@@ -41,6 +41,12 @@
 - **Saved feedback:** Section border indicates saved state until next edit.
 - **Warnings:** Inline, non-blocking for macro consistency checks.
 - **Destructive copy:** Explicit and specific about what gets deleted.
+- **Action mapping (strict):**
+  - `primary` = create/save/proceed
+  - `secondary` = back/cancel/navigation
+  - `subtle` = low-priority tertiary actions
+  - `danger` = destructive only
+  - `ghost` = alternate secondary in dense areas
 
 ## Form Rules
 
@@ -48,11 +54,15 @@
 - **Numeric behavior:** Free typing precision, round to 1 decimal on blur.
 - **Ingredient naming:** Uppercase while typing and on save.
 - **Validation style:** Informative first, blocking only when truly required.
+- **Helper text rule:** use only when action or constraint is non-obvious.
+- **Helper text max length:** 90 characters.
 
 ## List/Row Behavior
 
 - **Mobile:** Swipe left reveals delete action.
 - **Desktop:** Delete button always visible.
+- **Standard row layout:** left = label + meta, right = metric + actions.
+- **Row padding rule:** include 5px padding above and below row contents.
 - **Density:** Rows stay airy; avoid cramped controls.
 - **Tap target:** Row-primary action remains easy to hit.
 
@@ -73,7 +83,9 @@
 ## Accessibility Baseline
 
 - **Contrast:** Text and controls must remain high-contrast in both themes.
+- **Contrast target:** WCAG AA for body/UI text.
 - **Focus:** Visible keyboard focus on all actionable elements.
+- **Focus style:** neutral gray focus ring across interactive controls.
 - **Labels:** Inputs and icon actions require clear accessible naming.
 - **Consistency:** Same component state language across all pages.
 
@@ -83,6 +95,7 @@
 - No over-colored surfaces.
 - No ambiguous destructive actions.
 - No inconsistent spacing/radius/font scales.
+- No raw native controls in app pages when a UI package element exists.
 
 ## Review Checklist
 
