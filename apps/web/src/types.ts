@@ -26,7 +26,6 @@ export type Ingredient = {
 
 export type Meal = { id: string; name: string; ingredients: Ingredient[] };
 export type Day = { id: string; date: string; meals: Meal[] };
-
 export type LibraryIngredient = Ingredient & { lastUsedAt: string };
 
 export type AppState = {
@@ -35,3 +34,10 @@ export type AppState = {
   days: Day[];
   ingredientLibrary: LibraryIngredient[];
 };
+
+export type SaveSections = Partial<
+  Record<
+    'mealName' | 'ingredientForm' | 'addIngredientFlow' | 'targets' | 'theme' | 'data',
+    boolean
+  >
+>;
