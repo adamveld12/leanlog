@@ -1,0 +1,6 @@
+{
+  "skills": ["../.agents/skills"],
+  "prompts": ["../.agents/commands"],
+  "enableSkillCommands": true,
+  "theme": "monokai-classic"
+}
