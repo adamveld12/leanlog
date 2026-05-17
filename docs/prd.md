@@ -10,7 +10,6 @@
 
 - Frictionless daily logging of meals and ingredients on mobile
 - Visibility into daily totals vs. user-defined targets (calories + macros)
-- Reusable ingredient library to avoid re-entering common foods
 - Manual backup via JSON export/import
 
 **Non-Goals (v1)**
@@ -40,7 +39,6 @@ type AppState = {
   version: 1;
   settings: Settings;
   days: Day[];
-  ingredientLibrary: LibraryIngredient[];
 };
 
 type Settings = {
@@ -78,24 +76,8 @@ type Ingredient = {
   carbs: number; // grams
   fiber: number; // grams
   protein: number; // grams
-  libraryId?: string; // optional reference to LibraryIngredient
-};
-
-type LibraryIngredient = {
-  id: string;
-  name: string;
-  grams: number;
-  calories: number;
-  fat: number;
-  saturatedFat: number;
-  carbs: number;
-  fiber: number;
-  protein: number;
-  lastUsedAt: string; // ISO timestamp, for sorting "recent"
 };
 ```
-
-**Note on absolute storage:** when a user picks an ingredient from the library, the stored values are copied as-is. If the gram amount differs from what was originally saved, the user must manually adjust macros — no automatic scaling. This is a deliberate tradeoff for simplicity; revisit in v2 if it becomes friction.
 
 ## 5. Screens
 
@@ -129,9 +111,7 @@ type LibraryIngredient = {
 
 - Header: meal name (editable inline — required, cannot be blank), back button, delete button
 - **Ingredients list**: each row shows name, grams, calories, with edit/remove affordances
-- **Add ingredient** button opens a flow with two tabs:
-  - Tab 1: **From library** — searchable list of saved ingredients, sorted by most recent use. Pick one to copy its values into the meal; user can adjust grams/macros after.
-  - Tab 2: **New** — form with name, grams, calories, fat, saturated fat, carbs, fiber, protein. On save, the ingredient is added to the meal AND saved to the library.
+- **Add ingredient** uses a single inline form with name, grams, calories, fat, saturated fat, carbs, fiber, protein.
 - Inline editing: tap an existing ingredient row to edit any field
 - **Floating footer (sticky bottom)**: running totals for the meal — calories, fat (with saturated), carbs (with fiber), protein
 - Auto-saves on every change; back button returns to Day Detail
@@ -160,7 +140,6 @@ type LibraryIngredient = {
 - **Persistence:** all writes go to `localStorage` after each state change. Wrap in try/catch to surface quota errors.
 - **Empty states:** day list shows prompt to add one (though first-open auto-creates today); empty day shows prompt to add a meal; empty meal shows the floating footer at zeros.
 - **Duplicate dates:** prevented at day creation.
-- **Library deduplication:** when saving a new ingredient, check for case-insensitive name match; if found, prompt user to update the existing entry or save as new.
 - **Required meal name:** enforced before navigating away from Meal Edit.
 - **Macro consistency:** saturated fat ≤ total fat; fiber ≤ total carbs. Warn inline but don't block save.
 - **Number inputs:** allow decimals; validate non-negative.
@@ -176,7 +155,6 @@ type LibraryIngredient = {
 - Photos
 - Per-day target overrides
 - Trans fat tracking
-- Per-100g scaling when reusing library ingredients
 - Cloud sync, accounts, multi-device
 
 ## 9. Design Source of Truth

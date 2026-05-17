@@ -9,8 +9,8 @@ import {
   type SetStateAction,
 } from 'react';
 import { v4 as uuid } from 'uuid';
-import { ingredientDedupeKey, normalizeIngredientName, todayIso } from './lib';
-import type { AppState, Day, Ingredient, LibraryIngredient, Meal } from './types';
+import { todayIso } from './lib';
+import type { AppState, Day, Ingredient, Meal } from './types';
 
 const KEY = 'mealTracker.v1';
 
@@ -23,7 +23,6 @@ const initial: AppState = {
     theme: 'system',
   },
   days: [{ id: uuid(), date: todayIso(), meals: [] }],
-  ingredientLibrary: [],
 };
 
 type Store = {
@@ -36,8 +35,6 @@ type Store = {
   renameMeal: (dayId: string, mealId: string, name: string) => void;
   upsertIngredient: (dayId: string, mealId: string, ingredient: Ingredient) => void;
   removeIngredient: (dayId: string, mealId: string, ingredientId: string) => void;
-  addFromLibrary: (dayId: string, mealId: string, libraryId: string) => void;
-  saveIngredientToLibrary: (ingredient: Ingredient, overwriteId?: string) => void;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -52,9 +49,6 @@ const parse = (): AppState => {
     return initial;
   }
 };
-
-const touchLibrary = (items: LibraryIngredient[], id: string) =>
-  items.map((i) => (i.id === id ? { ...i, lastUsedAt: new Date().toISOString() } : i));
 
 export function StateProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<AppState>(parse);
@@ -138,47 +132,6 @@ export function StateProvider({ children }: PropsWithChildren) {
               : d,
           ),
         })),
-      addFromLibrary: (dayId, mealId, libraryId) => {
-        const base = state.ingredientLibrary.find((i) => i.id === libraryId);
-        if (!base) return;
-        const ingredient: Ingredient = { ...base, id: uuid(), libraryId: base.id };
-        setState((s) => ({
-          ...s,
-          ingredientLibrary: touchLibrary(s.ingredientLibrary, libraryId),
-          days: s.days.map((d) =>
-            d.id === dayId
-              ? {
-                  ...d,
-                  meals: d.meals.map((m) =>
-                    m.id === mealId ? { ...m, ingredients: [...m.ingredients, ingredient] } : m,
-                  ),
-                }
-              : d,
-          ),
-        }));
-      },
-      saveIngredientToLibrary: (ingredient, overwriteId) => {
-        const normalizedName = normalizeIngredientName(ingredient.name);
-        const next: LibraryIngredient = {
-          ...ingredient,
-          id: overwriteId ?? uuid(),
-          name: normalizedName,
-          lastUsedAt: new Date().toISOString(),
-        };
-        setState((s) => {
-          const match = s.ingredientLibrary.find(
-            (i) => ingredientDedupeKey(i.name) === ingredientDedupeKey(next.name),
-          );
-          if (overwriteId) {
-            return {
-              ...s,
-              ingredientLibrary: s.ingredientLibrary.map((i) => (i.id === overwriteId ? next : i)),
-            };
-          }
-          if (match) return s;
-          return { ...s, ingredientLibrary: [next, ...s.ingredientLibrary] };
-        });
-      },
     }),
     [state],
   );

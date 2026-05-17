@@ -11,9 +11,8 @@ import {
   SectionCard,
   StickyFooter,
   SwipeRow,
-  Tabs,
 } from '@leanlog/ui';
-import { ingredientDedupeKey, normalizeIngredientName, parseNum, prettyDate, round1 } from './lib';
+import { normalizeIngredientName, parseNum, prettyDate, round1 } from './lib';
 import { dayTotals, mealTotals } from './selectors';
 import { useStore } from './state';
 import type { Ingredient, SaveSections } from './types';
@@ -232,23 +231,12 @@ function IngredientEditor({
 function MealEdit() {
   const { dayId, mealId } = useParams();
   const nav = useNavigate();
-  const {
-    state,
-    renameMeal,
-    removeMeal,
-    upsertIngredient,
-    removeIngredient,
-    addFromLibrary,
-    saveIngredientToLibrary,
-  } = useStore();
+  const { state, renameMeal, removeMeal, upsertIngredient, removeIngredient } = useStore();
   const day = state.days.find((d) => d.id === dayId);
   const meal = day?.meals.find((m) => m.id === mealId);
-  const [tab, setTab] = useState('library');
-  const [search, setSearch] = useState('');
   const [draft, setDraft] = useState<IngredientDraft>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showBlankNamePrompt, setShowBlankNamePrompt] = useState(false);
-  const [showDedupePrompt, setShowDedupePrompt] = useState<string | null>(null);
   const { saved, markDirty, markSaved } = useSavedSections();
 
   if (!day || !meal) return <Navigate to="/" replace />;
@@ -274,23 +262,11 @@ function MealEdit() {
     };
     upsertIngredient(day.id, meal.id, next);
     markSaved('ingredientForm');
-    const existing = state.ingredientLibrary.find(
-      (i) => ingredientDedupeKey(i.name) === ingredientDedupeKey(next.name),
-    );
-    if (existing) {
-      setShowDedupePrompt(existing.id);
-    } else {
-      saveIngredientToLibrary(next);
-      markSaved('addIngredientFlow');
-    }
     setDraft(emptyDraft);
     setEditingId(null);
   };
 
   const totals = mealTotals(meal);
-  const filteredLibrary = state.ingredientLibrary
-    .filter((i) => i.name.includes(search.toUpperCase()))
-    .sort((a, b) => (a.lastUsedAt < b.lastUsedAt ? 1 : -1));
 
   return (
     <main className="ll-page ll-main">
@@ -368,44 +344,6 @@ function MealEdit() {
         </Button>
       </SectionCard>
 
-      <SectionCard title="Add from library" saved={saved.addIngredientFlow}>
-        <p className="ll-section-note">Library is sorted by most recently used.</p>
-        <Tabs
-          tabs={[
-            { key: 'library', label: 'From library' },
-            { key: 'new', label: 'New' },
-          ]}
-          active={tab}
-          onChange={setTab}
-        />
-        {tab === 'library' ? (
-          <>
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search"
-            />
-            <div className="ll-stack">
-              {filteredLibrary.map((item) => (
-                <div className="ll-row ll-between" key={item.id}>
-                  <span>{item.name}</span>
-                  <Button
-                    onClick={() => {
-                      addFromLibrary(day.id, meal.id, item.id);
-                      markSaved('addIngredientFlow');
-                    }}
-                  >
-                    Add
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <p>Use ingredient editor above and save to add new + library.</p>
-        )}
-      </SectionCard>
-
       <StickyFooter>
         <strong className="ll-page-subtitle">
           {totals.calories} kcal · P {totals.protein} · C {totals.carbs} · F {totals.fat}
@@ -428,36 +366,6 @@ function MealEdit() {
             }}
           >
             Discard meal draft and all ingredients
-          </Button>
-        </div>
-      </Modal>
-
-      <Modal
-        open={Boolean(showDedupePrompt)}
-        title="Ingredient name already exists"
-        onClose={() => setShowDedupePrompt(null)}
-      >
-        <p>This ingredient already exists in your library. Update the existing entry?</p>
-        <div className="ll-row">
-          <Button
-            onClick={() => {
-              if (showDedupePrompt)
-                saveIngredientToLibrary({ id: uuid(), ...draft }, showDedupePrompt);
-              setShowDedupePrompt(null);
-              markSaved('addIngredientFlow');
-            }}
-          >
-            Update existing library entry
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              saveIngredientToLibrary({ id: uuid(), ...draft });
-              setShowDedupePrompt(null);
-              markSaved('addIngredientFlow');
-            }}
-          >
-            Save as new anyway
           </Button>
         </div>
       </Modal>
