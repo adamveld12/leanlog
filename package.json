@@ -11,20 +11,28 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:watch": "pnpm -r test:watch",
+    "test:coverage": "pnpm -r test:coverage",
     "format": "prettier --write .",
     "prepare": "husky"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
     "@typescript-eslint/eslint-plugin": "^8.59.3",
     "@typescript-eslint/parser": "^8.59.3",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "husky": "^9.1.7",
+    "jsdom": "^29.0.1",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.1",
+    "vitest": "^4.0.18"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,md,css}": [
