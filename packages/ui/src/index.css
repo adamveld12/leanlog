@@ -1,91 +1,174 @@
+@import 'tailwindcss';
+
+:root {
+  --ll-bg: #f6f6f4;
+  --ll-surface: #ffffff;
+  --ll-text: #141414;
+  --ll-text-muted: #5e5e5e;
+  --ll-line: #e8e8e8;
+  --ll-line-strong: #d7d7d7;
+  --ll-danger: #b91c1c;
+  --ll-warn: #b45309;
+  --ll-saved: #3f8f5a;
+  --ll-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[data-theme='dark'] {
+  --ll-bg: #121212;
+  --ll-surface: #181818;
+  --ll-text: #f4f4f4;
+  --ll-text-muted: #b3b3b3;
+  --ll-line: #2d2d2d;
+  --ll-line-strong: #3a3a3a;
+  --ll-danger: #ef4444;
+  --ll-warn: #f59e0b;
+  --ll-saved: #4db36d;
+}
+
+.ll-page {
+  @apply mx-auto min-h-screen w-full max-w-[620px] p-4 pb-24;
+  color: var(--ll-text);
+}
+
+.ll-main {
+  @apply flex flex-col gap-3;
+}
+
+.ll-stack {
+  @apply flex flex-col gap-2.5;
+}
+
+.ll-row {
+  @apply flex items-center gap-2;
+}
+
+.ll-between {
+  @apply justify-between;
+}
+
 .ll-card {
-  border: 1px solid #ddd;
-  border-radius: 14px;
-  background: #fff;
-  padding: 12px;
+  @apply rounded-[14px] border p-3;
+  border-color: var(--ll-line);
+  background: var(--ll-surface);
 }
+
 .ll-card-saved {
-  border-color: #16a34a;
+  border-color: var(--ll-saved);
 }
+
 .ll-card-title {
-  margin: 0 0 10px;
-  font-size: 14px;
+  @apply mb-2 text-sm font-semibold tracking-tight;
 }
+
 .ll-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
+  @apply flex flex-col gap-1.5 text-xs font-medium;
+  color: var(--ll-text-muted);
 }
-.ll-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: #00000066;
-  display: grid;
-  place-items: center;
-  padding: 16px;
+
+.ll-input {
+  @apply h-11 w-full rounded-[10px] border px-3 text-sm outline-none transition;
+  border-color: var(--ll-line);
+  background: var(--ll-surface);
+  color: var(--ll-text);
+  transition-duration: 140ms;
+  transition-timing-function: var(--ll-ease);
 }
-.ll-modal {
-  width: min(560px, 100%);
-  background: #fff;
-  border-radius: 14px;
-  padding: 12px;
+
+.ll-input:focus {
+  border-color: var(--ll-line-strong);
 }
-.ll-modal-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+
+.ll-btn {
+  @apply h-11 rounded-[10px] px-4 text-sm font-semibold transition active:scale-[0.98];
+  transition-duration: 140ms;
+  transition-timing-function: var(--ll-ease);
 }
-.ll-tabs {
-  display: flex;
-  background: #f1f1f1;
-  border-radius: 10px;
-  padding: 2px;
+
+.ll-btn-primary {
+  background: var(--ll-text);
+  color: var(--ll-surface);
 }
-.ll-tabs button {
-  flex: 1;
-  border: 0;
+
+.ll-btn-ghost {
+  @apply border;
+  border-color: var(--ll-line);
   background: transparent;
-  border-radius: 8px;
-  height: 34px;
+  color: var(--ll-text);
 }
-.ll-tabs button.active {
-  background: #fff;
-}
-.ll-date-select {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-}
-.ll-date-select select {
-  height: 38px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-}
-.ll-sticky-footer {
-  position: sticky;
-  bottom: 0;
-  background: #fff;
-  border-top: 1px solid #ddd;
-  padding: 10px 0;
-}
-.ll-swipe {
-  position: relative;
-  overflow: hidden;
-}
-.ll-swipe-delete {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 100%;
-  border: 0;
-  background: #dc2626;
+
+.ll-btn-danger {
+  background: var(--ll-danger);
   color: #fff;
-  padding: 0 12px;
-  transform: translateX(100%);
-  transition: transform 150ms ease;
 }
+
+.ll-delete-btn {
+  @apply h-9 rounded-[10px] border px-2.5 text-xs font-semibold;
+  border-color: color-mix(in srgb, var(--ll-danger) 30%, var(--ll-line));
+  color: var(--ll-danger);
+}
+
+.ll-warn {
+  @apply text-xs font-medium;
+  color: var(--ll-warn);
+}
+
+.ll-modal-backdrop {
+  @apply fixed inset-0 grid place-items-center p-4;
+  background: rgb(0 0 0 / 45%);
+}
+
+.ll-modal {
+  @apply w-full max-w-[560px] rounded-[14px] border p-3;
+  background: var(--ll-surface);
+  border-color: var(--ll-line);
+}
+
+.ll-modal-head {
+  @apply mb-3 flex items-center justify-between;
+}
+
+.ll-tabs {
+  @apply flex rounded-[10px] border p-0.5;
+  border-color: var(--ll-line);
+}
+
+.ll-tabs button {
+  @apply h-[34px] flex-1 rounded-[8px] text-xs font-semibold;
+}
+
+.ll-tabs button.active {
+  background: var(--ll-text);
+  color: var(--ll-surface);
+}
+
+.ll-date-select {
+  @apply grid grid-cols-3 gap-2;
+}
+
+.ll-date-select select {
+  @apply h-10 rounded-[10px] border px-2 text-sm;
+  border-color: var(--ll-line);
+  background: var(--ll-surface);
+}
+
+.ll-sticky-footer {
+  @apply sticky bottom-0 border-t py-2.5;
+  border-color: var(--ll-line);
+  background: var(--ll-surface);
+}
+
+.ll-swipe {
+  @apply relative overflow-hidden;
+}
+
+.ll-swipe-delete {
+  @apply absolute right-0 top-0 h-full px-3 text-xs font-semibold text-white;
+  border: 0;
+  background: var(--ll-danger);
+  transform: translateX(100%);
+  transition: transform 140ms var(--ll-ease);
+}
+
 .ll-swipe.open .ll-swipe-delete {
   transform: translateX(0);
 }

@@ -1,64 +1,28 @@
+@import 'tailwindcss';
+
 body {
   margin: 0;
-  font-family: Inter, system-ui, sans-serif;
-  background: #f8f8f6;
-  color: #111;
-}
-
-#root {
-  max-width: 620px;
-  margin: 0 auto;
-  min-height: 100vh;
-  padding: 16px;
-}
-
-main {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-bottom: 80px;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: var(--ll-bg);
+  color: var(--ll-text);
 }
 
 h1,
 h2,
-h3 {
+h3,
+p {
   margin: 0;
 }
 
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+a {
+  color: inherit;
 }
 
-.row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.between {
-  justify-content: space-between;
-}
-
-.delete-btn {
-  border: 1px solid #fecaca;
-  color: #b91c1c;
-  background: #fff;
-  border-radius: 10px;
-  height: 36px;
-  padding: 0 10px;
-}
-
-.warn {
-  color: #b45309;
+.desktop-only {
+  display: inline-flex;
 }
 
 @media (max-width: 768px) {
-  .delete-btn {
-    min-width: 44px;
-  }
-
   .desktop-only {
     display: none;
   }

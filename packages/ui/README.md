@@ -25,5 +25,7 @@ pnpm --filter @leanlog/ui build
 
 ## Design docs
 
+From repo root:
+
 - `docs/design-reference.md`
 - `docs/design-system.md`

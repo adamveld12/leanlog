@@ -47,7 +47,7 @@ function DayList() {
   });
   const toIso = `${picker.year}-${String(picker.month).padStart(2, '0')}-${String(picker.day).padStart(2, '0')}`;
   return (
-    <main>
+    <main className="ll-page ll-main">
       <h1>leanlog</h1>
       <SectionCard title="Add day">
         <DateSelect3
@@ -58,7 +58,7 @@ function DayList() {
         />
         <Button onClick={() => addDay(toIso)}>Add day</Button>
       </SectionCard>
-      <div className="stack">
+      <div className="ll-stack">
         {state.days
           .slice()
           .sort((a, b) => (a.date < b.date ? 1 : -1))
@@ -67,9 +67,9 @@ function DayList() {
             return (
               <SwipeRow onDelete={() => removeDay(d.id)} deleteLabel="Delete day">
                 <SectionCard key={d.id}>
-                  <div className="row between">
+                  <div className="ll-row ll-between">
                     <Link to={`/day/${d.id}`}>{prettyDate(d.date)}</Link>
-                    <button className="delete-btn desktop-only" onClick={() => removeDay(d.id)}>
+                    <button className="ll-delete-btn desktop-only" onClick={() => removeDay(d.id)}>
                       Delete day
                     </button>
                   </div>
@@ -95,7 +95,7 @@ function DayDetail() {
   const totals = dayTotals(day);
 
   return (
-    <main>
+    <main className="ll-page ll-main">
       <h2>{prettyDate(day.date)}</h2>
       <SectionCard title="Daily totals">
         <p>
@@ -118,10 +118,10 @@ function DayDetail() {
         return (
           <SwipeRow onDelete={() => removeMeal(day.id, m.id)} deleteLabel="Delete meal">
             <SectionCard key={m.id}>
-              <div className="row between">
+              <div className="ll-row ll-between">
                 <Link to={`/day/${day.id}/meal/${m.id}`}>{m.name || 'UNTITLED MEAL'}</Link>
                 <button
-                  className="delete-btn desktop-only"
+                  className="ll-delete-btn desktop-only"
                   onClick={() => removeMeal(day.id, m.id)}
                 >
                   Delete meal
@@ -149,7 +149,7 @@ function IngredientEditor({
   const warnSat = value.saturatedFat > value.fat;
   const warnFiber = value.fiber > value.carbs;
   return (
-    <div className="stack">
+    <div className="ll-stack">
       <Input
         value={value.name}
         onChange={(e) => onChange({ ...value, name: normalizeIngredientName(e.target.value) })}
@@ -178,7 +178,7 @@ function IngredientEditor({
         onChange={(n) => onChange({ ...value, saturatedFat: parseNum(n) })}
         onBlur={onBlur}
       />
-      {warnSat ? <small className="warn">Saturated fat is higher than total fat.</small> : null}
+      {warnSat ? <small className="ll-warn">Saturated fat is higher than total fat.</small> : null}
       <NumberInput
         label="Carbs"
         value={String(value.carbs)}
@@ -191,7 +191,7 @@ function IngredientEditor({
         onChange={(n) => onChange({ ...value, fiber: parseNum(n) })}
         onBlur={onBlur}
       />
-      {warnFiber ? <small className="warn">Fiber is higher than total carbs.</small> : null}
+      {warnFiber ? <small className="ll-warn">Fiber is higher than total carbs.</small> : null}
       <NumberInput
         label="Protein"
         value={String(value.protein)}
@@ -266,7 +266,7 @@ function MealEdit() {
     .sort((a, b) => (a.lastUsedAt < b.lastUsedAt ? 1 : -1));
 
   return (
-    <main>
+    <main className="ll-page ll-main">
       <SectionCard title="Meal name" saved={saved.mealName}>
         <Input
           value={meal.name}
@@ -276,9 +276,9 @@ function MealEdit() {
             markSaved('mealName');
           }}
         />
-        <div className="row">
+        <div className="ll-row">
           <button
-            className="delete-btn"
+            className="ll-delete-btn"
             onClick={() => {
               if (!meal.name.trim()) {
                 setShowBlankNamePrompt(true);
@@ -290,7 +290,7 @@ function MealEdit() {
             Back
           </button>
           <button
-            className="delete-btn"
+            className="ll-delete-btn"
             onClick={() => {
               removeMeal(day.id, meal.id);
               nav(`/day/${day.id}`);
@@ -303,7 +303,7 @@ function MealEdit() {
 
       <SectionCard title="Ingredients" saved={saved.ingredientForm}>
         {meal.ingredients.map((i) => (
-          <div className="row between" key={i.id}>
+          <div className="ll-row ll-between" key={i.id}>
             <button
               onClick={() => {
                 setEditingId(i.id);
@@ -312,7 +312,10 @@ function MealEdit() {
             >
               {i.name} · {i.calories} kcal
             </button>
-            <button className="delete-btn" onClick={() => removeIngredient(day.id, meal.id, i.id)}>
+            <button
+              className="ll-delete-btn"
+              onClick={() => removeIngredient(day.id, meal.id, i.id)}
+            >
               Delete ingredient
             </button>
           </div>
@@ -346,9 +349,9 @@ function MealEdit() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search"
             />
-            <div className="stack">
+            <div className="ll-stack">
               {filteredLibrary.map((item) => (
-                <div className="row between" key={item.id}>
+                <div className="ll-row ll-between" key={item.id}>
                   <span>{item.name}</span>
                   <Button
                     onClick={() => {
@@ -379,7 +382,7 @@ function MealEdit() {
         onClose={() => setShowBlankNamePrompt(false)}
       >
         <p>Name this meal before leaving, or discard this whole meal draft.</p>
-        <div className="row">
+        <div className="ll-row">
           <Button onClick={() => setShowBlankNamePrompt(false)}>Stay and edit</Button>
           <Button
             variant="danger"
@@ -399,7 +402,7 @@ function MealEdit() {
         onClose={() => setShowDedupePrompt(null)}
       >
         <p>This ingredient already exists in your library. Update the existing entry?</p>
-        <div className="row">
+        <div className="ll-row">
           <Button
             onClick={() => {
               if (showDedupePrompt)
@@ -437,7 +440,7 @@ function Settings() {
   };
 
   return (
-    <main>
+    <main className="ll-page ll-main">
       <SectionCard title="Targets" saved={saved.targets}>
         <NumberInput
           label="Calories"
@@ -472,7 +475,7 @@ function Settings() {
       </SectionCard>
 
       <SectionCard title="Theme" saved={saved.theme}>
-        <div className="row">
+        <div className="ll-row">
           {(['system', 'light', 'dark'] as const).map((theme) => (
             <Button
               key={theme}
@@ -527,7 +530,7 @@ function Settings() {
             }
           }}
         />
-        {importError ? <small className="warn">{importError}</small> : null}
+        {importError ? <small className="ll-warn">{importError}</small> : null}
       </SectionCard>
 
       <Link to="/">Back</Link>

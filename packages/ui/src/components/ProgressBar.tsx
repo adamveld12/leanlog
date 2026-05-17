@@ -6,15 +6,10 @@ type ProgressBarProps = {
 export function ProgressBar({ value, max }: ProgressBarProps) {
   const percent = Math.max(0, Math.min(100, (value / Math.max(1, max)) * 100));
   return (
-    <div style={{ height: 8, width: '100%', borderRadius: 999, background: '#e5e5e5' }}>
+    <div className="h-2 w-full rounded-full" style={{ background: 'var(--ll-line)' }}>
       <div
-        style={{
-          height: '100%',
-          borderRadius: 999,
-          background: '#171717',
-          width: `${percent}%`,
-          transition: 'width 200ms ease',
-        }}
+        className="h-full rounded-full transition-[width] duration-150"
+        style={{ width: `${percent}%`, background: 'var(--ll-text)' }}
       />
     </div>
   );
