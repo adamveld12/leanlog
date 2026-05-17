@@ -51,6 +51,7 @@ function DayList() {
     <main className="ll-page ll-main">
       <h1 className="ll-page-title">leanlog</h1>
       <SectionCard title="Add day">
+        <p className="ll-section-note">Choose month, day, and year to create a new log day.</p>
         <DateSelect3
           month={picker.month}
           day={picker.day}
@@ -108,7 +109,7 @@ function DayDetail() {
     <main className="ll-page ll-main">
       <h2 className="ll-page-title">{prettyDate(day.date)}</h2>
       <SectionCard title="Daily totals">
-        <div className="ll-stack">
+        <div className="ll-stack-lg">
           <div className="ll-stack">
             <p className="ll-page-subtitle">
               {totals.calories} / {state.settings.calorieTarget} kcal
@@ -149,7 +150,9 @@ function DayDetail() {
                   Delete meal
                 </Button>
               </div>
-              <small className="ll-meta">{totals.calories} kcal</small>
+              <small className="ll-meta">
+                {totals.calories} kcal · P {totals.protein} · C {totals.carbs} · F {totals.fat}
+              </small>
             </SectionCard>
           </SwipeRow>
         );
@@ -293,6 +296,7 @@ function MealEdit() {
     <main className="ll-page ll-main">
       <h2 className="ll-page-title">{meal.name || 'Meal'}</h2>
       <SectionCard title="Meal name" saved={saved.mealName}>
+        <p className="ll-section-note">Name is required before leaving this page.</p>
         <Input
           value={meal.name}
           onChange={(e) => {
@@ -329,8 +333,9 @@ function MealEdit() {
       </SectionCard>
 
       <SectionCard title="Ingredients" saved={saved.ingredientForm}>
+        <p className="ll-section-note">Tap an ingredient row to edit values.</p>
         {meal.ingredients.map((i) => (
-          <div className="ll-row ll-between" key={i.id}>
+          <div className="ll-list-row" key={i.id}>
             <button
               type="button"
               className="ll-link-btn"
@@ -364,6 +369,7 @@ function MealEdit() {
       </SectionCard>
 
       <SectionCard title="Add from library" saved={saved.addIngredientFlow}>
+        <p className="ll-section-note">Library is sorted by most recently used.</p>
         <Tabs
           tabs={[
             { key: 'library', label: 'From library' },
@@ -473,6 +479,7 @@ function Settings() {
     <main className="ll-page ll-main">
       <h2 className="ll-page-title">Settings</h2>
       <SectionCard title="Targets" saved={saved.targets}>
+        <p className="ll-section-note">Changes save immediately.</p>
         <NumberInput
           label="Calories"
           value={String(state.settings.calorieTarget)}
@@ -506,7 +513,7 @@ function Settings() {
       </SectionCard>
 
       <SectionCard title="Theme" saved={saved.theme}>
-        <div className="ll-row">
+        <div className="ll-row flex-wrap">
           {(['system', 'light', 'dark'] as const).map((theme) => (
             <Button
               key={theme}
@@ -524,6 +531,7 @@ function Settings() {
       </SectionCard>
 
       <SectionCard title="Data" saved={saved.data}>
+        <p className="ll-section-note">Import replaces all existing data.</p>
         <Button
           onClick={() => {
             const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
