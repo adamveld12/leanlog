@@ -1,4 +1,5 @@
 import type { PropsWithChildren } from 'react';
+import { Button } from './Button';
 
 type ModalProps = PropsWithChildren<{ open: boolean; title: string; onClose: () => void }>;
 
@@ -8,10 +9,12 @@ export function Modal({ open, title, children, onClose }: ModalProps) {
     <div className="ll-modal-backdrop" role="dialog" aria-modal="true">
       <div className="ll-modal">
         <div className="ll-modal-head">
-          <h3>{title}</h3>
-          <button onClick={onClose}>Close</button>
+          <h3 className="ll-modal-title">{title}</h3>
+          <Button size="sm" variant="ghost" onClick={onClose}>
+            Close
+          </Button>
         </div>
-        {children}
+        <div className="ll-modal-body">{children}</div>
       </div>
     </div>
   );

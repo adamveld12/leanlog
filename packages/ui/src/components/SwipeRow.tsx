@@ -5,8 +5,6 @@ type SwipeRowProps = PropsWithChildren<{ onDelete: () => void; deleteLabel: stri
 export function SwipeRow({ children, onDelete, deleteLabel }: SwipeRowProps) {
   const [startX, setStartX] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
-  const mobile =
-    typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false;
 
   return (
     <div className={`ll-swipe ${open ? 'open' : ''}`}>
@@ -22,11 +20,7 @@ export function SwipeRow({ children, onDelete, deleteLabel }: SwipeRowProps) {
       >
         {children}
       </div>
-      <button
-        className="ll-swipe-delete"
-        style={{ display: mobile ? 'block' : 'none' }}
-        onClick={onDelete}
-      >
+      <button type="button" className="ll-swipe-delete" onClick={onDelete}>
         {deleteLabel}
       </button>
     </div>
