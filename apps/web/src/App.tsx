@@ -320,7 +320,7 @@ function MealEdit() {
                 setDraft(i);
               }}
             >
-              {i.name} · {i.calories} kcal
+              {i.name} · {i.calories} kcal · F {i.fat} · C {i.carbs} · P {i.protein}
             </button>
             <Button
               size="sm"
