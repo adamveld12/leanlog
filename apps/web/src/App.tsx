@@ -9,6 +9,7 @@ import {
   NumberInput,
   SectionCard,
   StickyFooter,
+  SwipeRow,
   Tabs,
 } from '@leanlog/ui';
 import { ingredientDedupeKey, normalizeIngredientName, parseNum, prettyDate, round1 } from './lib';
@@ -64,17 +65,19 @@ function DayList() {
           .map((d) => {
             const totals = dayTotals(d);
             return (
-              <SectionCard key={d.id}>
-                <div className="row between">
-                  <Link to={`/day/${d.id}`}>{prettyDate(d.date)}</Link>
-                  <button className="delete-btn" onClick={() => removeDay(d.id)}>
-                    Delete day
-                  </button>
-                </div>
-                <small>
-                  {totals.calories} kcal · P {totals.protein} · C {totals.carbs} · F {totals.fat}
-                </small>
-              </SectionCard>
+              <SwipeRow onDelete={() => removeDay(d.id)} deleteLabel="Delete day">
+                <SectionCard key={d.id}>
+                  <div className="row between">
+                    <Link to={`/day/${d.id}`}>{prettyDate(d.date)}</Link>
+                    <button className="delete-btn desktop-only" onClick={() => removeDay(d.id)}>
+                      Delete day
+                    </button>
+                  </div>
+                  <small>
+                    {totals.calories} kcal · P {totals.protein} · C {totals.carbs} · F {totals.fat}
+                  </small>
+                </SectionCard>
+              </SwipeRow>
             );
           })}
       </div>
@@ -113,15 +116,20 @@ function DayDetail() {
       {day.meals.map((m) => {
         const totals = mealTotals(m);
         return (
-          <SectionCard key={m.id}>
-            <div className="row between">
-              <Link to={`/day/${day.id}/meal/${m.id}`}>{m.name || 'UNTITLED MEAL'}</Link>
-              <button className="delete-btn" onClick={() => removeMeal(day.id, m.id)}>
-                Delete meal
-              </button>
-            </div>
-            <small>{totals.calories} kcal</small>
-          </SectionCard>
+          <SwipeRow onDelete={() => removeMeal(day.id, m.id)} deleteLabel="Delete meal">
+            <SectionCard key={m.id}>
+              <div className="row between">
+                <Link to={`/day/${day.id}/meal/${m.id}`}>{m.name || 'UNTITLED MEAL'}</Link>
+                <button
+                  className="delete-btn desktop-only"
+                  onClick={() => removeMeal(day.id, m.id)}
+                >
+                  Delete meal
+                </button>
+              </div>
+              <small>{totals.calories} kcal</small>
+            </SectionCard>
+          </SwipeRow>
         );
       })}
       <Link to="/">Back</Link>

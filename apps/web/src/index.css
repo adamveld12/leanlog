@@ -58,4 +58,8 @@ h3 {
   .delete-btn {
     min-width: 44px;
   }
+
+  .desktop-only {
+    display: none;
+  }
 }
