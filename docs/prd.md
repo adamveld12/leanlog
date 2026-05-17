@@ -4,17 +4,17 @@
 
 **Leanlog** is a lightweight, mobile-first React web app for tracking daily meals, calories, and macronutrients. All data is stored in the browser via `localStorage` — no backend, no accounts, no sync. JSON export/import is available for manual backup.
 
-**Visual direction:** refined minimalist — generous whitespace, restrained palette, serif accents. Light and dark themes with a toggle that defaults to the user's system preference.
-
 ## 2. Goals & Non-Goals
 
 **Goals**
+
 - Frictionless daily logging of meals and ingredients on mobile
 - Visibility into daily totals vs. user-defined targets (calories + macros)
 - Reusable ingredient library to avoid re-entering common foods
 - Manual backup via JSON export/import
 
 **Non-Goals (v1)**
+
 - Multi-device sync, accounts, or cloud storage
 - Barcode scanning or third-party nutrition database integration (USDA, etc.)
 - Recipes, meal templates, or weekly meal planning
@@ -44,27 +44,27 @@ type AppState = {
 };
 
 type Settings = {
-  calorieTarget: number;        // kcal
-  mealCountTarget: number;      // e.g. 3
+  calorieTarget: number; // kcal
+  mealCountTarget: number; // e.g. 3
   macroTargets: {
-    fat: number;                // grams
-    saturatedFat: number;       // grams
-    carbs: number;              // grams
-    fiber: number;              // grams
-    protein: number;            // grams
+    fat: number; // grams
+    saturatedFat: number; // grams
+    carbs: number; // grams
+    fiber: number; // grams
+    protein: number; // grams
   };
   theme: 'system' | 'light' | 'dark';
 };
 
 type Day = {
-  id: string;                   // uuid
-  date: string;                 // ISO date, e.g. "2026-05-17"
+  id: string; // uuid
+  date: string; // ISO date, e.g. "2026-05-17"
   meals: Meal[];
 };
 
 type Meal = {
   id: string;
-  name: string;                 // required, free text
+  name: string; // required, free text
   ingredients: Ingredient[];
 };
 
@@ -72,13 +72,13 @@ type Ingredient = {
   id: string;
   name: string;
   grams: number;
-  calories: number;             // absolute kcal as entered
-  fat: number;                  // grams
-  saturatedFat: number;         // grams
-  carbs: number;                // grams
-  fiber: number;                // grams
-  protein: number;              // grams
-  libraryId?: string;           // optional reference to LibraryIngredient
+  calories: number; // absolute kcal as entered
+  fat: number; // grams
+  saturatedFat: number; // grams
+  carbs: number; // grams
+  fiber: number; // grams
+  protein: number; // grams
+  libraryId?: string; // optional reference to LibraryIngredient
 };
 
 type LibraryIngredient = {
@@ -91,7 +91,7 @@ type LibraryIngredient = {
   carbs: number;
   fiber: number;
   protein: number;
-  lastUsedAt: string;           // ISO timestamp, for sorting "recent"
+  lastUsedAt: string; // ISO timestamp, for sorting "recent"
 };
 ```
 
@@ -179,13 +179,12 @@ type LibraryIngredient = {
 - Per-100g scaling when reusing library ingredients
 - Cloud sync, accounts, multi-device
 
-## 9. Visual Design
+## 9. Design Source of Truth
 
-- **Aesthetic:** refined minimalist. Generous whitespace, restrained palette, serif accents for headings and numerics (totals, targets); clean sans-serif for UI/body.
-- **Color:** off-white / warm paper background for light mode; deep neutral (near-black, not pure) for dark mode. One subtle accent color used sparingly for primary actions and progress indicators. Muted warning color for over-target states.
-- **Typography:** serif display face for headlines, day labels, and large numbers; a refined sans-serif for body, inputs, and meta. Numeric tabular figures where totals are shown so digits align.
-- **Motion:** restrained. Page transitions are simple fades or subtle slides; swipe-to-delete uses native-feeling spring; progress bars animate to new values smoothly. No decorative motion.
-- **Density:** spacious. Touch targets ≥ 44px. Single-column layout, max-width on desktop.
+Design guidance lives in:
+
+- `docs/design-reference.md`
+- `docs/design-system.md`
 
 ## 10. Deployment
 

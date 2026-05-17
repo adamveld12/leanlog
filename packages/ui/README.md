@@ -22,3 +22,8 @@ Build:
 ```bash
 pnpm --filter @leanlog/ui build
 ```
+
+## Design docs
+
+- `docs/design-reference.md`
+- `docs/design-system.md`
