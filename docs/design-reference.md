@@ -41,6 +41,7 @@
 - **Saved feedback:** Section border indicates saved state until next edit.
 - **Warnings:** Inline, non-blocking for macro consistency checks.
 - **Destructive copy:** Explicit and specific about what gets deleted.
+- **Button spacing:** All button components keep 10px top/bottom margin.
 - **Action mapping (strict):**
   - `primary` = create/save/proceed
   - `secondary` = back/cancel/navigation
@@ -54,6 +55,7 @@
 - **Numeric behavior:** Free typing precision, round to 1 decimal on blur.
 - **Ingredient naming:** Uppercase while typing and on save.
 - **Validation style:** Informative first, blocking only when truly required.
+- **Input spacing:** All input components keep 10px top/bottom margin.
 - **Helper text rule:** use only when action or constraint is non-obvious.
 - **Helper text max length:** 90 characters.
 
@@ -62,7 +64,6 @@
 - **Mobile:** Swipe left reveals delete action.
 - **Desktop:** Delete button always visible.
 - **Standard row layout:** left = label + meta, right = metric + actions.
-- **Row padding rule:** include 5px padding above and below row contents.
 - **Density:** Rows stay airy; avoid cramped controls.
 - **Tap target:** Row-primary action remains easy to hit.
 

@@ -34,8 +34,7 @@
 - `4, 8, 12, 16, 20, 24`
 - **Containers:** default vertical rhythm uses 12 or 16.
 - **Sections:** internal padding 12–16.
-- **Row micro-padding exception:** 5px top + 5px bottom is allowed for list rows.
-- **Rule:** Do not invent one-off spacing values outside defined exceptions.
+- **Rule:** Do not invent one-off spacing values.
 
 ## Radius Scale
 
@@ -66,7 +65,8 @@
   - `subtle` low-priority tertiary actions
   - `danger` destructive only
   - `ghost` alternate secondary in dense areas
-- **Input/NumberInput:** min-height 44, top label, muted helper/error below.
+- **Button spacing:** all button components have 10px top/bottom margin.
+- **Input/NumberInput:** min-height 44, top label, muted helper/error below, 10px top/bottom margin.
 - **SectionCard:** default surface + line; saved state swaps border to `--ll-saved`.
 - **Modal:** dim backdrop + elevated surface; explicit destructive copy in confirm flows.
 - **Tabs:** compact segmented control; active tab must be obvious.

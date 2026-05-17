@@ -92,7 +92,7 @@
 }
 
 .ll-input {
-  @apply h-11 w-full rounded-[10px] border px-3 text-sm outline-none transition;
+  @apply my-2.5 h-11 w-full rounded-[10px] border px-3 text-sm outline-none transition;
   border-color: var(--ll-line);
   background: var(--ll-surface);
   color: var(--ll-text);
@@ -106,7 +106,7 @@
 }
 
 .ll-btn {
-  @apply inline-flex items-center justify-center rounded-[10px] text-sm font-semibold transition active:scale-[0.98] disabled:opacity-50;
+  @apply my-2.5 inline-flex items-center justify-center rounded-[10px] text-sm font-semibold transition active:scale-[0.98] disabled:opacity-50;
   transition-duration: 140ms;
   transition-timing-function: var(--ll-ease);
 }
@@ -182,7 +182,7 @@
 }
 
 .ll-list-row {
-  @apply flex items-center justify-between gap-2 rounded-[10px] px-1.5 py-1;
+  @apply flex items-center justify-between gap-2 rounded-[10px] px-1.5 py-0;
 }
 
 .ll-delete-btn {
@@ -250,7 +250,7 @@
 }
 
 .ll-date-select select {
-  @apply h-10 rounded-[10px] border px-2 text-sm;
+  @apply my-2.5 h-10 rounded-[10px] border px-2 text-sm;
   border-color: var(--ll-line);
   background: var(--ll-surface);
   color: var(--ll-text);
