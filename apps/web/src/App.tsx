@@ -82,7 +82,11 @@ function DayList() {
                     </Button>
                   </div>
                   <small className="ll-meta">
-                    {totals.calories} kcal · P {totals.protein} · C {totals.carbs} · F {totals.fat}
+                    {totals.calories}
+                    <span className="ll-unit"> kcal</span> · P {totals.protein}
+                    <span className="ll-unit">g</span> · C {totals.carbs}
+                    <span className="ll-unit">g</span> · F {totals.fat}
+                    <span className="ll-unit">g</span>
                   </small>
                 </SectionCard>
               </SwipeRow>
@@ -111,7 +115,8 @@ function DayDetail() {
         <div className="ll-stack-lg">
           <div className="ll-stack">
             <p className="ll-page-subtitle">
-              {totals.calories} / {state.settings.calorieTarget} kcal
+              {totals.calories} / {state.settings.calorieTarget}
+              <span className="ll-unit"> kcal</span>
             </p>
             <ProgressBar value={totals.calories} max={state.settings.calorieTarget} />
           </div>
@@ -150,7 +155,11 @@ function DayDetail() {
                 </Button>
               </div>
               <small className="ll-meta">
-                {totals.calories} kcal · P {totals.protein} · C {totals.carbs} · F {totals.fat}
+                {totals.calories}
+                <span className="ll-unit"> kcal</span> · P {totals.protein}
+                <span className="ll-unit">g</span> · C {totals.carbs}
+                <span className="ll-unit">g</span> · F {totals.fat}
+                <span className="ll-unit">g</span>
               </small>
             </SectionCard>
           </SwipeRow>
@@ -320,7 +329,11 @@ function MealEdit() {
                 setDraft(i);
               }}
             >
-              {i.name} · {i.calories} kcal · F {i.fat} · C {i.carbs} · P {i.protein}
+              {i.name} · {i.calories}
+              <span className="ll-unit"> kcal</span> · F {i.fat}
+              <span className="ll-unit">g</span> · C {i.carbs}
+              <span className="ll-unit">g</span> · P {i.protein}
+              <span className="ll-unit">g</span>
             </button>
             <Button
               size="sm"
@@ -346,7 +359,11 @@ function MealEdit() {
 
       <StickyFooter>
         <strong className="ll-page-subtitle">
-          {totals.calories} kcal · P {totals.protein} · C {totals.carbs} · F {totals.fat}
+          {totals.calories}
+          <span className="ll-unit"> kcal</span> · P {totals.protein}
+          <span className="ll-unit">g</span> · C {totals.carbs}
+          <span className="ll-unit">g</span> · F {totals.fat}
+          <span className="ll-unit">g</span>
         </strong>
       </StickyFooter>
 

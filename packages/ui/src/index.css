@@ -71,6 +71,10 @@
   color: var(--ll-text-muted);
 }
 
+.ll-unit {
+  color: var(--ll-text-muted);
+}
+
 .ll-card {
   @apply rounded-[14px] border p-4;
   border-color: var(--ll-line);
