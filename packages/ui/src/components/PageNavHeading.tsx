@@ -40,17 +40,17 @@ export function PageNavHeading({
 
   return (
     <div className="ll-stack">
-      <div className="relative flex w-full items-center justify-between gap-2">
-        <div className="ll-row min-w-0">
+      <div className="relative w-full">
+        <div className="ll-row min-w-0 pr-24">
           {backHref ? renderLink({ href: backHref, label: backLabel }) : null}
           <h1 className="ll-page-title">{title}</h1>
         </div>
         {subtitle ? (
-          <div className="pointer-events-none absolute left-1/2 hidden -translate-x-1/2 md:block">
+          <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:block">
             {subtitle}
           </div>
         ) : null}
-        <div className="ml-auto shrink-0">
+        <div className="absolute right-0 top-1/2 -translate-y-1/2">
           {renderLink({ href: profileHref, label: profileLabel })}
         </div>
       </div>
