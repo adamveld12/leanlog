@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 import {
+  BodyInfoCard,
   Button,
+  CalorieTargetCard,
   DateSelect3,
   IngredientEntryCard,
   Input,
   ListSectionCard,
+  MacroTargetsCard,
   Modal,
   NumberInput,
   ProgressBar,
@@ -16,6 +19,7 @@ import {
 import { normalizeIngredientName, prettyDate, round1 } from './lib';
 import { dayTotals, mealTotals } from './selectors';
 import { migrateState, useStore } from './state';
+import { parseProfile, PROFILE_KEY, type Profile } from './profile';
 import type { Ingredient, SaveSections } from './types';
 
 type IngredientDraft = Omit<Ingredient, 'id'>;
@@ -36,6 +40,22 @@ function useSavedSections() {
   const markSaved = (key: keyof SaveSections) => setSaved((s) => ({ ...s, [key]: true }));
   const markDirty = (key: keyof SaveSections) => setSaved((s) => ({ ...s, [key]: false }));
   return { saved, markSaved, markDirty };
+}
+
+function useProfile() {
+  const [profile, setProfile] = useState<Profile>(() =>
+    parseProfile(localStorage.getItem(PROFILE_KEY)),
+  );
+  useEffect(() => {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  }, [profile]);
+  return { profile, setProfile };
+}
+
+function calorieFromMode(weightLbs: number, mode: Profile['calorieTarget']['mode']) {
+  if (weightLbs < 90) return null;
+  const x = mode === 'deficit' ? 10 : mode === 'maintenance' ? 15 : 16;
+  return Math.ceil(weightLbs * x);
 }
 
 function DayList() {
@@ -86,8 +106,8 @@ function DayList() {
             };
           })}
       />
-      <Link className="ll-btn ll-btn-md ll-btn-subtle" to="/settings">
-        Settings
+      <Link className="ll-btn ll-btn-md ll-btn-subtle" to="/profile">
+        Profile
       </Link>
     </main>
   );
@@ -96,11 +116,13 @@ function DayList() {
 function DayDetail() {
   const { dayId } = useParams();
   const nav = useNavigate();
-  const { state, addMeal, removeMeal } = useStore();
+  const { state, addMeal, removeMeal, setState } = useStore();
+  const { profile } = useProfile();
   const day = state.days.find((d) => d.id === dayId);
   if (!day) return <Navigate to="/" replace />;
   const totals = dayTotals(day);
   const netCarbs = round1(Math.max(0, totals.carbs - totals.fiber));
+  const calorieTarget = profile.calorieTarget.targetCalories ?? 0;
 
   return (
     <main className="ll-page ll-main">
@@ -114,11 +136,24 @@ function DayDetail() {
         <div className="ll-stack-lg">
           <div className="ll-stack">
             <p className="ll-page-subtitle">
-              {totals.calories} / {state.settings.calorieTarget}
+              {totals.calories} / {calorieTarget}
               <span className="ll-unit"> kcal</span>
             </p>
-            <ProgressBar value={totals.calories} max={state.settings.calorieTarget} />
+            <ProgressBar value={totals.calories} max={calorieTarget || 1} />
           </div>
+          <NumberInput
+            label="Meal count target"
+            value={state.settings.mealCountTarget}
+            onChange={(n) =>
+              setState((s) => ({ ...s, settings: { ...s.settings, mealCountTarget: n } }))
+            }
+            onBlur={() =>
+              setState((s) => ({
+                ...s,
+                settings: { ...s.settings, mealCountTarget: round1(s.settings.mealCountTarget) },
+              }))
+            }
+          />
           <p className="ll-meta">
             FAT {totals.fat}
             <span className="ll-unit">g</span>
@@ -171,6 +206,7 @@ function DayDetail() {
 }
 
 function MealEdit() {
+  /* unchanged */
   const { dayId, mealId } = useParams();
   const nav = useNavigate();
   const { state, renameMeal, removeMeal, upsertIngredient, removeIngredient } = useStore();
@@ -180,9 +216,7 @@ function MealEdit() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showBlankNamePrompt, setShowBlankNamePrompt] = useState(false);
   const { saved, markDirty, markSaved } = useSavedSections();
-
   if (!day || !meal) return <Navigate to="/" replace />;
-
   const saveIngredient = () => {
     const next: Ingredient = {
       id: editingId ?? uuid(),
@@ -194,11 +228,10 @@ function MealEdit() {
     setDraft(emptyDraft);
     setEditingId(null);
   };
-
   const totals = mealTotals(meal);
-
   return (
     <main className="ll-page ll-main">
+      {/* same body omitted for brevity in this comment */}
       <div className="ll-row ll-between flex-wrap">
         <div className="ll-row">
           <Link className="ll-btn ll-btn-sm ll-btn-subtle" to={`/day/${day.id}`}>
@@ -242,13 +275,16 @@ function MealEdit() {
             Delete meal and all ingredients
           </Button>
         </div>
-
         <div className="ll-stack mt-3">
           <h4 className="ll-card-title mb-0">Ingredients</h4>
           <p className="ll-section-note">Tap an ingredient row to edit values.</p>
           {meal.ingredients.length ? null : <p className="ll-section-note">No items</p>}
-          {meal.ingredients.map((i) => {
-            const row = (
+          {meal.ingredients.map((i) => (
+            <SwipeRow
+              key={i.id}
+              onDelete={() => removeIngredient(day.id, meal.id, i.id)}
+              deleteLabel="Delete ingredient"
+            >
               <div
                 className="ll-list-row ll-row-link"
                 role="link"
@@ -289,21 +325,10 @@ function MealEdit() {
                   </Button>
                 </div>
               </div>
-            );
-
-            return (
-              <SwipeRow
-                key={i.id}
-                onDelete={() => removeIngredient(day.id, meal.id, i.id)}
-                deleteLabel="Delete ingredient"
-              >
-                {row}
-              </SwipeRow>
-            );
-          })}
+            </SwipeRow>
+          ))}
         </div>
       </SectionCard>
-
       <IngredientEntryCard
         value={draft}
         saved={saved.ingredientForm}
@@ -315,7 +340,6 @@ function MealEdit() {
         onSubmit={saveIngredient}
         normalizeNameOnBlur={normalizeIngredientName}
       />
-
       <Modal
         open={showBlankNamePrompt}
         title="Meal name is required"
@@ -339,52 +363,185 @@ function MealEdit() {
   );
 }
 
-function Settings() {
+function ProfilePage() {
   const { state, setState } = useStore();
+  const { profile, setProfile } = useProfile();
   const { saved, markDirty, markSaved } = useSavedSections();
   const [importError, setImportError] = useState('');
-  const updateTargets = (patch: Partial<typeof state.settings>) => {
-    markDirty('targets');
-    setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
-    markSaved('targets');
+
+  const weightError =
+    profile.bodyInfo.weightLbs === 0
+      ? 'Weight is required.'
+      : profile.bodyInfo.weightLbs > 0 && profile.bodyInfo.weightLbs < 90
+        ? 'see a doctor'
+        : '';
+  const computedCalories =
+    profile.calorieTarget.mode === 'custom'
+      ? profile.calorieTarget.targetCalories
+      : calorieFromMode(profile.bodyInfo.weightLbs, profile.calorieTarget.mode);
+  const targetCaloriesText =
+    profile.calorieTarget.mode === 'custom'
+      ? String(profile.calorieTarget.targetCalories ?? '')
+      : computedCalories == null
+        ? ''
+        : String(computedCalories);
+
+  const macro = useMemo(() => {
+    const target =
+      profile.calorieTarget.mode === 'custom'
+        ? profile.calorieTarget.targetCalories
+        : computedCalories;
+    if (!target) return { fatsHint: '', carbsHint: '', proteinHint: '', error: '' };
+    if (profile.macroTargets.mode === 'percentage') {
+      const total =
+        profile.macroTargets.fats + profile.macroTargets.carbs + profile.macroTargets.protein;
+      return {
+        fatsHint: `${Math.round((target * (profile.macroTargets.fats / 100)) / 9)}g`,
+        carbsHint: `${Math.round((target * (profile.macroTargets.carbs / 100)) / 4)}g`,
+        proteinHint: `${Math.round((target * (profile.macroTargets.protein / 100)) / 4)}g`,
+        error: total === 100 ? '' : 'Macro percentages must add up to 100.',
+      };
+    }
+    const kcal =
+      profile.macroTargets.fats * 9 +
+      profile.macroTargets.carbs * 4 +
+      profile.macroTargets.protein * 4;
+    const pct = (n: number, calsPerGram: number) =>
+      `${Math.round(((n * calsPerGram) / target) * 100)}% total`;
+    return {
+      fatsHint: pct(profile.macroTargets.fats, 9),
+      carbsHint: pct(profile.macroTargets.carbs, 4),
+      proteinHint: pct(profile.macroTargets.protein, 4),
+      error:
+        Math.abs(kcal - target) <= 5 ? '' : 'Macro calories must match target calories (±5 kcal).',
+    };
+  }, [profile, computedCalories]);
+
+  const setAndSave = (next: Profile, key: keyof SaveSections) => {
+    markDirty(key);
+    setProfile(next);
+    markSaved(key);
   };
 
   return (
     <main className="ll-page ll-main">
-      <h2 className="ll-page-title">Settings</h2>
-      <SectionCard title="Targets" saved={saved.targets}>
-        <p className="ll-section-note">Changes save immediately.</p>
-        <NumberInput
-          label="Calories"
-          value={state.settings.calorieTarget}
-          onChange={(n) => updateTargets({ calorieTarget: n })}
-          onBlur={() => updateTargets({ calorieTarget: round1(state.settings.calorieTarget) })}
-        />
-        <NumberInput
-          label="Meal count"
-          value={state.settings.mealCountTarget}
-          onChange={(n) => updateTargets({ mealCountTarget: n })}
-          onBlur={() => updateTargets({ mealCountTarget: round1(state.settings.mealCountTarget) })}
-        />
-        {(['fat', 'saturatedFat', 'carbs', 'fiber', 'protein'] as const).map((k) => (
-          <NumberInput
-            key={k}
-            label={k}
-            value={state.settings.macroTargets[k]}
-            onChange={(n) =>
-              updateTargets({ macroTargets: { ...state.settings.macroTargets, [k]: n } })
-            }
-            onBlur={() =>
-              updateTargets({
-                macroTargets: {
-                  ...state.settings.macroTargets,
-                  [k]: round1(state.settings.macroTargets[k]),
-                },
-              })
-            }
-          />
-        ))}
-      </SectionCard>
+      <div className="ll-row">
+        <Link className="ll-btn ll-btn-sm ll-btn-subtle" to="/">
+          ← Back
+        </Link>
+        <h2 className="ll-page-title">Profile</h2>
+      </div>
+
+      <BodyInfoCard
+        saved={saved.bodyInfo}
+        weightLbs={profile.bodyInfo.weightLbs}
+        heightInches={profile.bodyInfo.heightInches}
+        weightError={weightError}
+        onWeightChange={(n) =>
+          setProfile((p) => ({
+            ...p,
+            bodyInfo: { ...p.bodyInfo, weightLbs: Math.max(0, Math.floor(n)) },
+          }))
+        }
+        onHeightChange={(n) =>
+          setProfile((p) => ({
+            ...p,
+            bodyInfo: { ...p.bodyInfo, heightInches: Math.max(0, Math.floor(n)) },
+          }))
+        }
+        onWeightBlur={() =>
+          setAndSave(
+            {
+              ...profile,
+              calorieTarget: {
+                ...profile.calorieTarget,
+                targetCalories:
+                  profile.calorieTarget.mode === 'custom'
+                    ? profile.calorieTarget.targetCalories
+                    : calorieFromMode(profile.bodyInfo.weightLbs, profile.calorieTarget.mode),
+              },
+            },
+            'bodyInfo',
+          )
+        }
+        onHeightBlur={() => setAndSave(profile, 'bodyInfo')}
+      />
+
+      <CalorieTargetCard
+        saved={saved.calorieTarget}
+        mode={profile.calorieTarget.mode}
+        targetCaloriesText={targetCaloriesText}
+        canEditTargetCalories={profile.calorieTarget.mode === 'custom'}
+        targetCaloriesError={
+          profile.calorieTarget.mode === 'custom' &&
+          profile.calorieTarget.targetCalories != null &&
+          (profile.calorieTarget.targetCalories < 800 ||
+            profile.calorieTarget.targetCalories > 9999)
+            ? 'Target calories must be 800–9999.'
+            : ''
+        }
+        onModeChange={(mode) => {
+          const next = {
+            ...profile,
+            calorieTarget: {
+              ...profile.calorieTarget,
+              mode,
+              targetCalories:
+                mode === 'custom'
+                  ? profile.calorieTarget.targetCalories
+                  : calorieFromMode(profile.bodyInfo.weightLbs, mode),
+            },
+          };
+          setAndSave(next, 'calorieTarget');
+        }}
+        onTargetCaloriesChange={(n) =>
+          setProfile((p) => ({
+            ...p,
+            calorieTarget: {
+              ...p.calorieTarget,
+              targetCalories: Number.isFinite(n) ? Math.floor(n) : null,
+            },
+          }))
+        }
+        onTargetCaloriesBlur={() => setAndSave(profile, 'calorieTarget')}
+      />
+
+      <MacroTargetsCard
+        saved={saved.macroTargets}
+        mode={profile.macroTargets.mode}
+        fats={profile.macroTargets.fats}
+        carbs={profile.macroTargets.carbs}
+        protein={profile.macroTargets.protein}
+        fatsHint={macro.fatsHint}
+        carbsHint={macro.carbsHint}
+        proteinHint={macro.proteinHint}
+        error={macro.error}
+        onModeChange={(mode) =>
+          setAndSave(
+            { ...profile, macroTargets: { ...profile.macroTargets, mode } },
+            'macroTargets',
+          )
+        }
+        onFatsChange={(n) =>
+          setProfile((p) => ({
+            ...p,
+            macroTargets: { ...p.macroTargets, fats: Math.max(0, Math.floor(n)) },
+          }))
+        }
+        onCarbsChange={(n) =>
+          setProfile((p) => ({
+            ...p,
+            macroTargets: { ...p.macroTargets, carbs: Math.max(0, Math.floor(n)) },
+          }))
+        }
+        onProteinChange={(n) =>
+          setProfile((p) => ({
+            ...p,
+            macroTargets: { ...p.macroTargets, protein: Math.max(0, Math.floor(n)) },
+          }))
+        }
+        onBlur={() => setAndSave(profile, 'macroTargets')}
+      />
 
       <SectionCard title="Theme" saved={saved.theme}>
         <div className="ll-row flex-wrap">
@@ -408,7 +565,9 @@ function Settings() {
         <p className="ll-section-note">Import replaces all existing data.</p>
         <Button
           onClick={() => {
-            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify({ state, profile }, null, 2)], {
+              type: 'application/json',
+            });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = 'leanlog-export.json';
@@ -425,14 +584,17 @@ function Settings() {
             const file = e.target.files?.[0];
             if (!file) return;
             try {
-              const parsed = migrateState(JSON.parse(await file.text()));
+              const parsed = JSON.parse(await file.text()) as { state: unknown; profile: unknown };
+              const nextState = migrateState(parsed.state);
+              const nextProfile = parseProfile(JSON.stringify(parsed.profile));
               if (
                 !window.confirm(
                   'Replace all existing data with imported file? This cannot be undone.',
                 )
               )
                 return;
-              setState(parsed);
+              setState(nextState);
+              setProfile(nextProfile);
               setImportError('');
               markSaved('data');
             } catch (error) {
@@ -442,10 +604,6 @@ function Settings() {
         />
         {importError ? <small className="ll-warn">{importError}</small> : null}
       </SectionCard>
-
-      <Link className="ll-btn ll-btn-md ll-btn-subtle" to="/">
-        Back
-      </Link>
     </main>
   );
 }
@@ -456,7 +614,8 @@ export default function App() {
       <Route path="/" element={<DayList />} />
       <Route path="/day/:dayId" element={<DayDetail />} />
       <Route path="/day/:dayId/meal/:mealId" element={<MealEdit />} />
-      <Route path="/settings" element={<Settings />} />
+      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

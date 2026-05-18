@@ -13,3 +13,5 @@ export * from './components/StickyFooter';
 export * from './components/SwipeRow';
 export * from './components/ListSectionCard';
 export * from './components/IngredientEntryCard';
+export * from './components/RadioGroup';
+export * from './components/ProfileSectionCards';

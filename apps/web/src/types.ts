@@ -33,5 +33,14 @@ export type AppState = {
 };
 
 export type SaveSections = Partial<
-  Record<'mealName' | 'ingredientForm' | 'targets' | 'theme' | 'data', boolean>
+  Record<
+    | 'mealName'
+    | 'ingredientForm'
+    | 'bodyInfo'
+    | 'calorieTarget'
+    | 'macroTargets'
+    | 'theme'
+    | 'data',
+    boolean
+  >
 >;
