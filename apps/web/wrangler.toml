@@ -1,4 +1,4 @@
-name = "leanlog-web"
+name = 'leanlog'
 main = "worker.ts"
 compatibility_date = "2026-05-17"
 workers_dev = false
