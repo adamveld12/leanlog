@@ -233,7 +233,9 @@ function IngredientEditor({
     <div className="ll-stack">
       <Input
         value={value.name}
-        onChange={(e) => onChange({ ...value, name: normalizeIngredientName(e.target.value) })}
+        onChange={(e) => onChange({ ...value, name: e.target.value })}
+        normalizeOnBlur={normalizeIngredientName}
+        onNormalized={(name) => onChange({ ...value, name })}
       />
       <NumberInput
         label="Grams"
@@ -332,7 +334,13 @@ function MealEdit() {
           value={meal.name}
           onChange={(e) => {
             markDirty('mealName');
-            renameMeal(day.id, meal.id, normalizeIngredientName(e.target.value));
+            renameMeal(day.id, meal.id, e.target.value);
+            markSaved('mealName');
+          }}
+          normalizeOnBlur={normalizeIngredientName}
+          onNormalized={(name) => {
+            markDirty('mealName');
+            renameMeal(day.id, meal.id, name);
             markSaved('mealName');
           }}
         />
