@@ -11,7 +11,7 @@ import {
   NumberInput,
   ProgressBar,
   SectionCard,
-  StickyFooter,
+  SwipeRow,
 } from '@leanlog/ui';
 import { normalizeIngredientName, prettyDate, round1 } from './lib';
 import { dayTotals, mealTotals } from './selectors';
@@ -199,11 +199,20 @@ function MealEdit() {
 
   return (
     <main className="ll-page ll-main">
-      <div className="ll-row">
-        <Link className="ll-btn ll-btn-sm ll-btn-subtle" to={`/day/${day.id}`}>
-          ← Back
-        </Link>
-        <h2 className="ll-page-title">{meal.name || 'Meal'}</h2>
+      <div className="ll-row ll-between flex-wrap">
+        <div className="ll-row">
+          <Link className="ll-btn ll-btn-sm ll-btn-subtle" to={`/day/${day.id}`}>
+            ← Back
+          </Link>
+          <h2 className="ll-page-title">{meal.name || 'Meal'}</h2>
+        </div>
+        <p className="ll-meta">
+          {totals.calories}
+          <span className="ll-unit"> kcal</span> · P {totals.protein}
+          <span className="ll-unit">g</span> · C {totals.carbs}
+          <span className="ll-unit">g</span> · F {totals.fat}
+          <span className="ll-unit">g</span>
+        </p>
       </div>
       <SectionCard title="Meal name" saved={saved.mealName}>
         <p className="ll-section-note">Name is required before leaving this page.</p>
@@ -224,19 +233,6 @@ function MealEdit() {
         <div className="ll-row">
           <Button
             size="sm"
-            variant="secondary"
-            onClick={() => {
-              if (!meal.name.trim()) {
-                setShowBlankNamePrompt(true);
-                return;
-              }
-              nav(`/day/${day.id}`);
-            }}
-          >
-            Back
-          </Button>
-          <Button
-            size="sm"
             variant="danger"
             onClick={() => {
               removeMeal(day.id, meal.id);
@@ -246,32 +242,67 @@ function MealEdit() {
             Delete meal and all ingredients
           </Button>
         </div>
-      </SectionCard>
 
-      <ListSectionCard
-        title="Ingredients"
-        saved={saved.ingredientForm}
-        note="Tap an ingredient row to edit values."
-        items={meal.ingredients.map((i) => ({
-          id: i.id,
-          title: i.name,
-          meta: (
-            <>
-              {i.calories}
-              <span className="ll-unit"> kcal</span> · F {i.fat}
-              <span className="ll-unit">g</span> · C {i.carbs}
-              <span className="ll-unit">g</span> · P {i.protein}
-              <span className="ll-unit">g</span>
-            </>
-          ),
-          onOpen: () => {
-            setEditingId(i.id);
-            setDraft(i);
-          },
-          onDelete: () => removeIngredient(day.id, meal.id, i.id),
-          deleteLabel: 'Delete ingredient',
-        }))}
-      />
+        <div className="ll-stack mt-3">
+          <h4 className="ll-card-title mb-0">Ingredients</h4>
+          <p className="ll-section-note">Tap an ingredient row to edit values.</p>
+          {meal.ingredients.length ? null : <p className="ll-section-note">No items</p>}
+          {meal.ingredients.map((i) => {
+            const row = (
+              <div
+                className="ll-list-row ll-row-link"
+                role="link"
+                tabIndex={0}
+                onClick={() => {
+                  setEditingId(i.id);
+                  setDraft(i);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setEditingId(i.id);
+                    setDraft(i);
+                  }
+                }}
+              >
+                <div className="ll-stack">
+                  <span className="text-sm font-medium">{i.name}</span>
+                  <small className="ll-meta">
+                    {i.calories}
+                    <span className="ll-unit"> kcal</span> · F {i.fat}
+                    <span className="ll-unit">g</span> · C {i.carbs}
+                    <span className="ll-unit">g</span> · P {i.protein}
+                    <span className="ll-unit">g</span>
+                  </small>
+                </div>
+                <div className="ll-row">
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    className="desktop-only"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeIngredient(day.id, meal.id, i.id);
+                    }}
+                  >
+                    Delete ingredient
+                  </Button>
+                </div>
+              </div>
+            );
+
+            return (
+              <SwipeRow
+                key={i.id}
+                onDelete={() => removeIngredient(day.id, meal.id, i.id)}
+                deleteLabel="Delete ingredient"
+              >
+                {row}
+              </SwipeRow>
+            );
+          })}
+        </div>
+      </SectionCard>
 
       <IngredientEntryCard
         value={draft}
@@ -284,16 +315,6 @@ function MealEdit() {
         onSubmit={saveIngredient}
         normalizeNameOnBlur={normalizeIngredientName}
       />
-
-      <StickyFooter>
-        <strong className="ll-page-subtitle">
-          {totals.calories}
-          <span className="ll-unit"> kcal</span> · P {totals.protein}
-          <span className="ll-unit">g</span> · C {totals.carbs}
-          <span className="ll-unit">g</span> · F {totals.fat}
-          <span className="ll-unit">g</span>
-        </strong>
-      </StickyFooter>
 
       <Modal
         open={showBlankNamePrompt}
