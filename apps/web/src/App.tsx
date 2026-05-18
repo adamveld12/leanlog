@@ -15,6 +15,7 @@ import {
   ProgressBar,
   SectionCard,
   SwipeRow,
+  PageNavHeading,
 } from '@leanlog/ui';
 import { normalizeIngredientName, prettyDate, round1 } from './lib';
 import { dayTotals, mealTotals } from './selectors';
@@ -91,23 +92,19 @@ function dayTargetsFromProfile(profile: Profile): DayTargets {
   };
 }
 
-function AppHeader({ title, backTo }: { title: string; backTo?: string }) {
-  return (
-    <div className="ll-row ll-between">
-      <div className="ll-row">
-        {backTo ? (
-          <Link className="ll-btn ll-btn-sm ll-btn-subtle" to={backTo}>
-            ← Back
-          </Link>
-        ) : null}
-        <h1 className="ll-page-title">{title}</h1>
-      </div>
-      <Link className="ll-btn ll-btn-sm ll-btn-subtle" to="/profile">
-        Profile
-      </Link>
-    </div>
-  );
-}
+const renderRouterNavLink = ({
+  href,
+  label,
+  className,
+}: {
+  href: string;
+  label: string;
+  className: string;
+}) => (
+  <Link className={className} to={href}>
+    {label}
+  </Link>
+);
 
 function DayList({ profile }: { profile: Profile }) {
   const nav = useNavigate();
@@ -121,7 +118,7 @@ function DayList({ profile }: { profile: Profile }) {
   const toIso = `${picker.year}-${String(picker.month).padStart(2, '0')}-${String(picker.day).padStart(2, '0')}`;
   return (
     <main className="ll-page ll-main">
-      <AppHeader title="leanlog" />
+      <PageNavHeading title="leanlog" profileHref="/profile" renderNavLink={renderRouterNavLink} />
       <SectionCard title="Add day">
         <p className="ll-section-note">Choose month, day, and year to create a new log day.</p>
         <DateSelect3
@@ -176,7 +173,12 @@ function DayDetail({ profile }: { profile: Profile }) {
 
   return (
     <main className="ll-page ll-main">
-      <AppHeader title={prettyDate(day.date)} backTo="/" />
+      <PageNavHeading
+        title={prettyDate(day.date)}
+        backHref="/"
+        profileHref="/profile"
+        renderNavLink={renderRouterNavLink}
+      />
       <SectionCard>
         <div className="ll-stack-lg">
           <div className="ll-row ll-between items-start">
@@ -402,24 +404,21 @@ function MealEdit() {
   return (
     <main className="ll-page ll-main">
       {/* same body omitted for brevity in this comment */}
-      <div className="ll-row ll-between flex-wrap">
-        <div className="ll-row flex-wrap">
-          <Link className="ll-btn ll-btn-sm ll-btn-subtle" to={`/day/${day.id}`}>
-            ← Back
-          </Link>
-          <h1 className="ll-page-title">{meal.name || 'Meal'}</h1>
-          <p className="ll-meta">
+      <PageNavHeading
+        title={meal.name || 'Meal'}
+        subtitle={
+          <>
             {totals.calories}
             <span className="ll-unit"> kcal</span> · P {totals.protein}
             <span className="ll-unit">g</span> · C {totals.carbs}
             <span className="ll-unit">g</span> · F {totals.fat}
             <span className="ll-unit">g</span>
-          </p>
-        </div>
-        <Link className="ll-btn ll-btn-sm ll-btn-subtle" to="/profile">
-          Profile
-        </Link>
-      </div>
+          </>
+        }
+        backHref={`/day/${day.id}`}
+        profileHref="/profile"
+        renderNavLink={renderRouterNavLink}
+      />
       <SectionCard title="Meal name" saved={saved.mealName}>
         <p className="ll-section-note">Name is required before leaving this page.</p>
         <Input
@@ -708,7 +707,12 @@ function ProfilePage({
 
   return (
     <main className="ll-page ll-main">
-      <AppHeader title="Profile" backTo="/" />
+      <PageNavHeading
+        title="Profile"
+        backHref="/"
+        profileHref="/profile"
+        renderNavLink={renderRouterNavLink}
+      />
 
       <BodyInfoCard
         saved={saved.bodyInfo}

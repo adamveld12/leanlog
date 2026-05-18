@@ -15,3 +15,4 @@ export * from './components/ListSectionCard';
 export * from './components/IngredientEntryCard';
 export * from './components/RadioGroup';
 export * from './components/ProfileSectionCards';
+export * from './components/PageNavHeading';
