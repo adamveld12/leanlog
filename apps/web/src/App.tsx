@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid';
 import {
   Button,
   DateSelect3,
+  IngredientEntryCard,
   Input,
   ListSectionCard,
   Modal,
@@ -14,14 +15,14 @@ import {
 } from '@leanlog/ui';
 import { normalizeIngredientName, prettyDate, round1 } from './lib';
 import { dayTotals, mealTotals } from './selectors';
-import { useStore } from './state';
+import { migrateState, useStore } from './state';
 import type { Ingredient, SaveSections } from './types';
 
 type IngredientDraft = Omit<Ingredient, 'id'>;
 
 const emptyDraft: IngredientDraft = {
   name: '',
-  grams: 0,
+  weight: 0,
   calories: 0,
   fat: 0,
   saturatedFat: 0,
@@ -169,73 +170,6 @@ function DayDetail() {
   );
 }
 
-function IngredientEditor({
-  value,
-  onChange,
-  onBlur,
-}: {
-  value: IngredientDraft;
-  onChange: (next: IngredientDraft) => void;
-  onBlur: () => void;
-}) {
-  const warnSat = value.saturatedFat > value.fat;
-  const warnFiber = value.fiber > value.carbs;
-  return (
-    <div className="ll-stack">
-      <Input
-        value={value.name}
-        onChange={(e) => onChange({ ...value, name: e.target.value })}
-        normalizeOnBlur={normalizeIngredientName}
-        onNormalized={(name) => onChange({ ...value, name })}
-      />
-      <NumberInput
-        label="Grams"
-        value={value.grams}
-        onChange={(n) => onChange({ ...value, grams: n })}
-        onBlur={onBlur}
-      />
-      <NumberInput
-        label="Calories"
-        value={value.calories}
-        onChange={(n) => onChange({ ...value, calories: n })}
-        onBlur={onBlur}
-      />
-      <NumberInput
-        label="Fat"
-        value={value.fat}
-        onChange={(n) => onChange({ ...value, fat: n })}
-        onBlur={onBlur}
-      />
-      <NumberInput
-        label="Sat fat"
-        value={value.saturatedFat}
-        onChange={(n) => onChange({ ...value, saturatedFat: n })}
-        onBlur={onBlur}
-      />
-      {warnSat ? <small className="ll-warn">Saturated fat is higher than total fat.</small> : null}
-      <NumberInput
-        label="Carbs"
-        value={value.carbs}
-        onChange={(n) => onChange({ ...value, carbs: n })}
-        onBlur={onBlur}
-      />
-      <NumberInput
-        label="Fiber"
-        value={value.fiber}
-        onChange={(n) => onChange({ ...value, fiber: n })}
-        onBlur={onBlur}
-      />
-      {warnFiber ? <small className="ll-warn">Fiber is higher than total carbs.</small> : null}
-      <NumberInput
-        label="Protein"
-        value={value.protein}
-        onChange={(n) => onChange({ ...value, protein: n })}
-        onBlur={onBlur}
-      />
-    </div>
-  );
-}
-
 function MealEdit() {
   const { dayId, mealId } = useParams();
   const nav = useNavigate();
@@ -248,19 +182,6 @@ function MealEdit() {
   const { saved, markDirty, markSaved } = useSavedSections();
 
   if (!day || !meal) return <Navigate to="/" replace />;
-
-  const persistDraft = () =>
-    setDraft((d) => ({
-      ...d,
-      grams: round1(d.grams),
-      calories: round1(d.calories),
-      fat: round1(d.fat),
-      saturatedFat: round1(d.saturatedFat),
-      carbs: round1(d.carbs),
-      fiber: round1(d.fiber),
-      protein: round1(d.protein),
-      name: normalizeIngredientName(d.name),
-    }));
 
   const saveIngredient = () => {
     const next: Ingredient = {
@@ -350,19 +271,19 @@ function MealEdit() {
           onDelete: () => removeIngredient(day.id, meal.id, i.id),
           deleteLabel: 'Delete ingredient',
         }))}
-      >
-        <IngredientEditor
-          value={draft}
-          onChange={(next) => {
-            markDirty('ingredientForm');
-            setDraft(next);
-          }}
-          onBlur={persistDraft}
-        />
-        <Button onClick={saveIngredient}>
-          {editingId ? 'Update ingredient' : 'Add ingredient'}
-        </Button>
-      </ListSectionCard>
+      />
+
+      <IngredientEntryCard
+        value={draft}
+        saved={saved.ingredientForm}
+        submitLabel={editingId ? 'Update' : 'Add'}
+        onChange={(next) => {
+          markDirty('ingredientForm');
+          setDraft(next);
+        }}
+        onSubmit={saveIngredient}
+        normalizeNameOnBlur={normalizeIngredientName}
+      />
 
       <StickyFooter>
         <strong className="ll-page-subtitle">
@@ -483,10 +404,7 @@ function Settings() {
             const file = e.target.files?.[0];
             if (!file) return;
             try {
-              const parsed = JSON.parse(await file.text());
-              if (parsed.version !== 1 || !Array.isArray(parsed.days) || !parsed.settings) {
-                throw new Error('Invalid state schema. Import failed.');
-              }
+              const parsed = migrateState(JSON.parse(await file.text()));
               if (
                 !window.confirm(
                   'Replace all existing data with imported file? This cannot be undone.',

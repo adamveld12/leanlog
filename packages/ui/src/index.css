@@ -62,6 +62,18 @@
   @apply flex items-center gap-2;
 }
 
+.ll-grid-2 {
+  @apply grid grid-cols-2 gap-2;
+}
+
+.ll-grid-carb-fiber {
+  @apply grid grid-cols-3 gap-2;
+}
+
+.ll-grid-carb-fiber > :first-child {
+  grid-column: span 2;
+}
+
 .ll-between {
   @apply justify-between;
 }
@@ -100,6 +112,10 @@
   color: var(--ll-text-muted);
 }
 
+.ll-field-sm {
+  @apply text-[11px];
+}
+
 .ll-input {
   @apply my-2.5 h-11 w-full rounded-[10px] border px-3 text-sm outline-none transition;
   border-color: var(--ll-line);
@@ -112,6 +128,10 @@
 .ll-input:focus-visible {
   border-color: var(--ll-line-strong);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--ll-focus) 35%, transparent);
+}
+
+.ll-input-error {
+  border-color: var(--ll-danger);
 }
 
 .ll-btn {

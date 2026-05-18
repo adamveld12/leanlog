@@ -6,14 +6,23 @@ type NumberInputProps = {
   value: number;
   onChange: (next: number) => void;
   onBlur?: () => void;
+  labelClassName?: string;
+  inputClassName?: string;
 };
 
-export function NumberInput({ label, value, onChange, onBlur }: NumberInputProps) {
+export function NumberInput({
+  label,
+  value,
+  onChange,
+  onBlur,
+  labelClassName = '',
+  inputClassName = '',
+}: NumberInputProps) {
   const [text, setText] = useState(String(value));
   const [editing, setEditing] = useState(false);
 
   return (
-    <label className="ll-field">
+    <label className={`ll-field ${labelClassName}`.trim()}>
       <span>{label}</span>
       <Input
         value={editing ? text : String(value)}
@@ -39,6 +48,7 @@ export function NumberInput({ label, value, onChange, onBlur }: NumberInputProps
           onBlur?.();
         }}
         inputMode="decimal"
+        className={inputClassName}
       />
     </label>
   );

@@ -40,7 +40,7 @@ describe('list section behaviors', () => {
                 {
                   id: 'i1',
                   name: 'EGG',
-                  grams: 50,
+                  weight: 50,
                   calories: 100,
                   fat: 7,
                   saturatedFat: 2,
@@ -89,7 +89,7 @@ describe('list section behaviors', () => {
                 {
                   id: 'i1',
                   name: 'CHICKEN',
-                  grams: 120,
+                  weight: 120,
                   calories: 220,
                   fat: 6,
                   saturatedFat: 1.5,

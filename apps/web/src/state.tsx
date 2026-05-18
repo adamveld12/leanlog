@@ -39,11 +39,61 @@ type Store = {
 
 const Ctx = createContext<Store | null>(null);
 
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object';
+
+const migrateIngredient = (raw: unknown): Ingredient => {
+  if (!isRecord(raw)) throw new Error('Invalid state schema. Import failed.');
+  const weight =
+    typeof raw.weight === 'number' ? raw.weight : typeof raw.grams === 'number' ? raw.grams : 0;
+
+  return {
+    id: String(raw.id ?? ''),
+    name: String(raw.name ?? ''),
+    weight,
+    calories: Number(raw.calories ?? 0),
+    fat: Number(raw.fat ?? 0),
+    saturatedFat: Number(raw.saturatedFat ?? 0),
+    carbs: Number(raw.carbs ?? 0),
+    fiber: Number(raw.fiber ?? 0),
+    protein: Number(raw.protein ?? 0),
+  };
+};
+
+export const migrateState = (raw: unknown): AppState => {
+  if (!isRecord(raw) || raw.version !== 1 || !Array.isArray(raw.days) || !isRecord(raw.settings)) {
+    throw new Error('Invalid state schema. Import failed.');
+  }
+
+  return {
+    version: 1,
+    settings: raw.settings as AppState['settings'],
+    days: raw.days.map((day) => {
+      if (!isRecord(day) || !Array.isArray(day.meals)) {
+        throw new Error('Invalid state schema. Import failed.');
+      }
+      return {
+        id: String(day.id ?? ''),
+        date: String(day.date ?? ''),
+        meals: day.meals.map((meal) => {
+          if (!isRecord(meal) || !Array.isArray(meal.ingredients)) {
+            throw new Error('Invalid state schema. Import failed.');
+          }
+          return {
+            id: String(meal.id ?? ''),
+            name: String(meal.name ?? ''),
+            ingredients: meal.ingredients.map(migrateIngredient),
+          };
+        }),
+      };
+    }),
+  };
+};
+
 const parse = (): AppState => {
   const raw = localStorage.getItem(KEY);
   if (!raw) return initial;
   try {
-    const parsed = JSON.parse(raw) as AppState;
+    const parsed = migrateState(JSON.parse(raw));
     return parsed.days.length ? parsed : initial;
   } catch {
     return initial;

@@ -10,7 +10,7 @@ describe('selectors', () => {
         {
           id: '1',
           name: 'A',
-          grams: 1,
+          weight: 1,
           calories: 10,
           fat: 1,
           saturatedFat: 0,
@@ -21,7 +21,7 @@ describe('selectors', () => {
         {
           id: '2',
           name: 'B',
-          grams: 1,
+          weight: 1,
           calories: 20,
           fat: 2,
           saturatedFat: 0,

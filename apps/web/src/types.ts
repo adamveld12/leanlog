@@ -14,7 +14,7 @@ export type Settings = {
 export type Ingredient = {
   id: string;
   name: string;
-  grams: number;
+  weight: number;
   calories: number;
   fat: number;
   saturatedFat: number;
