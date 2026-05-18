@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 import {
@@ -23,6 +23,22 @@ import { parseProfile, PROFILE_KEY, type Profile } from './profile';
 import type { DayTargets, Ingredient, SaveSections } from './types';
 
 type IngredientDraft = Omit<Ingredient, 'id'>;
+
+type NutritionScanResult = {
+  proposed: {
+    name?: string;
+    weight: number;
+    calories: number;
+    fat: number;
+    saturatedFat: number;
+    carbs: number;
+    fiber: number;
+    protein: number;
+  };
+  canApply: boolean;
+  blockReason?: string;
+  notes: string[];
+};
 
 const emptyDraft: IngredientDraft = {
   name: '',
@@ -261,6 +277,10 @@ function MealEdit() {
   const [draft, setDraft] = useState<IngredientDraft>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showBlankNamePrompt, setShowBlankNamePrompt] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [scanResult, setScanResult] = useState<NutritionScanResult | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { saved, markDirty, markSaved } = useSavedSections();
   if (!day || !meal) return <Navigate to="/" replace />;
   const saveIngredient = () => {
@@ -275,6 +295,47 @@ function MealEdit() {
     setEditingId(null);
   };
   const totals = mealTotals(meal);
+
+  const openCamera = () => {
+    fileInputRef.current?.click();
+  };
+
+  const onScanFile = async (file: File) => {
+    setScanError('');
+    setScanLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+      formData.append('weightGrams', draft.weight > 0 ? String(draft.weight) : '');
+      formData.append('name', draft.name);
+      const response = await fetch('/api/scan-nutrition', { method: 'POST', body: formData });
+      if (!response.ok) throw new Error('Scan failed. Try again with a clearer label photo.');
+      const result = (await response.json()) as NutritionScanResult;
+      setScanResult(result);
+    } catch (error) {
+      setScanError(error instanceof Error ? error.message : 'Scan failed');
+    } finally {
+      setScanLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const applyScan = () => {
+    if (!scanResult || !scanResult.canApply) return;
+    markDirty('ingredientForm');
+    setDraft((prev) => ({
+      ...prev,
+      name: prev.name.trim() ? prev.name : (scanResult.proposed.name ?? prev.name),
+      weight: scanResult.proposed.weight,
+      calories: scanResult.proposed.calories,
+      fat: scanResult.proposed.fat,
+      saturatedFat: scanResult.proposed.saturatedFat,
+      carbs: scanResult.proposed.carbs,
+      fiber: scanResult.proposed.fiber,
+      protein: scanResult.proposed.protein,
+    }));
+    setScanResult(null);
+  };
   return (
     <main className="ll-page ll-main">
       {/* same body omitted for brevity in this comment */}
@@ -378,7 +439,81 @@ function MealEdit() {
         }}
         onSubmit={saveIngredient}
         normalizeNameOnBlur={normalizeIngredientName}
+        weightAction={
+          <Button size="sm" variant="ghost" onClick={openCamera} disabled={scanLoading}>
+            {scanLoading ? 'Scanning…' : 'Scan Nutrition Facts'}
+          </Button>
+        }
       />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void onScanFile(file);
+        }}
+      />
+      {scanError ? <small className="ll-warn">{scanError}</small> : null}
+      <Modal open={!!scanResult} title="Review nutrition scan" onClose={() => setScanResult(null)}>
+        {scanResult ? (
+          <div className="ll-stack">
+            <p className="ll-section-note">
+              Compare current values with scanned values before applying.
+            </p>
+            <p className="ll-meta">
+              Weight: {draft.weight} → {scanResult.proposed.weight}g
+            </p>
+            <p className="ll-meta">
+              Calories: {draft.calories} → {scanResult.proposed.calories}
+            </p>
+            <p className="ll-meta">
+              Fat: {draft.fat} → {scanResult.proposed.fat}g
+            </p>
+            <p className="ll-meta">
+              Saturated fat: {draft.saturatedFat} → {scanResult.proposed.saturatedFat}g
+            </p>
+            <p className="ll-meta">
+              Carbs: {draft.carbs} → {scanResult.proposed.carbs}g
+            </p>
+            <p className="ll-meta">
+              Fiber: {draft.fiber} → {scanResult.proposed.fiber}g
+            </p>
+            <p className="ll-meta">
+              Protein: {draft.protein} → {scanResult.proposed.protein}g
+            </p>
+            {draft.name.trim() ? null : (
+              <p className="ll-meta">
+                Ingredient title: {draft.name || '(blank)'} →{' '}
+                {scanResult.proposed.name || '(unchanged)'}
+              </p>
+            )}
+            {scanResult.notes.length ? (
+              <small className="ll-section-note">{scanResult.notes.join(' ')}</small>
+            ) : null}
+            {scanResult.canApply ? null : (
+              <small className="ll-warn">
+                {scanResult.blockReason ?? 'Scan cannot be applied.'}
+              </small>
+            )}
+            <div className="ll-row ll-between">
+              <Button variant="ghost" onClick={openCamera} disabled={scanLoading}>
+                Retake photo
+              </Button>
+              <div className="ll-row">
+                <Button variant="secondary" onClick={() => setScanResult(null)}>
+                  Cancel
+                </Button>
+                <Button onClick={applyScan} disabled={!scanResult.canApply}>
+                  Apply
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
       <Modal
         open={showBlankNamePrompt}
         title="Meal name is required"

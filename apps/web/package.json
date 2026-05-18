@@ -14,7 +14,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.14",
     "@leanlog/ui": "workspace:*",
+    "ai": "^5.0.100",
     "date-fns": "^4.1.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
