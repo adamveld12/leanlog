@@ -3,9 +3,6 @@ main = "worker.ts"
 compatibility_date = "2026-05-17"
 workers_dev = false
 
-routes = [
-  { pattern = "leanlog.vdhsn.com/*", custom_domain = true }
-]
 
 [assets]
 binding = "ASSETS"
