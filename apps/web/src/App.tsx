@@ -293,20 +293,6 @@ function MealEdit() {
     };
   }, []);
 
-  if (!day || !meal) return <Navigate to="/" replace />;
-  const saveIngredient = () => {
-    const next: Ingredient = {
-      id: editingId ?? uuid(),
-      ...draft,
-      name: normalizeIngredientName(draft.name),
-    };
-    upsertIngredient(day.id, meal.id, next);
-    markSaved('ingredientForm');
-    setDraft(emptyDraft);
-    setEditingId(null);
-  };
-  const totals = mealTotals(meal);
-
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -324,17 +310,40 @@ function MealEdit() {
       });
       streamRef.current = stream;
       setCameraOpen(true);
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          void videoRef.current.play();
-        }
-      }, 0);
     } catch {
       setCameraError('Camera unavailable. Falling back to file picker.');
       fileInputRef.current?.click();
     }
   };
+
+  useEffect(() => {
+    if (!cameraOpen || !videoRef.current || !streamRef.current) return;
+    const video = videoRef.current;
+    video.srcObject = streamRef.current;
+    const onLoadedMetadata = () => {
+      void video.play();
+    };
+    video.addEventListener('loadedmetadata', onLoadedMetadata);
+    return () => {
+      video.removeEventListener('loadedmetadata', onLoadedMetadata);
+      video.srcObject = null;
+    };
+  }, [cameraOpen]);
+
+  if (!day || !meal) return <Navigate to="/" replace />;
+
+  const saveIngredient = () => {
+    const next: Ingredient = {
+      id: editingId ?? uuid(),
+      ...draft,
+      name: normalizeIngredientName(draft.name),
+    };
+    upsertIngredient(day.id, meal.id, next);
+    markSaved('ingredientForm');
+    setDraft(emptyDraft);
+    setEditingId(null);
+  };
+  const totals = mealTotals(meal);
 
   const capturePhoto = async () => {
     if (!videoRef.current) return;
