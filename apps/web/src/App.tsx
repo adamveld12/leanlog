@@ -339,14 +339,24 @@ function MealEdit() {
   return (
     <main className="ll-page ll-main">
       {/* same body omitted for brevity in this comment */}
-      <AppHeader title={meal.name || 'Meal'} backTo={`/day/${day.id}`} />
-      <p className="ll-meta">
-        {totals.calories}
-        <span className="ll-unit"> kcal</span> · P {totals.protein}
-        <span className="ll-unit">g</span> · C {totals.carbs}
-        <span className="ll-unit">g</span> · F {totals.fat}
-        <span className="ll-unit">g</span>
-      </p>
+      <div className="ll-row ll-between flex-wrap">
+        <div className="ll-row flex-wrap">
+          <Link className="ll-btn ll-btn-sm ll-btn-subtle" to={`/day/${day.id}`}>
+            ← Back
+          </Link>
+          <h1 className="ll-page-title">{meal.name || 'Meal'}</h1>
+          <p className="ll-meta">
+            {totals.calories}
+            <span className="ll-unit"> kcal</span> · P {totals.protein}
+            <span className="ll-unit">g</span> · C {totals.carbs}
+            <span className="ll-unit">g</span> · F {totals.fat}
+            <span className="ll-unit">g</span>
+          </p>
+        </div>
+        <Link className="ll-btn ll-btn-sm ll-btn-subtle" to="/profile">
+          Profile
+        </Link>
+      </div>
       <SectionCard title="Meal name" saved={saved.mealName}>
         <p className="ll-section-note">Name is required before leaving this page.</p>
         <Input
