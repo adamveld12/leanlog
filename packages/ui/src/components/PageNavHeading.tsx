@@ -40,7 +40,7 @@ export function PageNavHeading({
 
   return (
     <div className="ll-stack">
-      <div className="relative flex items-center justify-between gap-2">
+      <div className="relative flex w-full items-center justify-between gap-2">
         <div className="ll-row min-w-0">
           {backHref ? renderLink({ href: backHref, label: backLabel }) : null}
           <h1 className="ll-page-title">{title}</h1>
@@ -50,7 +50,9 @@ export function PageNavHeading({
             {subtitle}
           </div>
         ) : null}
-        <div className="shrink-0">{renderLink({ href: profileHref, label: profileLabel })}</div>
+        <div className="ml-auto shrink-0">
+          {renderLink({ href: profileHref, label: profileLabel })}
+        </div>
       </div>
       {subtitle ? <div className="md:hidden">{subtitle}</div> : null}
     </div>
