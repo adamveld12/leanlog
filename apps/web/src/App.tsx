@@ -126,26 +126,14 @@ function DayDetail() {
             </p>
             <ProgressBar value={totals.calories} max={state.settings.calorieTarget} />
           </div>
-          <div className="ll-stack">
-            <p className="ll-page-subtitle">
-              Meals {day.meals.length} / {state.settings.mealCountTarget}
-            </p>
-            <ProgressBar value={day.meals.length} max={state.settings.mealCountTarget} />
-          </div>
           <p className="ll-meta">
             FAT {totals.fat}
-            <span className="ll-unit">g</span>{' '}
-            <span className="ll-meta-sub">
-              SAT {totals.saturatedFat}
-              <span className="ll-unit">g</span>
-            </span>{' '}
-            · NET CARBS {netCarbs}
-            <span className="ll-unit">g</span>{' '}
-            <span className="ll-meta-sub">
-              (TOTAL {totals.carbs}
-              <span className="ll-unit">g</span>)
-            </span>{' '}
-            · PROTEIN {totals.protein}
+            <span className="ll-unit">g</span>
+            <span className="mx-[5px]">·</span>
+            NET CARBS {netCarbs}
+            <span className="ll-unit">g</span>
+            <span className="mx-[5px]">·</span>
+            PROTEIN {totals.protein}
             <span className="ll-unit">g</span>
           </p>
           <Button
