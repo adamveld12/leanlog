@@ -11,7 +11,6 @@ import {
   ProgressBar,
   SectionCard,
   StickyFooter,
-  SwipeRow,
 } from '@leanlog/ui';
 import { normalizeIngredientName, prettyDate, round1 } from './lib';
 import { dayTotals, mealTotals } from './selectors';
@@ -39,6 +38,7 @@ function useSavedSections() {
 }
 
 function DayList() {
+  const nav = useNavigate();
   const { state, addDay, removeDay } = useStore();
   const now = new Date();
   const [picker, setPicker] = useState({
@@ -60,40 +60,31 @@ function DayList() {
         />
         <Button onClick={() => addDay(toIso)}>Add day</Button>
       </SectionCard>
-      <div className="ll-stack">
-        {state.days
+      <ListSectionCard
+        title="Days"
+        items={state.days
           .slice()
           .sort((a, b) => (a.date < b.date ? 1 : -1))
           .map((d) => {
             const totals = dayTotals(d);
-            return (
-              <SwipeRow key={d.id} onDelete={() => removeDay(d.id)} deleteLabel="Delete day">
-                <SectionCard>
-                  <div className="ll-row ll-between">
-                    <Link className="ll-link-btn" to={`/day/${d.id}`}>
-                      {prettyDate(d.date)}
-                    </Link>
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      className="desktop-only"
-                      onClick={() => removeDay(d.id)}
-                    >
-                      Delete day
-                    </Button>
-                  </div>
-                  <small className="ll-meta">
-                    {totals.calories}
-                    <span className="ll-unit"> kcal</span> · P {totals.protein}
-                    <span className="ll-unit">g</span> · C {totals.carbs}
-                    <span className="ll-unit">g</span> · F {totals.fat}
-                    <span className="ll-unit">g</span>
-                  </small>
-                </SectionCard>
-              </SwipeRow>
-            );
+            return {
+              id: d.id,
+              title: prettyDate(d.date),
+              meta: (
+                <>
+                  {totals.calories}
+                  <span className="ll-unit"> kcal</span> · P {totals.protein}
+                  <span className="ll-unit">g</span> · C {totals.carbs}
+                  <span className="ll-unit">g</span> · F {totals.fat}
+                  <span className="ll-unit">g</span>
+                </>
+              ),
+              onOpen: () => nav(`/day/${d.id}`),
+              onDelete: () => removeDay(d.id),
+              deleteLabel: 'Delete day',
+            };
           })}
-      </div>
+      />
       <Link className="ll-btn ll-btn-md ll-btn-subtle" to="/settings">
         Settings
       </Link>
@@ -331,33 +322,30 @@ function MealEdit() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Ingredients" saved={saved.ingredientForm}>
-        <p className="ll-section-note">Tap an ingredient row to edit values.</p>
-        {meal.ingredients.map((i) => (
-          <div className="ll-list-row" key={i.id}>
-            <button
-              type="button"
-              className="ll-link-btn"
-              onClick={() => {
-                setEditingId(i.id);
-                setDraft(i);
-              }}
-            >
-              {i.name} · {i.calories}
+      <ListSectionCard
+        title="Ingredients"
+        saved={saved.ingredientForm}
+        note="Tap an ingredient row to edit values."
+        items={meal.ingredients.map((i) => ({
+          id: i.id,
+          title: i.name,
+          meta: (
+            <>
+              {i.calories}
               <span className="ll-unit"> kcal</span> · F {i.fat}
               <span className="ll-unit">g</span> · C {i.carbs}
               <span className="ll-unit">g</span> · P {i.protein}
               <span className="ll-unit">g</span>
-            </button>
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={() => removeIngredient(day.id, meal.id, i.id)}
-            >
-              Delete ingredient
-            </Button>
-          </div>
-        ))}
+            </>
+          ),
+          onOpen: () => {
+            setEditingId(i.id);
+            setDraft(i);
+          },
+          onDelete: () => removeIngredient(day.id, meal.id, i.id),
+          deleteLabel: 'Delete ingredient',
+        }))}
+      >
         <IngredientEditor
           value={draft}
           onChange={(next) => {
@@ -369,7 +357,7 @@ function MealEdit() {
         <Button onClick={saveIngredient}>
           {editingId ? 'Update ingredient' : 'Add ingredient'}
         </Button>
-      </SectionCard>
+      </ListSectionCard>
 
       <StickyFooter>
         <strong className="ll-page-subtitle">

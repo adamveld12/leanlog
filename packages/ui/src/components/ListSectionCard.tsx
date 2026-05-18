@@ -17,11 +17,22 @@ type ListSectionCardProps = {
   title: string;
   items: ListSectionItem[];
   emptyText?: string;
+  saved?: boolean;
+  note?: string;
+  children?: ReactNode;
 };
 
-export function ListSectionCard({ title, items, emptyText = 'No items' }: ListSectionCardProps) {
+export function ListSectionCard({
+  title,
+  items,
+  emptyText = 'No items',
+  saved,
+  note,
+  children,
+}: ListSectionCardProps) {
   return (
-    <SectionCard title={title}>
+    <SectionCard title={title} saved={saved}>
+      {note ? <p className="ll-section-note">{note}</p> : null}
       <div className="ll-stack">
         {items.map((item) => {
           const row = (
@@ -75,6 +86,7 @@ export function ListSectionCard({ title, items, emptyText = 'No items' }: ListSe
         })}
         {items.length ? null : <p className="ll-section-note">{emptyText}</p>}
       </div>
+      {children}
     </SectionCard>
   );
 }

@@ -60,7 +60,7 @@ describe('list section behaviors', () => {
     expect(screen.getByText('Today')).toBeInTheDocument();
     expect(screen.getByText(/100/)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('link', { name: 'Today' }));
+    await userEvent.click(screen.getByText('Today').closest('[role="link"]') as HTMLElement);
     expect(screen.getByText('Daily totals')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('link', { name: '← Back' }));
@@ -106,10 +106,10 @@ describe('list section behaviors', () => {
 
     renderApp('/day/d1/meal/m1', state);
 
-    await userEvent.click(screen.getByRole('button', { name: /CHICKEN/i }));
+    await userEvent.click(screen.getByRole('link', { name: /CHICKEN/i }));
     expect(screen.getByDisplayValue('CHICKEN')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Delete ingredient' }));
-    expect(screen.queryByText('CHICKEN')).not.toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('button', { name: 'Delete ingredient' })[0]);
+    expect(screen.queryByRole('link', { name: /CHICKEN/i })).not.toBeInTheDocument();
   });
 });
