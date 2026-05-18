@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 import {
@@ -23,6 +23,22 @@ import { parseProfile, PROFILE_KEY, type Profile } from './profile';
 import type { DayTargets, Ingredient, SaveSections } from './types';
 
 type IngredientDraft = Omit<Ingredient, 'id'>;
+
+type NutritionScanResult = {
+  proposed: {
+    name?: string;
+    weight: number;
+    calories: number;
+    fat: number;
+    saturatedFat: number;
+    carbs: number;
+    fiber: number;
+    protein: number;
+  };
+  canApply: boolean;
+  blockReason?: string;
+  notes: string[];
+};
 
 const emptyDraft: IngredientDraft = {
   name: '',
@@ -261,8 +277,61 @@ function MealEdit() {
   const [draft, setDraft] = useState<IngredientDraft>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showBlankNamePrompt, setShowBlankNamePrompt] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [scanResult, setScanResult] = useState<NutritionScanResult | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const { saved, markDirty, markSaved } = useSavedSections();
+
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+
+  const openCamera = async () => {
+    setCameraError('');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      fileInputRef.current?.click();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+      });
+      streamRef.current = stream;
+      setCameraOpen(true);
+    } catch {
+      setCameraError('Camera unavailable. Falling back to file picker.');
+      fileInputRef.current?.click();
+    }
+  };
+
+  useEffect(() => {
+    if (!cameraOpen || !videoRef.current || !streamRef.current) return;
+    const video = videoRef.current;
+    video.srcObject = streamRef.current;
+    const onLoadedMetadata = () => {
+      void video.play();
+    };
+    video.addEventListener('loadedmetadata', onLoadedMetadata);
+    return () => {
+      video.removeEventListener('loadedmetadata', onLoadedMetadata);
+      video.srcObject = null;
+    };
+  }, [cameraOpen]);
+
   if (!day || !meal) return <Navigate to="/" replace />;
+
   const saveIngredient = () => {
     const next: Ingredient = {
       id: editingId ?? uuid(),
@@ -275,17 +344,82 @@ function MealEdit() {
     setEditingId(null);
   };
   const totals = mealTotals(meal);
+
+  const capturePhoto = async () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.92),
+    );
+    if (!blob) return;
+    stopCamera();
+    setCameraOpen(false);
+    await onScanFile(new File([blob], 'nutrition.jpg', { type: 'image/jpeg' }));
+  };
+
+  const onScanFile = async (file: File) => {
+    setScanError('');
+    setScanLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+      formData.append('weightGrams', draft.weight > 0 ? String(draft.weight) : '');
+      formData.append('name', draft.name);
+      const response = await fetch('/api/scan-nutrition', { method: 'POST', body: formData });
+      if (!response.ok) throw new Error('Scan failed. Try again with a clearer label photo.');
+      const result = (await response.json()) as NutritionScanResult;
+      setScanResult(result);
+    } catch (error) {
+      setScanError(error instanceof Error ? error.message : 'Scan failed');
+    } finally {
+      setScanLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const applyScan = () => {
+    if (!scanResult || !scanResult.canApply) return;
+    markDirty('ingredientForm');
+    setDraft((prev) => ({
+      ...prev,
+      name: prev.name.trim() ? prev.name : (scanResult.proposed.name ?? prev.name),
+      weight: scanResult.proposed.weight,
+      calories: scanResult.proposed.calories,
+      fat: scanResult.proposed.fat,
+      saturatedFat: scanResult.proposed.saturatedFat,
+      carbs: scanResult.proposed.carbs,
+      fiber: scanResult.proposed.fiber,
+      protein: scanResult.proposed.protein,
+    }));
+    setScanResult(null);
+  };
   return (
     <main className="ll-page ll-main">
       {/* same body omitted for brevity in this comment */}
-      <AppHeader title={meal.name || 'Meal'} backTo={`/day/${day.id}`} />
-      <p className="ll-meta">
-        {totals.calories}
-        <span className="ll-unit"> kcal</span> · P {totals.protein}
-        <span className="ll-unit">g</span> · C {totals.carbs}
-        <span className="ll-unit">g</span> · F {totals.fat}
-        <span className="ll-unit">g</span>
-      </p>
+      <div className="ll-row ll-between flex-wrap">
+        <div className="ll-row flex-wrap">
+          <Link className="ll-btn ll-btn-sm ll-btn-subtle" to={`/day/${day.id}`}>
+            ← Back
+          </Link>
+          <h1 className="ll-page-title">{meal.name || 'Meal'}</h1>
+          <p className="ll-meta">
+            {totals.calories}
+            <span className="ll-unit"> kcal</span> · P {totals.protein}
+            <span className="ll-unit">g</span> · C {totals.carbs}
+            <span className="ll-unit">g</span> · F {totals.fat}
+            <span className="ll-unit">g</span>
+          </p>
+        </div>
+        <Link className="ll-btn ll-btn-sm ll-btn-subtle" to="/profile">
+          Profile
+        </Link>
+      </div>
       <SectionCard title="Meal name" saved={saved.mealName}>
         <p className="ll-section-note">Name is required before leaving this page.</p>
         <Input
@@ -378,7 +512,112 @@ function MealEdit() {
         }}
         onSubmit={saveIngredient}
         normalizeNameOnBlur={normalizeIngredientName}
+        weightAction={
+          <Button size="sm" variant="ghost" onClick={openCamera} disabled={scanLoading}>
+            {scanLoading ? 'Scanning…' : 'Scan Label'}
+          </Button>
+        }
       />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void onScanFile(file);
+        }}
+      />
+      {scanError ? <small className="ll-warn">{scanError}</small> : null}
+      {cameraError ? <small className="ll-warn">{cameraError}</small> : null}
+      <Modal
+        open={cameraOpen}
+        title="Take nutrition photo"
+        onClose={() => {
+          stopCamera();
+          setCameraOpen(false);
+        }}
+      >
+        <div className="ll-stack">
+          <video
+            ref={videoRef}
+            className="w-full rounded-[10px] border"
+            autoPlay
+            playsInline
+            muted
+          />
+          <div className="ll-row ll-between">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                stopCamera();
+                setCameraOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={() => void capturePhoto()}>Capture</Button>
+          </div>
+        </div>
+      </Modal>
+      <Modal open={!!scanResult} title="Review nutrition scan" onClose={() => setScanResult(null)}>
+        {scanResult ? (
+          <div className="ll-stack">
+            <p className="ll-section-note">
+              Compare current values with scanned values before applying.
+            </p>
+            <p className="ll-meta">
+              Weight: {draft.weight} → {scanResult.proposed.weight}g
+            </p>
+            <p className="ll-meta">
+              Calories: {draft.calories} → {scanResult.proposed.calories}
+            </p>
+            <p className="ll-meta">
+              Fat: {draft.fat} → {scanResult.proposed.fat}g
+            </p>
+            <p className="ll-meta">
+              Saturated fat: {draft.saturatedFat} → {scanResult.proposed.saturatedFat}g
+            </p>
+            <p className="ll-meta">
+              Carbs: {draft.carbs} → {scanResult.proposed.carbs}g
+            </p>
+            <p className="ll-meta">
+              Fiber: {draft.fiber} → {scanResult.proposed.fiber}g
+            </p>
+            <p className="ll-meta">
+              Protein: {draft.protein} → {scanResult.proposed.protein}g
+            </p>
+            {draft.name.trim() ? null : (
+              <p className="ll-meta">
+                Ingredient title: {draft.name || '(blank)'} →{' '}
+                {scanResult.proposed.name || '(unchanged)'}
+              </p>
+            )}
+            {scanResult.notes.length ? (
+              <small className="ll-section-note">{scanResult.notes.join(' ')}</small>
+            ) : null}
+            {scanResult.canApply ? null : (
+              <small className="ll-warn">
+                {scanResult.blockReason ?? 'Scan cannot be applied.'}
+              </small>
+            )}
+            <div className="ll-row ll-between">
+              <Button variant="ghost" onClick={openCamera} disabled={scanLoading}>
+                Retake photo
+              </Button>
+              <div className="ll-row">
+                <Button variant="secondary" onClick={() => setScanResult(null)}>
+                  Cancel
+                </Button>
+                <Button onClick={applyScan} disabled={!scanResult.canApply}>
+                  Apply
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
       <Modal
         open={showBlankNamePrompt}
         title="Meal name is required"
