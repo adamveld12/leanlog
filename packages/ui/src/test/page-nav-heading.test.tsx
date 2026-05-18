@@ -9,7 +9,7 @@ describe('PageNavHeading', () => {
     );
 
     expect(screen.getByRole('heading', { level: 1, name: 'Meal' })).toBeInTheDocument();
-    expect(screen.getByText('400 kcal')).toBeInTheDocument();
+    expect(screen.getAllByText('400 kcal')).toHaveLength(2);
     expect(screen.getByRole('link', { name: '← Back' })).toHaveAttribute('href', '/day/1');
     expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
   });

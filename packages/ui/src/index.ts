@@ -16,3 +16,4 @@ export * from './components/IngredientEntryCard';
 export * from './components/RadioGroup';
 export * from './components/ProfileSectionCards';
 export * from './components/PageNavHeading';
+export * from './components/MacroSummaryLine';

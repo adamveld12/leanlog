@@ -39,13 +39,18 @@ export function PageNavHeading({
   };
 
   return (
-    <div className="ll-row ll-between flex-wrap">
-      <div className="ll-row flex-wrap">
-        {backHref ? renderLink({ href: backHref, label: backLabel }) : null}
-        <h1 className="ll-page-title">{title}</h1>
-        {subtitle ? <p className="ll-meta">{subtitle}</p> : null}
+    <div className="ll-stack">
+      <div className="grid grid-cols-[1fr_auto] items-center gap-2 md:grid-cols-[1fr_auto_1fr]">
+        <div className="ll-row min-w-0">
+          {backHref ? renderLink({ href: backHref, label: backLabel }) : null}
+          <h1 className="ll-page-title">{title}</h1>
+        </div>
+        {subtitle ? <div className="hidden md:flex md:justify-center">{subtitle}</div> : null}
+        <div className="justify-self-end">
+          {renderLink({ href: profileHref, label: profileLabel })}
+        </div>
       </div>
-      {renderLink({ href: profileHref, label: profileLabel })}
+      {subtitle ? <div className="md:hidden">{subtitle}</div> : null}
     </div>
   );
 }

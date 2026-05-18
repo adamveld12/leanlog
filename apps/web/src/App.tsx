@@ -9,6 +9,7 @@ import {
   IngredientEntryCard,
   Input,
   ListSectionCard,
+  MacroSummaryLine,
   MacroTargetsCard,
   Modal,
   NumberInput,
@@ -407,13 +408,12 @@ function MealEdit() {
       <PageNavHeading
         title={meal.name || 'Meal'}
         subtitle={
-          <>
-            {totals.calories}
-            <span className="ll-unit"> kcal</span> · P {totals.protein}
-            <span className="ll-unit">g</span> · C {totals.carbs}
-            <span className="ll-unit">g</span> · F {totals.fat}
-            <span className="ll-unit">g</span>
-          </>
+          <MacroSummaryLine
+            calories={totals.calories}
+            protein={totals.protein}
+            carbs={totals.carbs}
+            fat={totals.fat}
+          />
         }
         backHref={`/day/${day.id}`}
         profileHref="/profile"

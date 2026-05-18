@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { MacroSummaryLine } from './MacroSummaryLine';
 import { PageNavHeading } from './PageNavHeading';
 
 const meta: Meta<typeof PageNavHeading> = {
@@ -19,7 +20,7 @@ export const TitleOnly: Story = {
 export const WithBackAndSubtitle: Story = {
   args: {
     title: 'Dinner',
-    subtitle: '520 kcal · P 31g · C 42g · F 20g',
+    subtitle: <MacroSummaryLine calories={520} protein={31} carbs={42} fat={20} />,
     backHref: '/day/1',
     profileHref: '/profile',
   },
