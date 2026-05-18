@@ -12,7 +12,7 @@ import {
   StickyFooter,
   SwipeRow,
 } from '@leanlog/ui';
-import { normalizeIngredientName, parseNum, prettyDate, round1 } from './lib';
+import { normalizeIngredientName, prettyDate, round1 } from './lib';
 import { dayTotals, mealTotals } from './selectors';
 import { useStore } from './state';
 import type { Ingredient, SaveSections } from './types';
@@ -237,46 +237,46 @@ function IngredientEditor({
       />
       <NumberInput
         label="Grams"
-        value={String(value.grams)}
-        onChange={(n) => onChange({ ...value, grams: parseNum(n) })}
+        value={value.grams}
+        onChange={(n) => onChange({ ...value, grams: n })}
         onBlur={onBlur}
       />
       <NumberInput
         label="Calories"
-        value={String(value.calories)}
-        onChange={(n) => onChange({ ...value, calories: parseNum(n) })}
+        value={value.calories}
+        onChange={(n) => onChange({ ...value, calories: n })}
         onBlur={onBlur}
       />
       <NumberInput
         label="Fat"
-        value={String(value.fat)}
-        onChange={(n) => onChange({ ...value, fat: parseNum(n) })}
+        value={value.fat}
+        onChange={(n) => onChange({ ...value, fat: n })}
         onBlur={onBlur}
       />
       <NumberInput
         label="Sat fat"
-        value={String(value.saturatedFat)}
-        onChange={(n) => onChange({ ...value, saturatedFat: parseNum(n) })}
+        value={value.saturatedFat}
+        onChange={(n) => onChange({ ...value, saturatedFat: n })}
         onBlur={onBlur}
       />
       {warnSat ? <small className="ll-warn">Saturated fat is higher than total fat.</small> : null}
       <NumberInput
         label="Carbs"
-        value={String(value.carbs)}
-        onChange={(n) => onChange({ ...value, carbs: parseNum(n) })}
+        value={value.carbs}
+        onChange={(n) => onChange({ ...value, carbs: n })}
         onBlur={onBlur}
       />
       <NumberInput
         label="Fiber"
-        value={String(value.fiber)}
-        onChange={(n) => onChange({ ...value, fiber: parseNum(n) })}
+        value={value.fiber}
+        onChange={(n) => onChange({ ...value, fiber: n })}
         onBlur={onBlur}
       />
       {warnFiber ? <small className="ll-warn">Fiber is higher than total carbs.</small> : null}
       <NumberInput
         label="Protein"
-        value={String(value.protein)}
-        onChange={(n) => onChange({ ...value, protein: parseNum(n) })}
+        value={value.protein}
+        onChange={(n) => onChange({ ...value, protein: n })}
         onBlur={onBlur}
       />
     </div>
@@ -453,23 +453,23 @@ function Settings() {
         <p className="ll-section-note">Changes save immediately.</p>
         <NumberInput
           label="Calories"
-          value={String(state.settings.calorieTarget)}
-          onChange={(n) => updateTargets({ calorieTarget: parseNum(n) })}
+          value={state.settings.calorieTarget}
+          onChange={(n) => updateTargets({ calorieTarget: n })}
           onBlur={() => updateTargets({ calorieTarget: round1(state.settings.calorieTarget) })}
         />
         <NumberInput
           label="Meal count"
-          value={String(state.settings.mealCountTarget)}
-          onChange={(n) => updateTargets({ mealCountTarget: parseNum(n) })}
+          value={state.settings.mealCountTarget}
+          onChange={(n) => updateTargets({ mealCountTarget: n })}
           onBlur={() => updateTargets({ mealCountTarget: round1(state.settings.mealCountTarget) })}
         />
         {(['fat', 'saturatedFat', 'carbs', 'fiber', 'protein'] as const).map((k) => (
           <NumberInput
             key={k}
             label={k}
-            value={String(state.settings.macroTargets[k])}
+            value={state.settings.macroTargets[k]}
             onChange={(n) =>
-              updateTargets({ macroTargets: { ...state.settings.macroTargets, [k]: parseNum(n) } })
+              updateTargets({ macroTargets: { ...state.settings.macroTargets, [k]: n } })
             }
             onBlur={() =>
               updateTargets({

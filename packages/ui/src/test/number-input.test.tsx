@@ -10,6 +10,7 @@ describe('NumberInput', () => {
     const input = screen.getByRole('textbox');
 
     await userEvent.clear(input);
+    onChange.mockClear();
     await userEvent.type(input, 'abc');
     expect(onChange).not.toHaveBeenCalled();
 

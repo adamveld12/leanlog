@@ -6,8 +6,8 @@ import { SectionCard } from './SectionCard';
 function TargetsSection() {
   return (
     <SectionCard title="Targets" saved>
-      <NumberInput label="Calories" value="2200" onChange={() => undefined} />
-      <NumberInput label="Protein" value="180" onChange={() => undefined} />
+      <NumberInput label="Calories" value={2200} onChange={() => undefined} />
+      <NumberInput label="Protein" value={180} onChange={() => undefined} />
       <Button>Save</Button>
     </SectionCard>
   );
