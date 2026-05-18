@@ -163,63 +163,43 @@ function DayDetail({ profile }: { profile: Profile }) {
       <AppHeader title={prettyDate(day.date)} backTo="/" />
       <SectionCard title="Daily totals">
         <div className="ll-stack-lg">
-          <div className="ll-stack">
+          <div className="ll-row ll-between items-start">
             <p className="ll-page-subtitle" style={{ color: calorieColor }}>
               {totals.calories} / {calorieTarget}
               <span className="ll-unit"> kcal</span>
             </p>
-            <ProgressBar value={totals.calories} max={calorieTarget || 1} color={calorieColor} />
+            <Button
+              variant="ghost"
+              onClick={() => {
+                const nextTargets = dayTargetsFromProfile(profile);
+                setState((s) => ({
+                  ...s,
+                  days: s.days.map((d) => (d.id === day.id ? { ...d, targets: nextTargets } : d)),
+                }));
+              }}
+            >
+              Refresh targets from profile
+            </Button>
           </div>
-          <NumberInput
-            label="Meal count target"
-            value={state.settings.mealCountTarget}
-            onChange={(n) =>
-              setState((s) => ({ ...s, settings: { ...s.settings, mealCountTarget: n } }))
-            }
-            onBlur={() =>
-              setState((s) => ({
-                ...s,
-                settings: { ...s.settings, mealCountTarget: round1(s.settings.mealCountTarget) },
-              }))
-            }
-          />
-          <p className="ll-meta">
-            FAT {totals.fat} / {day.targets.macros.fat}g
-          </p>
-          <p className="ll-meta">
-            CARBS {totals.carbs} / {day.targets.macros.carbs}g
-          </p>
-          <p className="ll-meta">
-            PROTEIN {totals.protein} / {day.targets.macros.protein}g
-          </p>
-          <p className="ll-meta">NET CARBS {netCarbs}g</p>
-          <Button
-            variant="ghost"
-            className="w-full"
-            onClick={() => {
-              const nextTargets = dayTargetsFromProfile(profile);
-              setState((s) => ({
-                ...s,
-                days: s.days.map((d) => (d.id === day.id ? { ...d, targets: nextTargets } : d)),
-              }));
-            }}
-          >
-            Refresh targets from profile
-          </Button>
-          <Button
-            className="w-full"
-            onClick={() => {
-              const meal = addMeal(day.id, `MEAL ${day.meals.length + 1}`);
-              if (meal) nav(`/day/${day.id}/meal/${meal.id}`);
-            }}
-          >
-            Add meal
-          </Button>
+          <ProgressBar value={totals.calories} max={calorieTarget || 1} color={calorieColor} />
+          <div className="ll-row flex-wrap">
+            <p className="ll-meta">
+              FAT {totals.fat} / {day.targets.macros.fat}g
+            </p>
+            <span className="ll-meta">·</span>
+            <p className="ll-meta">
+              PROTEIN {totals.protein} / {day.targets.macros.protein}g
+            </p>
+            <span className="ll-meta">·</span>
+            <p className="ll-meta">
+              CARBS {netCarbs} net / {totals.carbs} / {day.targets.macros.carbs}g
+            </p>
+          </div>
         </div>
       </SectionCard>
       <ListSectionCard
         title={`Meals ${day.meals.length} / ${state.settings.mealCountTarget}`}
-        emptyText="No meals yet. Add one above."
+        emptyText="No meals yet. Add one below."
         items={day.meals.map((m) => {
           const totals = mealTotals(m);
           return {
@@ -239,7 +219,30 @@ function DayDetail({ profile }: { profile: Profile }) {
             deleteLabel: 'Delete meal',
           };
         })}
-      />
+      >
+        <NumberInput
+          label="Meal count target"
+          value={state.settings.mealCountTarget}
+          onChange={(n) =>
+            setState((s) => ({ ...s, settings: { ...s.settings, mealCountTarget: n } }))
+          }
+          onBlur={() =>
+            setState((s) => ({
+              ...s,
+              settings: { ...s.settings, mealCountTarget: round1(s.settings.mealCountTarget) },
+            }))
+          }
+        />
+        <Button
+          className="w-full"
+          onClick={() => {
+            const meal = addMeal(day.id, `MEAL ${day.meals.length + 1}`);
+            if (meal) nav(`/day/${day.id}/meal/${meal.id}`);
+          }}
+        >
+          Add meal
+        </Button>
+      </ListSectionCard>
     </main>
   );
 }
