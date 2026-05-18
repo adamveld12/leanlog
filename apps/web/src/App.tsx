@@ -280,8 +280,19 @@ function MealEdit() {
   const [scanLoading, setScanLoading] = useState(false);
   const [scanError, setScanError] = useState('');
   const [scanResult, setScanResult] = useState<NutritionScanResult | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const { saved, markDirty, markSaved } = useSavedSections();
+
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
   if (!day || !meal) return <Navigate to="/" replace />;
   const saveIngredient = () => {
     const next: Ingredient = {
@@ -296,8 +307,51 @@ function MealEdit() {
   };
   const totals = mealTotals(meal);
 
-  const openCamera = () => {
-    fileInputRef.current?.click();
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+
+  const openCamera = async () => {
+    setCameraError('');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      fileInputRef.current?.click();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+      });
+      streamRef.current = stream;
+      setCameraOpen(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          void videoRef.current.play();
+        }
+      }, 0);
+    } catch {
+      setCameraError('Camera unavailable. Falling back to file picker.');
+      fileInputRef.current?.click();
+    }
+  };
+
+  const capturePhoto = async () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.92),
+    );
+    if (!blob) return;
+    stopCamera();
+    setCameraOpen(false);
+    await onScanFile(new File([blob], 'nutrition.jpg', { type: 'image/jpeg' }));
   };
 
   const onScanFile = async (file: File) => {
@@ -467,6 +521,37 @@ function MealEdit() {
         }}
       />
       {scanError ? <small className="ll-warn">{scanError}</small> : null}
+      {cameraError ? <small className="ll-warn">{cameraError}</small> : null}
+      <Modal
+        open={cameraOpen}
+        title="Take nutrition photo"
+        onClose={() => {
+          stopCamera();
+          setCameraOpen(false);
+        }}
+      >
+        <div className="ll-stack">
+          <video
+            ref={videoRef}
+            className="w-full rounded-[10px] border"
+            autoPlay
+            playsInline
+            muted
+          />
+          <div className="ll-row ll-between">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                stopCamera();
+                setCameraOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={() => void capturePhoto()}>Capture</Button>
+          </div>
+        </div>
+      </Modal>
       <Modal open={!!scanResult} title="Review nutrition scan" onClose={() => setScanResult(null)}>
         {scanResult ? (
           <div className="ll-stack">
