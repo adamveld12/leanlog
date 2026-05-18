@@ -194,6 +194,14 @@
   @apply flex items-center justify-between gap-2 rounded-[10px] px-1.5 py-0;
 }
 
+.ll-row-link {
+  @apply w-full cursor-pointer;
+}
+
+.ll-row-link:hover {
+  background: color-mix(in srgb, var(--ll-line) 25%, transparent);
+}
+
 .ll-delete-btn {
   @apply h-9 rounded-[10px] border px-2.5 text-xs font-semibold;
   border-color: color-mix(in srgb, var(--ll-danger) 30%, var(--ll-line));
