@@ -278,7 +278,12 @@ function MealEdit() {
 
   return (
     <main className="ll-page ll-main">
-      <h2 className="ll-page-title">{meal.name || 'Meal'}</h2>
+      <div className="ll-row">
+        <Link className="ll-btn ll-btn-sm ll-btn-subtle" to={`/day/${day.id}`}>
+          ← Back
+        </Link>
+        <h2 className="ll-page-title">{meal.name || 'Meal'}</h2>
+      </div>
       <SectionCard title="Meal name" saved={saved.mealName}>
         <p className="ll-section-note">Name is required before leaving this page.</p>
         <Input
