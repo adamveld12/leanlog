@@ -4,11 +4,17 @@ import { describe, expect, it, vi } from 'vitest';
 import { NumberInput } from '../components/NumberInput';
 
 describe('NumberInput', () => {
-  it('emits string changes', async () => {
+  it('ignores non-numeric text and supports decimal entry', async () => {
     const onChange = vi.fn();
-    render(<NumberInput label="Calories" value="" onChange={onChange} />);
+    render(<NumberInput label="Calories" value={0} onChange={onChange} />);
     const input = screen.getByRole('textbox');
-    await userEvent.type(input, '12');
-    expect(onChange).toHaveBeenCalled();
+
+    await userEvent.clear(input);
+    await userEvent.type(input, 'abc');
+    expect(onChange).not.toHaveBeenCalled();
+
+    await userEvent.clear(input);
+    await userEvent.type(input, '2.5');
+    expect(onChange).toHaveBeenLastCalledWith(2.5);
   });
 });
