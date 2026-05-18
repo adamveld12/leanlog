@@ -5,6 +5,7 @@ import {
   Button,
   DateSelect3,
   Input,
+  ListSectionCard,
   Modal,
   NumberInput,
   ProgressBar,
@@ -147,58 +148,29 @@ function DayDetail() {
           </Button>
         </div>
       </SectionCard>
-      <SectionCard title={`Meals ${day.meals.length} / ${state.settings.mealCountTarget}`}>
-        <div className="ll-stack">
-          {day.meals.map((m) => {
-            const totals = mealTotals(m);
-            return (
-              <SwipeRow
-                key={m.id}
-                onDelete={() => removeMeal(day.id, m.id)}
-                deleteLabel="Delete meal"
-              >
-                <div
-                  className="ll-list-row ll-row-link"
-                  role="link"
-                  tabIndex={0}
-                  onClick={() => nav(`/day/${day.id}/meal/${m.id}`)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      nav(`/day/${day.id}/meal/${m.id}`);
-                    }
-                  }}
-                >
-                  <div className="ll-stack">
-                    <span className="text-sm font-medium">{m.name || 'UNTITLED MEAL'}</span>
-                    <small className="ll-meta">
-                      {totals.calories}
-                      <span className="ll-unit"> kcal</span> · P {totals.protein}
-                      <span className="ll-unit">g</span> · C {totals.carbs}
-                      <span className="ll-unit">g</span> · F {totals.fat}
-                      <span className="ll-unit">g</span>
-                    </small>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    className="desktop-only"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeMeal(day.id, m.id);
-                    }}
-                  >
-                    Delete meal
-                  </Button>
-                </div>
-              </SwipeRow>
-            );
-          })}
-          {day.meals.length ? null : (
-            <p className="ll-section-note">No meals yet. Add one above.</p>
-          )}
-        </div>
-      </SectionCard>
+      <ListSectionCard
+        title={`Meals ${day.meals.length} / ${state.settings.mealCountTarget}`}
+        emptyText="No meals yet. Add one above."
+        items={day.meals.map((m) => {
+          const totals = mealTotals(m);
+          return {
+            id: m.id,
+            title: m.name || 'UNTITLED MEAL',
+            meta: (
+              <>
+                {totals.calories}
+                <span className="ll-unit"> kcal</span> · P {totals.protein}
+                <span className="ll-unit">g</span> · C {totals.carbs}
+                <span className="ll-unit">g</span> · F {totals.fat}
+                <span className="ll-unit">g</span>
+              </>
+            ),
+            onOpen: () => nav(`/day/${day.id}/meal/${m.id}`),
+            onDelete: () => removeMeal(day.id, m.id),
+            deleteLabel: 'Delete meal',
+          };
+        })}
+      />
       <Link className="ll-btn ll-btn-md ll-btn-subtle" to="/">
         Back
       </Link>
