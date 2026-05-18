@@ -6,10 +6,12 @@ const preview: Preview = {
     layout: 'centered',
     controls: { expanded: true },
   },
+  initialGlobals: {
+    colorMode: 'system',
+  },
   globalTypes: {
-    theme: {
+    colorMode: {
       name: 'Theme',
-      defaultValue: 'system',
       toolbar: {
         icon: 'mirror',
         items: ['system', 'light', 'dark'],
@@ -18,8 +20,14 @@ const preview: Preview = {
   },
   decorators: [
     (Story, context) => {
-      const theme = context.globals.theme as 'system' | 'light' | 'dark';
-      document.documentElement.dataset.theme = theme;
+      const colorMode = (context.globals.colorMode as 'system' | 'light' | 'dark') ?? 'system';
+      if (colorMode === 'system') {
+        delete document.documentElement.dataset.theme;
+        delete document.body.dataset.theme;
+      } else {
+        document.documentElement.dataset.theme = colorMode;
+        document.body.dataset.theme = colorMode;
+      }
       return Story();
     },
   ],
