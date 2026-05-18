@@ -24,7 +24,17 @@ export type Ingredient = {
 };
 
 export type Meal = { id: string; name: string; ingredients: Ingredient[] };
-export type Day = { id: string; date: string; meals: Meal[] };
+
+export type DayTargets = {
+  calories: number;
+  macros: {
+    fat: number;
+    carbs: number;
+    protein: number;
+  };
+};
+
+export type Day = { id: string; date: string; meals: Meal[]; targets: DayTargets };
 
 export type AppState = {
   version: 1;

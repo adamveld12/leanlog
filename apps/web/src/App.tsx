@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 import {
@@ -20,7 +20,7 @@ import { normalizeIngredientName, prettyDate, round1 } from './lib';
 import { dayTotals, mealTotals } from './selectors';
 import { migrateState, useStore } from './state';
 import { parseProfile, PROFILE_KEY, type Profile } from './profile';
-import type { Ingredient, SaveSections } from './types';
+import type { DayTargets, Ingredient, SaveSections } from './types';
 
 type IngredientDraft = Omit<Ingredient, 'id'>;
 
@@ -42,23 +42,58 @@ function useSavedSections() {
   return { saved, markSaved, markDirty };
 }
 
-function useProfile() {
-  const [profile, setProfile] = useState<Profile>(() =>
-    parseProfile(localStorage.getItem(PROFILE_KEY)),
-  );
-  useEffect(() => {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-  }, [profile]);
-  return { profile, setProfile };
-}
-
 function calorieFromMode(weightLbs: number, mode: Profile['calorieTarget']['mode']) {
   if (weightLbs < 90) return null;
   const x = mode === 'deficit' ? 10 : mode === 'maintenance' ? 15 : 16;
   return Math.ceil(weightLbs * x);
 }
 
-function DayList() {
+function targetCaloriesFromProfile(profile: Profile) {
+  if (profile.calorieTarget.mode === 'custom') return profile.calorieTarget.targetCalories ?? 0;
+  return calorieFromMode(profile.bodyInfo.weightLbs, profile.calorieTarget.mode) ?? 0;
+}
+
+function dayTargetsFromProfile(profile: Profile): DayTargets {
+  const calories = targetCaloriesFromProfile(profile);
+  if (profile.macroTargets.mode === 'custom') {
+    return {
+      calories,
+      macros: {
+        fat: Math.round(profile.macroTargets.fats),
+        carbs: Math.round(profile.macroTargets.carbs),
+        protein: Math.round(profile.macroTargets.protein),
+      },
+    };
+  }
+  return {
+    calories,
+    macros: {
+      fat: Math.round((calories * (profile.macroTargets.fats / 100)) / 9),
+      carbs: Math.round((calories * (profile.macroTargets.carbs / 100)) / 4),
+      protein: Math.round((calories * (profile.macroTargets.protein / 100)) / 4),
+    },
+  };
+}
+
+function AppHeader({ title, backTo }: { title: string; backTo?: string }) {
+  return (
+    <div className="ll-row ll-between">
+      <div className="ll-row">
+        {backTo ? (
+          <Link className="ll-btn ll-btn-sm ll-btn-subtle" to={backTo}>
+            ← Back
+          </Link>
+        ) : null}
+        <h1 className="ll-page-title">{title}</h1>
+      </div>
+      <Link className="ll-btn ll-btn-sm ll-btn-subtle" to="/profile">
+        Profile
+      </Link>
+    </div>
+  );
+}
+
+function DayList({ profile }: { profile: Profile }) {
   const nav = useNavigate();
   const { state, addDay, removeDay } = useStore();
   const now = new Date();
@@ -70,7 +105,7 @@ function DayList() {
   const toIso = `${picker.year}-${String(picker.month).padStart(2, '0')}-${String(picker.day).padStart(2, '0')}`;
   return (
     <main className="ll-page ll-main">
-      <h1 className="ll-page-title">leanlog</h1>
+      <AppHeader title="leanlog" />
       <SectionCard title="Add day">
         <p className="ll-section-note">Choose month, day, and year to create a new log day.</p>
         <DateSelect3
@@ -79,7 +114,7 @@ function DayList() {
           year={picker.year}
           onChange={setPicker}
         />
-        <Button onClick={() => addDay(toIso)}>Add day</Button>
+        <Button onClick={() => addDay(toIso, dayTargetsFromProfile(profile))}>Add day</Button>
       </SectionCard>
       <ListSectionCard
         title="Days"
@@ -106,40 +141,34 @@ function DayList() {
             };
           })}
       />
-      <Link className="ll-btn ll-btn-md ll-btn-subtle" to="/profile">
-        Profile
-      </Link>
     </main>
   );
 }
 
-function DayDetail() {
+function DayDetail({ profile }: { profile: Profile }) {
   const { dayId } = useParams();
   const nav = useNavigate();
   const { state, addMeal, removeMeal, setState } = useStore();
-  const { profile } = useProfile();
   const day = state.days.find((d) => d.id === dayId);
   if (!day) return <Navigate to="/" replace />;
   const totals = dayTotals(day);
   const netCarbs = round1(Math.max(0, totals.carbs - totals.fiber));
-  const calorieTarget = profile.calorieTarget.targetCalories ?? 0;
+  const calorieTarget = day.targets.calories;
+  const pctDiff = calorieTarget > 0 ? Math.abs(totals.calories - calorieTarget) / calorieTarget : 1;
+  const calorieColor =
+    pctDiff <= 0.05 ? 'var(--ll-saved)' : pctDiff <= 0.15 ? 'var(--ll-warn)' : 'var(--ll-danger)';
 
   return (
     <main className="ll-page ll-main">
-      <div className="ll-row">
-        <Link className="ll-btn ll-btn-sm ll-btn-subtle" to="/">
-          ← Back
-        </Link>
-        <h2 className="ll-page-title">{prettyDate(day.date)}</h2>
-      </div>
+      <AppHeader title={prettyDate(day.date)} backTo="/" />
       <SectionCard title="Daily totals">
         <div className="ll-stack-lg">
           <div className="ll-stack">
-            <p className="ll-page-subtitle">
+            <p className="ll-page-subtitle" style={{ color: calorieColor }}>
               {totals.calories} / {calorieTarget}
               <span className="ll-unit"> kcal</span>
             </p>
-            <ProgressBar value={totals.calories} max={calorieTarget || 1} />
+            <ProgressBar value={totals.calories} max={calorieTarget || 1} color={calorieColor} />
           </div>
           <NumberInput
             label="Meal count target"
@@ -155,15 +184,28 @@ function DayDetail() {
             }
           />
           <p className="ll-meta">
-            FAT {totals.fat}
-            <span className="ll-unit">g</span>
-            <span className="mx-[5px]">·</span>
-            NET CARBS {netCarbs}
-            <span className="ll-unit">g</span>
-            <span className="mx-[5px]">·</span>
-            PROTEIN {totals.protein}
-            <span className="ll-unit">g</span>
+            FAT {totals.fat} / {day.targets.macros.fat}g
           </p>
+          <p className="ll-meta">
+            CARBS {totals.carbs} / {day.targets.macros.carbs}g
+          </p>
+          <p className="ll-meta">
+            PROTEIN {totals.protein} / {day.targets.macros.protein}g
+          </p>
+          <p className="ll-meta">NET CARBS {netCarbs}g</p>
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={() => {
+              const nextTargets = dayTargetsFromProfile(profile);
+              setState((s) => ({
+                ...s,
+                days: s.days.map((d) => (d.id === day.id ? { ...d, targets: nextTargets } : d)),
+              }));
+            }}
+          >
+            Refresh targets from profile
+          </Button>
           <Button
             className="w-full"
             onClick={() => {
@@ -198,9 +240,6 @@ function DayDetail() {
           };
         })}
       />
-      <Link className="ll-btn ll-btn-md ll-btn-subtle" to="/">
-        Back
-      </Link>
     </main>
   );
 }
@@ -232,21 +271,14 @@ function MealEdit() {
   return (
     <main className="ll-page ll-main">
       {/* same body omitted for brevity in this comment */}
-      <div className="ll-row ll-between flex-wrap">
-        <div className="ll-row">
-          <Link className="ll-btn ll-btn-sm ll-btn-subtle" to={`/day/${day.id}`}>
-            ← Back
-          </Link>
-          <h2 className="ll-page-title">{meal.name || 'Meal'}</h2>
-        </div>
-        <p className="ll-meta">
-          {totals.calories}
-          <span className="ll-unit"> kcal</span> · P {totals.protein}
-          <span className="ll-unit">g</span> · C {totals.carbs}
-          <span className="ll-unit">g</span> · F {totals.fat}
-          <span className="ll-unit">g</span>
-        </p>
-      </div>
+      <AppHeader title={meal.name || 'Meal'} backTo={`/day/${day.id}`} />
+      <p className="ll-meta">
+        {totals.calories}
+        <span className="ll-unit"> kcal</span> · P {totals.protein}
+        <span className="ll-unit">g</span> · C {totals.carbs}
+        <span className="ll-unit">g</span> · F {totals.fat}
+        <span className="ll-unit">g</span>
+      </p>
       <SectionCard title="Meal name" saved={saved.mealName}>
         <p className="ll-section-note">Name is required before leaving this page.</p>
         <Input
@@ -363,9 +395,14 @@ function MealEdit() {
   );
 }
 
-function ProfilePage() {
+function ProfilePage({
+  profile,
+  setProfile,
+}: {
+  profile: Profile;
+  setProfile: Dispatch<SetStateAction<Profile>>;
+}) {
   const { state, setState } = useStore();
-  const { profile, setProfile } = useProfile();
   const { saved, markDirty, markSaved } = useSavedSections();
   const [importError, setImportError] = useState('');
 
@@ -425,12 +462,7 @@ function ProfilePage() {
 
   return (
     <main className="ll-page ll-main">
-      <div className="ll-row">
-        <Link className="ll-btn ll-btn-sm ll-btn-subtle" to="/">
-          ← Back
-        </Link>
-        <h2 className="ll-page-title">Profile</h2>
-      </div>
+      <AppHeader title="Profile" backTo="/" />
 
       <BodyInfoCard
         saved={saved.bodyInfo}
@@ -609,12 +641,20 @@ function ProfilePage() {
 }
 
 export default function App() {
+  const [profile, setProfile] = useState<Profile>(() =>
+    parseProfile(localStorage.getItem(PROFILE_KEY)),
+  );
+
+  useEffect(() => {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  }, [profile]);
+
   return (
     <Routes>
-      <Route path="/" element={<DayList />} />
-      <Route path="/day/:dayId" element={<DayDetail />} />
+      <Route path="/" element={<DayList profile={profile} />} />
+      <Route path="/day/:dayId" element={<DayDetail profile={profile} />} />
       <Route path="/day/:dayId/meal/:mealId" element={<MealEdit />} />
-      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/profile" element={<ProfilePage profile={profile} setProfile={setProfile} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -10,9 +10,14 @@ import {
 } from 'react';
 import { v4 as uuid } from 'uuid';
 import { todayIso } from './lib';
-import type { AppState, Day, Ingredient, Meal } from './types';
+import type { AppState, Day, DayTargets, Ingredient, Meal } from './types';
 
 const KEY = 'mealTracker.v1';
+
+const defaultDayTargets: DayTargets = {
+  calories: 2700,
+  macros: { fat: 75, carbs: 236, protein: 270 },
+};
 
 const initial: AppState = {
   version: 1,
@@ -22,13 +27,13 @@ const initial: AppState = {
     macroTargets: { fat: 70, saturatedFat: 20, carbs: 250, fiber: 30, protein: 140 },
     theme: 'system',
   },
-  days: [{ id: uuid(), date: todayIso(), meals: [] }],
+  days: [{ id: uuid(), date: todayIso(), meals: [], targets: defaultDayTargets }],
 };
 
 type Store = {
   state: AppState;
   setState: Dispatch<SetStateAction<AppState>>;
-  addDay: (date: string) => void;
+  addDay: (date: string, targets: DayTargets) => void;
   removeDay: (dayId: string) => void;
   addMeal: (dayId: string, name: string) => Meal | null;
   removeMeal: (dayId: string, mealId: string) => void;
@@ -71,9 +76,20 @@ export const migrateState = (raw: unknown): AppState => {
       if (!isRecord(day) || !Array.isArray(day.meals)) {
         throw new Error('Invalid state schema. Import failed.');
       }
+      if (!isRecord(day.targets) || !isRecord(day.targets.macros)) {
+        throw new Error('Invalid state schema. Import failed.');
+      }
       return {
         id: String(day.id ?? ''),
         date: String(day.date ?? ''),
+        targets: {
+          calories: Number(day.targets.calories ?? 0),
+          macros: {
+            fat: Number(day.targets.macros.fat ?? 0),
+            carbs: Number(day.targets.macros.carbs ?? 0),
+            protein: Number(day.targets.macros.protein ?? 0),
+          },
+        },
         meals: day.meals.map((meal) => {
           if (!isRecord(meal) || !Array.isArray(meal.ingredients)) {
             throw new Error('Invalid state schema. Import failed.');
@@ -114,11 +130,11 @@ export function StateProvider({ children }: PropsWithChildren) {
     () => ({
       state,
       setState,
-      addDay: (date) =>
+      addDay: (date, targets) =>
         setState((s) =>
           s.days.some((d) => d.date === date)
             ? s
-            : { ...s, days: [{ id: uuid(), date, meals: [] }, ...s.days] },
+            : { ...s, days: [{ id: uuid(), date, meals: [], targets }, ...s.days] },
         ),
       removeDay: (dayId) => setState((s) => ({ ...s, days: s.days.filter((d) => d.id !== dayId) })),
       addMeal: (dayId, name) => {

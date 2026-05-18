@@ -15,6 +15,7 @@ describe('state migration', () => {
         {
           id: 'd1',
           date: '2026-01-01',
+          targets: { calories: 2700, macros: { fat: 75, carbs: 236, protein: 270 } },
           meals: [
             {
               id: 'm1',

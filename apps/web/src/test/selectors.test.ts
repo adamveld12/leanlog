@@ -32,6 +32,13 @@ describe('selectors', () => {
       ],
     };
     expect(mealTotals(meal).calories).toBe(30);
-    expect(dayTotals({ id: 'd', date: '2026-01-01', meals: [meal] }).protein).toBe(9);
+    expect(
+      dayTotals({
+        id: 'd',
+        date: '2026-01-01',
+        meals: [meal],
+        targets: { calories: 2700, macros: { fat: 75, carbs: 236, protein: 270 } },
+      }).protein,
+    ).toBe(9);
   });
 });

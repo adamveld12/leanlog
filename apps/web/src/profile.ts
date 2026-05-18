@@ -10,9 +10,9 @@ export type Profile = {
 export const PROFILE_KEY = 'profile';
 
 export const defaultProfile: Profile = {
-  bodyInfo: { weightLbs: 0, heightInches: 0 },
-  calorieTarget: { mode: 'maintenance', targetCalories: null },
-  macroTargets: { mode: 'percentage', fats: 30, carbs: 40, protein: 30 },
+  bodyInfo: { weightLbs: 180, heightInches: 72 },
+  calorieTarget: { mode: 'maintenance', targetCalories: 2700 },
+  macroTargets: { mode: 'percentage', fats: 25, carbs: 35, protein: 40 },
 };
 
 export function parseProfile(raw: string | null): Profile {
