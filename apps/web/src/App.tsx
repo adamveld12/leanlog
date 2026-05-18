@@ -148,16 +148,17 @@ function DayDetail() {
             · PROTEIN {totals.protein}
             <span className="ll-unit">g</span>
           </p>
+          <Button
+            className="w-full"
+            onClick={() => {
+              const meal = addMeal(day.id, `MEAL ${day.meals.length + 1}`);
+              if (meal) nav(`/day/${day.id}/meal/${meal.id}`);
+            }}
+          >
+            Add meal
+          </Button>
         </div>
       </SectionCard>
-      <Button
-        onClick={() => {
-          const meal = addMeal(day.id, `MEAL ${day.meals.length + 1}`);
-          if (meal) nav(`/day/${day.id}/meal/${meal.id}`);
-        }}
-      >
-        Add meal
-      </Button>
       <SectionCard title={`Meals ${day.meals.length} / ${state.settings.mealCountTarget}`}>
         <div className="ll-stack">
           {day.meals.map((m) => {
