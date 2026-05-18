@@ -514,7 +514,7 @@ function MealEdit() {
         normalizeNameOnBlur={normalizeIngredientName}
         weightAction={
           <Button size="sm" variant="ghost" onClick={openCamera} disabled={scanLoading}>
-            {scanLoading ? 'Scanning…' : 'Scan Nutrition Facts'}
+            {scanLoading ? 'Scanning…' : 'Scan Label'}
           </Button>
         }
       />
