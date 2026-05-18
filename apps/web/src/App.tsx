@@ -200,6 +200,7 @@ function DayDetail({ profile }: { profile: Profile }) {
       <ListSectionCard
         title={`Meals ${day.meals.length} / ${state.settings.mealCountTarget}`}
         emptyText="No meals yet. Add one below."
+        childrenTop
         items={day.meals.map((m) => {
           const totals = mealTotals(m);
           return {
@@ -220,28 +221,29 @@ function DayDetail({ profile }: { profile: Profile }) {
           };
         })}
       >
-        <NumberInput
-          label="Meal count target"
-          value={state.settings.mealCountTarget}
-          onChange={(n) =>
-            setState((s) => ({ ...s, settings: { ...s.settings, mealCountTarget: n } }))
-          }
-          onBlur={() =>
-            setState((s) => ({
-              ...s,
-              settings: { ...s.settings, mealCountTarget: round1(s.settings.mealCountTarget) },
-            }))
-          }
-        />
-        <Button
-          className="w-full"
-          onClick={() => {
-            const meal = addMeal(day.id, `MEAL ${day.meals.length + 1}`);
-            if (meal) nav(`/day/${day.id}/meal/${meal.id}`);
-          }}
-        >
-          Add meal
-        </Button>
+        <div className="ll-row">
+          <NumberInput
+            label="Meal count target"
+            value={state.settings.mealCountTarget}
+            onChange={(n) =>
+              setState((s) => ({ ...s, settings: { ...s.settings, mealCountTarget: n } }))
+            }
+            onBlur={() =>
+              setState((s) => ({
+                ...s,
+                settings: { ...s.settings, mealCountTarget: round1(s.settings.mealCountTarget) },
+              }))
+            }
+          />
+          <Button
+            onClick={() => {
+              const meal = addMeal(day.id, `MEAL ${day.meals.length + 1}`);
+              if (meal) nav(`/day/${day.id}/meal/${meal.id}`);
+            }}
+          >
+            Add meal
+          </Button>
+        </div>
       </ListSectionCard>
     </main>
   );

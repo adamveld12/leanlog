@@ -20,6 +20,7 @@ type ListSectionCardProps = {
   saved?: boolean;
   note?: string;
   children?: ReactNode;
+  childrenTop?: boolean;
 };
 
 export function ListSectionCard({
@@ -29,10 +30,12 @@ export function ListSectionCard({
   saved,
   note,
   children,
+  childrenTop = false,
 }: ListSectionCardProps) {
   return (
     <SectionCard title={title} saved={saved}>
       {note ? <p className="ll-section-note">{note}</p> : null}
+      {childrenTop ? children : null}
       <div className="ll-stack">
         {items.map((item) => {
           const row = (
@@ -86,7 +89,7 @@ export function ListSectionCard({
         })}
         {items.length ? null : <p className="ll-section-note">{emptyText}</p>}
       </div>
-      {children}
+      {childrenTop ? null : children}
     </SectionCard>
   );
 }
