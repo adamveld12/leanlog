@@ -111,7 +111,12 @@ function DayDetail() {
 
   return (
     <main className="ll-page ll-main">
-      <h2 className="ll-page-title">{prettyDate(day.date)}</h2>
+      <div className="ll-row">
+        <Link className="ll-btn ll-btn-sm ll-btn-subtle" to="/">
+          ← Back
+        </Link>
+        <h2 className="ll-page-title">{prettyDate(day.date)}</h2>
+      </div>
       <SectionCard title="Daily totals">
         <div className="ll-stack-lg">
           <div className="ll-stack">
