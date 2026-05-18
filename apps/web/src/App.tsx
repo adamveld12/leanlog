@@ -161,13 +161,10 @@ function DayDetail({ profile }: { profile: Profile }) {
   return (
     <main className="ll-page ll-main">
       <AppHeader title={prettyDate(day.date)} backTo="/" />
-      <SectionCard title="Daily totals">
+      <SectionCard>
         <div className="ll-stack-lg">
           <div className="ll-row ll-between items-start">
-            <p className="ll-page-subtitle" style={{ color: calorieColor }}>
-              {totals.calories} / {calorieTarget}
-              <span className="ll-unit"> kcal</span>
-            </p>
+            <h3 className="ll-card-title mb-0">Daily totals</h3>
             <Button
               variant="ghost"
               onClick={() => {
@@ -178,9 +175,13 @@ function DayDetail({ profile }: { profile: Profile }) {
                 }));
               }}
             >
-              Refresh targets from profile
+              Update targets
             </Button>
           </div>
+          <p className="ll-page-subtitle" style={{ color: calorieColor }}>
+            {totals.calories} / {calorieTarget}
+            <span className="ll-unit"> kcal</span>
+          </p>
           <ProgressBar value={totals.calories} max={calorieTarget || 1} color={calorieColor} />
           <div className="ll-row flex-wrap">
             <p className="ll-meta">
@@ -236,7 +237,7 @@ function DayDetail({ profile }: { profile: Profile }) {
             }
           />
           <Button
-            className="min-w-32"
+            className="w-full"
             onClick={() => {
               const meal = addMeal(day.id, `MEAL ${day.meals.length + 1}`);
               if (meal) nav(`/day/${day.id}/meal/${meal.id}`);
