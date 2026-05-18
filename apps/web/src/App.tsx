@@ -107,6 +107,7 @@ function DayDetail() {
   const day = state.days.find((d) => d.id === dayId);
   if (!day) return <Navigate to="/" replace />;
   const totals = dayTotals(day);
+  const netCarbs = round1(Math.max(0, totals.carbs - totals.fiber));
 
   return (
     <main className="ll-page ll-main">
@@ -126,6 +127,22 @@ function DayDetail() {
             </p>
             <ProgressBar value={day.meals.length} max={state.settings.mealCountTarget} />
           </div>
+          <p className="ll-meta">
+            FAT {totals.fat}
+            <span className="ll-unit">g</span>{' '}
+            <span className="ll-meta-sub">
+              SAT {totals.saturatedFat}
+              <span className="ll-unit">g</span>
+            </span>{' '}
+            · NET CARBS {netCarbs}
+            <span className="ll-unit">g</span>{' '}
+            <span className="ll-meta-sub">
+              (TOTAL {totals.carbs}
+              <span className="ll-unit">g</span>)
+            </span>{' '}
+            · PROTEIN {totals.protein}
+            <span className="ll-unit">g</span>
+          </p>
         </div>
       </SectionCard>
       <Button

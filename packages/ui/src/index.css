@@ -71,6 +71,11 @@
   color: var(--ll-text-muted);
 }
 
+.ll-meta-sub {
+  @apply text-[11px] font-medium;
+  color: var(--ll-text-muted);
+}
+
 .ll-unit {
   color: var(--ll-text-muted);
 }
