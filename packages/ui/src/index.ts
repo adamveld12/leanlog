@@ -9,6 +9,7 @@ export * from './components/NumberInput';
 export * from './components/Modal';
 export * from './components/Tabs';
 export * from './components/DateSelect3';
+export * from './components/AddDayControl';
 export * from './components/StickyFooter';
 export * from './components/SwipeRow';
 export * from './components/ListSectionCard';
