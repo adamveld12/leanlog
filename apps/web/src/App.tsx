@@ -236,7 +236,7 @@ function DayDetail({ profile }: { profile: Profile }) {
         <div className="ll-stack">
           <Button
             className="w-full"
-            variant="subtle"
+            variant="secondary"
             onClick={() => {
               if (isEditingMealTarget) {
                 setDraftMealCountTarget(day.mealCountTarget);
