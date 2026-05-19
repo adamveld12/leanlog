@@ -43,16 +43,16 @@ export function PageNavHeading({
       <div className="flex w-full items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           {backHref ? (
-            <span className="md:inline-flex max-[420px]:hidden">
+            <span className="md:inline-flex max-[512px]:hidden">
               {renderLink({ href: backHref, label: backLabel })}
             </span>
           ) : null}
           <h1 className="ll-page-title">{title}</h1>
-          {subtitle ? <div className="hidden md:block">{subtitle}</div> : null}
+          {subtitle ? <div className="px-5 md:inline max-[512px]:hidden">{subtitle}</div> : null}
         </div>
         <div className="shrink-0">{renderLink({ href: profileHref, label: profileLabel })}</div>
       </div>
-      {subtitle ? <div className="w-full md:hidden">{subtitle}</div> : null}
+      {subtitle ? <div className="w-full min-[512px]:hidden">{subtitle}</div> : null}
     </div>
   );
 }
