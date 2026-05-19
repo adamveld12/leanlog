@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateActio
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 import {
+  AddDayControl,
   BodyInfoCard,
   Button,
   CalorieTargetCard,
-  DateSelect3,
   IngredientEntryCard,
   Input,
   ListSectionCard,
@@ -110,26 +110,15 @@ const renderRouterNavLink = ({
 function DayList({ profile }: { profile: Profile }) {
   const nav = useNavigate();
   const { state, addDay, removeDay } = useStore();
-  const now = new Date();
-  const [picker, setPicker] = useState({
-    month: now.getMonth() + 1,
-    day: now.getDate(),
-    year: now.getFullYear(),
-  });
-  const toIso = `${picker.year}-${String(picker.month).padStart(2, '0')}-${String(picker.day).padStart(2, '0')}`;
   return (
     <main className="ll-page ll-main">
       <PageNavHeading title="leanlog" profileHref="/profile" renderNavLink={renderRouterNavLink} />
-      <SectionCard title="Add day">
-        <p className="ll-section-note">Choose month, day, and year to create a new log day.</p>
-        <DateSelect3
-          month={picker.month}
-          day={picker.day}
-          year={picker.year}
-          onChange={setPicker}
-        />
-        <Button onClick={() => addDay(toIso, dayTargetsFromProfile(profile))}>Add day</Button>
-      </SectionCard>
+      <AddDayControl
+        onDayAdded={({ month, day, year }) => {
+          const toIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          addDay(toIso, dayTargetsFromProfile(profile));
+        }}
+      />
       <ListSectionCard
         title="Days"
         items={state.days
