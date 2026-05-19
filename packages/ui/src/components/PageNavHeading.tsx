@@ -39,22 +39,20 @@ export function PageNavHeading({
   };
 
   return (
-    <div className="ll-stack">
-      <div className="relative w-full">
-        <div className="ll-row min-w-0 pr-24">
-          {backHref ? renderLink({ href: backHref, label: backLabel }) : null}
+    <div className="ll-stack w-full">
+      <div className="flex w-full items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          {backHref ? (
+            <span className="md:inline-flex max-[420px]:hidden">
+              {renderLink({ href: backHref, label: backLabel })}
+            </span>
+          ) : null}
           <h1 className="ll-page-title">{title}</h1>
+          {subtitle ? <div className="hidden md:block">{subtitle}</div> : null}
         </div>
-        {subtitle ? (
-          <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:block">
-            {subtitle}
-          </div>
-        ) : null}
-        <div className="absolute right-0 top-1/2 -translate-y-1/2">
-          {renderLink({ href: profileHref, label: profileLabel })}
-        </div>
+        <div className="shrink-0">{renderLink({ href: profileHref, label: profileLabel })}</div>
       </div>
-      {subtitle ? <div className="md:hidden">{subtitle}</div> : null}
+      {subtitle ? <div className="w-full md:hidden">{subtitle}</div> : null}
     </div>
   );
 }
