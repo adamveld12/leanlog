@@ -211,7 +211,6 @@ function DayDetail({ profile }: { profile: Profile }) {
       </SectionCard>
       <ListSectionCard
         title={`Meals ${day.meals.length} / ${day.mealCountTarget}`}
-        note="✎ Edit meal target"
         emptyText="No meals yet. Add one below."
         childrenTop
         items={day.meals.map((m) => {
