@@ -278,7 +278,7 @@ function DayDetail({ profile }: { profile: Profile }) {
             </div>
           ) : null}
           <Button
-            className="w-full"
+            className="mt-2 w-full"
             onClick={() => {
               const meal = addMeal(day.id, `MEAL ${day.meals.length + 1}`);
               if (meal) nav(`/day/${day.id}/meal/${meal.id}`);

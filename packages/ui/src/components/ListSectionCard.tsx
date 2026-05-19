@@ -87,7 +87,7 @@ export function ListSectionCard({
             </SwipeRow>
           );
         })}
-        {items.length ? null : <p className="ll-section-note">{emptyText}</p>}
+        {items.length ? null : <p className="ll-section-note text-center">{emptyText}</p>}
       </div>
       {childrenTop ? null : children}
     </SectionCard>
