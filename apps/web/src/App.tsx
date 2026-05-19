@@ -234,21 +234,19 @@ function DayDetail({ profile }: { profile: Profile }) {
         })}
       >
         <div className="ll-stack">
-          <div className="ll-row ll-between">
-            <Button
-              variant="subtle"
-              size="sm"
-              onClick={() => {
-                if (isEditingMealTarget) {
-                  setDraftMealCountTarget(day.mealCountTarget);
-                  setConfirmMealTargetUpdate(false);
-                }
-                setIsEditingMealTarget((v) => !v);
-              }}
-            >
-              ✎ Edit meal target
-            </Button>
-          </div>
+          <Button
+            className="w-full"
+            variant="subtle"
+            onClick={() => {
+              if (isEditingMealTarget) {
+                setDraftMealCountTarget(day.mealCountTarget);
+                setConfirmMealTargetUpdate(false);
+              }
+              setIsEditingMealTarget((v) => !v);
+            }}
+          >
+            ✎ Edit meal target
+          </Button>
           {isEditingMealTarget ? (
             <div className="ll-row">
               <NumberInput
