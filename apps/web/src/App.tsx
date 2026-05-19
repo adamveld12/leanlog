@@ -152,6 +152,9 @@ function DayDetail({ profile }: { profile: Profile }) {
   const { dayId } = useParams();
   const nav = useNavigate();
   const { state, addMeal, removeMeal, setState } = useStore();
+  const [isEditingMealTarget, setIsEditingMealTarget] = useState(false);
+  const [draftMealCountTarget, setDraftMealCountTarget] = useState(0);
+  const [confirmMealTargetUpdate, setConfirmMealTargetUpdate] = useState(false);
   const day = state.days.find((d) => d.id === dayId);
   if (!day) return <Navigate to="/" replace />;
   const totals = dayTotals(day);
@@ -208,6 +211,7 @@ function DayDetail({ profile }: { profile: Profile }) {
       </SectionCard>
       <ListSectionCard
         title={`Meals ${day.meals.length} / ${day.mealCountTarget}`}
+        note="✎ Edit meal target"
         emptyText="No meals yet. Add one below."
         childrenTop
         items={day.meals.map((m) => {
@@ -230,25 +234,52 @@ function DayDetail({ profile }: { profile: Profile }) {
           };
         })}
       >
-        <div className="ll-row">
-          <NumberInput
-            label="Meal count target"
-            value={day.mealCountTarget}
-            onChange={(n) =>
-              setState((s) => ({
-                ...s,
-                days: s.days.map((d) => (d.id === day.id ? { ...d, mealCountTarget: n } : d)),
-              }))
-            }
-            onBlur={() =>
-              setState((s) => ({
-                ...s,
-                days: s.days.map((d) =>
-                  d.id === day.id ? { ...d, mealCountTarget: round1(d.mealCountTarget) } : d,
-                ),
-              }))
-            }
-          />
+        <div className="ll-stack">
+          <div className="ll-row ll-between">
+            <Button
+              variant="subtle"
+              size="sm"
+              onClick={() => {
+                if (isEditingMealTarget) {
+                  setDraftMealCountTarget(day.mealCountTarget);
+                  setConfirmMealTargetUpdate(false);
+                }
+                setIsEditingMealTarget((v) => !v);
+              }}
+            >
+              ✎ Edit meal target
+            </Button>
+          </div>
+          {isEditingMealTarget ? (
+            <div className="ll-row">
+              <NumberInput
+                label="Meal count target"
+                value={draftMealCountTarget}
+                onChange={(n) => setDraftMealCountTarget(Math.max(0, n))}
+                onBlur={() => setDraftMealCountTarget((n) => round1(Math.max(0, n)))}
+              />
+              <Button
+                variant={confirmMealTargetUpdate ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => {
+                  const next = !confirmMealTargetUpdate;
+                  setConfirmMealTargetUpdate(next);
+                  if (next) {
+                    setState((s) => ({
+                      ...s,
+                      days: s.days.map((d) =>
+                        d.id === day.id ? { ...d, mealCountTarget: draftMealCountTarget } : d,
+                      ),
+                    }));
+                    setIsEditingMealTarget(false);
+                    setConfirmMealTargetUpdate(false);
+                  }
+                }}
+              >
+                {confirmMealTargetUpdate ? 'Confirmed' : '☐ Confirm'}
+              </Button>
+            </div>
+          ) : null}
           <Button
             className="w-full"
             onClick={() => {
