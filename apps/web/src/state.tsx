@@ -27,13 +27,15 @@ const initial: AppState = {
     macroTargets: { fat: 70, saturatedFat: 20, carbs: 250, fiber: 30, protein: 140 },
     theme: 'system',
   },
-  days: [{ id: uuid(), date: todayIso(), meals: [], targets: defaultDayTargets }],
+  days: [
+    { id: uuid(), date: todayIso(), meals: [], targets: defaultDayTargets, mealCountTarget: 3 },
+  ],
 };
 
 type Store = {
   state: AppState;
   setState: Dispatch<SetStateAction<AppState>>;
-  addDay: (date: string, targets: DayTargets) => void;
+  addDay: (date: string, targets: DayTargets, mealCountTarget: number) => void;
   removeDay: (dayId: string) => void;
   addMeal: (dayId: string, name: string) => Meal | null;
   removeMeal: (dayId: string, mealId: string) => void;
@@ -90,6 +92,9 @@ export const migrateState = (raw: unknown): AppState => {
             protein: Number(day.targets.macros.protein ?? 0),
           },
         },
+        mealCountTarget: Number(
+          day.mealCountTarget ?? (raw.settings as AppState['settings']).mealCountTarget ?? 3,
+        ),
         meals: day.meals.map((meal) => {
           if (!isRecord(meal) || !Array.isArray(meal.ingredients)) {
             throw new Error('Invalid state schema. Import failed.');
@@ -130,11 +135,14 @@ export function StateProvider({ children }: PropsWithChildren) {
     () => ({
       state,
       setState,
-      addDay: (date, targets) =>
+      addDay: (date, targets, mealCountTarget) =>
         setState((s) =>
           s.days.some((d) => d.date === date)
             ? s
-            : { ...s, days: [{ id: uuid(), date, meals: [], targets }, ...s.days] },
+            : {
+                ...s,
+                days: [{ id: uuid(), date, meals: [], targets, mealCountTarget }, ...s.days],
+              },
         ),
       removeDay: (dayId) => setState((s) => ({ ...s, days: s.days.filter((d) => d.id !== dayId) })),
       addMeal: (dayId, name) => {

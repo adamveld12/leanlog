@@ -34,7 +34,13 @@ export type DayTargets = {
   };
 };
 
-export type Day = { id: string; date: string; meals: Meal[]; targets: DayTargets };
+export type Day = {
+  id: string;
+  date: string;
+  meals: Meal[];
+  targets: DayTargets;
+  mealCountTarget: number;
+};
 
 export type AppState = {
   version: 1;

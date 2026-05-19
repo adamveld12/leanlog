@@ -114,9 +114,9 @@ function DayList({ profile }: { profile: Profile }) {
     <main className="ll-page ll-main">
       <PageNavHeading title="leanlog" profileHref="/profile" renderNavLink={renderRouterNavLink} />
       <AddDayControl
-        onDayAdded={({ month, day, year }) => {
+        onDayAdded={({ month, day, year, totalMeals }) => {
           const toIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          addDay(toIso, dayTargetsFromProfile(profile));
+          addDay(toIso, dayTargetsFromProfile(profile), totalMeals);
         }}
       />
       <ListSectionCard
@@ -207,7 +207,7 @@ function DayDetail({ profile }: { profile: Profile }) {
         </div>
       </SectionCard>
       <ListSectionCard
-        title={`Meals ${day.meals.length} / ${state.settings.mealCountTarget}`}
+        title={`Meals ${day.meals.length} / ${day.mealCountTarget}`}
         emptyText="No meals yet. Add one below."
         childrenTop
         items={day.meals.map((m) => {
@@ -233,14 +233,19 @@ function DayDetail({ profile }: { profile: Profile }) {
         <div className="ll-row">
           <NumberInput
             label="Meal count target"
-            value={state.settings.mealCountTarget}
+            value={day.mealCountTarget}
             onChange={(n) =>
-              setState((s) => ({ ...s, settings: { ...s.settings, mealCountTarget: n } }))
+              setState((s) => ({
+                ...s,
+                days: s.days.map((d) => (d.id === day.id ? { ...d, mealCountTarget: n } : d)),
+              }))
             }
             onBlur={() =>
               setState((s) => ({
                 ...s,
-                settings: { ...s.settings, mealCountTarget: round1(s.settings.mealCountTarget) },
+                days: s.days.map((d) =>
+                  d.id === day.id ? { ...d, mealCountTarget: round1(d.mealCountTarget) } : d,
+                ),
               }))
             }
           />

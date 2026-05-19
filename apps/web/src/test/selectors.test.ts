@@ -38,6 +38,7 @@ describe('selectors', () => {
         date: '2026-01-01',
         meals: [meal],
         targets: { calories: 2700, macros: { fat: 75, carbs: 236, protein: 270 } },
+        mealCountTarget: 4,
       }).protein,
     ).toBe(9);
   });

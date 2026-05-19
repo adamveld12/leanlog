@@ -33,6 +33,7 @@ describe('list section behaviors', () => {
           id: 'd1',
           date: todayIso(),
           targets: { calories: 2700, macros: { fat: 75, carbs: 236, protein: 270 } },
+          mealCountTarget: 4,
           meals: [
             {
               id: 'm1',
@@ -83,6 +84,7 @@ describe('list section behaviors', () => {
           id: 'd1',
           date: todayIso(),
           targets: { calories: 2700, macros: { fat: 75, carbs: 236, protein: 270 } },
+          mealCountTarget: 4,
           meals: [
             {
               id: 'm1',
