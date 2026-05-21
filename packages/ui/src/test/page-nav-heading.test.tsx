@@ -21,4 +21,18 @@ describe('PageNavHeading', () => {
     expect(queries.getByRole('link', { name: 'Profile' })).toBeInTheDocument();
     expect(queries.queryByRole('link', { name: '← Back' })).toBeNull();
   });
+
+  it('renders right-side content next to profile link', () => {
+    const { container } = render(
+      <PageNavHeading
+        title="leanlog"
+        profileHref="/profile"
+        rightContent={<button type="button">Auth</button>}
+      />,
+    );
+    const queries = within(container);
+
+    expect(queries.getByRole('link', { name: 'Profile' })).toBeInTheDocument();
+    expect(queries.getByRole('button', { name: 'Auth' })).toBeInTheDocument();
+  });
 });

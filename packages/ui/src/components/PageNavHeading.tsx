@@ -14,6 +14,7 @@ export type PageNavHeadingProps = {
   backLabel?: string;
   profileLabel?: string;
   renderNavLink?: (props: NavLinkRenderProps) => ReactNode;
+  rightContent?: ReactNode;
 };
 
 export function PageNavHeading({
@@ -24,6 +25,7 @@ export function PageNavHeading({
   backLabel = '← Back',
   profileLabel = 'Profile',
   renderNavLink,
+  rightContent,
 }: PageNavHeadingProps) {
   const linkClassName = 'll-btn ll-btn-sm ll-btn-subtle';
   const renderLink = ({ href, label }: { href: string; label: string }) => {
@@ -50,7 +52,10 @@ export function PageNavHeading({
           <h1 className="ll-page-title">{title}</h1>
           {subtitle ? <div className="px-5 md:inline max-[512px]:hidden">{subtitle}</div> : null}
         </div>
-        <div className="shrink-0">{renderLink({ href: profileHref, label: profileLabel })}</div>
+        <div className="ll-row shrink-0 items-center">
+          {renderLink({ href: profileHref, label: profileLabel })}
+          {rightContent}
+        </div>
       </div>
       {subtitle ? <div className="w-full min-[512px]:hidden">{subtitle}</div> : null}
     </div>
