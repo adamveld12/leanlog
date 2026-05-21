@@ -163,6 +163,12 @@
   @apply w-full md:w-auto;
 }
 
+.ll-auth-pricing {
+  @apply ll-stack rounded-[14px] border p-4 md:p-5;
+  border-color: var(--ll-line);
+  background: var(--ll-surface);
+}
+
 .ll-card {
   @apply rounded-[14px] border p-4;
   border-color: var(--ll-line);

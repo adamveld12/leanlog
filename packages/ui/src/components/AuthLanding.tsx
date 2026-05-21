@@ -6,6 +6,7 @@ type AuthLandingProps = {
   cta: ReactNode;
   subtitle?: string;
   highlights?: string[];
+  pricing?: ReactNode;
 };
 
 export function AuthLanding({
@@ -14,6 +15,7 @@ export function AuthLanding({
   cta,
   subtitle = 'Track meals, macros, and calories with a focused daily workflow.',
   highlights = ['One-tap day setup', 'Fast macro logging', 'Clean daily progress tracking'],
+  pricing,
 }: AuthLandingProps) {
   return (
     <main className="ll-page ll-main ll-auth-page">
@@ -37,6 +39,12 @@ export function AuthLanding({
           </ul>
         </aside>
       </section>
+      {pricing ? (
+        <section className="ll-auth-pricing">
+          <h2 className="ll-auth-side-title">Pricing</h2>
+          {pricing}
+        </section>
+      ) : null}
     </main>
   );
 }

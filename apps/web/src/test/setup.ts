@@ -15,6 +15,7 @@ vi.mock('@clerk/clerk-react', () => ({
   SignedOut: ({ children }: PropsWithChildren) =>
     signedIn ? null : createElement(Fragment, null, children),
   UserButton: () => createElement('button', { type: 'button' }, 'User'),
+  PricingTable: () => createElement('div', null, 'Pricing Table'),
 }));
 
 beforeEach(() => {

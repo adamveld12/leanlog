@@ -7,7 +7,7 @@ import {
   type PropsWithChildren,
   type SetStateAction,
 } from 'react';
-import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
+import { PricingTable, SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 import {
@@ -151,6 +151,7 @@ function LandingPage() {
               <Button>Sign in / Sign up</Button>
             </SignInButton>
           }
+          pricing={<PricingTable />}
         />
       </SignedOut>
     </>
