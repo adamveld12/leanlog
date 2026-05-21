@@ -96,33 +96,16 @@
   @apply min-h-[100dvh] justify-center pb-8;
 }
 
-.ll-auth-grid {
-  @apply grid gap-4 md:grid-cols-[1.35fr_1fr] md:gap-3;
+.ll-auth-card {
+  @apply p-4 md:p-5;
 }
 
-.ll-auth-column-main,
-.ll-auth-column-side {
-  @apply rounded-[14px] border p-4 md:p-5;
-  border-color: var(--ll-line);
-  background: var(--ll-surface);
-}
-
-.ll-auth-column-main {
-  @apply ll-stack-lg;
-}
-
-.ll-auth-column-side {
-  @apply ll-stack;
-}
-
-.ll-auth-badge {
-  @apply inline-flex w-fit rounded-[999px] border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em];
-  border-color: var(--ll-line-strong);
-  color: var(--ll-text-muted);
+.ll-auth-hero-title-row {
+  @apply ll-row items-center gap-3;
 }
 
 .ll-auth-hero-title {
-  @apply flex items-center gap-3 text-3xl font-semibold tracking-tight md:text-4xl;
+  @apply text-5xl font-semibold tracking-tight md:text-6xl;
 }
 
 .ll-auth-subtitle {
@@ -133,6 +116,10 @@
 .ll-auth-side-title {
   @apply text-xs font-semibold uppercase tracking-[0.08em];
   color: var(--ll-text-muted);
+}
+
+.ll-auth-question {
+  @apply text-base font-semibold tracking-tight;
 }
 
 .ll-auth-icon {
@@ -161,12 +148,6 @@
 
 .ll-auth-cta .ll-btn {
   @apply w-full md:w-auto;
-}
-
-.ll-auth-pricing {
-  @apply ll-stack rounded-[14px] border p-4 md:p-5;
-  border-color: var(--ll-line);
-  background: var(--ll-surface);
 }
 
 .ll-card {
