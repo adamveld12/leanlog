@@ -26,6 +26,7 @@ import {
   SectionCard,
   SwipeRow,
   PageNavHeading,
+  AuthLanding,
 } from '@leanlog/ui';
 import { normalizeIngredientName, prettyDate, round1 } from './lib';
 import { dayTotals, mealTotals } from './selectors';
@@ -142,17 +143,15 @@ function LandingPage() {
         <Navigate to="/track" replace />
       </SignedIn>
       <SignedOut>
-        <main className="ll-page ll-main">
-          <section className="ll-stack-lg items-center pt-14 text-center">
-            <h1 className="ll-page-title flex items-center gap-3">
-              <img src="/icon-192.png" alt="" aria-hidden className="h-10 w-10 rounded-lg" />
-              LeanLog
-            </h1>
+        <AuthLanding
+          appName="LeanLog"
+          iconSrc="/icon-192.png"
+          cta={
             <SignInButton mode="modal">
               <Button>Sign in / Sign up</Button>
             </SignInButton>
-          </section>
-        </main>
+          }
+        />
       </SignedOut>
     </>
   );

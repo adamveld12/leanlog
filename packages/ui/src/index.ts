@@ -18,3 +18,4 @@ export * from './components/RadioGroup';
 export * from './components/ProfileSectionCards';
 export * from './components/PageNavHeading';
 export * from './components/MacroSummaryLine';
+export * from './components/AuthLanding';

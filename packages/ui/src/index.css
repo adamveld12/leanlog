@@ -92,6 +92,55 @@
   color: var(--ll-text-muted);
 }
 
+.ll-auth-wrap {
+  @apply pt-8;
+}
+
+.ll-auth-shell {
+  @apply rounded-[14px] border p-2;
+  border-color: color-mix(in srgb, var(--ll-line-strong) 45%, var(--ll-line));
+  background: color-mix(in srgb, var(--ll-surface) 84%, var(--ll-bg));
+}
+
+.ll-auth-core {
+  @apply ll-stack-lg rounded-[10px] border p-4 md:p-5;
+  border-color: var(--ll-line);
+  background: var(--ll-surface);
+}
+
+.ll-auth-badge {
+  @apply inline-flex w-fit rounded-[999px] border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em];
+  border-color: var(--ll-line-strong);
+  color: var(--ll-text-muted);
+}
+
+.ll-auth-title {
+  @apply flex items-center gap-3;
+}
+
+.ll-auth-icon {
+  @apply h-10 w-10 rounded-[10px] border;
+  border-color: var(--ll-line);
+}
+
+.ll-auth-highlights {
+  @apply ll-stack m-0 list-none p-0;
+}
+
+.ll-auth-highlights li {
+  @apply ll-row text-sm font-medium;
+}
+
+.ll-auth-highlights li::before {
+  content: '';
+  @apply block h-1.5 w-1.5 rounded-[999px];
+  background: var(--ll-text-muted);
+}
+
+.ll-auth-cta {
+  @apply pt-1;
+}
+
 .ll-card {
   @apply rounded-[14px] border p-4;
   border-color: var(--ll-line);
