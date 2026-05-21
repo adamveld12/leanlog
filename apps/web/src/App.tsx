@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type PropsWithChildren,
+  type SetStateAction,
+} from 'react';
+import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 import {
@@ -107,12 +116,59 @@ const renderRouterNavLink = ({
   </Link>
 );
 
+function HeaderAuthControl() {
+  return (
+    <SignedIn>
+      <UserButton afterSignOutUrl="/" />
+    </SignedIn>
+  );
+}
+
+function RequireSignedIn({ children }: PropsWithChildren) {
+  return (
+    <>
+      <SignedIn>{children}</SignedIn>
+      <SignedOut>
+        <Navigate to="/" replace />
+      </SignedOut>
+    </>
+  );
+}
+
+function LandingPage() {
+  return (
+    <>
+      <SignedIn>
+        <Navigate to="/track" replace />
+      </SignedIn>
+      <SignedOut>
+        <main className="ll-page ll-main">
+          <section className="ll-stack-lg items-center pt-14 text-center">
+            <h1 className="ll-page-title flex items-center gap-3">
+              <img src="/icon-192.png" alt="" aria-hidden className="h-10 w-10 rounded-lg" />
+              LeanLog
+            </h1>
+            <SignInButton mode="modal">
+              <Button>Sign in / Sign up</Button>
+            </SignInButton>
+          </section>
+        </main>
+      </SignedOut>
+    </>
+  );
+}
+
 function DayList({ profile }: { profile: Profile }) {
   const nav = useNavigate();
   const { state, addDay, removeDay } = useStore();
   return (
     <main className="ll-page ll-main">
-      <PageNavHeading title="leanlog" profileHref="/profile" renderNavLink={renderRouterNavLink} />
+      <PageNavHeading
+        title="leanlog"
+        profileHref="/track/profile"
+        renderNavLink={renderRouterNavLink}
+        rightContent={<HeaderAuthControl />}
+      />
       <AddDayControl
         onDayAdded={({ month, day, year, totalMeals }) => {
           const toIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -138,7 +194,7 @@ function DayList({ profile }: { profile: Profile }) {
                   <span className="ll-unit">g</span>
                 </>
               ),
-              onOpen: () => nav(`/day/${d.id}`),
+              onOpen: () => nav(`/track/day/${d.id}`),
               onDelete: () => removeDay(d.id),
               deleteLabel: 'Delete day',
             };
@@ -156,7 +212,7 @@ function DayDetail({ profile }: { profile: Profile }) {
   const [draftMealCountTarget, setDraftMealCountTarget] = useState(0);
   const [confirmMealTargetUpdate, setConfirmMealTargetUpdate] = useState(false);
   const day = state.days.find((d) => d.id === dayId);
-  if (!day) return <Navigate to="/" replace />;
+  if (!day) return <Navigate to="/track" replace />;
   const totals = dayTotals(day);
   const netCarbs = round1(Math.max(0, totals.carbs - totals.fiber));
   const calorieTarget = day.targets.calories;
@@ -168,9 +224,10 @@ function DayDetail({ profile }: { profile: Profile }) {
     <main className="ll-page ll-main">
       <PageNavHeading
         title={prettyDate(day.date)}
-        backHref="/"
-        profileHref="/profile"
+        backHref="/track"
+        profileHref="/track/profile"
         renderNavLink={renderRouterNavLink}
+        rightContent={<HeaderAuthControl />}
       />
       <SectionCard>
         <div className="ll-stack-lg">
@@ -227,7 +284,7 @@ function DayDetail({ profile }: { profile: Profile }) {
                 <span className="ll-unit">g</span>
               </>
             ),
-            onOpen: () => nav(`/day/${day.id}/meal/${m.id}`),
+            onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
             onDelete: () => removeMeal(day.id, m.id),
             deleteLabel: 'Delete meal',
           };
@@ -281,7 +338,7 @@ function DayDetail({ profile }: { profile: Profile }) {
             className="w-full"
             onClick={() => {
               const meal = addMeal(day.id, `MEAL ${day.meals.length + 1}`);
-              if (meal) nav(`/day/${day.id}/meal/${meal.id}`);
+              if (meal) nav(`/track/day/${day.id}/meal/${meal.id}`);
             }}
           >
             Add meal
@@ -355,7 +412,7 @@ function MealEdit() {
     };
   }, [cameraOpen]);
 
-  if (!day || !meal) return <Navigate to="/" replace />;
+  if (!day || !meal) return <Navigate to="/track" replace />;
 
   const saveIngredient = () => {
     const next: Ingredient = {
@@ -437,9 +494,10 @@ function MealEdit() {
             fat={totals.fat}
           />
         }
-        backHref={`/day/${day.id}`}
-        profileHref="/profile"
+        backHref={`/track/day/${day.id}`}
+        profileHref="/track/profile"
         renderNavLink={renderRouterNavLink}
+        rightContent={<HeaderAuthControl />}
       />
       <SectionCard title="Meal name" saved={saved.mealName}>
         <p className="ll-section-note">Name is required before leaving this page.</p>
@@ -463,7 +521,7 @@ function MealEdit() {
             variant="danger"
             onClick={() => {
               removeMeal(day.id, meal.id);
-              nav(`/day/${day.id}`);
+              nav(`/track/day/${day.id}`);
             }}
           >
             Delete meal and all ingredients
@@ -651,7 +709,7 @@ function MealEdit() {
             variant="danger"
             onClick={() => {
               removeMeal(day.id, meal.id);
-              nav(`/day/${day.id}`);
+              nav(`/track/day/${day.id}`);
             }}
           >
             Discard meal draft and all ingredients
@@ -731,9 +789,10 @@ function ProfilePage({
     <main className="ll-page ll-main">
       <PageNavHeading
         title="Profile"
-        backHref="/"
-        profileHref="/profile"
+        backHref="/track"
+        profileHref="/track/profile"
         renderNavLink={renderRouterNavLink}
+        rightContent={<HeaderAuthControl />}
       />
 
       <BodyInfoCard
@@ -923,11 +982,52 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<DayList profile={profile} />} />
-      <Route path="/day/:dayId" element={<DayDetail profile={profile} />} />
-      <Route path="/day/:dayId/meal/:mealId" element={<MealEdit />} />
-      <Route path="/profile" element={<ProfilePage profile={profile} setProfile={setProfile} />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/track"
+        element={
+          <RequireSignedIn>
+            <DayList profile={profile} />
+          </RequireSignedIn>
+        }
+      />
+      <Route
+        path="/track/day/:dayId"
+        element={
+          <RequireSignedIn>
+            <DayDetail profile={profile} />
+          </RequireSignedIn>
+        }
+      />
+      <Route
+        path="/track/day/:dayId/meal/:mealId"
+        element={
+          <RequireSignedIn>
+            <MealEdit />
+          </RequireSignedIn>
+        }
+      />
+      <Route
+        path="/track/profile"
+        element={
+          <RequireSignedIn>
+            <ProfilePage profile={profile} setProfile={setProfile} />
+          </RequireSignedIn>
+        }
+      />
+      <Route
+        path="*"
+        element={
+          <>
+            <SignedIn>
+              <Navigate to="/track" replace />
+            </SignedIn>
+            <SignedOut>
+              <Navigate to="/" replace />
+            </SignedOut>
+          </>
+        }
+      />
     </Routes>
   );
 }

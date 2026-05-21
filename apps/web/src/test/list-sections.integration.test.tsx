@@ -57,7 +57,7 @@ describe('list section behaviors', () => {
       ],
     };
 
-    renderApp('/', state);
+    renderApp('/track', state);
 
     expect(screen.getByText('Today')).toBeInTheDocument();
     expect(screen.getByText(/100/)).toBeInTheDocument();
@@ -108,7 +108,7 @@ describe('list section behaviors', () => {
       ],
     };
 
-    renderApp('/day/d1/meal/m1', state);
+    renderApp('/track/day/d1/meal/m1', state);
 
     expect(
       Array.from(document.querySelectorAll('.ll-meta')).some((el) =>
