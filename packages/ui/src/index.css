@@ -92,20 +92,27 @@
   color: var(--ll-text-muted);
 }
 
-.ll-auth-wrap {
-  @apply pt-8;
+.ll-auth-page {
+  @apply min-h-[100dvh] justify-center pb-8;
 }
 
-.ll-auth-shell {
-  @apply rounded-[14px] border p-2;
-  border-color: color-mix(in srgb, var(--ll-line-strong) 45%, var(--ll-line));
-  background: color-mix(in srgb, var(--ll-surface) 84%, var(--ll-bg));
+.ll-auth-grid {
+  @apply grid gap-4 md:grid-cols-[1.35fr_1fr] md:gap-3;
 }
 
-.ll-auth-core {
-  @apply ll-stack-lg rounded-[10px] border p-4 md:p-5;
+.ll-auth-column-main,
+.ll-auth-column-side {
+  @apply rounded-[14px] border p-4 md:p-5;
   border-color: var(--ll-line);
   background: var(--ll-surface);
+}
+
+.ll-auth-column-main {
+  @apply ll-stack-lg;
+}
+
+.ll-auth-column-side {
+  @apply ll-stack;
 }
 
 .ll-auth-badge {
@@ -114,8 +121,18 @@
   color: var(--ll-text-muted);
 }
 
-.ll-auth-title {
-  @apply flex items-center gap-3;
+.ll-auth-hero-title {
+  @apply flex items-center gap-3 text-3xl font-semibold tracking-tight md:text-4xl;
+}
+
+.ll-auth-subtitle {
+  @apply text-sm leading-6;
+  color: var(--ll-text-muted);
+}
+
+.ll-auth-side-title {
+  @apply text-xs font-semibold uppercase tracking-[0.08em];
+  color: var(--ll-text-muted);
 }
 
 .ll-auth-icon {
@@ -128,7 +145,8 @@
 }
 
 .ll-auth-highlights li {
-  @apply ll-row text-sm font-medium;
+  @apply ll-row rounded-[10px] border px-3 py-2 text-sm font-medium;
+  border-color: var(--ll-line);
 }
 
 .ll-auth-highlights li::before {
@@ -138,7 +156,11 @@
 }
 
 .ll-auth-cta {
-  @apply pt-1;
+  @apply pt-2;
+}
+
+.ll-auth-cta .ll-btn {
+  @apply w-full md:w-auto;
 }
 
 .ll-card {
