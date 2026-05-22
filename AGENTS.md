@@ -4,20 +4,24 @@
 - Each git commit should be a working, running state of the repo
 - _ONLY_ make commits using conventional commit style.
 
-## Skill and Doc Hints
+## SKILLS LOADING HINTS
 
-Use the following skills in the following scenarios:
+You **MUST PROACTIVELY** load these skills in these following scenarios. Also respect the skill hints in the skill.md themselves.
 
-- When any design, UI/UX work, new components or page updates need to happen, use these skills:
-  - skill:design-taste-frontend
-  - skill:high-end-visual-design
-  - skill:react-best-practices
-  - @docs/design-reference.md
-  - @docs/design-system.md
+- **BEFORE** you edit or read any `.tsx/jsx` file, frontend page, react components or in the `@packages/ui` module
 
-- When writing react components
-  - skill:react-best-practices
+```
+skill:react-best-practices
+skill:typescript-pro
 
-- When writing any code of any complexity
-  - skill:tdd
-  - skill:typescript-pro
+@docs/design-reference.md
+@docs/design-system.md
+```
+
+- **BEFORE** I ask you to plan implementation
+
+```
+skill:tdd
+skill:react-best-practices
+skill:context7-cli
+```

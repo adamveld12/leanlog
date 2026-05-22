@@ -14,13 +14,19 @@ export function AuthLanding({
   iconSrc,
   cta,
   subtitle = 'Track meals, macros, and calories with a focused daily workflow.',
-  highlights = ['One-tap day setup', 'Fast macro logging', 'Clean daily progress tracking'],
+  highlights = [
+    'One-tap day setup',
+    'Fast macro logging',
+    'Clean daily progress tracking',
+    'AI powered nutrition label scanning',
+    'Own your data - export in various formats',
+  ],
   pricing,
 }: AuthLandingProps) {
   return (
     <main className="ll-page ll-main ll-auth-page">
       <section className="ll-card ll-auth-card ll-stack-lg">
-        <div className="ll-auth-hero-title-row">
+        <div className="ll-auth-hero-title-row flex">
           <img src={iconSrc} alt="" aria-hidden className="ll-auth-icon" />
           <h1 className="ll-auth-hero-title">{appName}</h1>
         </div>
