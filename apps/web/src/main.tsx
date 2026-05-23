@@ -2,6 +2,7 @@ import { ClerkProvider } from '@clerk/clerk-react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
+import { ConsoleAnalyticsProvider } from '@leanlog/ui';
 import './index.css';
 import App from './App';
 import { StateProvider } from './state';
@@ -22,7 +23,9 @@ function RootLayout() {
       routerReplace={(to) => navigate(to, { replace: true })}
     >
       <StateProvider>
-        <App />
+        <ConsoleAnalyticsProvider enabled={import.meta.env.DEV}>
+          <App />
+        </ConsoleAnalyticsProvider>
       </StateProvider>
     </ClerkProvider>
   );

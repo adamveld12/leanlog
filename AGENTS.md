@@ -13,6 +13,7 @@ You **MUST PROACTIVELY** load these skills in these following scenarios. Also re
 ```
 skill:react-best-practices
 skill:typescript-pro
+skill:leanlog-design-system
 
 @docs/design-reference.md
 @docs/design-system.md

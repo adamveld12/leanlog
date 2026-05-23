@@ -35,5 +35,11 @@ jobs:
       - name: Unit tests
         run: pnpm -r test
 
+      - name: Design system audit
+        run: pnpm design:audit
+
+      - name: Storybook build
+        run: pnpm --filter @leanlog/ui build-storybook
+
       - name: Build
         run: pnpm build

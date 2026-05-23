@@ -162,7 +162,7 @@ function DayList({ profile }: { profile: Profile }) {
   const nav = useNavigate();
   const { state, addDay, removeDay } = useStore();
   return (
-    <main className="ll-page ll-main">
+    <main className="mx-auto min-h-screen w-full max-w-[620px] p-4 pb-24 text-[var(--ll-text)] flex flex-col gap-4">
       <PageNavHeading
         title="leanlog"
         profileHref="/track/profile"
@@ -188,10 +188,10 @@ function DayList({ profile }: { profile: Profile }) {
               meta: (
                 <>
                   {totals.calories}
-                  <span className="ll-unit"> kcal</span> · P {totals.protein}
-                  <span className="ll-unit">g</span> · C {totals.carbs}
-                  <span className="ll-unit">g</span> · F {totals.fat}
-                  <span className="ll-unit">g</span>
+                  <span className="text-[var(--ll-text-muted)]"> kcal</span> · P {totals.protein}
+                  <span className="text-[var(--ll-text-muted)]">g</span> · C {totals.carbs}
+                  <span className="text-[var(--ll-text-muted)]">g</span> · F {totals.fat}
+                  <span className="text-[var(--ll-text-muted)]">g</span>
                 </>
               ),
               onOpen: () => nav(`/track/day/${d.id}`),
@@ -221,7 +221,7 @@ function DayDetail({ profile }: { profile: Profile }) {
     pctDiff <= 0.05 ? 'var(--ll-saved)' : pctDiff <= 0.15 ? 'var(--ll-warn)' : 'var(--ll-danger)';
 
   return (
-    <main className="ll-page ll-main">
+    <main className="mx-auto min-h-screen w-full max-w-[620px] p-4 pb-24 text-[var(--ll-text)] flex flex-col gap-4">
       <PageNavHeading
         title={prettyDate(day.date)}
         backHref="/track"
@@ -230,9 +230,11 @@ function DayDetail({ profile }: { profile: Profile }) {
         rightContent={<HeaderAuthControl />}
       />
       <SectionCard>
-        <div className="ll-stack-lg">
-          <div className="ll-row ll-between items-start">
-            <h3 className="ll-card-title mb-0">Daily totals</h3>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2 justify-between items-start">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ll-text-muted)] mb-0">
+              Daily totals
+            </h3>
             <Button
               variant="ghost"
               onClick={() => {
@@ -246,21 +248,24 @@ function DayDetail({ profile }: { profile: Profile }) {
               Update targets
             </Button>
           </div>
-          <p className="ll-page-subtitle" style={{ color: calorieColor }}>
+          <p
+            className="text-sm font-medium text-[var(--ll-text-muted)]"
+            style={{ color: calorieColor }}
+          >
             {totals.calories} / {calorieTarget}
-            <span className="ll-unit"> kcal</span>
+            <span className="text-[var(--ll-text-muted)]"> kcal</span>
           </p>
           <ProgressBar value={totals.calories} max={calorieTarget || 1} color={calorieColor} />
-          <div className="ll-row flex-wrap">
-            <p className="ll-meta">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
               FAT {totals.fat} / {day.targets.macros.fat}g
             </p>
-            <span className="ll-meta">·</span>
-            <p className="ll-meta">
+            <span className="text-xs font-medium text-[var(--ll-text-muted)]">·</span>
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
               PROTEIN {totals.protein} / {day.targets.macros.protein}g
             </p>
-            <span className="ll-meta">·</span>
-            <p className="ll-meta">
+            <span className="text-xs font-medium text-[var(--ll-text-muted)]">·</span>
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
               CARBS {netCarbs} net / {totals.carbs} / {day.targets.macros.carbs}g
             </p>
           </div>
@@ -278,10 +283,10 @@ function DayDetail({ profile }: { profile: Profile }) {
             meta: (
               <>
                 {totals.calories}
-                <span className="ll-unit"> kcal</span> · P {totals.protein}
-                <span className="ll-unit">g</span> · C {totals.carbs}
-                <span className="ll-unit">g</span> · F {totals.fat}
-                <span className="ll-unit">g</span>
+                <span className="text-[var(--ll-text-muted)]"> kcal</span> · P {totals.protein}
+                <span className="text-[var(--ll-text-muted)]">g</span> · C {totals.carbs}
+                <span className="text-[var(--ll-text-muted)]">g</span> · F {totals.fat}
+                <span className="text-[var(--ll-text-muted)]">g</span>
               </>
             ),
             onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
@@ -290,7 +295,7 @@ function DayDetail({ profile }: { profile: Profile }) {
           };
         })}
       >
-        <div className="ll-stack mb-5">
+        <div className="flex flex-col gap-2.5 mb-5">
           <Button
             className="w-full"
             variant="secondary"
@@ -305,7 +310,7 @@ function DayDetail({ profile }: { profile: Profile }) {
             ✎ Edit meal target
           </Button>
           {isEditingMealTarget ? (
-            <div className="ll-row">
+            <div className="flex items-center gap-2">
               <NumberInput
                 label="Meal count target"
                 value={draftMealCountTarget}
@@ -482,7 +487,7 @@ function MealEdit() {
     setScanResult(null);
   };
   return (
-    <main className="ll-page ll-main">
+    <main className="mx-auto min-h-screen w-full max-w-[620px] p-4 pb-24 text-[var(--ll-text)] flex flex-col gap-4">
       {/* same body omitted for brevity in this comment */}
       <PageNavHeading
         title={meal.name || 'Meal'}
@@ -500,7 +505,9 @@ function MealEdit() {
         rightContent={<HeaderAuthControl />}
       />
       <SectionCard title="Meal name" saved={saved.mealName}>
-        <p className="ll-section-note">Name is required before leaving this page.</p>
+        <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+          Name is required before leaving this page.
+        </p>
         <Input
           value={meal.name}
           onChange={(e) => {
@@ -515,7 +522,7 @@ function MealEdit() {
             markSaved('mealName');
           }}
         />
-        <div className="ll-row">
+        <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="danger"
@@ -527,10 +534,16 @@ function MealEdit() {
             Delete meal and all ingredients
           </Button>
         </div>
-        <div className="ll-stack mt-3">
-          <h4 className="ll-card-title mb-0">Ingredients</h4>
-          <p className="ll-section-note">Tap an ingredient row to edit values.</p>
-          {meal.ingredients.length ? null : <p className="ll-section-note">No items</p>}
+        <div className="flex flex-col gap-2.5 mt-3">
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ll-text-muted)] mb-0">
+            Ingredients
+          </h4>
+          <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            Tap an ingredient row to edit values.
+          </p>
+          {meal.ingredients.length ? null : (
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">No items</p>
+          )}
           {meal.ingredients.map((i) => (
             <SwipeRow
               key={i.id}
@@ -538,7 +551,7 @@ function MealEdit() {
               deleteLabel="Delete ingredient"
             >
               <div
-                className="ll-list-row ll-row-link"
+                className="flex items-center justify-between gap-2 rounded-[10px] px-1.5 py-0 cursor-pointer hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]"
                 role="link"
                 tabIndex={0}
                 onClick={() => {
@@ -553,17 +566,17 @@ function MealEdit() {
                   }
                 }}
               >
-                <div className="ll-stack">
+                <div className="flex flex-col gap-2.5">
                   <span className="text-sm font-medium">{i.name}</span>
-                  <small className="ll-meta">
+                  <small className="text-xs font-medium text-[var(--ll-text-muted)]">
                     {i.calories}
-                    <span className="ll-unit"> kcal</span> · F {i.fat}
-                    <span className="ll-unit">g</span> · C {i.carbs}
-                    <span className="ll-unit">g</span> · P {i.protein}
-                    <span className="ll-unit">g</span>
+                    <span className="text-[var(--ll-text-muted)]"> kcal</span> · F {i.fat}
+                    <span className="text-[var(--ll-text-muted)]">g</span> · C {i.carbs}
+                    <span className="text-[var(--ll-text-muted)]">g</span> · P {i.protein}
+                    <span className="text-[var(--ll-text-muted)]">g</span>
                   </small>
                 </div>
-                <div className="ll-row">
+                <div className="flex items-center gap-2">
                   <Button
                     size="sm"
                     variant="danger"
@@ -608,8 +621,12 @@ function MealEdit() {
           if (file) void onScanFile(file);
         }}
       />
-      {scanError ? <small className="ll-warn">{scanError}</small> : null}
-      {cameraError ? <small className="ll-warn">{cameraError}</small> : null}
+      {scanError ? (
+        <small className="text-xs font-medium text-[var(--ll-warn)]">{scanError}</small>
+      ) : null}
+      {cameraError ? (
+        <small className="text-xs font-medium text-[var(--ll-warn)]">{cameraError}</small>
+      ) : null}
       <Modal
         open={cameraOpen}
         title="Take nutrition photo"
@@ -618,7 +635,7 @@ function MealEdit() {
           setCameraOpen(false);
         }}
       >
-        <div className="ll-stack">
+        <div className="flex flex-col gap-2.5">
           <video
             ref={videoRef}
             className="w-full rounded-[10px] border"
@@ -626,7 +643,7 @@ function MealEdit() {
             playsInline
             muted
           />
-          <div className="ll-row ll-between">
+          <div className="flex items-center gap-2 justify-between">
             <Button
               variant="secondary"
               onClick={() => {
@@ -642,50 +659,52 @@ function MealEdit() {
       </Modal>
       <Modal open={!!scanResult} title="Review nutrition scan" onClose={() => setScanResult(null)}>
         {scanResult ? (
-          <div className="ll-stack">
-            <p className="ll-section-note">
+          <div className="flex flex-col gap-2.5">
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
               Compare current values with scanned values before applying.
             </p>
-            <p className="ll-meta">
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
               Weight: {draft.weight} → {scanResult.proposed.weight}g
             </p>
-            <p className="ll-meta">
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
               Calories: {draft.calories} → {scanResult.proposed.calories}
             </p>
-            <p className="ll-meta">
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
               Fat: {draft.fat} → {scanResult.proposed.fat}g
             </p>
-            <p className="ll-meta">
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
               Saturated fat: {draft.saturatedFat} → {scanResult.proposed.saturatedFat}g
             </p>
-            <p className="ll-meta">
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
               Carbs: {draft.carbs} → {scanResult.proposed.carbs}g
             </p>
-            <p className="ll-meta">
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
               Fiber: {draft.fiber} → {scanResult.proposed.fiber}g
             </p>
-            <p className="ll-meta">
+            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
               Protein: {draft.protein} → {scanResult.proposed.protein}g
             </p>
             {draft.name.trim() ? null : (
-              <p className="ll-meta">
+              <p className="text-xs font-medium text-[var(--ll-text-muted)]">
                 Ingredient title: {draft.name || '(blank)'} →{' '}
                 {scanResult.proposed.name || '(unchanged)'}
               </p>
             )}
             {scanResult.notes.length ? (
-              <small className="ll-section-note">{scanResult.notes.join(' ')}</small>
+              <small className="text-xs font-medium text-[var(--ll-text-muted)]">
+                {scanResult.notes.join(' ')}
+              </small>
             ) : null}
             {scanResult.canApply ? null : (
-              <small className="ll-warn">
+              <small className="text-xs font-medium text-[var(--ll-warn)]">
                 {scanResult.blockReason ?? 'Scan cannot be applied.'}
               </small>
             )}
-            <div className="ll-row ll-between">
+            <div className="flex items-center gap-2 justify-between">
               <Button variant="ghost" onClick={openCamera} disabled={scanLoading}>
                 Retake photo
               </Button>
-              <div className="ll-row">
+              <div className="flex items-center gap-2">
                 <Button variant="secondary" onClick={() => setScanResult(null)}>
                   Cancel
                 </Button>
@@ -703,7 +722,7 @@ function MealEdit() {
         onClose={() => setShowBlankNamePrompt(false)}
       >
         <p>Name this meal before leaving, or discard this whole meal draft.</p>
-        <div className="ll-row">
+        <div className="flex items-center gap-2">
           <Button onClick={() => setShowBlankNamePrompt(false)}>Stay and edit</Button>
           <Button
             variant="danger"
@@ -786,7 +805,7 @@ function ProfilePage({
   };
 
   return (
-    <main className="ll-page ll-main">
+    <main className="mx-auto min-h-screen w-full max-w-[620px] p-4 pb-24 text-[var(--ll-text)] flex flex-col gap-4">
       <PageNavHeading
         title="Profile"
         backHref="/track"
@@ -907,7 +926,7 @@ function ProfilePage({
       />
 
       <SectionCard title="Theme" saved={saved.theme}>
-        <div className="ll-row flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {(['system', 'light', 'dark'] as const).map((theme) => (
             <Button
               key={theme}
@@ -925,7 +944,9 @@ function ProfilePage({
       </SectionCard>
 
       <SectionCard title="Data" saved={saved.data}>
-        <p className="ll-section-note">Import replaces all existing data.</p>
+        <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+          Import replaces all existing data.
+        </p>
         <Button
           onClick={() => {
             const blob = new Blob([JSON.stringify({ state, profile }, null, 2)], {
@@ -965,7 +986,9 @@ function ProfilePage({
             }
           }}
         />
-        {importError ? <small className="ll-warn">{importError}</small> : null}
+        {importError ? (
+          <small className="text-xs font-medium text-[var(--ll-warn)]">{importError}</small>
+        ) : null}
       </SectionCard>
     </main>
   );
