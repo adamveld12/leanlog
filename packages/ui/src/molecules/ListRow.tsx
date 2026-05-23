@@ -43,8 +43,8 @@ export function ListRow({
           <small className="text-xs font-medium text-[var(--ll-text-muted)]">{meta}</small>
         ) : null}
       </div>
-      <div className="flex items-center gap-2">
-        {rightMetric}
+      <div className="flex shrink-0 items-center gap-2">
+        {rightMetric ? <span className="whitespace-nowrap">{rightMetric}</span> : null}
         {actions}
       </div>
     </div>
