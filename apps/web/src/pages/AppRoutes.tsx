@@ -12,6 +12,7 @@ import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-rou
 import { v4 as uuid } from 'uuid';
 import {
   AddDayControl,
+  AppShell,
   BodyInfoCard,
   Button,
   CalorieTargetCard,
@@ -162,7 +163,7 @@ function DayList({ profile }: { profile: Profile }) {
   const nav = useNavigate();
   const { state, addDay, removeDay } = useStore();
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[620px] p-4 pb-24 text-[var(--ll-text)] flex flex-col gap-4">
+    <AppShell>
       <PageNavHeading
         title="leanlog"
         profileHref="/track/profile"
@@ -200,7 +201,7 @@ function DayList({ profile }: { profile: Profile }) {
             };
           })}
       />
-    </main>
+    </AppShell>
   );
 }
 
@@ -221,7 +222,7 @@ function DayDetail({ profile }: { profile: Profile }) {
     pctDiff <= 0.05 ? 'var(--ll-saved)' : pctDiff <= 0.15 ? 'var(--ll-warn)' : 'var(--ll-danger)';
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[620px] p-4 pb-24 text-[var(--ll-text)] flex flex-col gap-4">
+    <AppShell>
       <PageNavHeading
         title={prettyDate(day.date)}
         backHref="/track"
@@ -350,7 +351,7 @@ function DayDetail({ profile }: { profile: Profile }) {
           </Button>
         </div>
       </ListSectionCard>
-    </main>
+    </AppShell>
   );
 }
 
@@ -487,7 +488,7 @@ function MealEdit() {
     setScanResult(null);
   };
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[620px] p-4 pb-24 text-[var(--ll-text)] flex flex-col gap-4">
+    <AppShell>
       {/* same body omitted for brevity in this comment */}
       <PageNavHeading
         title={meal.name || 'Meal'}
@@ -735,7 +736,7 @@ function MealEdit() {
           </Button>
         </div>
       </Modal>
-    </main>
+    </AppShell>
   );
 }
 
@@ -805,7 +806,7 @@ function ProfilePage({
   };
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[620px] p-4 pb-24 text-[var(--ll-text)] flex flex-col gap-4">
+    <AppShell>
       <PageNavHeading
         title="Profile"
         backHref="/track"
@@ -990,7 +991,7 @@ function ProfilePage({
           <small className="text-xs font-medium text-[var(--ll-warn)]">{importError}</small>
         ) : null}
       </SectionCard>
-    </main>
+    </AppShell>
   );
 }
 

@@ -14,7 +14,11 @@ const requiredSpecs = [
 for (const spec of requiredSpecs) {
   if (!existsSync(join('packages/ui/specs', spec))) errors.push(`Missing BDD spec: ${spec}`);
 }
-for (const dir of ['packages/ui/src/pages', 'packages/ui/src/components', 'apps/web/src/templates']) {
+for (const dir of [
+  'packages/ui/src/pages',
+  'packages/ui/src/components',
+  'apps/web/src/templates',
+]) {
   if (existsSync(dir)) errors.push(`Forbidden directory exists: ${dir}`);
 }
 
@@ -47,14 +51,23 @@ for (const file of files('packages/ui/src').filter((f) => f.endsWith('.stories.t
   }
 }
 
-for (const file of files('packages/ui/src').filter((f) => /\.(tsx)$/.test(f) && !f.includes('/atoms/') && !f.includes('/test/') && !f.endsWith('.stories.tsx'))) {
+for (const file of files('packages/ui/src').filter(
+  (f) =>
+    /\.(tsx)$/.test(f) &&
+    !f.includes('/atoms/') &&
+    !f.includes('/test/') &&
+    !f.endsWith('.stories.tsx'),
+)) {
   const text = readFileSync(file, 'utf8');
-  const hasDisallowedRawControl = /<(button|select|textarea)\b/.test(text) || (/<input\b/.test(text) && !file.endsWith('RadioGroup.tsx'));
+  const hasDisallowedRawControl =
+    /<(button|select|textarea)\b/.test(text) ||
+    (/<input\b/.test(text) && !file.endsWith('RadioGroup.tsx'));
   if (hasDisallowedRawControl) errors.push(`Raw control outside atoms: ${file}`);
 }
 for (const file of files('apps/web/src/pages').filter((f) => f.endsWith('.tsx'))) {
   const text = readFileSync(file, 'utf8');
-  if (/<(button|input|select|textarea)\b/.test(text)) errors.push(`Raw control in app page: ${file}`);
+  if (/<(button|input|select|textarea)\b/.test(text))
+    errors.push(`Raw control in app page: ${file}`);
 }
 
 if (errors.length) {
