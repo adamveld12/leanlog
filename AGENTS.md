@@ -18,7 +18,7 @@ skill:typescript-pro
 @docs/design-system.md
 ```
 
-- **BEFORE** I ask you to plan implementation
+- When I ask you to plan implementation, load these immediately
 
 ```
 skill:tdd
