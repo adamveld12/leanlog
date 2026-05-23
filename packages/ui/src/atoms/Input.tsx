@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes } from 'react';
+import { forwardRef, type InputHTMLAttributes } from 'react';
 import { useAnalytics } from '../analytics';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
@@ -8,18 +8,14 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   onNormalized?: (value: string) => void;
 };
 
-export function Input({
-  className = '',
-  normalizeOnBlur,
-  onNormalized,
-  onBlur,
-  onChange,
-  name,
-  ...props
-}: InputProps) {
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { className = '', normalizeOnBlur, onNormalized, onBlur, onChange, name, ...props },
+  ref,
+) {
   const track = useAnalytics();
   return (
     <input
+      ref={ref}
       className={cn(recipes.input.base, className)}
       name={name}
       onChange={(e) => {
@@ -38,4 +34,4 @@ export function Input({
       {...props}
     />
   );
-}
+});
