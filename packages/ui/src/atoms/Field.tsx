@@ -1,6 +1,8 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 import { cn } from '../styles/cn';
-import { recipes } from '../styles/recipes';
+import { HelperText } from './HelperText';
+import { Label } from './Label';
+import { WarningText } from './WarningText';
 
 export type FieldProps = PropsWithChildren<{
   label?: ReactNode;
@@ -10,16 +12,11 @@ export type FieldProps = PropsWithChildren<{
 }>;
 export function Field({ label, helperText, errorText, className = '', children }: FieldProps) {
   return (
-    <label
-      className={cn(
-        'flex flex-col gap-1.5 text-xs font-medium text-[var(--ll-text-muted)]',
-        className,
-      )}
-    >
+    <Label className={cn(className)}>
       {label ? <span>{label}</span> : null}
       {children}
-      {helperText ? <small className={recipes.text.meta}>{helperText}</small> : null}
-      {errorText ? <small className={recipes.text.warn}>{errorText}</small> : null}
-    </label>
+      {helperText ? <HelperText>{helperText}</HelperText> : null}
+      {errorText ? <WarningText>{errorText}</WarningText> : null}
+    </Label>
   );
 }

@@ -17,6 +17,7 @@ import {
   Button,
   CalorieTargetCard,
   IngredientEntryCard,
+  FileInput,
   Input,
   ListSectionCard,
   MacroSummaryLine,
@@ -611,9 +612,8 @@ function MealEdit() {
           </Button>
         }
       />
-      <Input
+      <FileInput
         ref={fileInputRef}
-        type="file"
         accept="image/*"
         capture="environment"
         className="hidden"

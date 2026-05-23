@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
 import { Card } from '../atoms/Card';
+import { HelperText } from '../atoms/HelperText';
+import { PageTitle } from '../atoms/PageTitle';
+import { SectionHeading } from '../atoms/SectionHeading';
 import { Text } from '../atoms/Text';
 import { recipes } from '../styles/recipes';
 
@@ -32,13 +35,20 @@ export function AuthLanding({
             aria-hidden
             className="h-10 w-10 rounded-[10px] border border-[var(--ll-line)]"
           />
-          <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">{appName}</h1>
+          <PageTitle hero>{appName}</PageTitle>
         </div>
-        <p className="text-sm leading-6 text-[var(--ll-text-muted)]">{subtitle}</p>
+        <HelperText as="p" className="text-sm leading-6">
+          {subtitle}
+        </HelperText>
         <div className="pt-2 [&_.inline-flex]:w-full md:[&_.inline-flex]:w-auto">{cta}</div>
       </Card>
       <Card className="flex flex-col gap-2.5 p-4 md:p-5" aria-label="Product highlights">
-        <h2 className="text-base font-semibold tracking-tight">What is lean log?</h2>
+        <SectionHeading
+          as="h2"
+          className="text-base normal-case tracking-tight text-[var(--ll-text)]"
+        >
+          What is lean log?
+        </SectionHeading>
         <Text as="p" variant="sectionHeading">
           What you get
         </Text>

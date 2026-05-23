@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react';
+import { HelperText } from '../atoms/HelperText';
+import { UnitText } from '../atoms/UnitText';
 
 export type MacroSummaryLineProps = {
   calories: number;
@@ -16,8 +18,6 @@ function calorieColor(calories: number, calorieTarget?: number): CSSProperties |
   return { color };
 }
 
-const unitClass = 'text-[var(--ll-text-muted)]';
-
 export function MacroSummaryLine({
   calories,
   protein,
@@ -26,7 +26,7 @@ export function MacroSummaryLine({
   calorieTarget,
 }: MacroSummaryLineProps) {
   return (
-    <span className="text-xs font-medium text-[var(--ll-text-muted)]">
+    <HelperText as="span">
       <span style={calorieColor(calories, calorieTarget)}>
         {calorieTarget && calorieTarget > 0 ? (
           <>
@@ -35,12 +35,12 @@ export function MacroSummaryLine({
         ) : (
           calories
         )}
-        <span className={unitClass}> kcal</span>
+        <UnitText> kcal</UnitText>
       </span>{' '}
       · P {protein}
-      <span className={unitClass}>g</span> · C {carbs}
-      <span className={unitClass}>g</span> · F {fat}
-      <span className={unitClass}>g</span>
-    </span>
+      <UnitText>g</UnitText> · C {carbs}
+      <UnitText>g</UnitText> · F {fat}
+      <UnitText>g</UnitText>
+    </HelperText>
   );
 }

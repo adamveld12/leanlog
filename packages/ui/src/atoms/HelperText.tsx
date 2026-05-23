@@ -2,14 +2,15 @@ import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
-export function HelperText({
-  children,
-  className = '',
-  ...props
-}: PropsWithChildren<HTMLAttributes<HTMLElement>>) {
+type HelperTextProps = PropsWithChildren<HTMLAttributes<HTMLElement>> & {
+  as?: 'small' | 'p' | 'span';
+};
+
+export function HelperText({ as = 'small', children, className = '', ...props }: HelperTextProps) {
+  const Component = as;
   return (
-    <small className={cn(recipes.text.meta, className)} {...props}>
+    <Component className={cn(recipes.text.meta, className)} {...props}>
       {children}
-    </small>
+    </Component>
   );
 }

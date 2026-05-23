@@ -1,5 +1,5 @@
 import { Field } from '../atoms/Field';
-import { useAnalytics } from '../analytics';
+import { Radio } from '../atoms/Radio';
 
 type RadioOption<T extends string> = { value: T; label: string };
 
@@ -18,21 +18,17 @@ export function RadioGroup<T extends string>({
   options,
   onChange,
 }: RadioGroupProps<T>) {
-  const track = useAnalytics();
   return (
     <fieldset className="flex flex-col gap-1.5 text-xs font-medium text-[var(--ll-text-muted)]">
       <legend>{label}</legend>
       <div className="flex flex-col gap-2.5">
         {options.map((option) => (
           <Field key={option.value} className="flex-row items-center gap-2">
-            <input
-              type="radio"
+            <Radio
               name={name}
+              value={option.value}
               checked={value === option.value}
-              onChange={() => {
-                track('ui.radio.change', { atom: 'RadioInput', name, value: option.value });
-                onChange(option.value);
-              }}
+              onChange={() => onChange(option.value)}
             />
             <span className="text-sm text-[var(--ll-text)]">{option.label}</span>
           </Field>

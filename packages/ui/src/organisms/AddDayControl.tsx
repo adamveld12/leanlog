@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '../atoms/Button';
+import { HelperText } from '../atoms/HelperText';
+import { IntegerInput } from '../atoms/IntegerInput';
 import { DateSelect3 } from '../molecules/DateSelect3';
-import { Input } from '../atoms/Input';
 import { SectionCard } from '../molecules/SectionCard';
 
 export type AddDayValue = {
@@ -50,21 +51,12 @@ export function AddDayControl({
 
   return (
     <SectionCard title={title}>
-      {note ? <p className="text-xs font-medium text-[var(--ll-text-muted)]">{note}</p> : null}
+      {note ? <HelperText>{note}</HelperText> : null}
       <DateSelect3 month={picker.month} day={picker.day} year={picker.year} onChange={setPicker} />
       {hideTotalMealsInput ? null : (
         <div>
-          <p className="text-xs font-medium text-[var(--ll-text-muted)]">Total meals for the day</p>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            value={String(totalMealsValue)}
-            onChange={(e) => {
-              const parsed = Number.parseInt(e.target.value, 10);
-              setTotalMealsValue(Number.isNaN(parsed) ? 0 : Math.max(0, parsed));
-            }}
-          />
+          <HelperText>Total meals for the day</HelperText>
+          <IntegerInput min={0} step={1} value={totalMealsValue} onChange={setTotalMealsValue} />
         </div>
       )}
       <Button

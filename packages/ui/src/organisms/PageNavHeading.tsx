@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { PageTitle } from '../atoms/PageTitle';
 
 type NavLinkRenderProps = { href: string; label: string; className: string };
 
@@ -43,7 +44,7 @@ export function PageNavHeading({
               {renderLink({ href: backHref, label: backLabel })}
             </span>
           ) : null}
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--ll-text)]">{title}</h1>
+          <PageTitle>{title}</PageTitle>
           {subtitle ? <div className="px-5 md:inline max-[512px]:hidden">{subtitle}</div> : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
