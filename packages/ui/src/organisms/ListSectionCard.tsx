@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { Button } from '../atoms/Button';
 import { ListRow } from '../molecules/ListRow';
 import { SectionCard } from '../molecules/SectionCard';
-import { SwipeRow } from '../molecules/SwipeRow';
 
 export type ListSectionItem = {
   id: string;
@@ -43,7 +42,7 @@ export function ListSectionCard({
             <Button
               size="sm"
               variant="danger"
-              className="my-0 hidden min-w-[72px] shrink-0 rounded-[10px] px-3 min-[769px]:inline-flex"
+              className="my-0 min-w-[72px] shrink-0 rounded-[10px] px-3"
               onClick={(e) => {
                 e.stopPropagation();
                 item.onDelete?.();
@@ -61,16 +60,7 @@ export function ListSectionCard({
               onOpen={item.onOpen}
             />
           );
-          if (!item.onDelete) return <div key={item.id}>{row}</div>;
-          return (
-            <SwipeRow
-              key={item.id}
-              onDelete={item.onDelete}
-              deleteLabel={item.deleteLabel ?? 'Delete'}
-            >
-              {row}
-            </SwipeRow>
-          );
+          return <div key={item.id}>{row}</div>;
         })}
         {items.length ? null : (
           <p className="text-center text-xs font-medium text-[var(--ll-text-muted)]">{emptyText}</p>

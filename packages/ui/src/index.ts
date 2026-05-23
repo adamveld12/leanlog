@@ -26,7 +26,6 @@ export * from './molecules/Modal';
 export * from './molecules/RadioGroup';
 export * from './molecules/SectionCard';
 export * from './molecules/StickyFooter';
-export * from './molecules/SwipeRow';
 export * from './molecules/Tabs';
 export * from './organisms/AddDayControl';
 export * from './organisms/AuthLanding';

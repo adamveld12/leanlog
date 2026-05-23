@@ -26,7 +26,6 @@ import {
   NumberInput,
   ProgressBar,
   SectionCard,
-  SwipeRow,
   PageNavHeading,
   AuthLanding,
 } from '@leanlog/ui';
@@ -547,52 +546,46 @@ function MealEdit() {
             <p className="text-xs font-medium text-[var(--ll-text-muted)]">No items</p>
           )}
           {meal.ingredients.map((i) => (
-            <SwipeRow
+            <div
               key={i.id}
-              onDelete={() => removeIngredient(day.id, meal.id, i.id)}
-              deleteLabel="Delete ingredient"
-            >
-              <div
-                className="flex items-center justify-between gap-2 rounded-[10px] px-1.5 py-0 cursor-pointer hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]"
-                role="link"
-                tabIndex={0}
-                onClick={() => {
+              className="flex items-center justify-between gap-2 rounded-[10px] px-1.5 py-0 cursor-pointer hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]"
+              role="link"
+              tabIndex={0}
+              onClick={() => {
+                setEditingId(i.id);
+                setDraft(i);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
                   setEditingId(i.id);
                   setDraft(i);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setEditingId(i.id);
-                    setDraft(i);
-                  }
-                }}
-              >
-                <div className="flex flex-col gap-2.5">
-                  <span className="text-sm font-medium">{i.name}</span>
-                  <small className="text-xs font-medium text-[var(--ll-text-muted)]">
-                    {i.calories}
-                    <span className="text-[var(--ll-text-muted)]"> kcal</span> · F {i.fat}
-                    <span className="text-[var(--ll-text-muted)]">g</span> · C {i.carbs}
-                    <span className="text-[var(--ll-text-muted)]">g</span> · P {i.protein}
-                    <span className="text-[var(--ll-text-muted)]">g</span>
-                  </small>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    className="desktop-only"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeIngredient(day.id, meal.id, i.id);
-                    }}
-                  >
-                    Delete ingredient
-                  </Button>
-                </div>
+                }
+              }}
+            >
+              <div className="flex flex-col gap-2.5">
+                <span className="text-sm font-medium">{i.name}</span>
+                <small className="text-xs font-medium text-[var(--ll-text-muted)]">
+                  {i.calories}
+                  <span className="text-[var(--ll-text-muted)]"> kcal</span> · F {i.fat}
+                  <span className="text-[var(--ll-text-muted)]">g</span> · C {i.carbs}
+                  <span className="text-[var(--ll-text-muted)]">g</span> · P {i.protein}
+                  <span className="text-[var(--ll-text-muted)]">g</span>
+                </small>
               </div>
-            </SwipeRow>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeIngredient(day.id, meal.id, i.id);
+                  }}
+                >
+                  Delete ingredient
+                </Button>
+              </div>
+            </div>
           ))}
         </div>
       </SectionCard>
