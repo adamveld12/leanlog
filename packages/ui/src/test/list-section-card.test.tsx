@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { ListSectionCard } from '../components/ListSectionCard';
+import { ListSectionCard } from '../organisms/ListSectionCard';
 
 describe('ListSectionCard', () => {
   it('renders rows and supports open/delete with defaults and metric slot', async () => {

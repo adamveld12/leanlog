@@ -1,0 +1,35 @@
+import type { Meta, StoryObj } from '@storybook/react';
+import { AddDayControl } from './AddDayControl';
+
+const meta: Meta<typeof AddDayControl> = {
+  title: 'Design System/Organisms/AddDayControl',
+  component: AddDayControl,
+  args: {
+    onDayAdded: () => undefined,
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof AddDayControl>;
+
+export const Default: Story = {};
+
+export const CustomCopy: Story = {
+  args: {
+    title: 'Add day',
+    note: 'Pick a date to start logging meals for that day.',
+    buttonLabel: 'Create day',
+  },
+};
+
+export const Disabled: Story = {
+  args: {
+    disabled: true,
+  },
+};
+
+export const HiddenTotalMeals: Story = {
+  args: {
+    hideTotalMealsInput: true,
+  },
+};

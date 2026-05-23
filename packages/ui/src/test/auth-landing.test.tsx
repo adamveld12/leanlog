@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { Button } from '../components/Button';
-import { AuthLanding } from '../components/AuthLanding';
+import { Button } from '../atoms/Button';
+import { AuthLanding } from '../organisms/AuthLanding';
 
 describe('AuthLanding', () => {
   it('renders heading, highlights, and cta', () => {

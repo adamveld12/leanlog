@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { NumberInput } from '../components/NumberInput';
+import { NumberInput } from '../atoms/NumberInput';
 
 describe('NumberInput', () => {
   it('ignores non-numeric text and supports decimal entry', async () => {

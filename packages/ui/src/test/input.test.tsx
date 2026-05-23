@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { Input } from '../components/Input';
+import { Input } from '../atoms/Input';
 
 describe('Input', () => {
   it('keeps spaces while typing and only normalizes on blur when configured', async () => {
