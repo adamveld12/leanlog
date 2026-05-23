@@ -11,6 +11,7 @@ description: Leanlog Atomic Design rules for UI work.
 - Templates live in `packages/ui/src/templates` and receive data/callbacks as props.
 - Storybook documents UI templates, not app route pages.
 - Raw native controls are only allowed in atoms.
+- Prefer existing atoms before adding molecule/organism markup: Button, Card, Field, FileInput, HelperText, Input, IntegerInput, Label, NumberInput, PageTitle, ProgressBar, Radio, SectionHeading, Select, Text, UnitText, and WarningText.
 - Reusable class strings in `packages/ui` must be defined in `packages/ui/src/styles/recipes.ts`.
 - App pages are not checked against `recipes.ts`, but must consume `@leanlog/ui`.
 - Do not use `.ll-*` classes.

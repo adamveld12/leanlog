@@ -4,7 +4,7 @@
 Feature: Design System Enforcement
 
   Scenario: Raw controls are blocked outside atoms
-    Given a developer adds a raw button, input, select, textarea, or label outside atoms
+    Given a developer adds a raw button, input, select, textarea, radio input, file input, integer input, or label outside atoms
     When lint runs
     Then the check fails with guidance to use @leanlog/ui atoms
 
