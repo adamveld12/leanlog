@@ -41,7 +41,10 @@ export function AuthLanding({
         <div className="pt-2 [&_.inline-flex]:w-full md:[&_.inline-flex]:w-auto">{cta}</div>
       </Card>
       <Card className="flex flex-col gap-2.5 p-4 md:p-5" aria-label="Product highlights">
-        <Text as="h2" className="text-base font-semibold normal-case tracking-tight text-[var(--ll-text)]">
+        <Text
+          as="h2"
+          className="text-base font-semibold normal-case tracking-tight text-[var(--ll-text)]"
+        >
           What is lean log?
         </Text>
         <Text as="p" variant="sectionHeading">

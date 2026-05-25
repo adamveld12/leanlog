@@ -22,7 +22,9 @@ export function RadioGroup<T extends string>({
 }: RadioGroupProps<T>) {
   return (
     <fieldset className="flex flex-col gap-1.5">
-      <legend><HelperText as="span">{label}</HelperText></legend>
+      <legend>
+        <HelperText as="span">{label}</HelperText>
+      </legend>
       <div className="flex flex-col gap-2.5">
         {options.map((option) => (
           <Field key={option.value} className="flex-row items-center gap-2">
@@ -32,7 +34,9 @@ export function RadioGroup<T extends string>({
               checked={value === option.value}
               onChange={() => onChange(option.value)}
             />
-            <Text as="span" variant="body">{option.label}</Text>
+            <Text as="span" variant="body">
+              {option.label}
+            </Text>
           </Field>
         ))}
       </div>

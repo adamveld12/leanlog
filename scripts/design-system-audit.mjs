@@ -92,7 +92,11 @@ function hasEslintDisable(text, matchIndex) {
   return prevLine.includes('eslint-disable') || currentLine.includes('eslint-disable');
 }
 
-const uiRawTypographyDirs = ['packages/ui/src/molecules', 'packages/ui/src/organisms', 'packages/ui/src/templates'];
+const uiRawTypographyDirs = [
+  'packages/ui/src/molecules',
+  'packages/ui/src/organisms',
+  'packages/ui/src/templates',
+];
 for (const dir of uiRawTypographyDirs) {
   for (const file of files(dir).filter((f) => f.endsWith('.tsx') && !f.endsWith('.stories.tsx'))) {
     const text = readFileSync(file, 'utf8');
@@ -147,7 +151,8 @@ const componentDirs = [
 for (const dir of componentDirs) {
   if (!existsSync(dir)) continue;
   for (const entry of readdirSync(dir)) {
-    if (!entry.endsWith('.tsx') || entry.endsWith('.stories.tsx') || entry.endsWith('.test.tsx')) continue;
+    if (!entry.endsWith('.tsx') || entry.endsWith('.stories.tsx') || entry.endsWith('.test.tsx'))
+      continue;
     if (typographyStoryCovered.has(entry)) continue;
     const storyFile = join(dir, entry.replace('.tsx', '.stories.tsx'));
     if (!existsSync(storyFile)) {

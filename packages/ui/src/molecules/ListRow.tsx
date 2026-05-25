@@ -40,7 +40,9 @@ export function ListRow({
       onKeyDown={onKeyDown}
     >
       <div className="flex flex-col gap-2.5">
-        <Text as="span" className="font-medium">{title}</Text>
+        <Text as="span" className="font-medium">
+          {title}
+        </Text>
         {meta ? <HelperText>{meta}</HelperText> : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">

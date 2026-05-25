@@ -16,7 +16,10 @@ export function SectionHeading({
 }: SectionHeadingProps) {
   const Component = as;
   return (
-    <Component className={cn(recipes.text.sectionHeading, noMargin && 'mb-0', className)} {...props}>
+    <Component
+      className={cn(recipes.text.sectionHeading, noMargin && 'mb-0', className)}
+      {...props}
+    >
       {children}
     </Component>
   );

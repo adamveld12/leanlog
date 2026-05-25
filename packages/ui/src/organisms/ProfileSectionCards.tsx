@@ -33,9 +33,7 @@ export function BodyInfoCard(props: BodyInfoCardProps) {
           onBlur={props.onHeightBlur}
         />
       </div>
-      {props.weightError ? (
-        <WarningText>{props.weightError}</WarningText>
-      ) : null}
+      {props.weightError ? <WarningText>{props.weightError}</WarningText> : null}
     </SectionCard>
   );
 }
@@ -77,11 +75,7 @@ export function CalorieTargetCard(props: CalorieTargetCardProps) {
           disabled={!props.canEditTargetCalories}
         />
       </Field>
-      {props.targetCaloriesError ? (
-        <WarningText>
-          {props.targetCaloriesError}
-        </WarningText>
-      ) : null}
+      {props.targetCaloriesError ? <WarningText>{props.targetCaloriesError}</WarningText> : null}
     </SectionCard>
   );
 }
@@ -138,9 +132,7 @@ export function MacroTargetsCard(props: MacroTargetsCardProps) {
         onChange={props.onProteinChange}
         onBlur={props.onBlur}
       />
-      {props.error ? (
-        <WarningText>{props.error}</WarningText>
-      ) : null}
+      {props.error ? <WarningText>{props.error}</WarningText> : null}
     </SectionCard>
   );
 }

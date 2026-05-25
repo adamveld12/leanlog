@@ -64,7 +64,9 @@ export function ListSectionCard({
           return <div key={item.id}>{row}</div>;
         })}
         {items.length ? null : (
-          <HelperText as="p" className="text-center">{emptyText}</HelperText>
+          <HelperText as="p" className="text-center">
+            {emptyText}
+          </HelperText>
         )}
       </div>
       {childrenTop ? null : children}
