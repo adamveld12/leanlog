@@ -6,3 +6,8 @@ compatibility_flags = ["nodejs_compat"]
 binding = "ASSETS"
 directory = "./dist"
 not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "leanlog-db"
+database_id = "3747f59b-37ac-452f-93cd-8965e704a063"
