@@ -18,7 +18,9 @@ import {
   CalorieTargetCard,
   IngredientEntryCard,
   FileInput,
+  HelperText,
   Input,
+  ListRow,
   ListSectionCard,
   MacroSummaryLine,
   MacroTargetsCard,
@@ -26,8 +28,13 @@ import {
   NumberInput,
   ProgressBar,
   SectionCard,
+  SectionHeading,
+  Text,
+  UnitText,
+  WarningText,
   PageNavHeading,
   AuthLanding,
+  calorieColor as getCalorieColor,
 } from '@leanlog/ui';
 import { normalizeIngredientName, prettyDate, round1 } from '../lib';
 import { dayTotals, mealTotals } from '../selectors';
@@ -187,13 +194,12 @@ function DayList({ profile }: { profile: Profile }) {
               id: d.id,
               title: prettyDate(d.date),
               meta: (
-                <>
-                  {totals.calories}
-                  <span className="text-[var(--ll-text-muted)]"> kcal</span> · P {totals.protein}
-                  <span className="text-[var(--ll-text-muted)]">g</span> · C {totals.carbs}
-                  <span className="text-[var(--ll-text-muted)]">g</span> · F {totals.fat}
-                  <span className="text-[var(--ll-text-muted)]">g</span>
-                </>
+                <MacroSummaryLine
+                  calories={totals.calories}
+                  protein={totals.protein}
+                  carbs={totals.carbs}
+                  fat={totals.fat}
+                />
               ),
               onOpen: () => nav(`/track/day/${d.id}`),
               onDelete: () => removeDay(d.id),
@@ -217,9 +223,9 @@ function DayDetail({ profile }: { profile: Profile }) {
   const totals = dayTotals(day);
   const netCarbs = round1(Math.max(0, totals.carbs - totals.fiber));
   const calorieTarget = day.targets.calories;
-  const pctDiff = calorieTarget > 0 ? Math.abs(totals.calories - calorieTarget) / calorieTarget : 1;
-  const calorieColor =
-    pctDiff <= 0.05 ? 'var(--ll-saved)' : pctDiff <= 0.15 ? 'var(--ll-warn)' : 'var(--ll-danger)';
+  const calorieColorStyle = getCalorieColor(totals.calories, calorieTarget);
+  const calorieColorValue =
+    (calorieColorStyle?.color as string | undefined) ?? 'var(--ll-text-muted)';
 
   return (
     <AppShell>
@@ -233,9 +239,7 @@ function DayDetail({ profile }: { profile: Profile }) {
       <SectionCard>
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2 justify-between items-start">
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ll-text-muted)] mb-0">
-              Daily totals
-            </h3>
+            <SectionHeading noMargin>Daily totals</SectionHeading>
             <Button
               variant="ghost"
               onClick={() => {
@@ -249,26 +253,23 @@ function DayDetail({ profile }: { profile: Profile }) {
               Update targets
             </Button>
           </div>
-          <p
-            className="text-sm font-medium text-[var(--ll-text-muted)]"
-            style={{ color: calorieColor }}
-          >
+          <Text as="p" variant="pageSubtitle" style={{ color: calorieColorValue }}>
             {totals.calories} / {calorieTarget}
-            <span className="text-[var(--ll-text-muted)]"> kcal</span>
-          </p>
-          <ProgressBar value={totals.calories} max={calorieTarget || 1} color={calorieColor} />
+            <UnitText> kcal</UnitText>
+          </Text>
+          <ProgressBar value={totals.calories} max={calorieTarget || 1} color={calorieColorValue} />
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            <HelperText as="p">
               FAT {totals.fat} / {day.targets.macros.fat}g
-            </p>
-            <span className="text-xs font-medium text-[var(--ll-text-muted)]">·</span>
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            </HelperText>
+            <HelperText as="span">·</HelperText>
+            <HelperText as="p">
               PROTEIN {totals.protein} / {day.targets.macros.protein}g
-            </p>
-            <span className="text-xs font-medium text-[var(--ll-text-muted)]">·</span>
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            </HelperText>
+            <HelperText as="span">·</HelperText>
+            <HelperText as="p">
               CARBS {netCarbs} net / {totals.carbs} / {day.targets.macros.carbs}g
-            </p>
+            </HelperText>
           </div>
         </div>
       </SectionCard>
@@ -282,13 +283,12 @@ function DayDetail({ profile }: { profile: Profile }) {
             id: m.id,
             title: m.name || 'UNTITLED MEAL',
             meta: (
-              <>
-                {totals.calories}
-                <span className="text-[var(--ll-text-muted)]"> kcal</span> · P {totals.protein}
-                <span className="text-[var(--ll-text-muted)]">g</span> · C {totals.carbs}
-                <span className="text-[var(--ll-text-muted)]">g</span> · F {totals.fat}
-                <span className="text-[var(--ll-text-muted)]">g</span>
-              </>
+              <MacroSummaryLine
+                calories={totals.calories}
+                protein={totals.protein}
+                carbs={totals.carbs}
+                fat={totals.fat}
+              />
             ),
             onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
             onDelete: () => removeMeal(day.id, m.id),
@@ -506,9 +506,7 @@ function MealEdit() {
         rightContent={<HeaderAuthControl />}
       />
       <SectionCard title="Meal name" saved={saved.mealName}>
-        <p className="text-xs font-medium text-[var(--ll-text-muted)]">
-          Name is required before leaving this page.
-        </p>
+        <HelperText as="p">Name is required before leaving this page.</HelperText>
         <Input
           value={meal.name}
           onChange={(e) => {
@@ -536,44 +534,24 @@ function MealEdit() {
           </Button>
         </div>
         <div className="flex flex-col gap-2.5 mt-3">
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ll-text-muted)] mb-0">
+          <SectionHeading as="h4" noMargin>
             Ingredients
-          </h4>
-          <p className="text-xs font-medium text-[var(--ll-text-muted)]">
-            Tap an ingredient row to edit values.
-          </p>
-          {meal.ingredients.length ? null : (
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">No items</p>
-          )}
+          </SectionHeading>
+          <HelperText as="p">Tap an ingredient row to edit values.</HelperText>
+          {meal.ingredients.length ? null : <HelperText as="p">No items</HelperText>}
           {meal.ingredients.map((i) => (
-            <div
+            <ListRow
               key={i.id}
-              className="flex items-center justify-between gap-2 rounded-[10px] px-1.5 py-0 cursor-pointer hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]"
-              role="link"
-              tabIndex={0}
-              onClick={() => {
-                setEditingId(i.id);
-                setDraft(i);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  setEditingId(i.id);
-                  setDraft(i);
-                }
-              }}
-            >
-              <div className="flex flex-col gap-2.5">
-                <span className="text-sm font-medium">{i.name}</span>
-                <small className="text-xs font-medium text-[var(--ll-text-muted)]">
-                  {i.calories}
-                  <span className="text-[var(--ll-text-muted)]"> kcal</span> · F {i.fat}
-                  <span className="text-[var(--ll-text-muted)]">g</span> · C {i.carbs}
-                  <span className="text-[var(--ll-text-muted)]">g</span> · P {i.protein}
-                  <span className="text-[var(--ll-text-muted)]">g</span>
-                </small>
-              </div>
-              <div className="flex items-center gap-2">
+              title={i.name}
+              meta={
+                <MacroSummaryLine
+                  calories={i.calories}
+                  protein={i.protein}
+                  carbs={i.carbs}
+                  fat={i.fat}
+                />
+              }
+              actions={
                 <Button
                   size="sm"
                   variant="danger"
@@ -584,8 +562,12 @@ function MealEdit() {
                 >
                   Delete ingredient
                 </Button>
-              </div>
-            </div>
+              }
+              onOpen={() => {
+                setEditingId(i.id);
+                setDraft(i);
+              }}
+            />
           ))}
         </div>
       </SectionCard>
@@ -615,12 +597,8 @@ function MealEdit() {
           if (file) void onScanFile(file);
         }}
       />
-      {scanError ? (
-        <small className="text-xs font-medium text-[var(--ll-warn)]">{scanError}</small>
-      ) : null}
-      {cameraError ? (
-        <small className="text-xs font-medium text-[var(--ll-warn)]">{cameraError}</small>
-      ) : null}
+      {scanError ? <WarningText>{scanError}</WarningText> : null}
+      {cameraError ? <WarningText>{cameraError}</WarningText> : null}
       <Modal
         open={cameraOpen}
         title="Take nutrition photo"
@@ -654,45 +632,39 @@ function MealEdit() {
       <Modal open={!!scanResult} title="Review nutrition scan" onClose={() => setScanResult(null)}>
         {scanResult ? (
           <div className="flex flex-col gap-2.5">
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            <HelperText as="p">
               Compare current values with scanned values before applying.
-            </p>
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            </HelperText>
+            <HelperText as="p">
               Weight: {draft.weight} → {scanResult.proposed.weight}g
-            </p>
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            </HelperText>
+            <HelperText as="p">
               Calories: {draft.calories} → {scanResult.proposed.calories}
-            </p>
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            </HelperText>
+            <HelperText as="p">
               Fat: {draft.fat} → {scanResult.proposed.fat}g
-            </p>
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            </HelperText>
+            <HelperText as="p">
               Saturated fat: {draft.saturatedFat} → {scanResult.proposed.saturatedFat}g
-            </p>
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            </HelperText>
+            <HelperText as="p">
               Carbs: {draft.carbs} → {scanResult.proposed.carbs}g
-            </p>
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            </HelperText>
+            <HelperText as="p">
               Fiber: {draft.fiber} → {scanResult.proposed.fiber}g
-            </p>
-            <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+            </HelperText>
+            <HelperText as="p">
               Protein: {draft.protein} → {scanResult.proposed.protein}g
-            </p>
+            </HelperText>
             {draft.name.trim() ? null : (
-              <p className="text-xs font-medium text-[var(--ll-text-muted)]">
+              <HelperText as="p">
                 Ingredient title: {draft.name || '(blank)'} →{' '}
                 {scanResult.proposed.name || '(unchanged)'}
-              </p>
+              </HelperText>
             )}
-            {scanResult.notes.length ? (
-              <small className="text-xs font-medium text-[var(--ll-text-muted)]">
-                {scanResult.notes.join(' ')}
-              </small>
-            ) : null}
+            {scanResult.notes.length ? <HelperText>{scanResult.notes.join(' ')}</HelperText> : null}
             {scanResult.canApply ? null : (
-              <small className="text-xs font-medium text-[var(--ll-warn)]">
-                {scanResult.blockReason ?? 'Scan cannot be applied.'}
-              </small>
+              <WarningText>{scanResult.blockReason ?? 'Scan cannot be applied.'}</WarningText>
             )}
             <div className="flex items-center gap-2 justify-between">
               <Button variant="ghost" onClick={openCamera} disabled={scanLoading}>
@@ -715,7 +687,9 @@ function MealEdit() {
         title="Meal name is required"
         onClose={() => setShowBlankNamePrompt(false)}
       >
-        <p>Name this meal before leaving, or discard this whole meal draft.</p>
+        <HelperText as="p">
+          Name this meal before leaving, or discard this whole meal draft.
+        </HelperText>
         <div className="flex items-center gap-2">
           <Button onClick={() => setShowBlankNamePrompt(false)}>Stay and edit</Button>
           <Button
@@ -938,9 +912,7 @@ function ProfilePage({
       </SectionCard>
 
       <SectionCard title="Data" saved={saved.data}>
-        <p className="text-xs font-medium text-[var(--ll-text-muted)]">
-          Import replaces all existing data.
-        </p>
+        <HelperText as="p">Import replaces all existing data.</HelperText>
         <Button
           onClick={() => {
             const blob = new Blob([JSON.stringify({ state, profile }, null, 2)], {
@@ -980,9 +952,7 @@ function ProfilePage({
             }
           }}
         />
-        {importError ? (
-          <small className="text-xs font-medium text-[var(--ll-warn)]">{importError}</small>
-        ) : null}
+        {importError ? <WarningText>{importError}</WarningText> : null}
       </SectionCard>
     </AppShell>
   );

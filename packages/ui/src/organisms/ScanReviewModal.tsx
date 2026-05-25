@@ -1,0 +1,69 @@
+import { Button } from '../atoms/Button';
+import { HelperText } from '../atoms/HelperText';
+import { WarningText } from '../atoms/WarningText';
+import { AnalyticsScope } from '../analytics';
+import { Modal } from '../molecules/Modal';
+
+export type ScanField = {
+  label: string;
+  current: number | string;
+  proposed: number | string;
+  unit?: string;
+};
+
+export type ScanReviewModalProps = {
+  open: boolean;
+  onClose: () => void;
+  onAccept: () => void;
+  onRetake?: () => void;
+  canAccept?: boolean;
+  blockReason?: string;
+  notes?: string[];
+  fields: ScanField[];
+  acceptLabel?: string;
+};
+
+export function ScanReviewModal({
+  open,
+  onClose,
+  onAccept,
+  onRetake,
+  canAccept = true,
+  blockReason,
+  notes,
+  fields,
+  acceptLabel = 'Apply',
+}: ScanReviewModalProps) {
+  return (
+    <AnalyticsScope properties={{ organism: 'ScanReviewModal' }}>
+      <Modal open={open} title="Review nutrition scan" onClose={onClose}>
+        <HelperText as="p">Compare current values with scanned values before applying.</HelperText>
+
+        {fields.map((field, i) => (
+          <HelperText as="p" key={i}>
+            {field.label}: {field.current} → {field.proposed}
+            {field.unit ?? ''}
+          </HelperText>
+        ))}
+
+        {notes && notes.length > 0 ? <HelperText as="p">{notes.join(' ')}</HelperText> : null}
+
+        {!canAccept && blockReason ? <WarningText>{blockReason}</WarningText> : null}
+
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {onRetake ? (
+            <Button variant="ghost" size="sm" onClick={onRetake}>
+              Retake photo
+            </Button>
+          ) : null}
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={onAccept} disabled={!canAccept}>
+            {acceptLabel}
+          </Button>
+        </div>
+      </Modal>
+    </AnalyticsScope>
+  );
+}
