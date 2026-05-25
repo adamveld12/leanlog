@@ -1,4 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { HelperText } from '../atoms/HelperText';
+import { SectionHeading } from '../atoms/SectionHeading';
+import { SectionCard } from '../molecules/SectionCard';
 import { MealEditTemplate } from './MealEditTemplate';
 
 const value = {
@@ -17,10 +20,12 @@ const meta: Meta<typeof MealEditTemplate> = {
   component: MealEditTemplate,
   args: {
     heading: { title: 'LUNCH', profileHref: '/profile' },
-    ingredients: {
-      title: 'Ingredients',
-      items: [{ id: 'i1', title: 'CHICKEN', meta: '220 kcal' }],
-    },
+    mealSection: (
+      <SectionCard>
+        <SectionHeading>LUNCH</SectionHeading>
+        <HelperText as="p">CHICKEN · 220 kcal</HelperText>
+      </SectionCard>
+    ),
     ingredientEntry: {
       value,
       submitLabel: 'Add',
