@@ -16,6 +16,51 @@ vi.mock('@clerk/clerk-react', () => ({
     signedIn ? null : createElement(Fragment, null, children),
   UserButton: () => createElement('button', { type: 'button' }, 'User'),
   PricingTable: () => createElement('div', null, 'Pricing Table'),
+  useAuth: () => ({
+    isSignedIn: signedIn,
+    getToken: () => Promise.resolve('test-token'),
+  }),
+}));
+
+vi.mock('../api', () => ({
+  api: {
+    days: {
+      list: () => Promise.resolve({ days: [] }),
+      create: vi.fn(),
+      get: vi.fn(),
+      updateTargets: vi.fn(),
+      delete: vi.fn(),
+    },
+    meals: {
+      create: vi.fn(),
+      rename: vi.fn(),
+      delete: vi.fn(),
+    },
+    ingredients: {
+      upsert: vi.fn(),
+      delete: vi.fn(),
+    },
+    profile: {
+      get: () =>
+        Promise.resolve({
+          id: 'p1',
+          clerkUserId: 'user_test',
+          weightLbs: 180,
+          heightInches: 72,
+          calorieMode: 'maintenance',
+          targetCalories: null,
+          macroMode: 'percentage',
+          macroFats: 25,
+          macroCarbs: 35,
+          macroProtein: 40,
+          goalWeightLbs: null,
+          goalBodyFatPct: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
+      update: vi.fn(),
+    },
+  },
 }));
 
 beforeEach(() => {

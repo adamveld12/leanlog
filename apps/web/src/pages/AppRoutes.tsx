@@ -1,15 +1,14 @@
+import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type Dispatch,
-  type PropsWithChildren,
-  type SetStateAction,
-} from 'react';
-import { PricingTable, SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
+  useAuth,
+  PricingTable,
+  SignInButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from '@clerk/clerk-react';
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
-import { v4 as uuid } from 'uuid';
+import { uuidv7 } from '@leanlog/data-access';
 import {
   BodyInfoCard,
   Button,
@@ -32,13 +31,14 @@ import {
   SectionHeading,
   WarningText,
 } from '@leanlog/ui';
+import { caloriesFromMode, dayTargetsFromProfile } from '@leanlog/data-access';
 import { normalizeIngredientName, prettyDate, round1 } from '../lib';
 import { dayTotals, mealTotals } from '../selectors';
-import { migrateState, useStore } from '../state';
-import { parseProfile, PROFILE_KEY, type Profile } from '../profile';
-import type { DayTargets, Ingredient, SaveSections } from '../types';
+import { useStore } from '../state';
+import { api } from '../api';
+import type { UpsertIngredient, SaveSections } from '../types';
 
-type IngredientDraft = Omit<Ingredient, 'id'>;
+type IngredientDraft = Omit<UpsertIngredient, 'id' | 'mealId' | 'createdAt' | 'updatedAt'>;
 
 type NutritionScanResult = {
   proposed: {
@@ -74,37 +74,17 @@ function useSavedSections() {
   return { saved, markSaved, markDirty };
 }
 
-function calorieFromMode(weightLbs: number, mode: Profile['calorieTarget']['mode']) {
-  if (weightLbs < 90) return null;
-  const x = mode === 'deficit' ? 10 : mode === 'maintenance' ? 15 : 16;
-  return Math.ceil(weightLbs * x);
-}
+const THEME_KEY = 'leanlog.theme';
 
-function targetCaloriesFromProfile(profile: Profile) {
-  if (profile.calorieTarget.mode === 'custom') return profile.calorieTarget.targetCalories ?? 0;
-  return calorieFromMode(profile.bodyInfo.weightLbs, profile.calorieTarget.mode) ?? 0;
-}
-
-function dayTargetsFromProfile(profile: Profile): DayTargets {
-  const calories = targetCaloriesFromProfile(profile);
-  if (profile.macroTargets.mode === 'custom') {
-    return {
-      calories,
-      macros: {
-        fat: Math.round(profile.macroTargets.fats),
-        carbs: Math.round(profile.macroTargets.carbs),
-        protein: Math.round(profile.macroTargets.protein),
-      },
-    };
-  }
-  return {
-    calories,
-    macros: {
-      fat: Math.round((calories * (profile.macroTargets.fats / 100)) / 9),
-      carbs: Math.round((calories * (profile.macroTargets.carbs / 100)) / 4),
-      protein: Math.round((calories * (profile.macroTargets.protein / 100)) / 4),
-    },
-  };
+function useTheme() {
+  const [theme, setTheme] = useState<'system' | 'light' | 'dark'>(
+    () => (localStorage.getItem(THEME_KEY) as 'system' | 'light' | 'dark') ?? 'system',
+  );
+  useEffect(() => {
+    localStorage.setItem(THEME_KEY, theme);
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
+  return [theme, setTheme] as const;
 }
 
 const renderRouterNavLink = ({
@@ -162,9 +142,13 @@ function LandingPage() {
   );
 }
 
-function DayList({ profile }: { profile: Profile }) {
+function DayList() {
   const nav = useNavigate();
-  const { state, addDay, removeDay } = useStore();
+  const { days, profile, loading, error, addDay, removeDay } = useStore();
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
   return (
     <DayListTemplate
       heading={{
@@ -176,10 +160,12 @@ function DayList({ profile }: { profile: Profile }) {
       addDay={{
         onDayAdded: ({ month, day, year, totalMeals }) => {
           const toIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          addDay(toIso, dayTargetsFromProfile(profile), totalMeals);
+          if (!profile) return;
+          const targets = dayTargetsFromProfile(profile);
+          void addDay(toIso, { ...targets, mealCountTarget: totalMeals });
         },
       }}
-      days={state.days
+      days={days
         .slice()
         .sort((a, b) => (a.date < b.date ? 1 : -1))
         .map((d) => {
@@ -196,7 +182,7 @@ function DayList({ profile }: { profile: Profile }) {
               />
             ),
             onOpen: () => nav(`/track/day/${d.id}`),
-            onDelete: () => removeDay(d.id),
+            onDelete: () => void removeDay(d.id),
             deleteLabel: 'Delete day',
           };
         })}
@@ -204,14 +190,14 @@ function DayList({ profile }: { profile: Profile }) {
   );
 }
 
-function DayDetail({ profile }: { profile: Profile }) {
+function DayDetail() {
   const { dayId } = useParams();
   const nav = useNavigate();
-  const { state, addMeal, removeMeal, setState } = useStore();
+  const { days, profile, addMeal, removeMeal, updateDayTargets } = useStore();
   const [isEditingMealTarget, setIsEditingMealTarget] = useState(false);
   const [draftMealCountTarget, setDraftMealCountTarget] = useState(0);
   const [confirmMealTargetUpdate, setConfirmMealTargetUpdate] = useState(false);
-  const day = state.days.find((d) => d.id === dayId);
+  const day = days.find((d) => d.id === dayId);
   if (!day) return <Navigate to="/track" replace />;
   const totals = dayTotals(day);
 
@@ -227,38 +213,36 @@ function DayDetail({ profile }: { profile: Profile }) {
       totalsSection={
         <DailyTotalsCard
           calories={totals.calories}
-          calorieTarget={day.targets.calories}
+          calorieTarget={day.targetCalories}
           fat={totals.fat}
           protein={totals.protein}
           carbs={totals.carbs}
           fiber={totals.fiber}
-          macroTargets={day.targets.macros}
+          macroTargets={{ fat: day.targetFat, carbs: day.targetCarbs, protein: day.targetProtein }}
           onUpdateTargets={() => {
+            if (!profile) return;
             const nextTargets = dayTargetsFromProfile(profile);
-            setState((s) => ({
-              ...s,
-              days: s.days.map((d) => (d.id === day.id ? { ...d, targets: nextTargets } : d)),
-            }));
+            void updateDayTargets(day.id, nextTargets);
           }}
         />
       }
       mealsTitle={`Meals ${day.meals.length} / ${day.mealCountTarget}`}
       mealsEmptyText="No meals yet. Add one below."
       mealsItems={day.meals.map((m) => {
-        const totals = mealTotals(m);
+        const mTotals = mealTotals(m);
         return {
           id: m.id,
           title: m.name || 'UNTITLED MEAL',
           meta: (
             <MacroSummaryLine
-              calories={totals.calories}
-              protein={totals.protein}
-              carbs={totals.carbs}
-              fat={totals.fat}
+              calories={mTotals.calories}
+              protein={mTotals.protein}
+              carbs={mTotals.carbs}
+              fat={mTotals.fat}
             />
           ),
           onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
-          onDelete: () => removeMeal(day.id, m.id),
+          onDelete: () => void removeMeal(day.id, m.id),
           deleteLabel: 'Delete meal',
         };
       })}
@@ -292,12 +276,13 @@ function DayDetail({ profile }: { profile: Profile }) {
                   const next = !confirmMealTargetUpdate;
                   setConfirmMealTargetUpdate(next);
                   if (next) {
-                    setState((s) => ({
-                      ...s,
-                      days: s.days.map((d) =>
-                        d.id === day.id ? { ...d, mealCountTarget: draftMealCountTarget } : d,
-                      ),
-                    }));
+                    void updateDayTargets(day.id, {
+                      targetCalories: day.targetCalories,
+                      targetFat: day.targetFat,
+                      targetCarbs: day.targetCarbs,
+                      targetProtein: day.targetProtein,
+                      mealCountTarget: draftMealCountTarget,
+                    });
                     setIsEditingMealTarget(false);
                     setConfirmMealTargetUpdate(false);
                   }
@@ -309,8 +294,8 @@ function DayDetail({ profile }: { profile: Profile }) {
           ) : null}
           <Button
             className="w-full"
-            onClick={() => {
-              const meal = addMeal(day.id, `MEAL ${day.meals.length + 1}`);
+            onClick={async () => {
+              const meal = await addMeal(day.id, `MEAL ${day.meals.length + 1}`);
               if (meal) nav(`/track/day/${day.id}/meal/${meal.id}`);
             }}
           >
@@ -323,12 +308,13 @@ function DayDetail({ profile }: { profile: Profile }) {
 }
 
 function MealEdit() {
-  /* unchanged */
   const { dayId, mealId } = useParams();
   const nav = useNavigate();
-  const { state, renameMeal, removeMeal, upsertIngredient, removeIngredient } = useStore();
-  const day = state.days.find((d) => d.id === dayId);
+  const { getToken } = useAuth();
+  const { days, renameMeal, removeMeal, upsertIngredient, removeIngredient } = useStore();
+  const day = days.find((d) => d.id === dayId);
   const meal = day?.meals.find((m) => m.id === mealId);
+  const [mealName, setMealName] = useState(meal?.name ?? '');
   const [draft, setDraft] = useState<IngredientDraft>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showBlankNamePrompt, setShowBlankNamePrompt] = useState(false);
@@ -388,12 +374,14 @@ function MealEdit() {
   if (!day || !meal) return <Navigate to="/track" replace />;
 
   const saveIngredient = () => {
-    const next: Ingredient = {
-      id: editingId ?? uuid(),
+    const id = editingId ?? uuidv7();
+    const next: UpsertIngredient = {
+      id,
+      mealId: meal.id,
       ...draft,
       name: normalizeIngredientName(draft.name),
     };
-    upsertIngredient(day.id, meal.id, next);
+    void upsertIngredient(day.id, meal.id, next);
     markSaved('ingredientForm');
     setDraft(emptyDraft);
     setEditingId(null);
@@ -426,7 +414,12 @@ function MealEdit() {
       formData.append('photo', file);
       formData.append('weightGrams', draft.weight > 0 ? String(draft.weight) : '');
       formData.append('name', draft.name);
-      const response = await fetch('/api/scan-nutrition', { method: 'POST', body: formData });
+      const token = await getToken();
+      const response = await fetch('/api/scan-nutrition', {
+        method: 'POST',
+        body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!response.ok) throw new Error('Scan failed. Try again with a clearer label photo.');
       const result = (await response.json()) as NutritionScanResult;
       setScanResult(result);
@@ -454,6 +447,7 @@ function MealEdit() {
     }));
     setScanResult(null);
   };
+
   return (
     <MealEditTemplate
       heading={{
@@ -475,16 +469,19 @@ function MealEdit() {
         <SectionCard title="Meal name" saved={saved.mealName}>
           <HelperText as="p">Name is required before leaving this page.</HelperText>
           <Input
-            value={meal.name}
+            value={mealName}
             onChange={(e) => {
+              setMealName(e.target.value);
               markDirty('mealName');
-              renameMeal(day.id, meal.id, e.target.value);
-              markSaved('mealName');
             }}
             normalizeOnBlur={normalizeIngredientName}
             onNormalized={(name) => {
-              markDirty('mealName');
-              renameMeal(day.id, meal.id, name);
+              setMealName(name);
+              void renameMeal(day.id, meal.id, name);
+              markSaved('mealName');
+            }}
+            onBlur={() => {
+              void renameMeal(day.id, meal.id, normalizeIngredientName(mealName));
               markSaved('mealName');
             }}
           />
@@ -493,7 +490,7 @@ function MealEdit() {
               size="sm"
               variant="danger"
               onClick={() => {
-                removeMeal(day.id, meal.id);
+                void removeMeal(day.id, meal.id);
                 nav(`/track/day/${day.id}`);
               }}
             >
@@ -524,7 +521,7 @@ function MealEdit() {
                     variant="danger"
                     onClick={(e) => {
                       e.stopPropagation();
-                      removeIngredient(day.id, meal.id, i.id);
+                      void removeIngredient(day.id, meal.id, i.id);
                     }}
                   >
                     Delete ingredient
@@ -532,7 +529,16 @@ function MealEdit() {
                 }
                 onOpen={() => {
                   setEditingId(i.id);
-                  setDraft(i);
+                  setDraft({
+                    name: i.name,
+                    weight: i.weight,
+                    calories: i.calories,
+                    fat: i.fat,
+                    saturatedFat: i.saturatedFat,
+                    carbs: i.carbs,
+                    fiber: i.fiber,
+                    protein: i.protein,
+                  });
                 }}
               />
             ))}
@@ -664,7 +670,7 @@ function MealEdit() {
           <Button
             variant="danger"
             onClick={() => {
-              removeMeal(day.id, meal.id);
+              void removeMeal(day.id, meal.id);
               nav(`/track/day/${day.id}`);
             }}
           >
@@ -676,73 +682,81 @@ function MealEdit() {
   );
 }
 
-function ProfilePage({
-  profile,
-  setProfile,
-}: {
-  profile: Profile;
-  setProfile: Dispatch<SetStateAction<Profile>>;
-}) {
-  const { state, setState } = useStore();
+function ProfilePage() {
+  const { profile, updateProfile } = useStore();
+  const [theme, setTheme] = useTheme();
+  const { getToken } = useAuth();
   const { saved, markDirty, markSaved } = useSavedSections();
-  const [importError, setImportError] = useState('');
-  const [pendingImport, setPendingImport] = useState<{
-    state: ReturnType<typeof migrateState>;
-    profile: Profile;
-  } | null>(null);
 
-  const weightError =
-    profile.bodyInfo.weightLbs === 0
-      ? 'Weight is required.'
-      : profile.bodyInfo.weightLbs > 0 && profile.bodyInfo.weightLbs < 90
-        ? 'see a doctor'
-        : '';
-  const computedCalories =
-    profile.calorieTarget.mode === 'custom'
-      ? profile.calorieTarget.targetCalories
-      : calorieFromMode(profile.bodyInfo.weightLbs, profile.calorieTarget.mode);
-  const targetCaloriesText =
-    profile.calorieTarget.mode === 'custom'
-      ? String(profile.calorieTarget.targetCalories ?? '')
-      : computedCalories == null
-        ? ''
-        : String(computedCalories);
+  const computedCalories = useMemo(
+    () =>
+      profile?.calorieMode === 'custom'
+        ? profile.targetCalories
+        : profile
+          ? caloriesFromMode(profile.weightLbs, profile.calorieMode)
+          : null,
+    [profile],
+  );
 
   const macro = useMemo(() => {
-    const target =
-      profile.calorieTarget.mode === 'custom'
-        ? profile.calorieTarget.targetCalories
-        : computedCalories;
+    if (!profile) return { fatsHint: '', carbsHint: '', proteinHint: '', error: '' };
+    const target = profile.calorieMode === 'custom' ? profile.targetCalories : computedCalories;
     if (!target) return { fatsHint: '', carbsHint: '', proteinHint: '', error: '' };
-    if (profile.macroTargets.mode === 'percentage') {
-      const total =
-        profile.macroTargets.fats + profile.macroTargets.carbs + profile.macroTargets.protein;
+    if (profile.macroMode === 'percentage') {
+      const total = profile.macroFats + profile.macroCarbs + profile.macroProtein;
       return {
-        fatsHint: `${Math.round((target * (profile.macroTargets.fats / 100)) / 9)}g`,
-        carbsHint: `${Math.round((target * (profile.macroTargets.carbs / 100)) / 4)}g`,
-        proteinHint: `${Math.round((target * (profile.macroTargets.protein / 100)) / 4)}g`,
+        fatsHint: `${Math.round((target * (profile.macroFats / 100)) / 9)}g`,
+        carbsHint: `${Math.round((target * (profile.macroCarbs / 100)) / 4)}g`,
+        proteinHint: `${Math.round((target * (profile.macroProtein / 100)) / 4)}g`,
         error: total === 100 ? '' : 'Macro percentages must add up to 100.',
       };
     }
-    const kcal =
-      profile.macroTargets.fats * 9 +
-      profile.macroTargets.carbs * 4 +
-      profile.macroTargets.protein * 4;
+    const kcal = profile.macroFats * 9 + profile.macroCarbs * 4 + profile.macroProtein * 4;
     const pct = (n: number, calsPerGram: number) =>
       `${Math.round(((n * calsPerGram) / target) * 100)}% total`;
     return {
-      fatsHint: pct(profile.macroTargets.fats, 9),
-      carbsHint: pct(profile.macroTargets.carbs, 4),
-      proteinHint: pct(profile.macroTargets.protein, 4),
+      fatsHint: pct(profile.macroFats, 9),
+      carbsHint: pct(profile.macroCarbs, 4),
+      proteinHint: pct(profile.macroProtein, 4),
       error:
         Math.abs(kcal - target) <= 5 ? '' : 'Macro calories must match target calories (±5 kcal).',
     };
   }, [profile, computedCalories]);
 
-  const setAndSave = (next: Profile, key: keyof SaveSections) => {
+  if (!profile) return null;
+
+  const weightError =
+    profile.weightLbs === 0
+      ? 'Weight is required.'
+      : profile.weightLbs > 0 && profile.weightLbs < 90
+        ? 'see a doctor'
+        : '';
+
+  const targetCaloriesText =
+    profile.calorieMode === 'custom'
+      ? String(profile.targetCalories ?? '')
+      : computedCalories == null
+        ? ''
+        : String(computedCalories);
+
+  const save = (data: Parameters<typeof updateProfile>[0], key: keyof SaveSections) => {
     markDirty(key);
-    setProfile(next);
+    void updateProfile(data);
     markSaved(key);
+  };
+
+  const handleExport = async () => {
+    const token = await getToken();
+    if (!token) return;
+    const [{ days }, p] = await Promise.all([api.days.list(token), api.profile.get(token)]);
+    const blob = new Blob([JSON.stringify({ days, profile: p }, null, 2)], {
+      type: 'application/json',
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'leanlog-export.json';
+    a.click();
+    markSaved('data');
   };
 
   return (
@@ -757,207 +771,99 @@ function ProfilePage({
     >
       <BodyInfoCard
         saved={saved.bodyInfo}
-        weightLbs={profile.bodyInfo.weightLbs}
-        heightInches={profile.bodyInfo.heightInches}
+        weightLbs={profile.weightLbs}
+        heightInches={profile.heightInches}
         weightError={weightError}
-        onWeightChange={(n) =>
-          setProfile((p) => ({
-            ...p,
-            bodyInfo: { ...p.bodyInfo, weightLbs: Math.max(0, Math.floor(n)) },
-          }))
-        }
-        onHeightChange={(n) =>
-          setProfile((p) => ({
-            ...p,
-            bodyInfo: { ...p.bodyInfo, heightInches: Math.max(0, Math.floor(n)) },
-          }))
-        }
-        onWeightBlur={() =>
-          setAndSave(
-            {
-              ...profile,
-              calorieTarget: {
-                ...profile.calorieTarget,
-                targetCalories:
-                  profile.calorieTarget.mode === 'custom'
-                    ? profile.calorieTarget.targetCalories
-                    : calorieFromMode(profile.bodyInfo.weightLbs, profile.calorieTarget.mode),
-              },
-            },
-            'bodyInfo',
-          )
-        }
-        onHeightBlur={() => setAndSave(profile, 'bodyInfo')}
+        onWeightChange={(n) => void updateProfile({ weightLbs: Math.max(0, Math.floor(n)) })}
+        onHeightChange={(n) => void updateProfile({ heightInches: Math.max(0, Math.floor(n)) })}
+        onWeightBlur={() => save({ weightLbs: profile.weightLbs }, 'bodyInfo')}
+        onHeightBlur={() => save({ heightInches: profile.heightInches }, 'bodyInfo')}
       />
 
       <CalorieTargetCard
         saved={saved.calorieTarget}
-        mode={profile.calorieTarget.mode}
+        mode={profile.calorieMode}
         targetCaloriesText={targetCaloriesText}
-        canEditTargetCalories={profile.calorieTarget.mode === 'custom'}
+        canEditTargetCalories={profile.calorieMode === 'custom'}
         targetCaloriesError={
-          profile.calorieTarget.mode === 'custom' &&
-          profile.calorieTarget.targetCalories != null &&
-          (profile.calorieTarget.targetCalories < 800 ||
-            profile.calorieTarget.targetCalories > 9999)
+          profile.calorieMode === 'custom' &&
+          profile.targetCalories != null &&
+          (profile.targetCalories < 800 || profile.targetCalories > 9999)
             ? 'Target calories must be 800–9999.'
             : ''
         }
-        onModeChange={(mode) => {
-          const next = {
-            ...profile,
-            calorieTarget: {
-              ...profile.calorieTarget,
-              mode,
+        onModeChange={(mode) =>
+          save(
+            {
+              calorieMode: mode,
               targetCalories:
                 mode === 'custom'
-                  ? profile.calorieTarget.targetCalories
-                  : calorieFromMode(profile.bodyInfo.weightLbs, mode),
+                  ? profile.targetCalories
+                  : caloriesFromMode(profile.weightLbs, mode),
             },
-          };
-          setAndSave(next, 'calorieTarget');
-        }}
-        onTargetCaloriesChange={(n) =>
-          setProfile((p) => ({
-            ...p,
-            calorieTarget: {
-              ...p.calorieTarget,
-              targetCalories: Number.isFinite(n) ? Math.floor(n) : null,
-            },
-          }))
+            'calorieTarget',
+          )
         }
-        onTargetCaloriesBlur={() => setAndSave(profile, 'calorieTarget')}
+        onTargetCaloriesChange={(n) =>
+          void updateProfile({ targetCalories: Number.isFinite(n) ? Math.floor(n) : null })
+        }
+        onTargetCaloriesBlur={() =>
+          save({ targetCalories: profile.targetCalories }, 'calorieTarget')
+        }
       />
 
       <MacroTargetsCard
         saved={saved.macroTargets}
-        mode={profile.macroTargets.mode}
-        fats={profile.macroTargets.fats}
-        carbs={profile.macroTargets.carbs}
-        protein={profile.macroTargets.protein}
+        mode={profile.macroMode}
+        fats={profile.macroFats}
+        carbs={profile.macroCarbs}
+        protein={profile.macroProtein}
         fatsHint={macro.fatsHint}
         carbsHint={macro.carbsHint}
         proteinHint={macro.proteinHint}
         error={macro.error}
-        onModeChange={(mode) =>
-          setAndSave(
-            { ...profile, macroTargets: { ...profile.macroTargets, mode } },
+        onModeChange={(mode) => save({ macroMode: mode }, 'macroTargets')}
+        onFatsChange={(n) => void updateProfile({ macroFats: Math.max(0, Math.floor(n)) })}
+        onCarbsChange={(n) => void updateProfile({ macroCarbs: Math.max(0, Math.floor(n)) })}
+        onProteinChange={(n) => void updateProfile({ macroProtein: Math.max(0, Math.floor(n)) })}
+        onBlur={() =>
+          save(
+            {
+              macroFats: profile.macroFats,
+              macroCarbs: profile.macroCarbs,
+              macroProtein: profile.macroProtein,
+            },
             'macroTargets',
           )
         }
-        onFatsChange={(n) =>
-          setProfile((p) => ({
-            ...p,
-            macroTargets: { ...p.macroTargets, fats: Math.max(0, Math.floor(n)) },
-          }))
-        }
-        onCarbsChange={(n) =>
-          setProfile((p) => ({
-            ...p,
-            macroTargets: { ...p.macroTargets, carbs: Math.max(0, Math.floor(n)) },
-          }))
-        }
-        onProteinChange={(n) =>
-          setProfile((p) => ({
-            ...p,
-            macroTargets: { ...p.macroTargets, protein: Math.max(0, Math.floor(n)) },
-          }))
-        }
-        onBlur={() => setAndSave(profile, 'macroTargets')}
       />
 
       <SectionCard title="Theme" saved={saved.theme}>
         <div className="flex items-center gap-2 flex-wrap">
-          {(['system', 'light', 'dark'] as const).map((theme) => (
+          {(['system', 'light', 'dark'] as const).map((t) => (
             <Button
-              key={theme}
-              variant={state.settings.theme === theme ? 'primary' : 'ghost'}
+              key={t}
+              variant={theme === t ? 'primary' : 'ghost'}
               onClick={() => {
                 markDirty('theme');
-                setState((s) => ({ ...s, settings: { ...s.settings, theme } }));
+                setTheme(t);
                 markSaved('theme');
               }}
             >
-              {theme}
+              {t}
             </Button>
           ))}
         </div>
       </SectionCard>
 
       <SectionCard title="Data" saved={saved.data}>
-        <HelperText as="p">Import replaces all existing data.</HelperText>
-        <Button
-          onClick={() => {
-            const blob = new Blob([JSON.stringify({ state, profile }, null, 2)], {
-              type: 'application/json',
-            });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'leanlog-export.json';
-            a.click();
-            markSaved('data');
-          }}
-        >
-          Export
-        </Button>
-        <Input
-          type="file"
-          accept="application/json"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            try {
-              const parsed = JSON.parse(await file.text()) as { state: unknown; profile: unknown };
-              const nextState = migrateState(parsed.state);
-              const nextProfile = parseProfile(JSON.stringify(parsed.profile));
-              setPendingImport({ state: nextState, profile: nextProfile });
-            } catch (error) {
-              setImportError(error instanceof Error ? error.message : 'Import failed');
-            }
-          }}
-        />
-        {importError ? <WarningText>{importError}</WarningText> : null}
+        <Button onClick={() => void handleExport()}>Export</Button>
       </SectionCard>
-      <Modal
-        open={!!pendingImport}
-        title="Confirm data import"
-        onClose={() => setPendingImport(null)}
-      >
-        <HelperText as="p">
-          Replace all existing data with imported file? This cannot be undone.
-        </HelperText>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={() => setPendingImport(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => {
-              if (!pendingImport) return;
-              setState(pendingImport.state);
-              setProfile(pendingImport.profile);
-              setImportError('');
-              setPendingImport(null);
-              markSaved('data');
-            }}
-          >
-            Replace all data
-          </Button>
-        </div>
-      </Modal>
     </ProfileTemplate>
   );
 }
 
 export default function App() {
-  const [profile, setProfile] = useState<Profile>(() =>
-    parseProfile(localStorage.getItem(PROFILE_KEY)),
-  );
-
-  useEffect(() => {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-  }, [profile]);
-
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
@@ -965,7 +871,7 @@ export default function App() {
         path="/track"
         element={
           <RequireSignedIn>
-            <DayList profile={profile} />
+            <DayList />
           </RequireSignedIn>
         }
       />
@@ -973,7 +879,7 @@ export default function App() {
         path="/track/day/:dayId"
         element={
           <RequireSignedIn>
-            <DayDetail profile={profile} />
+            <DayDetail />
           </RequireSignedIn>
         }
       />
@@ -989,7 +895,7 @@ export default function App() {
         path="/track/profile"
         element={
           <RequireSignedIn>
-            <ProfilePage profile={profile} setProfile={setProfile} />
+            <ProfilePage />
           </RequireSignedIn>
         }
       />
