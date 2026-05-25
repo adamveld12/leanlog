@@ -65,6 +65,12 @@ importers:
       '@clerk/clerk-react':
         specifier: ^5.61.3
         version: 5.61.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@leanlog/data-access':
+        specifier: workspace:*
+        version: link:../../packages/data-access
+      '@leanlog/data-d1':
+        specifier: workspace:*
+        version: link:../../packages/data-d1
       '@leanlog/ui':
         specifier: workspace:*
         version: link:../../packages/ui
