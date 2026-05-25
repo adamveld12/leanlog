@@ -1,10 +1,7 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-
-interface Env {
-  GOOGLE_GENERATIVE_AI_API_KEY: string;
-}
+import type { Env } from './_env';
 
 const mb15 = 15 * 1024 * 1024;
 
