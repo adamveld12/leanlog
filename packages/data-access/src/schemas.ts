@@ -75,4 +75,5 @@ export const DayTargetsSchema = z.object({
   targetFat: z.number().min(0),
   targetCarbs: z.number().min(0),
   targetProtein: z.number().min(0),
+  mealCountTarget: z.number().min(0).optional(),
 });

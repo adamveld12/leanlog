@@ -13,7 +13,11 @@ export interface DayRepository {
   listByUser(userId: string): Promise<DailyMealLog[]>;
   getById(userId: string, dayId: string): Promise<DailyMealLog | null>;
   create(userId: string, data: CreateDailyMealLog): Promise<DailyMealLog>;
-  updateTargets(userId: string, dayId: string, targets: DayTargets): Promise<DailyMealLog>;
+  updateTargets(
+    userId: string,
+    dayId: string,
+    targets: DayTargets & { mealCountTarget?: number },
+  ): Promise<DailyMealLog>;
   delete(userId: string, dayId: string): Promise<void>;
 }
 
