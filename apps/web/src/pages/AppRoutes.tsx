@@ -11,30 +11,26 @@ import { PricingTable, SignInButton, SignedIn, SignedOut, UserButton } from '@cl
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuid } from 'uuid';
 import {
-  AddDayControl,
-  AppShell,
   BodyInfoCard,
   Button,
   CalorieTargetCard,
-  IngredientEntryCard,
+  DailyTotalsCard,
+  DayDetailTemplate,
+  DayListTemplate,
   FileInput,
   HelperText,
   Input,
+  LandingTemplate,
   ListRow,
-  ListSectionCard,
   MacroSummaryLine,
   MacroTargetsCard,
+  MealEditTemplate,
   Modal,
   NumberInput,
-  ProgressBar,
+  ProfileTemplate,
   SectionCard,
   SectionHeading,
-  Text,
-  UnitText,
   WarningText,
-  PageNavHeading,
-  AuthLanding,
-  calorieColor as getCalorieColor,
 } from '@leanlog/ui';
 import { normalizeIngredientName, prettyDate, round1 } from '../lib';
 import { dayTotals, mealTotals } from '../selectors';
@@ -151,7 +147,7 @@ function LandingPage() {
         <Navigate to="/track" replace />
       </SignedIn>
       <SignedOut>
-        <AuthLanding
+        <LandingTemplate
           appName="LeanLog"
           iconSrc="/icon-192.png"
           cta={
@@ -170,44 +166,41 @@ function DayList({ profile }: { profile: Profile }) {
   const nav = useNavigate();
   const { state, addDay, removeDay } = useStore();
   return (
-    <AppShell>
-      <PageNavHeading
-        title="leanlog"
-        profileHref="/track/profile"
-        renderNavLink={renderRouterNavLink}
-        rightContent={<HeaderAuthControl />}
-      />
-      <AddDayControl
-        onDayAdded={({ month, day, year, totalMeals }) => {
+    <DayListTemplate
+      heading={{
+        title: 'leanlog',
+        profileHref: '/track/profile',
+        renderNavLink: renderRouterNavLink,
+        rightContent: <HeaderAuthControl />,
+      }}
+      addDay={{
+        onDayAdded: ({ month, day, year, totalMeals }) => {
           const toIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           addDay(toIso, dayTargetsFromProfile(profile), totalMeals);
-        }}
-      />
-      <ListSectionCard
-        title="Days"
-        items={state.days
-          .slice()
-          .sort((a, b) => (a.date < b.date ? 1 : -1))
-          .map((d) => {
-            const totals = dayTotals(d);
-            return {
-              id: d.id,
-              title: prettyDate(d.date),
-              meta: (
-                <MacroSummaryLine
-                  calories={totals.calories}
-                  protein={totals.protein}
-                  carbs={totals.carbs}
-                  fat={totals.fat}
-                />
-              ),
-              onOpen: () => nav(`/track/day/${d.id}`),
-              onDelete: () => removeDay(d.id),
-              deleteLabel: 'Delete day',
-            };
-          })}
-      />
-    </AppShell>
+        },
+      }}
+      days={state.days
+        .slice()
+        .sort((a, b) => (a.date < b.date ? 1 : -1))
+        .map((d) => {
+          const totals = dayTotals(d);
+          return {
+            id: d.id,
+            title: prettyDate(d.date),
+            meta: (
+              <MacroSummaryLine
+                calories={totals.calories}
+                protein={totals.protein}
+                carbs={totals.carbs}
+                fat={totals.fat}
+              />
+            ),
+            onOpen: () => nav(`/track/day/${d.id}`),
+            onDelete: () => removeDay(d.id),
+            deleteLabel: 'Delete day',
+          };
+        })}
+    />
   );
 }
 
@@ -221,81 +214,55 @@ function DayDetail({ profile }: { profile: Profile }) {
   const day = state.days.find((d) => d.id === dayId);
   if (!day) return <Navigate to="/track" replace />;
   const totals = dayTotals(day);
-  const netCarbs = round1(Math.max(0, totals.carbs - totals.fiber));
-  const calorieTarget = day.targets.calories;
-  const calorieColorStyle = getCalorieColor(totals.calories, calorieTarget);
-  const calorieColorValue =
-    (calorieColorStyle?.color as string | undefined) ?? 'var(--ll-text-muted)';
 
   return (
-    <AppShell>
-      <PageNavHeading
-        title={prettyDate(day.date)}
-        backHref="/track"
-        profileHref="/track/profile"
-        renderNavLink={renderRouterNavLink}
-        rightContent={<HeaderAuthControl />}
-      />
-      <SectionCard>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2 justify-between items-start">
-            <SectionHeading noMargin>Daily totals</SectionHeading>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                const nextTargets = dayTargetsFromProfile(profile);
-                setState((s) => ({
-                  ...s,
-                  days: s.days.map((d) => (d.id === day.id ? { ...d, targets: nextTargets } : d)),
-                }));
-              }}
-            >
-              Update targets
-            </Button>
-          </div>
-          <Text as="p" variant="pageSubtitle" style={{ color: calorieColorValue }}>
-            {totals.calories} / {calorieTarget}
-            <UnitText> kcal</UnitText>
-          </Text>
-          <ProgressBar value={totals.calories} max={calorieTarget || 1} color={calorieColorValue} />
-          <div className="flex items-center gap-2 flex-wrap">
-            <HelperText as="p">
-              FAT {totals.fat} / {day.targets.macros.fat}g
-            </HelperText>
-            <HelperText as="span">·</HelperText>
-            <HelperText as="p">
-              PROTEIN {totals.protein} / {day.targets.macros.protein}g
-            </HelperText>
-            <HelperText as="span">·</HelperText>
-            <HelperText as="p">
-              CARBS {netCarbs} net / {totals.carbs} / {day.targets.macros.carbs}g
-            </HelperText>
-          </div>
-        </div>
-      </SectionCard>
-      <ListSectionCard
-        title={`Meals ${day.meals.length} / ${day.mealCountTarget}`}
-        emptyText="No meals yet. Add one below."
-        childrenTop
-        items={day.meals.map((m) => {
-          const totals = mealTotals(m);
-          return {
-            id: m.id,
-            title: m.name || 'UNTITLED MEAL',
-            meta: (
-              <MacroSummaryLine
-                calories={totals.calories}
-                protein={totals.protein}
-                carbs={totals.carbs}
-                fat={totals.fat}
-              />
-            ),
-            onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
-            onDelete: () => removeMeal(day.id, m.id),
-            deleteLabel: 'Delete meal',
-          };
-        })}
-      >
+    <DayDetailTemplate
+      heading={{
+        title: prettyDate(day.date),
+        backHref: '/track',
+        profileHref: '/track/profile',
+        renderNavLink: renderRouterNavLink,
+        rightContent: <HeaderAuthControl />,
+      }}
+      totalsSection={
+        <DailyTotalsCard
+          calories={totals.calories}
+          calorieTarget={day.targets.calories}
+          fat={totals.fat}
+          protein={totals.protein}
+          carbs={totals.carbs}
+          fiber={totals.fiber}
+          macroTargets={day.targets.macros}
+          onUpdateTargets={() => {
+            const nextTargets = dayTargetsFromProfile(profile);
+            setState((s) => ({
+              ...s,
+              days: s.days.map((d) => (d.id === day.id ? { ...d, targets: nextTargets } : d)),
+            }));
+          }}
+        />
+      }
+      mealsTitle={`Meals ${day.meals.length} / ${day.mealCountTarget}`}
+      mealsEmptyText="No meals yet. Add one below."
+      mealsItems={day.meals.map((m) => {
+        const totals = mealTotals(m);
+        return {
+          id: m.id,
+          title: m.name || 'UNTITLED MEAL',
+          meta: (
+            <MacroSummaryLine
+              calories={totals.calories}
+              protein={totals.protein}
+              carbs={totals.carbs}
+              fat={totals.fat}
+            />
+          ),
+          onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
+          onDelete: () => removeMeal(day.id, m.id),
+          deleteLabel: 'Delete meal',
+        };
+      })}
+      mealsControls={
         <div className="flex flex-col gap-2.5 mb-5">
           <Button
             className="w-full"
@@ -350,8 +317,8 @@ function DayDetail({ profile }: { profile: Profile }) {
             Add meal
           </Button>
         </div>
-      </ListSectionCard>
-    </AppShell>
+      }
+    />
   );
 }
 
@@ -488,105 +455,107 @@ function MealEdit() {
     setScanResult(null);
   };
   return (
-    <AppShell>
-      {/* same body omitted for brevity in this comment */}
-      <PageNavHeading
-        title={meal.name || 'Meal'}
-        subtitle={
+    <MealEditTemplate
+      heading={{
+        title: meal.name || 'Meal',
+        subtitle: (
           <MacroSummaryLine
             calories={totals.calories}
             protein={totals.protein}
             carbs={totals.carbs}
             fat={totals.fat}
           />
-        }
-        backHref={`/track/day/${day.id}`}
-        profileHref="/track/profile"
-        renderNavLink={renderRouterNavLink}
-        rightContent={<HeaderAuthControl />}
-      />
-      <SectionCard title="Meal name" saved={saved.mealName}>
-        <HelperText as="p">Name is required before leaving this page.</HelperText>
-        <Input
-          value={meal.name}
-          onChange={(e) => {
-            markDirty('mealName');
-            renameMeal(day.id, meal.id, e.target.value);
-            markSaved('mealName');
-          }}
-          normalizeOnBlur={normalizeIngredientName}
-          onNormalized={(name) => {
-            markDirty('mealName');
-            renameMeal(day.id, meal.id, name);
-            markSaved('mealName');
-          }}
-        />
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={() => {
-              removeMeal(day.id, meal.id);
-              nav(`/track/day/${day.id}`);
+        ),
+        backHref: `/track/day/${day.id}`,
+        profileHref: '/track/profile',
+        renderNavLink: renderRouterNavLink,
+        rightContent: <HeaderAuthControl />,
+      }}
+      mealSection={
+        <SectionCard title="Meal name" saved={saved.mealName}>
+          <HelperText as="p">Name is required before leaving this page.</HelperText>
+          <Input
+            value={meal.name}
+            onChange={(e) => {
+              markDirty('mealName');
+              renameMeal(day.id, meal.id, e.target.value);
+              markSaved('mealName');
             }}
-          >
-            Delete meal and all ingredients
-          </Button>
-        </div>
-        <div className="flex flex-col gap-2.5 mt-3">
-          <SectionHeading as="h4" noMargin>
-            Ingredients
-          </SectionHeading>
-          <HelperText as="p">Tap an ingredient row to edit values.</HelperText>
-          {meal.ingredients.length ? null : <HelperText as="p">No items</HelperText>}
-          {meal.ingredients.map((i) => (
-            <ListRow
-              key={i.id}
-              title={i.name}
-              meta={
-                <MacroSummaryLine
-                  calories={i.calories}
-                  protein={i.protein}
-                  carbs={i.carbs}
-                  fat={i.fat}
-                />
-              }
-              actions={
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeIngredient(day.id, meal.id, i.id);
-                  }}
-                >
-                  Delete ingredient
-                </Button>
-              }
-              onOpen={() => {
-                setEditingId(i.id);
-                setDraft(i);
+            normalizeOnBlur={normalizeIngredientName}
+            onNormalized={(name) => {
+              markDirty('mealName');
+              renameMeal(day.id, meal.id, name);
+              markSaved('mealName');
+            }}
+          />
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => {
+                removeMeal(day.id, meal.id);
+                nav(`/track/day/${day.id}`);
               }}
-            />
-          ))}
-        </div>
-      </SectionCard>
-      <IngredientEntryCard
-        value={draft}
-        saved={saved.ingredientForm}
-        submitLabel={editingId ? 'Update' : 'Add'}
-        onChange={(next) => {
+            >
+              Delete meal and all ingredients
+            </Button>
+          </div>
+          <div className="flex flex-col gap-2.5 mt-3">
+            <SectionHeading as="h4" noMargin>
+              Ingredients
+            </SectionHeading>
+            <HelperText as="p">Tap an ingredient row to edit values.</HelperText>
+            {meal.ingredients.length ? null : <HelperText as="p">No items</HelperText>}
+            {meal.ingredients.map((i) => (
+              <ListRow
+                key={i.id}
+                title={i.name}
+                meta={
+                  <MacroSummaryLine
+                    calories={i.calories}
+                    protein={i.protein}
+                    carbs={i.carbs}
+                    fat={i.fat}
+                  />
+                }
+                actions={
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeIngredient(day.id, meal.id, i.id);
+                    }}
+                  >
+                    Delete ingredient
+                  </Button>
+                }
+                onOpen={() => {
+                  setEditingId(i.id);
+                  setDraft(i);
+                }}
+              />
+            ))}
+          </div>
+        </SectionCard>
+      }
+      ingredientEntry={{
+        value: draft,
+        saved: saved.ingredientForm,
+        submitLabel: editingId ? 'Update' : 'Add',
+        onChange: (next) => {
           markDirty('ingredientForm');
           setDraft(next);
-        }}
-        onSubmit={saveIngredient}
-        normalizeNameOnBlur={normalizeIngredientName}
-        weightAction={
+        },
+        onSubmit: saveIngredient,
+        normalizeNameOnBlur: normalizeIngredientName,
+        weightAction: (
           <Button size="sm" variant="ghost" onClick={openCamera} disabled={scanLoading}>
             {scanLoading ? 'Scanning…' : 'Scan Label'}
           </Button>
-        }
-      />
+        ),
+      }}
+    >
       <FileInput
         ref={fileInputRef}
         accept="image/*"
@@ -703,7 +672,7 @@ function MealEdit() {
           </Button>
         </div>
       </Modal>
-    </AppShell>
+    </MealEditTemplate>
   );
 }
 
@@ -773,15 +742,15 @@ function ProfilePage({
   };
 
   return (
-    <AppShell>
-      <PageNavHeading
-        title="Profile"
-        backHref="/track"
-        profileHref="/track/profile"
-        renderNavLink={renderRouterNavLink}
-        rightContent={<HeaderAuthControl />}
-      />
-
+    <ProfileTemplate
+      heading={{
+        title: 'Profile',
+        backHref: '/track',
+        profileHref: '/track/profile',
+        renderNavLink: renderRouterNavLink,
+        rightContent: <HeaderAuthControl />,
+      }}
+    >
       <BodyInfoCard
         saved={saved.bodyInfo}
         weightLbs={profile.bodyInfo.weightLbs}
@@ -954,7 +923,7 @@ function ProfilePage({
         />
         {importError ? <WarningText>{importError}</WarningText> : null}
       </SectionCard>
-    </AppShell>
+    </ProfileTemplate>
   );
 }
 
