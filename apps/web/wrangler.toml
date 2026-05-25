@@ -7,3 +7,8 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB"
 database_name = "leanlog-db"
 database_id = "3747f59b-37ac-452f-93cd-8965e704a063"
+
+[[d1_databases]]
+binding = "DB_DEV"
+database_name = "leanlog-db-dev"
+database_id = "2bb90936-0975-43b5-bf32-fa28f4b1fb59"
