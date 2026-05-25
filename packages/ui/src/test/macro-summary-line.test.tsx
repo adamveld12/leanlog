@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { MacroSummaryLine } from '../components/MacroSummaryLine';
+import { MacroSummaryLine } from '../molecules/MacroSummaryLine';
 
 describe('MacroSummaryLine', () => {
   it('renders plain macro summary', () => {

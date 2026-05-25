@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { PageNavHeading } from '../components/PageNavHeading';
+import { PageNavHeading } from '../organisms/PageNavHeading';
 
 describe('PageNavHeading', () => {
   it('renders title, subtitle, and nav links', () => {

@@ -15,7 +15,8 @@
     "test:watch": "pnpm -r test:watch",
     "test:coverage": "pnpm -r test:coverage",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "design:audit": "node scripts/design-system-audit.mjs"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

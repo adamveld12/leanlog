@@ -70,8 +70,41 @@
 - **SectionCard:** default surface + line; saved state swaps border to `--ll-saved`.
 - **Modal:** dim backdrop + elevated surface; explicit destructive copy in confirm flows.
 - **Tabs:** compact segmented control; active tab must be obvious.
-- **SwipeRow:** mobile reveal delete; desktop shows explicit delete button.
 - **StickyFooter:** anchored totals with blended sticky surface + top border.
+
+## Component Catalog
+
+### Atoms (17)
+
+Button, Card, Field, FileInput, HelperText, Input, IntegerInput, Label, NumberInput, PageTitle, ProgressBar, Radio, SectionHeading, Select, Text, UnitText, WarningText
+
+### Molecules (9)
+
+ActionRow, DateSelect3, ListRow, MacroSummaryLine, Modal, RadioGroup, SectionCard, StickyFooter, Tabs
+
+### Organisms (9)
+
+AddDayControl, AppPageHeading, AuthLanding, DailyTotalsCard, IngredientEntryCard, ListSectionCard, PageNavHeading, ProfileSectionCards, ScanReviewModal
+
+### Templates (6)
+
+AppShell, DayDetailTemplate, DayListTemplate, LandingTemplate, MealEditTemplate, ProfileTemplate
+
+## Recipes (`packages/ui/src/styles/recipes.ts`)
+
+Reusable Tailwind class strings. Components in molecules/organisms/templates must use these tokens — do not duplicate the class strings inline.
+
+- `focusRing` — keyboard focus ring
+- `transition` — standard motion transition
+- `radius.control` / `radius.card` / `radius.pill` — border radius tokens
+- `surface.card` — card border + background
+- `text.*` — typography variants (title, sectionHeading, body, meta, pageSubtitle, warn)
+- `page.shell` / `page.main` — page layout
+- `stack.sm` / `stack.lg` / `stack.row` / `stack.between` — flex column/row layouts
+- `grid.two` / `grid.carbFiber` — grid layouts
+- `control.base` / `control.size` — interactive control sizing
+- `button.*` — button variant colors
+- `input.base` — input field styling
 
 ## State Rules
 

@@ -34,6 +34,7 @@
 - **Level 3:** Editable detail rows.
 - **Level 4:** Meta/supporting labels.
 - **Rule:** Never let helper text visually compete with totals.
+- **Macro order:** Always display macros in P / C / F order (Protein, Carbs, Fat). Use the MacroSummaryLine component.
 
 ## Interaction Rules
 

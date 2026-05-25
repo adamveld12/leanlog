@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { AddDayControl } from '../components/AddDayControl';
+import { AddDayControl } from '../organisms/AddDayControl';
 
 describe('AddDayControl', () => {
   it('submits selected picker values and totalMeals through onDayAdded', async () => {

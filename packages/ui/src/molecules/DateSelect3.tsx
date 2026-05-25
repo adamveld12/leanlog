@@ -1,0 +1,51 @@
+import { Select } from '../atoms/Select';
+
+type DateSelect3Props = {
+  month: number;
+  day: number;
+  year: number;
+  onChange: (next: { month: number; day: number; year: number }) => void;
+};
+
+export function DateSelect3({ month, day, year, onChange }: DateSelect3Props) {
+  const years = Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - i);
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      <Select
+        name="month"
+        value={month}
+        onChange={(e) => onChange({ month: Number(e.target.value), day, year })}
+      >
+        {months.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </Select>
+      <Select
+        name="day"
+        value={day}
+        onChange={(e) => onChange({ month, day: Number(e.target.value), year })}
+      >
+        {days.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </Select>
+      <Select
+        name="year"
+        value={year}
+        onChange={(e) => onChange({ month, day, year: Number(e.target.value) })}
+      >
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </Select>
+    </div>
+  );
+}

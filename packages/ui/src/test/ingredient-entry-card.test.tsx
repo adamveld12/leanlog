@@ -2,7 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { IngredientEntryCard, type IngredientEntryValue } from '../components/IngredientEntryCard';
+import { IngredientEntryCard, type IngredientEntryValue } from '../organisms/IngredientEntryCard';
 
 const base: IngredientEntryValue = {
   name: 'CHICKEN',
@@ -94,7 +94,7 @@ describe('IngredientEntryCard', () => {
     await userEvent.tab();
 
     expect(screen.getByText('Fiber cannot exceed carbs.')).toBeInTheDocument();
-    expect(fiber.className).toContain('ll-input-error');
+    expect(fiber.className).toContain('border-[var(--ll-danger)]');
 
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
     expect(onSubmit).not.toHaveBeenCalled();

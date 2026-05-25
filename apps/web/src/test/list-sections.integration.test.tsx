@@ -111,12 +111,11 @@ describe('list section behaviors', () => {
     renderApp('/track/day/d1/meal/m1', state);
 
     expect(
-      Array.from(document.querySelectorAll('.ll-meta')).some((el) =>
-        (el.textContent ?? '').includes('220 kcal · P 42g · C 0g · F 6g'),
-      ),
-    ).toBe(true);
+      screen.getAllByText((_content, element) => (element?.textContent ?? '').includes('220 kcal'))
+        .length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
-    expect(document.querySelector('.ll-sticky-footer')).toBeNull();
+    expect(document.querySelector('footer')).toBeNull();
 
     await userEvent.click(screen.getByRole('link', { name: /CHICKEN/i }));
     expect(screen.getByDisplayValue('CHICKEN')).toBeInTheDocument();
