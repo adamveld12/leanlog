@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 const errors = [];
 const requiredSpecs = [
@@ -68,6 +68,80 @@ for (const file of files('apps/web/src/pages').filter((f) => f.endsWith('.tsx'))
   const text = readFileSync(file, 'utf8');
   if (/<(button|input|select|textarea)\b/.test(text))
     errors.push(`Raw control in app page: ${file}`);
+}
+
+// Check: raw typography elements in app pages (should use design system atoms)
+const rawTypographyPattern = /<(small|h3|h4|p|span|a)\b/g;
+for (const file of files('apps/web/src/pages').filter((f) => f.endsWith('.tsx'))) {
+  const text = readFileSync(file, 'utf8');
+  const matches = [...text.matchAll(rawTypographyPattern)];
+  for (const m of matches) {
+    errors.push(`Raw <${m[1]}> in app page (use design system atom): ${file}`);
+  }
+}
+
+// Check: raw typography elements in UI package outside atoms/analytics
+const uiRawTypographyDirs = ['packages/ui/src/molecules', 'packages/ui/src/organisms', 'packages/ui/src/templates'];
+for (const dir of uiRawTypographyDirs) {
+  for (const file of files(dir).filter((f) => f.endsWith('.tsx') && !f.endsWith('.stories.tsx'))) {
+    const text = readFileSync(file, 'utf8');
+    const matches = [...text.matchAll(rawTypographyPattern)];
+    for (const m of matches) {
+      errors.push(`Raw <${m[1]}> in UI package outside atoms (use design system atom): ${file}`);
+    }
+  }
+}
+
+// Check: recipe class duplication in app pages (inline recipe class strings)
+const recipeDuplicationPatterns = [
+  { pattern: /text-\[var\(--ll-warn\)\]/, atom: 'WarningText' },
+  { pattern: /text-\[var\(--ll-text-muted\)\]/, atom: 'HelperText/UnitText/Text' },
+  { pattern: /text-xs font-semibold uppercase tracking-\[0\.08em\]/, atom: 'SectionHeading' },
+];
+for (const file of files('apps/web/src/pages').filter((f) => f.endsWith('.tsx'))) {
+  const text = readFileSync(file, 'utf8');
+  for (const { pattern, atom } of recipeDuplicationPatterns) {
+    if (pattern.test(text)) {
+      errors.push(`Inline recipe class instead of <${atom}> in app page: ${file}`);
+    }
+  }
+}
+for (const dir of uiRawTypographyDirs) {
+  for (const file of files(dir).filter((f) => f.endsWith('.tsx') && !f.endsWith('.stories.tsx'))) {
+    const text = readFileSync(file, 'utf8');
+    for (const { pattern, atom } of recipeDuplicationPatterns) {
+      if (pattern.test(text)) {
+        errors.push(`Inline recipe class instead of <${atom}> in UI package: ${file}`);
+      }
+    }
+  }
+}
+
+// Check: Storybook coverage — every component .tsx must have a .stories.tsx
+// Typography.stories.tsx covers: PageTitle, SectionHeading, HelperText, WarningText, UnitText
+const typographyStoryCovered = new Set([
+  'PageTitle.tsx',
+  'SectionHeading.tsx',
+  'HelperText.tsx',
+  'WarningText.tsx',
+  'UnitText.tsx',
+]);
+const componentDirs = [
+  'packages/ui/src/atoms',
+  'packages/ui/src/molecules',
+  'packages/ui/src/organisms',
+  'packages/ui/src/templates',
+];
+for (const dir of componentDirs) {
+  if (!existsSync(dir)) continue;
+  for (const entry of readdirSync(dir)) {
+    if (!entry.endsWith('.tsx') || entry.endsWith('.stories.tsx') || entry.endsWith('.test.tsx')) continue;
+    if (typographyStoryCovered.has(entry)) continue;
+    const storyFile = join(dir, entry.replace('.tsx', '.stories.tsx'));
+    if (!existsSync(storyFile)) {
+      errors.push(`Missing Storybook story: ${join(dir, entry)} (create ${basename(storyFile)})`);
+    }
+  }
 }
 
 if (errors.length) {

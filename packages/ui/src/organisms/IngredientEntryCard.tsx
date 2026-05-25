@@ -3,6 +3,8 @@ import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
 import { Input } from '../atoms/Input';
 import { NumberInput } from '../atoms/NumberInput';
+import { SectionHeading } from '../atoms/SectionHeading';
+import { WarningText } from '../atoms/WarningText';
 import { SectionCard } from '../molecules/SectionCard';
 
 export type IngredientEntryValue = {
@@ -50,9 +52,7 @@ export function IngredientEntryCard({
   return (
     <SectionCard saved={saved}>
       <div className="flex items-center gap-2 justify-between">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ll-text-muted)] mb-0">
-          Ingredient Entry
-        </h3>
+        <SectionHeading noMargin>Ingredient Entry</SectionHeading>
         <Button size="sm" onClick={onSubmit} disabled={fiberInvalid}>
           {submitLabel}
         </Button>
@@ -118,11 +118,7 @@ export function IngredientEntryCard({
           inputClassName={fiberInvalid ? 'border-[var(--ll-danger)]' : ''}
         />
       </div>
-      {fiberInvalid ? (
-        <small className="text-xs font-medium text-[var(--ll-warn)]">
-          Fiber cannot exceed carbs.
-        </small>
-      ) : null}
+      {fiberInvalid ? <WarningText>Fiber cannot exceed carbs.</WarningText> : null}
 
       <NumberInput
         label="Protein"

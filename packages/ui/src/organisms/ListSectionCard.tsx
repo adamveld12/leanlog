@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Button } from '../atoms/Button';
+import { HelperText } from '../atoms/HelperText';
 import { ListRow } from '../molecules/ListRow';
 import { SectionCard } from '../molecules/SectionCard';
 
@@ -34,7 +35,7 @@ export function ListSectionCard({
 }: ListSectionCardProps) {
   return (
     <SectionCard title={title} saved={saved}>
-      {note ? <p className="text-xs font-medium text-[var(--ll-text-muted)]">{note}</p> : null}
+      {note ? <HelperText as="p">{note}</HelperText> : null}
       {childrenTop ? children : null}
       <div className="flex flex-col gap-2.5">
         {items.map((item) => {
@@ -63,7 +64,7 @@ export function ListSectionCard({
           return <div key={item.id}>{row}</div>;
         })}
         {items.length ? null : (
-          <p className="text-center text-xs font-medium text-[var(--ll-text-muted)]">{emptyText}</p>
+          <HelperText as="p" className="text-center">{emptyText}</HelperText>
         )}
       </div>
       {childrenTop ? null : children}

@@ -1,6 +1,7 @@
 import { Field } from '../atoms/Field';
 import { Input } from '../atoms/Input';
 import { NumberInput } from '../atoms/NumberInput';
+import { WarningText } from '../atoms/WarningText';
 import { RadioGroup } from '../molecules/RadioGroup';
 import { SectionCard } from '../molecules/SectionCard';
 
@@ -33,7 +34,7 @@ export function BodyInfoCard(props: BodyInfoCardProps) {
         />
       </div>
       {props.weightError ? (
-        <small className="text-xs font-medium text-[var(--ll-warn)]">{props.weightError}</small>
+        <WarningText>{props.weightError}</WarningText>
       ) : null}
     </SectionCard>
   );
@@ -77,9 +78,9 @@ export function CalorieTargetCard(props: CalorieTargetCardProps) {
         />
       </Field>
       {props.targetCaloriesError ? (
-        <small className="text-xs font-medium text-[var(--ll-warn)]">
+        <WarningText>
           {props.targetCaloriesError}
-        </small>
+        </WarningText>
       ) : null}
     </SectionCard>
   );
@@ -138,7 +139,7 @@ export function MacroTargetsCard(props: MacroTargetsCardProps) {
         onBlur={props.onBlur}
       />
       {props.error ? (
-        <small className="text-xs font-medium text-[var(--ll-warn)]">{props.error}</small>
+        <WarningText>{props.error}</WarningText>
       ) : null}
     </SectionCard>
   );

@@ -1,4 +1,6 @@
 import type { KeyboardEvent, ReactNode } from 'react';
+import { HelperText } from '../atoms/HelperText';
+import { Text } from '../atoms/Text';
 import { cn } from '../styles/cn';
 
 export type ListRowProps = {
@@ -38,13 +40,11 @@ export function ListRow({
       onKeyDown={onKeyDown}
     >
       <div className="flex flex-col gap-2.5">
-        <span className="text-sm font-medium text-[var(--ll-text)]">{title}</span>
-        {meta ? (
-          <small className="text-xs font-medium text-[var(--ll-text-muted)]">{meta}</small>
-        ) : null}
+        <Text as="span" className="font-medium">{title}</Text>
+        {meta ? <HelperText>{meta}</HelperText> : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        {rightMetric ? <span className="whitespace-nowrap">{rightMetric}</span> : null}
+        {rightMetric ? <div className="whitespace-nowrap">{rightMetric}</div> : null}
         {actions}
       </div>
     </div>
