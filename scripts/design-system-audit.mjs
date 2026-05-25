@@ -81,12 +81,24 @@ for (const file of files('apps/web/src/pages').filter((f) => f.endsWith('.tsx'))
 }
 
 // Check: raw typography elements in UI package outside atoms/analytics
+// Skip matches on lines preceded by eslint-disable comments (intentional exemptions)
+function hasEslintDisable(text, matchIndex) {
+  const before = text.lastIndexOf('\n', matchIndex);
+  const lineStart = before === -1 ? 0 : before + 1;
+  const prevLineEnd = before === -1 ? -1 : before;
+  const prevLineStart = prevLineEnd <= 0 ? 0 : text.lastIndexOf('\n', prevLineEnd - 1) + 1;
+  const prevLine = text.slice(prevLineStart, prevLineEnd);
+  const currentLine = text.slice(lineStart, text.indexOf('\n', lineStart));
+  return prevLine.includes('eslint-disable') || currentLine.includes('eslint-disable');
+}
+
 const uiRawTypographyDirs = ['packages/ui/src/molecules', 'packages/ui/src/organisms', 'packages/ui/src/templates'];
 for (const dir of uiRawTypographyDirs) {
   for (const file of files(dir).filter((f) => f.endsWith('.tsx') && !f.endsWith('.stories.tsx'))) {
     const text = readFileSync(file, 'utf8');
     const matches = [...text.matchAll(rawTypographyPattern)];
     for (const m of matches) {
+      if (hasEslintDisable(text, m.index)) continue;
       errors.push(`Raw <${m[1]}> in UI package outside atoms (use design system atom): ${file}`);
     }
   }
