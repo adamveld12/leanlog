@@ -686,6 +686,10 @@ function ProfilePage({
   const { state, setState } = useStore();
   const { saved, markDirty, markSaved } = useSavedSections();
   const [importError, setImportError] = useState('');
+  const [pendingImport, setPendingImport] = useState<{
+    state: ReturnType<typeof migrateState>;
+    profile: Profile;
+  } | null>(null);
 
   const weightError =
     profile.bodyInfo.weightLbs === 0
@@ -906,16 +910,7 @@ function ProfilePage({
               const parsed = JSON.parse(await file.text()) as { state: unknown; profile: unknown };
               const nextState = migrateState(parsed.state);
               const nextProfile = parseProfile(JSON.stringify(parsed.profile));
-              if (
-                !window.confirm(
-                  'Replace all existing data with imported file? This cannot be undone.',
-                )
-              )
-                return;
-              setState(nextState);
-              setProfile(nextProfile);
-              setImportError('');
-              markSaved('data');
+              setPendingImport({ state: nextState, profile: nextProfile });
             } catch (error) {
               setImportError(error instanceof Error ? error.message : 'Import failed');
             }
@@ -923,6 +918,33 @@ function ProfilePage({
         />
         {importError ? <WarningText>{importError}</WarningText> : null}
       </SectionCard>
+      <Modal
+        open={!!pendingImport}
+        title="Confirm data import"
+        onClose={() => setPendingImport(null)}
+      >
+        <HelperText as="p">
+          Replace all existing data with imported file? This cannot be undone.
+        </HelperText>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => setPendingImport(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              if (!pendingImport) return;
+              setState(pendingImport.state);
+              setProfile(pendingImport.profile);
+              setImportError('');
+              setPendingImport(null);
+              markSaved('data');
+            }}
+          >
+            Replace all data
+          </Button>
+        </div>
+      </Modal>
     </ProfileTemplate>
   );
 }
