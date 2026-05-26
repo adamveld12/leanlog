@@ -123,10 +123,15 @@ function RouteLoadingState({ title }: { title: string }) {
 }
 
 function RouteErrorState({ message }: { message: string }) {
+  const nav = useNavigate();
+
   return (
     <div className="mx-auto max-w-xl p-4">
       <SectionCard title="Unable to load tracker data">
         <WarningText>{message}</WarningText>
+        <Button variant="secondary" onClick={() => nav('/track')}>
+          Back to days
+        </Button>
       </SectionCard>
     </div>
   );
@@ -457,7 +462,7 @@ function MealEdit() {
   if (!dayId || routeStatus === 'not_found') return <Navigate to="/track" replace />;
   if (routeStatus === 'error') return <RouteErrorState message={routeLoad.error} />;
   if (!day) return <RouteLoadingState title="Loading meal…" />;
-  if (!meal) return <Navigate to="/track" replace />;
+  if (!meal) return <Navigate to={`/track/day/${day.id}`} replace />;
 
   const saveIngredient = () => {
     const id = editingId ?? uuidv7();

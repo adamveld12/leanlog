@@ -9,6 +9,16 @@ import type {
   DayTargets,
 } from '@leanlog/data-access';
 
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(`API ${status}: ${message}`);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 async function apiFetch<T>(path: string, opts: RequestInit & { token: string }): Promise<T> {
   const { token, ...fetchOpts } = opts;
   const res = await fetch(path, {
@@ -21,7 +31,7 @@ async function apiFetch<T>(path: string, opts: RequestInit & { token: string }):
   });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    throw new Error(`API ${res.status}: ${text}`);
+    throw new ApiError(res.status, text);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;

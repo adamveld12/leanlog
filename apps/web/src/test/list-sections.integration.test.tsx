@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter, useLocation } from 'react-router-dom';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createContext, useContext, useState, type PropsWithChildren } from 'react';
 import App from '../App';
 import { todayIso } from '../lib';
@@ -42,6 +42,7 @@ type StoreCtx = {
   upsertIngredient: (...args: unknown[]) => Promise<void>;
   removeIngredient: (dayId: string, mealId: string, ingredientId: string) => Promise<void>;
   updateDayTargets: (...args: unknown[]) => Promise<void>;
+  patchProfileLocal: (data: Partial<UserProfile>) => void;
   updateProfile: (...args: unknown[]) => Promise<void>;
 };
 
@@ -87,6 +88,7 @@ function FakeStateProvider({
       );
     },
     updateDayTargets: async () => {},
+    patchProfileLocal: () => {},
     updateProfile: async () => {},
   };
 
@@ -102,11 +104,17 @@ vi.mock('../state', () => ({
   },
 }));
 
+function LocationProbe() {
+  const location = useLocation();
+  return <div data-testid="location-probe">{location.pathname}</div>;
+}
+
 function renderApp(route: string, initialDays: DailyMealLog[]) {
   return render(
     <FakeStateProvider initialDays={initialDays}>
       <MemoryRouter initialEntries={[route]}>
         <App />
+        <LocationProbe />
       </MemoryRouter>
     </FakeStateProvider>,
   );
@@ -130,6 +138,8 @@ function makeDayWithMeals(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
 }
 
 describe('list section behaviors', () => {
+  afterEach(() => cleanup());
+
   it('day list row opens detail and supports delete', async () => {
     const initialDays = [
       makeDayWithMeals({
@@ -172,6 +182,30 @@ describe('list section behaviors', () => {
     await userEvent.click(screen.getByRole('link', { name: '← Back' }));
     await userEvent.click(screen.getAllByRole('button', { name: 'Delete day' })[0]);
     expect(screen.queryByText('Today')).not.toBeInTheDocument();
+  });
+
+  it('missing meal route redirects to the parent day', async () => {
+    const initialDays = [
+      makeDayWithMeals({
+        meals: [
+          {
+            id: 'm1',
+            dailyMealLogId: 'd1',
+            name: 'LUNCH',
+            createdAt: now,
+            updatedAt: now,
+            ingredients: [],
+          },
+        ],
+      }),
+    ];
+
+    renderApp('/track/day/d1/meal/missing', initialDays);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/d1');
+    });
+    expect(screen.getByText('Daily totals')).toBeInTheDocument();
   });
 
   it('ingredient list row opens ingredient editor and supports delete', async () => {

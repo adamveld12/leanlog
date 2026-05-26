@@ -22,7 +22,18 @@ vi.mock('@clerk/clerk-react', () => ({
   }),
 }));
 
+class MockApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(`API ${status}: ${message}`);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 vi.mock('../api', () => ({
+  ApiError: MockApiError,
   api: {
     days: {
       list: vi.fn(() => Promise.resolve({ days: [] })),

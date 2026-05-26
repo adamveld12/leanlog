@@ -3,7 +3,7 @@ import * as ClerkReact from '@clerk/clerk-react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
-import { api } from '../api';
+import { api, ApiError } from '../api';
 import { StateProvider } from '../state';
 import type { DailyMealLog } from '@leanlog/data-access';
 
@@ -111,13 +111,38 @@ describe('deep-link routing', () => {
   });
 
   it('redirects missing days back to the day list after route loading', async () => {
-    apiMock.days.get.mockRejectedValue(new Error('API 404: Not found'));
+    apiMock.days.get.mockRejectedValue(new ApiError(404, 'Not found'));
 
     renderApp('/track/day/missing');
 
     await waitFor(() => {
       expect(screen.getByTestId('location-probe')).toHaveTextContent('/track');
     });
+  });
+
+  it('shows recoverable error state for non-404 route loading failures', async () => {
+    apiMock.days.get.mockRejectedValue(new ApiError(500, 'Network timeout'));
+
+    renderApp('/track/day/d1');
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to load tracker data')).toBeInTheDocument();
+    });
+    expect(screen.getByText('API 500: Network timeout')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to days' })).toBeInTheDocument();
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/d1');
+  });
+
+  it('does not classify generic errors containing API 404 text as not found', async () => {
+    apiMock.days.get.mockRejectedValue(new Error('Proxy reported API 404 in response body'));
+
+    renderApp('/track/day/d1');
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to load tracker data')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Proxy reported API 404 in response body')).toBeInTheDocument();
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/d1');
   });
 
   it('redirects signed-out users from direct tracker URLs to the landing page', () => {

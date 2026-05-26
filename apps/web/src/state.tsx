@@ -17,7 +17,7 @@ import type {
   UpsertIngredient,
   DayTargets,
 } from '@leanlog/data-access';
-import { api } from './api';
+import { api, ApiError } from './api';
 
 export type EnsureDayResult =
   | { status: 'found'; day: DailyMealLog }
@@ -109,8 +109,8 @@ export function StateProvider({ children }: PropsWithChildren) {
         });
         return { status: 'found', day };
       } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return { status: 'not_found' };
         const message = error instanceof Error ? error.message : 'Failed to load day';
-        if (message.includes('API 404')) return { status: 'not_found' };
         return { status: 'error', error: message };
       }
     },
