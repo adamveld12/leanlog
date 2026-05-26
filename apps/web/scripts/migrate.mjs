@@ -7,6 +7,6 @@ if (!branch) {
   process.exit(0);
 }
 
-const binding = branch === 'main' ? 'DB' : 'DB_DEV';
-console.log(`Applying migrations to ${binding} (branch: ${branch})...`);
-execSync(`pnpx wrangler d1 migrations apply ${binding} --remote`, { stdio: 'inherit' });
+const env = branch === 'main' ? '' : '--env preview';
+console.log(`Applying migrations to DB (branch: ${branch})...`);
+execSync(`pnpx wrangler d1 migrations apply DB --remote ${env}`, { stdio: 'inherit' });
