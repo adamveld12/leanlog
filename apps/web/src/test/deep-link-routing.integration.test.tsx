@@ -89,7 +89,7 @@ describe('deep-link routing', () => {
 
     renderApp('/track/day/d1');
 
-    expect(screen.getByText('Fetching your tracker data…')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('Daily totals')).toBeInTheDocument();

@@ -6,7 +6,7 @@ Feature: Leanlog Atoms
   Scenario: Atoms provide base UI primitives
     Given a developer needs a primitive UI element
     When they import from @leanlog/ui
-    Then they can use Button, Card, Field, FileInput, HelperText, Input, IntegerInput, Label, NumberInput, PageTitle, ProgressBar, Radio, SectionHeading, Select, Text, UnitText, WarningText, and color documentation
+    Then they can use Button, Card, Field, FileInput, HelperText, Input, IntegerInput, Label, NumberInput, PageTitle, ProgressBar, Radio, SectionHeading, Select, Spinner, Text, UnitText, WarningText, and color documentation
 
   Scenario: Atoms may wrap native controls
     Given an atom represents a primitive interactive element

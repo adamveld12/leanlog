@@ -56,6 +56,7 @@
 - **Curve:** `cubic-bezier(0.2, 0.8, 0.2, 1)`
 - **Animated properties:** transform, opacity, border-color
 - **Rule:** No layout-jank animations.
+- **Exception:** The `Spinner` atom uses a continuous 0.75s linear rotation — the only intentional infinite animation. Pauses automatically under `prefers-reduced-motion`.
 
 ## Component Baselines
 
@@ -74,13 +75,13 @@
 
 ## Component Catalog
 
-### Atoms (17)
+### Atoms (18)
 
-Button, Card, Field, FileInput, HelperText, Input, IntegerInput, Label, NumberInput, PageTitle, ProgressBar, Radio, SectionHeading, Select, Text, UnitText, WarningText
+Button, Card, Field, FileInput, HelperText, Input, IntegerInput, Label, NumberInput, PageTitle, ProgressBar, Radio, SectionHeading, Select, Spinner, Text, UnitText, WarningText
 
-### Molecules (9)
+### Molecules (10)
 
-ActionRow, DateSelect3, ListRow, MacroSummaryLine, Modal, RadioGroup, SectionCard, StickyFooter, Tabs
+ActionRow, DateSelect3, ListRow, LoadingState, MacroSummaryLine, Modal, RadioGroup, SectionCard, StickyFooter, Tabs
 
 ### Organisms (9)
 

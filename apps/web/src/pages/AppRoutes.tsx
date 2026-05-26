@@ -21,6 +21,7 @@ import {
   Input,
   LandingTemplate,
   ListRow,
+  LoadingState,
   MacroSummaryLine,
   MacroTargetsCard,
   MealEditTemplate,
@@ -112,14 +113,16 @@ function HeaderAuthControl() {
 type RouteLoadStatus = 'loading' | 'not_found' | 'error';
 type RouteLoadState = { dayId: string; status: RouteLoadStatus; error: string };
 
-function RouteLoadingState({ title }: { title: string }) {
+function PageLoadingState({ label }: { label: string }) {
   return (
-    <div className="mx-auto max-w-xl p-4">
-      <SectionCard title={title}>
-        <HelperText as="p">Fetching your tracker data…</HelperText>
-      </SectionCard>
+    <div className="flex min-h-screen items-center justify-center">
+      <LoadingState label={label} />
     </div>
   );
+}
+
+function RouteLoadingState({ title }: { title: string }) {
+  return <PageLoadingState label={title} />;
 }
 
 function RouteErrorState({ message }: { message: string }) {
@@ -174,7 +177,7 @@ function DayList() {
   const nav = useNavigate();
   const { days, profile, loading, error, addDay, removeDay } = useStore();
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <PageLoadingState label="Loading your days…" />;
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -814,7 +817,7 @@ function ProfilePage() {
     };
   }, [profile, computedCalories]);
 
-  if (!profile) return null;
+  if (!profile) return <PageLoadingState label="Loading profile…" />;
 
   const weightError =
     profile.weightLbs === 0
