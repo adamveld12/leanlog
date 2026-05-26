@@ -22,7 +22,7 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -30,12 +30,94 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
+          use_sticky_comment: true
           additional_permissions: |
             actions: read
           prompt: |
-            Provide an advisory Leanlog design-system review for this pull request.
+            You are performing an advisory design-system review for this Leanlog pull request. This is a read-only review — do not modify any files or create branches.
 
-            Review against docs/design-reference.md, docs/design-system.md, packages/ui/specs/*.md, and AGENTS.md.
-            Check Atomic Design boundaries, page/template placement, Storybook template-only policy, recipe-approved class usage in packages/ui, app-page exemption from recipes.ts class-name allowlist, no .ll-* classes, no raw controls outside atoms, analytics values and scope decoration, accessibility, and mobile-first behavior.
+            ## Your Task
 
-            Comment with concise findings and mark whether each finding is blocking for deterministic lint/audit or advisory design feedback.
+            Review the PR diff against:
+            - `docs/design-reference.md`
+            - `docs/design-system.md`
+            - `packages/ui/specs/*.md`
+            - `AGENTS.md`
+
+            ## Review Criteria (9 areas)
+
+            Check each area in order and update the comment after completing each one:
+
+            1. **Atomic Design tier boundaries** — molecules/organisms/templates must not use raw HTML elements; only atoms may. Check for banned elements (`<small>`, `<p>`, `<span>`, `<h3>`, `<h4>`, `<a>`) outside atoms.
+            2. **Template slot-based architecture** — templates must accept ReactNode slots, not raw data props. App pages must use the appropriate template (DayListTemplate, DayDetailTemplate, MealEditTemplate, ProfileTemplate, LandingTemplate).
+            3. **Recipe-approved class usage** — reusable class strings in `packages/ui` must come from `recipes.ts` tokens. No inline duplication of recipe values.
+            4. **No `.ll-*` classes** — legacy ll-* classes are banned everywhere.
+            5. **Raw control usage** — no raw `<input>`, `<select>`, `<button>`, `<textarea>` outside atom components.
+            6. **Storybook story coverage** — every new component in atoms/, molecules/, organisms/, templates/ needs a `.stories.tsx` file.
+            7. **App page template usage** — app pages must not build layouts manually with AppShell + PageNavHeading; they must use the appropriate template.
+            8. **Analytics scope decoration** — molecules/organisms/templates that contain interactive atoms must wrap them in `<AnalyticsScope>`.
+            9. **Accessibility & mobile-first** — check for missing ARIA labels, keyboard navigation issues, and non-mobile-first layout patterns.
+
+            ## Comment Format
+
+            Structure your comment exactly like this and update it progressively:
+
+            ```
+            ### Design System Review
+
+            **Status:** Reviewing... [spinner] — N/9 areas checked
+
+            #### Review Areas
+            - [ ] Atomic Design tier boundaries
+            - [ ] Template slot-based architecture
+            - [ ] Recipe-approved class usage
+            - [ ] No .ll-* classes
+            - [ ] Raw control usage
+            - [ ] Storybook story coverage
+            - [ ] App page template usage
+            - [ ] Analytics scope decoration
+            - [ ] Accessibility & mobile-first
+
+            #### Findings
+            *(filling in as review progresses)*
+            ```
+
+            After checking each area:
+            - Mark it `[x]` in the checklist
+            - Add any findings under **#### Findings** with this format:
+              - `**[Blocking]** Area name — description` for deterministic lint/audit violations (raw elements, ll-* classes, missing stories, etc.)
+              - `**[Advisory]** Area name — description` for design feedback (naming, structure, pattern suggestions)
+            - Call `mcp__github_comment__update_claude_comment` to update the comment
+
+            ## Final Comment Format
+
+            When all 9 areas are checked, update the comment to the final format:
+
+            If issues found:
+            ```
+            ### Design System Review
+
+            **Result:** N finding(s) — B blocking, A advisory
+
+            #### Review Areas
+            - [x] all items checked...
+
+            #### Findings
+            [list of findings]
+
+            #### Summary
+            [1-2 sentence summary of what was reviewed and the overall verdict]
+            ```
+
+            If no issues found:
+            ```
+            ### Design System Review — No Issues Found
+
+            All 9 review areas passed. No blocking or advisory findings.
+
+            #### Review Areas
+            - [x] all items checked...
+            ```
+
+            Always include the job run link at the bottom.
