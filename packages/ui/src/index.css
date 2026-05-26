@@ -26,3 +26,13 @@
   --ll-saved: #53bf79;
   --ll-focus: #9d9d9d;
 }
+
+@keyframes ll-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@theme {
+  --animate-ll-spin: ll-spin 0.75s linear infinite;
+}

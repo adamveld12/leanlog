@@ -11,7 +11,7 @@ Feature: Leanlog Molecules
   Scenario: Molecules provide reusable UI patterns
     Given a developer needs a common UI pattern
     When they import from @leanlog/ui
-    Then they can use ActionRow, DateSelect3, ListRow, MacroSummaryLine, Modal, RadioGroup, SectionCard, SwipeRow, and Tabs
+    Then they can use ActionRow, DateSelect3, ListRow, LoadingState, MacroSummaryLine, Modal, RadioGroup, SectionCard, StickyFooter, and Tabs
 
   Scenario: Molecules decorate atom analytics
     Given an atom is rendered inside a molecule

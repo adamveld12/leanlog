@@ -1,0 +1,21 @@
+{
+  "name": "@leanlog/data-access",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.0.0",
+    "uuidv7": "^1.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.0",
+    "vitest": "^3.0.0"
+  }
+}

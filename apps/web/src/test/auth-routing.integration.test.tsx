@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import * as ClerkReact from '@clerk/clerk-react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
@@ -28,10 +28,12 @@ describe('auth routing', () => {
     expect(screen.getByRole('button', { name: 'Sign in / Sign up' })).toBeInTheDocument();
   });
 
-  it('redirects signed-in users from / to /track', () => {
+  it('redirects signed-in users from / to /track', async () => {
     renderApp('/');
 
-    expect(screen.getByRole('heading', { level: 1, name: 'leanlog' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'leanlog' })).toBeInTheDocument();
+    });
     expect(screen.getByText('Days')).toBeInTheDocument();
   });
 });
