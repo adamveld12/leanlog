@@ -27,6 +27,7 @@ type Store = {
   upsertIngredient(dayId: string, mealId: string, ingredient: UpsertIngredient): Promise<void>;
   removeIngredient(dayId: string, mealId: string, ingredientId: string): Promise<void>;
   updateDayTargets(dayId: string, targets: DayTargets): Promise<void>;
+  patchProfileLocal(data: Partial<UserProfile>): void;
   updateProfile(data: UpdateProfile): Promise<void>;
 };
 
@@ -171,6 +172,10 @@ export function StateProvider({ children }: PropsWithChildren) {
     async updateDayTargets(dayId, targets) {
       const updated = await withToken((t) => api.days.updateTargets(t, dayId, targets));
       setDays((prev) => prev.map((d) => (d.id === dayId ? updated : d)));
+    },
+
+    patchProfileLocal(data) {
+      setProfile((prev) => (prev ? { ...prev, ...data } : prev));
     },
 
     async updateProfile(data) {

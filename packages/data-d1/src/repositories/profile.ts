@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { userProfiles } from '../schema';
+import { PROFILE_DEFAULTS } from '@leanlog/data-access';
 import type { ProfileRepository, UserProfile, UpdateProfile } from '@leanlog/data-access';
 
 export function createProfileRepository(db: D1Database): ProfileRepository {
@@ -41,16 +42,7 @@ export function createProfileRepository(db: D1Database): ProfileRepository {
       await d.insert(userProfiles).values({
         id,
         clerkUserId,
-        weightLbs: 180,
-        heightInches: 72,
-        calorieMode: 'maintenance',
-        targetCalories: null,
-        macroMode: 'percentage',
-        macroFats: 25,
-        macroCarbs: 35,
-        macroProtein: 40,
-        goalWeightLbs: null,
-        goalBodyFatPct: null,
+        ...PROFILE_DEFAULTS,
         createdAt: ts,
         updatedAt: ts,
       });

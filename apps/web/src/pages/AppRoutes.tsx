@@ -683,7 +683,7 @@ function MealEdit() {
 }
 
 function ProfilePage() {
-  const { profile, updateProfile } = useStore();
+  const { profile, updateProfile, patchProfileLocal } = useStore();
   const [theme, setTheme] = useTheme();
   const { getToken } = useAuth();
   const { saved, markDirty, markSaved } = useSavedSections();
@@ -774,8 +774,8 @@ function ProfilePage() {
         weightLbs={profile.weightLbs}
         heightInches={profile.heightInches}
         weightError={weightError}
-        onWeightChange={(n) => void updateProfile({ weightLbs: Math.max(0, Math.floor(n)) })}
-        onHeightChange={(n) => void updateProfile({ heightInches: Math.max(0, Math.floor(n)) })}
+        onWeightChange={(n) => patchProfileLocal({ weightLbs: Math.max(0, Math.floor(n)) })}
+        onHeightChange={(n) => patchProfileLocal({ heightInches: Math.max(0, Math.floor(n)) })}
         onWeightBlur={() => save({ weightLbs: profile.weightLbs }, 'bodyInfo')}
         onHeightBlur={() => save({ heightInches: profile.heightInches }, 'bodyInfo')}
       />
@@ -805,7 +805,7 @@ function ProfilePage() {
           )
         }
         onTargetCaloriesChange={(n) =>
-          void updateProfile({ targetCalories: Number.isFinite(n) ? Math.floor(n) : null })
+          patchProfileLocal({ targetCalories: Number.isFinite(n) ? Math.floor(n) : null })
         }
         onTargetCaloriesBlur={() =>
           save({ targetCalories: profile.targetCalories }, 'calorieTarget')
@@ -823,9 +823,9 @@ function ProfilePage() {
         proteinHint={macro.proteinHint}
         error={macro.error}
         onModeChange={(mode) => save({ macroMode: mode }, 'macroTargets')}
-        onFatsChange={(n) => void updateProfile({ macroFats: Math.max(0, Math.floor(n)) })}
-        onCarbsChange={(n) => void updateProfile({ macroCarbs: Math.max(0, Math.floor(n)) })}
-        onProteinChange={(n) => void updateProfile({ macroProtein: Math.max(0, Math.floor(n)) })}
+        onFatsChange={(n) => patchProfileLocal({ macroFats: Math.max(0, Math.floor(n)) })}
+        onCarbsChange={(n) => patchProfileLocal({ macroCarbs: Math.max(0, Math.floor(n)) })}
+        onProteinChange={(n) => patchProfileLocal({ macroProtein: Math.max(0, Math.floor(n)) })}
         onBlur={() =>
           save(
             {
