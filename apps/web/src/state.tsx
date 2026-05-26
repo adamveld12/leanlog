@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type PropsWithChildren,
+} from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import type {
   DailyMealLog,
@@ -11,11 +19,17 @@ import type {
 } from '@leanlog/data-access';
 import { api } from './api';
 
+export type EnsureDayResult =
+  | { status: 'found'; day: DailyMealLog }
+  | { status: 'not_found' }
+  | { status: 'error'; error: string };
+
 type Store = {
   days: DailyMealLog[];
   profile: UserProfile | null;
   loading: boolean;
   error: string | null;
+  ensureDayLoaded(dayId: string): Promise<EnsureDayResult>;
   addDay(
     date: string,
     opts: Omit<CreateDailyMealLog, 'date'> & { mealCountTarget: number },
@@ -39,6 +53,11 @@ export function StateProvider({ children }: PropsWithChildren) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const daysRef = useRef(days);
+
+  useEffect(() => {
+    daysRef.current = days;
+  }, [days]);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +71,10 @@ export function StateProvider({ children }: PropsWithChildren) {
         if (!token || cancelled) return;
         const [{ days: d }, p] = await Promise.all([api.days.list(token), api.profile.get(token)]);
         if (!cancelled) {
-          setDays(d);
+          setDays((prev) => {
+            const loadedIds = new Set(d.map((day) => day.id));
+            return [...d, ...prev.filter((day) => !loadedIds.has(day.id))];
+          });
           setProfile(p);
         }
       } catch (e) {
@@ -72,11 +94,35 @@ export function StateProvider({ children }: PropsWithChildren) {
     return fn(token);
   }
 
+  const ensureDayLoaded = useCallback(
+    async (dayId: string): Promise<EnsureDayResult> => {
+      const existing = daysRef.current.find((day) => day.id === dayId);
+      if (existing) return { status: 'found', day: existing };
+
+      try {
+        const token = await getToken();
+        if (!token) throw new Error('Not authenticated');
+        const day = await api.days.get(token, dayId);
+        setDays((prev) => {
+          const found = prev.some((d) => d.id === day.id);
+          return found ? prev.map((d) => (d.id === day.id ? day : d)) : [day, ...prev];
+        });
+        return { status: 'found', day };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load day';
+        if (message.includes('API 404')) return { status: 'not_found' };
+        return { status: 'error', error: message };
+      }
+    },
+    [getToken],
+  );
+
   const store: Store = {
     days,
     profile,
     loading,
     error,
+    ensureDayLoaded,
 
     async addDay(date, { targetCalories, targetFat, targetCarbs, targetProtein, mealCountTarget }) {
       const day = await withToken((t) =>

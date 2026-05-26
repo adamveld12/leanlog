@@ -31,6 +31,9 @@ type StoreCtx = {
   profile: UserProfile;
   loading: boolean;
   error: null;
+  ensureDayLoaded: (
+    dayId: string,
+  ) => Promise<{ status: 'found'; day: DailyMealLog } | { status: 'not_found' }>;
   addDay: (...args: unknown[]) => Promise<void>;
   removeDay: (id: string) => Promise<void>;
   addMeal: (...args: unknown[]) => Promise<null>;
@@ -55,6 +58,10 @@ function FakeStateProvider({
     profile: mockProfile,
     loading: false,
     error: null,
+    ensureDayLoaded: async (dayId: string) => {
+      const day = days.find((d) => d.id === dayId);
+      return day ? { status: 'found', day } : { status: 'not_found' };
+    },
     addDay: async () => {},
     removeDay: async (id: string) => {
       setDays((prev) => prev.filter((d) => d.id !== id));

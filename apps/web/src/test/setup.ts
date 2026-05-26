@@ -25,7 +25,7 @@ vi.mock('@clerk/clerk-react', () => ({
 vi.mock('../api', () => ({
   api: {
     days: {
-      list: () => Promise.resolve({ days: [] }),
+      list: vi.fn(() => Promise.resolve({ days: [] })),
       create: vi.fn(),
       get: vi.fn(),
       updateTargets: vi.fn(),

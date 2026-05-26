@@ -109,6 +109,29 @@ function HeaderAuthControl() {
   );
 }
 
+type RouteLoadStatus = 'loading' | 'not_found' | 'error';
+type RouteLoadState = { dayId: string; status: RouteLoadStatus; error: string };
+
+function RouteLoadingState({ title }: { title: string }) {
+  return (
+    <div className="mx-auto max-w-xl p-4">
+      <SectionCard title={title}>
+        <HelperText as="p">Fetching your tracker data…</HelperText>
+      </SectionCard>
+    </div>
+  );
+}
+
+function RouteErrorState({ message }: { message: string }) {
+  return (
+    <div className="mx-auto max-w-xl p-4">
+      <SectionCard title="Unable to load tracker data">
+        <WarningText>{message}</WarningText>
+      </SectionCard>
+    </div>
+  );
+}
+
 function RequireSignedIn({ children }: PropsWithChildren) {
   return (
     <>
@@ -193,12 +216,40 @@ function DayList() {
 function DayDetail() {
   const { dayId } = useParams();
   const nav = useNavigate();
-  const { days, profile, addMeal, removeMeal, updateDayTargets } = useStore();
+  const { days, profile, ensureDayLoaded, addMeal, removeMeal, updateDayTargets } = useStore();
   const [isEditingMealTarget, setIsEditingMealTarget] = useState(false);
   const [draftMealCountTarget, setDraftMealCountTarget] = useState(0);
   const [confirmMealTargetUpdate, setConfirmMealTargetUpdate] = useState(false);
+  const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
+    dayId: dayId ?? '',
+    status: 'loading',
+    error: '',
+  });
   const day = days.find((d) => d.id === dayId);
-  if (!day) return <Navigate to="/track" replace />;
+  const routeStatus = routeLoad.dayId === dayId ? routeLoad.status : 'loading';
+
+  useEffect(() => {
+    if (!dayId || day) return;
+
+    let cancelled = false;
+    void ensureDayLoaded(dayId).then((result) => {
+      if (cancelled) return;
+      if (result.status === 'found') return;
+      setRouteLoad({
+        dayId,
+        status: result.status,
+        error: result.status === 'error' ? result.error : '',
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dayId, day, ensureDayLoaded]);
+
+  if (!dayId || routeStatus === 'not_found') return <Navigate to="/track" replace />;
+  if (routeStatus === 'error') return <RouteErrorState message={routeLoad.error} />;
+  if (!day) return <RouteLoadingState title="Loading day…" />;
   const totals = dayTotals(day);
 
   return (
@@ -311,10 +362,16 @@ function MealEdit() {
   const { dayId, mealId } = useParams();
   const nav = useNavigate();
   const { getToken } = useAuth();
-  const { days, renameMeal, removeMeal, upsertIngredient, removeIngredient } = useStore();
+  const { days, ensureDayLoaded, renameMeal, removeMeal, upsertIngredient, removeIngredient } =
+    useStore();
   const day = days.find((d) => d.id === dayId);
   const meal = day?.meals.find((m) => m.id === mealId);
-  const [mealName, setMealName] = useState(meal?.name ?? '');
+  const [mealNameDraft, setMealNameDraft] = useState<{ mealId: string | null; name: string }>({
+    mealId: meal?.id ?? null,
+    name: meal?.name ?? '',
+  });
+  const mealName = mealNameDraft.mealId === meal?.id ? mealNameDraft.name : (meal?.name ?? '');
+  const setMealName = (name: string) => setMealNameDraft({ mealId: meal?.id ?? null, name });
   const [draft, setDraft] = useState<IngredientDraft>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showBlankNamePrompt, setShowBlankNamePrompt] = useState(false);
@@ -328,11 +385,37 @@ function MealEdit() {
   const streamRef = useRef<MediaStream | null>(null);
   const { saved, markDirty, markSaved } = useSavedSections();
 
+  const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
+    dayId: dayId ?? '',
+    status: 'loading',
+    error: '',
+  });
+  const routeStatus = routeLoad.dayId === dayId ? routeLoad.status : 'loading';
+
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
+
+  useEffect(() => {
+    if (!dayId || day) return;
+
+    let cancelled = false;
+    void ensureDayLoaded(dayId).then((result) => {
+      if (cancelled) return;
+      if (result.status === 'found') return;
+      setRouteLoad({
+        dayId,
+        status: result.status,
+        error: result.status === 'error' ? result.error : '',
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dayId, day, ensureDayLoaded]);
 
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -371,7 +454,10 @@ function MealEdit() {
     };
   }, [cameraOpen]);
 
-  if (!day || !meal) return <Navigate to="/track" replace />;
+  if (!dayId || routeStatus === 'not_found') return <Navigate to="/track" replace />;
+  if (routeStatus === 'error') return <RouteErrorState message={routeLoad.error} />;
+  if (!day) return <RouteLoadingState title="Loading meal…" />;
+  if (!meal) return <Navigate to="/track" replace />;
 
   const saveIngredient = () => {
     const id = editingId ?? uuidv7();
