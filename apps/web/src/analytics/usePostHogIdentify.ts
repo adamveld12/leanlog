@@ -6,6 +6,7 @@ export function usePostHogIdentify() {
   const { isSignedIn, user } = useUser();
 
   useEffect(() => {
+    if (isSignedIn === undefined) return;
     try {
       if (isSignedIn && user) {
         posthog.identify(user.id, {

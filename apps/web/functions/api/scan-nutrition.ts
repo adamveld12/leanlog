@@ -119,7 +119,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       notes,
     };
 
-    if (env.POSTHOG_API_KEY) {
+    if (env.POSTHOG_API_KEY && env.POSTHOG_HOST) {
       context.waitUntil(
         captureAiGeneration(env.POSTHOG_API_KEY, env.POSTHOG_HOST, {
           distinctId: userId,
@@ -135,7 +135,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     return Response.json(response);
   } catch (error) {
-    if (context.env.POSTHOG_API_KEY) {
+    if (context.env.POSTHOG_API_KEY && context.env.POSTHOG_HOST) {
       context.waitUntil(
         captureAiGeneration(context.env.POSTHOG_API_KEY, context.env.POSTHOG_HOST, {
           distinctId: userId,
