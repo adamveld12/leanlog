@@ -3,6 +3,8 @@ import { HelperText } from '../atoms/HelperText';
 import { AnalyticsScope } from '../analytics';
 import { MacroProgressBlock, type MacroProgressBlockProps } from '../molecules/MacroProgressBlock';
 import { SectionCard } from '../molecules/SectionCard';
+import { cn } from '../styles/cn';
+import { recipes } from '../styles/recipes';
 
 export type QuickActionsCardProps = {
   hasToday: boolean;
@@ -33,7 +35,7 @@ export function QuickActionsCard({
             Start tracking your meals to see daily and weekly macro progress here.
           </HelperText>
         ) : (
-          <div className="mt-3 flex flex-col gap-4">
+          <div className={cn(recipes.stack.lg, 'mt-3')}>
             {hasToday && today ? (
               <MacroProgressBlock label="Today" {...today} />
             ) : (

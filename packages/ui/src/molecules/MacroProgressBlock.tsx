@@ -2,6 +2,8 @@ import { HelperText } from '../atoms/HelperText';
 import { ProgressBar } from '../atoms/ProgressBar';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { UnitText } from '../atoms/UnitText';
+import { cn } from '../styles/cn';
+import { recipes } from '../styles/recipes';
 import { calorieColor } from './MacroSummaryLine';
 
 export type MacroProgressBlockProps = {
@@ -34,7 +36,7 @@ export function MacroProgressBlock({
   const barColor = colorStyle?.color ?? 'var(--ll-text)';
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={cn(recipes.stack.xs)}>
       <SectionHeading as="h4" noMargin>
         {label}
       </SectionHeading>

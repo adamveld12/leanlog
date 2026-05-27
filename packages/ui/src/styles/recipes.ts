@@ -18,6 +18,7 @@ export const recipes = {
     main: 'flex flex-col gap-4',
   },
   stack: {
+    xs: 'flex flex-col gap-1.5',
     sm: 'flex flex-col gap-2.5',
     lg: 'flex flex-col gap-4',
     row: 'flex items-center gap-2',

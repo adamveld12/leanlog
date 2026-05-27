@@ -3,6 +3,8 @@ import { HelperText } from '../atoms/HelperText';
 import { ProgressBar } from '../atoms/ProgressBar';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { Text } from '../atoms/Text';
+import { cn } from '../styles/cn';
+import { recipes } from '../styles/recipes';
 
 export type StatMetricProps = {
   label: string;
@@ -22,7 +24,7 @@ export function StatMetric({
   hint,
 }: StatMetricProps) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={cn(recipes.stack.xs)}>
       <div className="flex items-center justify-between">
         <SectionHeading as="h4" noMargin>
           {label}

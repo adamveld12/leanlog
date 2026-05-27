@@ -40,8 +40,9 @@ export function MonthCalendarCard({ title, days, emptyHint }: MonthCalendarCardP
               size="sm"
               disabled={day.status !== 'tracked'}
               onClick={day.onTap}
+              aria-label={`${day.dayOfMonth} ${day.status}`}
               className={[
-                'my-0 flex min-h-[44px] items-center justify-center rounded-[8px]',
+                'my-0 flex min-h-[44px] items-center justify-center rounded-[10px]',
                 day.isToday && 'ring-2 ring-[var(--ll-focus)]',
                 day.status === 'tracked' && 'cursor-pointer',
                 day.status !== 'tracked' && 'cursor-default',
