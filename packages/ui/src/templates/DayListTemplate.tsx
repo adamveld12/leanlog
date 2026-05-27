@@ -1,22 +1,32 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { AddDayControl } from '../organisms/AddDayControl';
-import { ListSectionCard } from '../organisms/ListSectionCard';
 import { PageNavHeading } from '../organisms/PageNavHeading';
 import { AppShell } from './AppShell';
 
 export type DayListTemplateProps = {
   heading: ComponentProps<typeof PageNavHeading>;
+  quickActions: ReactNode;
+  statistics: ReactNode;
+  calendar: ReactNode;
   addDay: ComponentProps<typeof AddDayControl>;
-  days: ComponentProps<typeof ListSectionCard>['items'];
   footer?: ReactNode;
 };
 
-export function DayListTemplate({ heading, addDay, days, footer }: DayListTemplateProps) {
+export function DayListTemplate({
+  heading,
+  quickActions,
+  statistics,
+  calendar,
+  addDay,
+  footer,
+}: DayListTemplateProps) {
   return (
     <AppShell>
       <PageNavHeading {...heading} />
+      {quickActions}
+      {statistics}
+      {calendar}
       <AddDayControl {...addDay} />
-      <ListSectionCard title="Days" items={days} emptyText="No days yet" />
       {footer}
     </AppShell>
   );
