@@ -5,7 +5,7 @@ import {
   estimatedWeightLost,
   weightLossCertainty,
 } from '@leanlog/data-access';
-import { sum } from './lib';
+import { sum, todayIso } from './lib';
 
 export function ingredientTotals(items: Ingredient[]) {
   return {
@@ -66,11 +66,7 @@ export function daysLast90(days: DailyMealLog[], referenceDate?: string): DailyM
 }
 
 export function todayLog(days: DailyMealLog[]): DailyMealLog | undefined {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  const today = `${y}-${m}-${d}`;
+  const today = todayIso();
   return days.find((day) => day.date === today);
 }
 

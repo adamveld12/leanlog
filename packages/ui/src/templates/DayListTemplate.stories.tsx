@@ -6,6 +6,7 @@ import { MonthCalendarCard } from '../organisms/MonthCalendarCard';
 
 const emptyStats = {
   accuracyOverall: 0,
+  accuracyCalories: 0,
   accuracyProtein: 0,
   accuracyCarbs: 0,
   accuracyFat: 0,
@@ -23,7 +24,14 @@ const meta: Meta<typeof DayListTemplate> = {
     heading: { title: 'leanlog', profileHref: '/profile' },
     addDay: { onDayAdded: () => undefined },
     quickActions: <QuickActionsCard hasToday={false} hasDays={false} onAction={() => {}} />,
-    statistics: <WeeklyStatsCard weekly={emptyStats} overall={emptyStats} hasDays={false} />,
+    statistics: (
+      <WeeklyStatsCard
+        weekly={emptyStats}
+        overall={emptyStats}
+        hasWeeklyData={false}
+        hasOverallData={false}
+      />
+    ),
     calendar: (
       <MonthCalendarCard
         title="May 2026"

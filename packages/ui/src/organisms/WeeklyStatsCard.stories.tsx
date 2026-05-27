@@ -11,6 +11,7 @@ type Story = StoryObj<typeof WeeklyStatsCard>;
 
 const goodStats: StatsData = {
   accuracyOverall: 87,
+  accuracyCalories: 89,
   accuracyProtein: 92,
   accuracyCarbs: 85,
   accuracyFat: 83,
@@ -23,6 +24,7 @@ const goodStats: StatsData = {
 
 const highCertaintyStats: StatsData = {
   accuracyOverall: 94,
+  accuracyCalories: 95,
   accuracyProtein: 96,
   accuracyCarbs: 93,
   accuracyFat: 91,
@@ -37,7 +39,8 @@ export const WeeklyTab: Story = {
   args: {
     weekly: goodStats,
     overall: highCertaintyStats,
-    hasDays: true,
+    hasWeeklyData: true,
+    hasOverallData: true,
   },
 };
 
@@ -45,7 +48,8 @@ export const OverallTab: Story = {
   args: {
     weekly: goodStats,
     overall: highCertaintyStats,
-    hasDays: true,
+    hasWeeklyData: true,
+    hasOverallData: true,
   },
 };
 
@@ -53,7 +57,8 @@ export const LowCertaintyWarning: Story = {
   args: {
     weekly: { ...goodStats, certainty: 40, coverage: 50 },
     overall: goodStats,
-    hasDays: true,
+    hasWeeklyData: true,
+    hasOverallData: true,
   },
 };
 
@@ -61,6 +66,7 @@ export const ZeroDays: Story = {
   args: {
     weekly: {
       accuracyOverall: 0,
+      accuracyCalories: 0,
       accuracyProtein: 0,
       accuracyCarbs: 0,
       accuracyFat: 0,
@@ -72,6 +78,7 @@ export const ZeroDays: Story = {
     },
     overall: {
       accuracyOverall: 0,
+      accuracyCalories: 0,
       accuracyProtein: 0,
       accuracyCarbs: 0,
       accuracyFat: 0,
@@ -81,6 +88,7 @@ export const ZeroDays: Story = {
       estimatedWeightLost: 0,
       certainty: 0,
     },
-    hasDays: false,
+    hasWeeklyData: false,
+    hasOverallData: false,
   },
 };

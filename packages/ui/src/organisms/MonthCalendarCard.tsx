@@ -40,7 +40,13 @@ export function MonthCalendarCard({ title, days, emptyHint }: MonthCalendarCardP
               size="sm"
               disabled={day.status !== 'tracked'}
               onClick={day.onTap}
-              aria-label={`${day.dayOfMonth} ${day.status}`}
+              aria-label={
+                day.status === 'tracked'
+                  ? `${day.dayOfMonth}, tracked`
+                  : day.status === 'missed'
+                    ? `${day.dayOfMonth}, not tracked`
+                    : `${day.dayOfMonth}`
+              }
               className={[
                 'my-0 flex min-h-[44px] items-center justify-center rounded-[10px]',
                 day.isToday && 'ring-2 ring-[var(--ll-focus)]',
@@ -50,21 +56,19 @@ export function MonthCalendarCard({ title, days, emptyHint }: MonthCalendarCardP
                 .filter(Boolean)
                 .join(' ')}
             >
-              {day.status === 'tracked' && (
-                <Text as="span" className="font-semibold text-[var(--ll-saved)]">
-                  ✓
-                </Text>
-              )}
-              {day.status === 'missed' && (
-                <Text as="span" className="font-semibold text-[var(--ll-danger)]">
-                  ✗
-                </Text>
-              )}
-              {day.status === 'future' && (
-                <Text as="span" variant="meta">
-                  {day.dayOfMonth}
-                </Text>
-              )}
+              <Text
+                as="span"
+                variant={day.status === 'future' ? 'meta' : undefined}
+                className={
+                  day.status === 'tracked'
+                    ? 'font-semibold text-[var(--ll-saved)]'
+                    : day.status === 'missed'
+                      ? 'font-semibold text-[var(--ll-danger)]'
+                      : undefined
+                }
+              >
+                {day.dayOfMonth}
+              </Text>
             </Button>
           ))}
         </div>

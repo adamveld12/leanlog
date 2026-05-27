@@ -176,11 +176,15 @@ describe('list section behaviors', () => {
     expect(screen.getByText('Quick Actions')).toBeInTheDocument();
     expect(screen.getByText('Statistics')).toBeInTheDocument();
 
-    const tracked = screen.getAllByText('✓');
-    expect(tracked.length).toBeGreaterThan(0);
-    await userEvent.click(tracked[0]);
+    const todayDate = new Date();
+    const dayNum = todayDate.getDate();
+    const tracked = screen.getByRole('button', { name: `${dayNum}, tracked` });
+    expect(tracked).not.toBeDisabled();
+    await userEvent.click(tracked);
 
-    expect(screen.getByText('Daily totals')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/d1');
+    });
   });
 
   it('missing meal route redirects to the parent day', async () => {

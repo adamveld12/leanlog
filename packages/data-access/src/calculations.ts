@@ -50,7 +50,7 @@ export function macroAccuracy(actual: number, target: number): number {
 
 export function trackingCoverage(mealsTracked: number, mealsExpected: number): number {
   if (mealsExpected <= 0) return 0;
-  return Math.round((mealsTracked / mealsExpected) * 100);
+  return Math.min(100, Math.round((mealsTracked / mealsExpected) * 100));
 }
 
 export function estimatedWeightLost(totalConsumed: number, totalMaintenance: number): number {

@@ -187,7 +187,7 @@ function LandingPage() {
 
 function DayList() {
   const nav = useNavigate();
-  const { days, profile, loading, error, addDay } = useStore();
+  const { days, profile, loading, error, addDay, addMeal } = useStore();
 
   const maintenance = useMemo(
     () => (profile ? (caloriesFromMode(profile.weightLbs, 'maintenance') ?? 0) : 0),
@@ -219,15 +219,18 @@ function DayList() {
     }
   }, [today, nav]);
 
-  function handleAction() {
-    if (!profile) return;
+  async function handleAction() {
+    if (!profile || pendingNavRef.current) return;
     if (today) {
-      nav(`/track/day/${today.id}`);
+      const meal = await addMeal(today.id, `Meal ${today.meals.length + 1}`);
+      if (meal) nav(`/track/day/${today.id}/meal/${meal.id}`);
       return;
     }
     const targets = dayTargetsFromProfile(profile);
     pendingNavRef.current = true;
-    void addDay(todayIso(), { ...targets, mealCountTarget: 3 });
+    addDay(todayIso(), { ...targets, mealCountTarget: 3 }).catch(() => {
+      pendingNavRef.current = false;
+    });
   }
 
   if (loading) return <PageLoadingState label="Loading your days…" />;
@@ -281,6 +284,7 @@ function DayList() {
         <WeeklyStatsCard
           weekly={{
             accuracyOverall: weeklyStats.accuracy.overall,
+            accuracyCalories: weeklyStats.accuracy.calories,
             accuracyProtein: weeklyStats.accuracy.protein,
             accuracyCarbs: weeklyStats.accuracy.carbs,
             accuracyFat: weeklyStats.accuracy.fat,
@@ -292,6 +296,7 @@ function DayList() {
           }}
           overall={{
             accuracyOverall: overallStats.accuracy.overall,
+            accuracyCalories: overallStats.accuracy.calories,
             accuracyProtein: overallStats.accuracy.protein,
             accuracyCarbs: overallStats.accuracy.carbs,
             accuracyFat: overallStats.accuracy.fat,
@@ -301,7 +306,8 @@ function DayList() {
             estimatedWeightLost: overallStats.estimatedWeightLost,
             certainty: overallStats.certainty,
           }}
-          hasDays={hasDays}
+          hasWeeklyData={weekDays.length > 0}
+          hasOverallData={last90Days.length > 0}
         />
       }
       calendar={
@@ -373,7 +379,7 @@ function buildCalendarDays(
       dayOfMonth: d,
       isToday,
       isFuture,
-      status: isFuture ? 'future' : dayId ? 'tracked' : 'missed',
+      status: isFuture || isToday ? (dayId ? 'tracked' : 'future') : dayId ? 'tracked' : 'missed',
       onTap: dayId ? () => nav(`/track/day/${dayId}`) : undefined,
     });
   }

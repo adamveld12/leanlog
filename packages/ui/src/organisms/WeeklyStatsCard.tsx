@@ -9,6 +9,7 @@ import { recipes } from '../styles/recipes';
 
 export type StatsData = {
   accuracyOverall: number;
+  accuracyCalories: number;
   accuracyProtein: number;
   accuracyCarbs: number;
   accuracyFat: number;
@@ -22,7 +23,8 @@ export type StatsData = {
 export type WeeklyStatsCardProps = {
   weekly: StatsData;
   overall: StatsData;
-  hasDays: boolean;
+  hasWeeklyData: boolean;
+  hasOverallData: boolean;
 };
 
 const TABS = [
@@ -30,9 +32,15 @@ const TABS = [
   { key: 'overall', label: 'Overall' },
 ];
 
-export function WeeklyStatsCard({ weekly, overall, hasDays }: WeeklyStatsCardProps) {
+export function WeeklyStatsCard({
+  weekly,
+  overall,
+  hasWeeklyData,
+  hasOverallData,
+}: WeeklyStatsCardProps) {
   const [tab, setTab] = useState('weekly');
   const stats = tab === 'weekly' ? weekly : overall;
+  const hasDays = tab === 'weekly' ? hasWeeklyData : hasOverallData;
 
   return (
     <AnalyticsScope properties={{ organism: 'WeeklyStatsCard' }}>
@@ -46,7 +54,7 @@ export function WeeklyStatsCard({ weekly, overall, hasDays }: WeeklyStatsCardPro
             progress={hasDays ? stats.accuracyOverall : 0}
             detail={
               hasDays
-                ? `P ${stats.accuracyProtein}%  C ${stats.accuracyCarbs}%  F ${stats.accuracyFat}%`
+                ? `Cal ${stats.accuracyCalories}%  P ${stats.accuracyProtein}%  C ${stats.accuracyCarbs}%  F ${stats.accuracyFat}%`
                 : undefined
             }
             hint={

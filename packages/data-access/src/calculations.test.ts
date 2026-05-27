@@ -152,6 +152,10 @@ describe('trackingCoverage', () => {
   it('returns 0 when expected is 0', () => {
     expect(trackingCoverage(0, 0)).toBe(0);
   });
+
+  it('clamps at 100 when meals exceed target', () => {
+    expect(trackingCoverage(5, 3)).toBe(100);
+  });
 });
 
 describe('estimatedWeightLost', () => {
