@@ -1,4 +1,10 @@
 import type { Ingredient, Meal, DailyMealLog } from '@leanlog/data-access';
+import {
+  macroAccuracy,
+  trackingCoverage,
+  estimatedWeightLost,
+  weightLossCertainty,
+} from '@leanlog/data-access';
 import { sum } from './lib';
 
 export function ingredientTotals(items: Ingredient[]) {
@@ -18,4 +24,129 @@ export function mealTotals(meal: Meal) {
 
 export function dayTotals(day: DailyMealLog) {
   return ingredientTotals(day.meals.flatMap((m) => m.ingredients));
+}
+
+function isoWeekStart(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function parseLocalDate(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export function daysThisWeek(days: DailyMealLog[], referenceDate?: string): DailyMealLog[] {
+  const ref = referenceDate ? parseLocalDate(referenceDate) : new Date();
+  const weekStart = isoWeekStart(ref);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  return days.filter((d) => {
+    const date = parseLocalDate(d.date);
+    return date >= weekStart && date < weekEnd;
+  });
+}
+
+export function daysLast90(days: DailyMealLog[], referenceDate?: string): DailyMealLog[] {
+  const ref = referenceDate ? parseLocalDate(referenceDate) : new Date();
+  ref.setHours(23, 59, 59, 999);
+  const start = new Date(ref);
+  start.setDate(start.getDate() - 89);
+  start.setHours(0, 0, 0, 0);
+
+  return days.filter((d) => {
+    const date = parseLocalDate(d.date);
+    return date >= start && date <= ref;
+  });
+}
+
+export function todayLog(days: DailyMealLog[]): DailyMealLog | undefined {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  const today = `${y}-${m}-${d}`;
+  return days.find((day) => day.date === today);
+}
+
+export function trackedDatesMap(days: DailyMealLog[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const day of days) {
+    map.set(day.date, day.id);
+  }
+  return map;
+}
+
+export type PeriodStats = {
+  accuracy: { calories: number; protein: number; carbs: number; fat: number; overall: number };
+  coverage: number;
+  mealsTracked: number;
+  mealsExpected: number;
+  estimatedWeightLost: number;
+  certainty: number;
+  totalCalories: number;
+  targetCalories: number;
+  totalProtein: number;
+  targetProtein: number;
+  totalCarbs: number;
+  targetCarbs: number;
+  totalFat: number;
+  targetFat: number;
+};
+
+export function aggregateStats(days: DailyMealLog[], maintenanceCalories: number): PeriodStats {
+  let totalCalories = 0;
+  let targetCalories = 0;
+  let totalProtein = 0;
+  let targetProtein = 0;
+  let totalCarbs = 0;
+  let targetCarbs = 0;
+  let totalFat = 0;
+  let targetFat = 0;
+  let mealsTracked = 0;
+  let mealsExpected = 0;
+
+  for (const day of days) {
+    const totals = dayTotals(day);
+    totalCalories += totals.calories;
+    targetCalories += day.targetCalories;
+    totalProtein += totals.protein;
+    targetProtein += day.targetProtein;
+    totalCarbs += totals.carbs;
+    targetCarbs += day.targetCarbs;
+    totalFat += totals.fat;
+    targetFat += day.targetFat;
+    mealsTracked += day.meals.length;
+    mealsExpected += day.mealCountTarget;
+  }
+
+  const calAcc = macroAccuracy(totalCalories, targetCalories);
+  const protAcc = macroAccuracy(totalProtein, targetProtein);
+  const carbAcc = macroAccuracy(totalCarbs, targetCarbs);
+  const fatAcc = macroAccuracy(totalFat, targetFat);
+  const overall = days.length > 0 ? Math.round((calAcc + protAcc + carbAcc + fatAcc) / 4) : 0;
+  const coverage = trackingCoverage(mealsTracked, mealsExpected);
+  const totalMaintenance = maintenanceCalories * days.length;
+
+  return {
+    accuracy: { calories: calAcc, protein: protAcc, carbs: carbAcc, fat: fatAcc, overall },
+    coverage,
+    mealsTracked,
+    mealsExpected,
+    estimatedWeightLost: estimatedWeightLost(totalCalories, totalMaintenance),
+    certainty: weightLossCertainty(coverage),
+    totalCalories,
+    targetCalories,
+    totalProtein,
+    targetProtein,
+    totalCarbs,
+    targetCarbs,
+    totalFat,
+    targetFat,
+  };
 }
