@@ -126,8 +126,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           model: 'gemini-2.5-flash',
           provider: 'google',
           latencyMs: Date.now() - start,
-          inputTokens: usage.promptTokens,
-          outputTokens: usage.completionTokens,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
           endpoint: 'scan-nutrition',
         }),
       );
