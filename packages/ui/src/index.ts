@@ -38,6 +38,7 @@ export * from './organisms/ListSectionCard';
 export * from './organisms/PageNavHeading';
 export * from './organisms/QuickActionsCard';
 export * from './organisms/WeeklyStatsCard';
+export * from './organisms/MonthCalendarCard';
 export * from './organisms/ProfileSectionCards';
 export * from './organisms/AppPageHeading';
 export * from './organisms/DailyTotalsCard';
