@@ -6,13 +6,17 @@ export function usePostHogIdentify() {
   const { isSignedIn, user } = useUser();
 
   useEffect(() => {
-    if (isSignedIn && user) {
-      posthog.identify(user.id, {
-        email: user.primaryEmailAddress?.emailAddress,
-        name: user.fullName,
-      });
-    } else {
-      posthog.reset();
+    try {
+      if (isSignedIn && user) {
+        posthog.identify(user.id, {
+          email: user.primaryEmailAddress?.emailAddress,
+          name: user.fullName,
+        });
+      } else {
+        posthog.reset();
+      }
+    } catch {
+      // PostHog unavailable — fail silently
     }
   }, [isSignedIn, user]);
 }

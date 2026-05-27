@@ -1,5 +1,4 @@
 import { Component, type ErrorInfo, type PropsWithChildren } from 'react';
-import posthog from 'posthog-js';
 import { Text } from '@leanlog/ui';
 
 type State = { hasError: boolean };
@@ -12,13 +11,20 @@ export class AnalyticsErrorBoundary extends Component<PropsWithChildren, State> 
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    posthog.capture('$exception', {
-      $exception_message: error.message,
-      $exception_type: error.name,
-      $exception_source: 'react_error_boundary',
-      $exception_stack_trace_raw: error.stack,
-      $exception_componentStack: info.componentStack,
-    });
+    try {
+      import('posthog-js').then((ph) => {
+        ph.default.capture('$exception', {
+          $exception_message: error.message,
+          $exception_type: error.name,
+          $exception_source: 'react_error_boundary',
+          $exception_stack_trace_raw: error.stack,
+          $exception_componentStack: info.componentStack,
+        });
+      });
+    } catch {
+      // PostHog unavailable — already logged at init
+    }
+    console.error('[leanlog] Unhandled React error', error);
   }
 
   render() {
