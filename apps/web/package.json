@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "pages:build": "node scripts/migrate.mjs && tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "tsc -b --noEmit && eslint .",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
