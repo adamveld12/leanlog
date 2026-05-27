@@ -3,6 +3,9 @@ pages_build_output_dir = "./dist"
 compatibility_date = "2026-05-17"
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+CLERK_PUBLISHABLE_KEY = "pk_live_Y2xlcmsubGVhbmxvZy52ZGhzbi5jb20k"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "leanlog-db"
@@ -10,6 +13,9 @@ database_id = "3747f59b-37ac-452f-93cd-8965e704a063"
 migrations_dir = "../../packages/data-d1/drizzle"
 
 [env.preview]
+[env.preview.vars]
+CLERK_PUBLISHABLE_KEY = "pk_test_bmV3LXdpbGRjYXQtMzkuY2xlcmsuYWNjb3VudHMuZGV2JA"
+
 [[env.preview.d1_databases]]
 binding = "DB"
 database_name = "leanlog-db-dev"
