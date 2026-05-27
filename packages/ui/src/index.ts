@@ -36,6 +36,7 @@ export * from './organisms/AuthLanding';
 export * from './organisms/IngredientEntryCard';
 export * from './organisms/ListSectionCard';
 export * from './organisms/PageNavHeading';
+export * from './organisms/QuickActionsCard';
 export * from './organisms/ProfileSectionCards';
 export * from './organisms/AppPageHeading';
 export * from './organisms/DailyTotalsCard';
