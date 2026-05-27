@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { caloriesFromMode, macrosFromPercentage, dayTargetsFromProfile } from './calculations';
+import {
+  caloriesFromMode,
+  macrosFromPercentage,
+  dayTargetsFromProfile,
+  macroAccuracy,
+  trackingCoverage,
+  estimatedWeightLost,
+  weightLossCertainty,
+} from './calculations';
 import type { UserProfile } from './models';
 
 const baseProfile: UserProfile = {
@@ -103,5 +111,77 @@ describe('dayTargetsFromProfile', () => {
     };
     const result = dayTargetsFromProfile(profile);
     expect(result.targetCalories).toBe(0);
+  });
+});
+
+describe('macroAccuracy', () => {
+  it('returns 100 when actual equals target', () => {
+    expect(macroAccuracy(2000, 2000)).toBe(100);
+  });
+
+  it('returns 80 when 20% over target', () => {
+    expect(macroAccuracy(2400, 2000)).toBe(80);
+  });
+
+  it('returns 80 when 20% under target', () => {
+    expect(macroAccuracy(1600, 2000)).toBe(80);
+  });
+
+  it('returns 0 when target is 0', () => {
+    expect(macroAccuracy(100, 0)).toBe(0);
+  });
+
+  it('returns 0 when actual is 0 and target is positive', () => {
+    expect(macroAccuracy(0, 2000)).toBe(0);
+  });
+
+  it('clamps to 0 when overshoot exceeds 100%', () => {
+    expect(macroAccuracy(4500, 2000)).toBe(0);
+  });
+});
+
+describe('trackingCoverage', () => {
+  it('returns 75 for 3/4 meals', () => {
+    expect(trackingCoverage(3, 4)).toBe(75);
+  });
+
+  it('returns 100 for full coverage', () => {
+    expect(trackingCoverage(4, 4)).toBe(100);
+  });
+
+  it('returns 0 when expected is 0', () => {
+    expect(trackingCoverage(0, 0)).toBe(0);
+  });
+
+  it('clamps at 100 when meals exceed target', () => {
+    expect(trackingCoverage(5, 3)).toBe(100);
+  });
+});
+
+describe('estimatedWeightLost', () => {
+  it('returns 1.0 lb for 3000 kcal deficit', () => {
+    expect(estimatedWeightLost(15000, 18000)).toBe(1);
+  });
+
+  it('returns 0 when in surplus', () => {
+    expect(estimatedWeightLost(20000, 18000)).toBe(0);
+  });
+
+  it('returns 0 when at maintenance', () => {
+    expect(estimatedWeightLost(18000, 18000)).toBe(0);
+  });
+});
+
+describe('weightLossCertainty', () => {
+  it('returns 80 for 100% coverage', () => {
+    expect(weightLossCertainty(100)).toBe(80);
+  });
+
+  it('returns 40 for 50% coverage', () => {
+    expect(weightLossCertainty(50)).toBe(40);
+  });
+
+  it('caps at 80', () => {
+    expect(weightLossCertainty(150)).toBe(80);
   });
 });

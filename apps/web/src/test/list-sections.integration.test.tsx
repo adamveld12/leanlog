@@ -140,7 +140,7 @@ function makeDayWithMeals(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
 describe('list section behaviors', () => {
   afterEach(() => cleanup());
 
-  it('day list row opens detail and supports delete', async () => {
+  it('calendar tracked day navigates to detail', async () => {
     const initialDays = [
       makeDayWithMeals({
         meals: [
@@ -173,15 +173,18 @@ describe('list section behaviors', () => {
 
     renderApp('/track', initialDays);
 
-    expect(screen.getByText('Today')).toBeInTheDocument();
-    expect(screen.getByText(/100/)).toBeInTheDocument();
+    expect(screen.getByText('Quick Actions')).toBeInTheDocument();
+    expect(screen.getByText('Statistics')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByText('Today').closest('[role="link"]') as HTMLElement);
-    expect(screen.getByText('Daily totals')).toBeInTheDocument();
+    const todayDate = new Date();
+    const dayNum = todayDate.getDate();
+    const tracked = screen.getByRole('button', { name: `${dayNum}, tracked` });
+    expect(tracked).not.toBeDisabled();
+    await userEvent.click(tracked);
 
-    await userEvent.click(screen.getByRole('link', { name: '← Back' }));
-    await userEvent.click(screen.getAllByRole('button', { name: 'Delete day' })[0]);
-    expect(screen.queryByText('Today')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/d1');
+    });
   });
 
   it('missing meal route redirects to the parent day', async () => {

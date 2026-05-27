@@ -1,5 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { DayListTemplate } from './DayListTemplate';
+import { QuickActionsCard } from '../organisms/QuickActionsCard';
+import { WeeklyStatsCard } from '../organisms/WeeklyStatsCard';
+import { MonthCalendarCard } from '../organisms/MonthCalendarCard';
+
+const emptyStats = {
+  accuracyOverall: 0,
+  accuracyCalories: 0,
+  accuracyProtein: 0,
+  accuracyCarbs: 0,
+  accuracyFat: 0,
+  coverage: 0,
+  mealsTracked: 0,
+  mealsExpected: 0,
+  estimatedWeightLost: 0,
+  certainty: 0,
+};
 
 const meta: Meta<typeof DayListTemplate> = {
   title: 'Design System/Templates/DayListTemplate',
@@ -7,7 +23,22 @@ const meta: Meta<typeof DayListTemplate> = {
   args: {
     heading: { title: 'leanlog', profileHref: '/profile' },
     addDay: { onDayAdded: () => undefined },
-    days: [{ id: 'd1', title: 'May 22, 2026', meta: '2 meals', rightMetric: '1,800 kcal' }],
+    quickActions: <QuickActionsCard hasToday={false} hasDays={false} onAction={() => {}} />,
+    statistics: (
+      <WeeklyStatsCard
+        weekly={emptyStats}
+        overall={emptyStats}
+        hasWeeklyData={false}
+        hasOverallData={false}
+      />
+    ),
+    calendar: (
+      <MonthCalendarCard
+        title="May 2026"
+        days={[]}
+        emptyHint="Start logging to fill in your calendar!"
+      />
+    ),
   },
 };
 export default meta;
