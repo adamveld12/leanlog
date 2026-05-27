@@ -34,6 +34,6 @@ describe('auth routing', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1, name: 'leanlog' })).toBeInTheDocument();
     });
-    expect(screen.getByText('Days')).toBeInTheDocument();
+    expect(screen.getByText('Quick Actions')).toBeInTheDocument();
   });
 });
