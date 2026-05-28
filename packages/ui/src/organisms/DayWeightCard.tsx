@@ -11,7 +11,7 @@ export type DayWeightCardProps = {
 };
 
 const HELPER_TEXT =
-  'For best results, weigh yourself naked, first thing in the morning, after using the bathroom and before eating or drinking anything.';
+  'Weigh in first thing in the morning, after the bathroom, before eating or drinking.';
 
 export function DayWeightCard({
   saved,
@@ -24,7 +24,8 @@ export function DayWeightCard({
       <SectionCard title="Body Weight" saved={saved}>
         <NumberInput
           label="Weight (lbs)"
-          value={weightLbs ?? 0}
+          value={weightLbs}
+          placeholder="e.g. 180"
           onChange={onWeightChange}
           onBlur={onWeightBlur}
         />

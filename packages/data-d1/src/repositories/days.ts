@@ -104,7 +104,7 @@ export function createDayRepository(db: D1Database): DayRepository {
       await d
         .update(dailyMealLogs)
         .set({ ...targets, updatedAt: ts })
-        .where(eq(dailyMealLogs.id, dayId));
+        .where(and(eq(dailyMealLogs.id, dayId), eq(dailyMealLogs.userId, userId)));
       const updated = await this.getById(userId, dayId);
       return updated!;
     },

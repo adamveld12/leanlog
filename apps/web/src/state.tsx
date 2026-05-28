@@ -224,14 +224,7 @@ export function StateProvider({ children }: PropsWithChildren) {
     async updateDayWeight(dayId, weightLbs) {
       const updated = await withToken((t) => api.days.updateTargets(t, dayId, { weightLbs }));
       setDays((prev) => prev.map((d) => (d.id === dayId ? updated : d)));
-      const latestWeightDate = daysRef.current
-        .filter((d) => d.id !== dayId && d.weightLbs != null)
-        .map((d) => d.date)
-        .sort()
-        .pop();
-      if (!latestWeightDate || updated.date >= latestWeightDate) {
-        setProfile((prev) => (prev ? { ...prev, weightLbs } : prev));
-      }
+      setProfile((prev) => (prev ? { ...prev, weightLbs: Math.round(weightLbs) } : prev));
     },
 
     patchProfileLocal(data) {

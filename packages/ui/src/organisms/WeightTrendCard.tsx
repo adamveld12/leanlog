@@ -67,7 +67,11 @@ export function WeightTrendCard({
           active={range}
           onChange={(key) => setRange(key as WeightTrendRange)}
         />
-        <div className="relative mt-2.5 h-56 w-full">
+        <div
+          className="relative mt-2.5 h-56 w-full"
+          role="img"
+          aria-label={ariaLabelFor(range, filtered.length)}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={filtered} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid stroke="var(--ll-line)" strokeDasharray="2 3" />
@@ -158,6 +162,12 @@ function formatTickDate(iso: string): string {
 function formatTooltipDate(iso: string): string {
   const d = parseIso(iso);
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function ariaLabelFor(range: WeightTrendRange, count: number): string {
+  if (count === 0) return 'Weight trend chart, no entries logged yet';
+  const window = range === 'all' ? 'all time' : `the last ${range}`;
+  return `Weight trend chart over ${window}, ${count} ${count === 1 ? 'entry' : 'entries'}`;
 }
 
 function domainFor(entries: WeightEntry[], goal: number | null): [number, number] {

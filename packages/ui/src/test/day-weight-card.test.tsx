@@ -14,7 +14,7 @@ describe('DayWeightCard', () => {
         onWeightBlur={() => undefined}
       />,
     );
-    expect(screen.getByText(/weigh yourself naked/i)).toBeInTheDocument();
+    expect(screen.getByText(/weigh in first thing in the morning/i)).toBeInTheDocument();
   });
 
   it('pre-populates the input with the provided weight', () => {

@@ -30,9 +30,9 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
 
   if (parsed.data.weightLbs !== undefined) {
     const latestDate = await repo.getMostRecentWeightDate(userId);
-    if (!latestDate || updated.date >= latestDate) {
+    if (updated.date >= latestDate!) {
       const profileRepo = createProfileRepository(context.env.DB);
-      await profileRepo.update(userId, { weightLbs: parsed.data.weightLbs });
+      await profileRepo.update(userId, { weightLbs: Math.round(parsed.data.weightLbs) });
     }
   }
   return Response.json(updated);
