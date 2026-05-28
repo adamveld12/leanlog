@@ -15,6 +15,8 @@ import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { SectionCard } from '../molecules/SectionCard';
 import { Tabs } from '../molecules/Tabs';
 import { Text } from '../atoms/Text';
+import { cn } from '../styles/cn';
+import { recipes } from '../styles/recipes';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
@@ -81,7 +83,12 @@ export function WeightTrendCard({
         >
           <Line data={data} options={options} />
           {filtered.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--ll-surface)_88%,transparent)] p-4 text-center">
+            <div
+              className={cn(
+                'absolute inset-0 flex items-center justify-center p-4 text-center',
+                recipes.surface.overlay,
+              )}
+            >
               <Text variant="meta">{EMPTY_TEXT}</Text>
             </div>
           ) : null}

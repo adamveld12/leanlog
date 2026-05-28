@@ -4,6 +4,7 @@ import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
 import { NumberInput } from '../atoms/NumberInput';
 import { SectionCard } from '../molecules/SectionCard';
+import { recipes } from '../styles/recipes';
 
 export type DayWeightCardProps = {
   saved?: boolean;
@@ -31,7 +32,7 @@ export function DayWeightCard({ saved, saving, weightLbs, onSave }: DayWeightCar
   return (
     <AnalyticsScope properties={{ organism: 'DayWeightCard' }}>
       <SectionCard title="Body Weight" saved={saved}>
-        <div className="flex items-end gap-2">
+        <div className={recipes.stack.rowEnd}>
           <NumberInput
             label="Weight (lbs)"
             value={draft}
