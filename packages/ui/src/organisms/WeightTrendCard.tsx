@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -30,6 +30,10 @@ export type WeightTrendCardProps = {
   now?: Date;
 };
 
+type Tokens = { text: string; muted: string; line: string };
+
+const FALLBACK_TOKENS: Tokens = { text: '#151515', muted: '#606060', line: '#e8e8e8' };
+
 const RANGE_DAYS: Record<Exclude<WeightTrendRange, 'all'>, number> = {
   '7d': 7,
   '30d': 30,
@@ -52,6 +56,7 @@ export function WeightTrendCard({
   now,
 }: WeightTrendCardProps) {
   const [range, setRange] = useState<WeightTrendRange>(defaultRange);
+  const tokens = useThemeTokens();
 
   const filtered = useMemo(() => {
     if (range === 'all') return entries;
@@ -64,9 +69,11 @@ export function WeightTrendCard({
   }, [entries, range, now]);
 
   const { data, options } = useMemo(
-    () => buildChart(filtered, goalWeightLbs),
-    [filtered, goalWeightLbs],
+    () => buildChart(filtered, goalWeightLbs, tokens),
+    [filtered, goalWeightLbs, tokens],
   );
+
+  const isEmpty = filtered.length === 0;
 
   return (
     <AnalyticsScope properties={{ organism: 'WeightTrendCard' }}>
@@ -76,14 +83,17 @@ export function WeightTrendCard({
           active={range}
           onChange={(key) => setRange(key as WeightTrendRange)}
         />
-        <div
-          className="relative mt-3 h-56 w-full"
-          role="img"
-          aria-label={ariaLabelFor(range, filtered.length)}
-        >
-          <Line data={data} options={options} />
-          {filtered.length === 0 ? (
+        <div className="relative mt-3 h-56 w-full">
+          <div
+            className="absolute inset-0"
+            role="img"
+            aria-label={ariaLabelFor(range, filtered.length)}
+          >
+            <Line data={data} options={options} />
+          </div>
+          {isEmpty ? (
             <div
+              aria-live="polite"
               className={cn(
                 'absolute inset-0 flex items-center justify-center p-4 text-center',
                 recipes.surface.overlay,
@@ -98,9 +108,37 @@ export function WeightTrendCard({
   );
 }
 
+function useThemeTokens(): Tokens {
+  const [tokens, setTokens] = useState<Tokens>(readTokens);
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    // Re-read the canvas colors whenever the theme attribute on <html> changes so the
+    // chart tracks the CSS variables (chart.js writes to canvas and can't resolve var()).
+    const observer = new MutationObserver(() => setTokens(readTokens()));
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'class'],
+    });
+    return () => observer.disconnect();
+  }, []);
+  return tokens;
+}
+
+function readTokens(): Tokens {
+  if (typeof document === 'undefined') return FALLBACK_TOKENS;
+  const cs = getComputedStyle(document.documentElement);
+  const read = (name: string, fallback: string) => cs.getPropertyValue(name).trim() || fallback;
+  return {
+    text: read('--ll-text', FALLBACK_TOKENS.text),
+    muted: read('--ll-text-muted', FALLBACK_TOKENS.muted),
+    line: read('--ll-line', FALLBACK_TOKENS.line),
+  };
+}
+
 function buildChart(
   entries: WeightEntry[],
   goal: number | null,
+  tokens: Tokens,
 ): { data: Parameters<typeof Line>[0]['data']; options: ChartOptions<'line'> } {
   const labels = entries.map((e) => e.date);
   const values = entries.map((e) => e.weightLbs);
@@ -112,7 +150,7 @@ function buildChart(
           {
             label: `Goal ${goal}`,
             data: entries.map(() => goal),
-            borderColor: 'var(--ll-text-muted)',
+            borderColor: tokens.muted,
             borderDash: [4, 4],
             borderWidth: 1,
             pointRadius: 0,
@@ -129,8 +167,8 @@ function buildChart(
       {
         label: 'Weight',
         data: values,
-        borderColor: 'var(--ll-text)',
-        backgroundColor: 'var(--ll-text)',
+        borderColor: tokens.text,
+        backgroundColor: tokens.text,
         borderWidth: 2,
         tension: 0.3,
         pointRadius: 3,
@@ -157,9 +195,9 @@ function buildChart(
     scales: {
       x: {
         type: 'category',
-        grid: { color: 'var(--ll-line)', display: true, drawTicks: false },
+        grid: { color: tokens.line, display: true, drawTicks: false },
         ticks: {
-          color: 'var(--ll-text-muted)',
+          color: tokens.muted,
           font: { size: 10 },
           maxRotation: 0,
           autoSkipPadding: 16,
@@ -173,8 +211,8 @@ function buildChart(
       y: {
         min: yMin,
         max: yMax,
-        grid: { color: 'var(--ll-line)' },
-        ticks: { color: 'var(--ll-text-muted)', font: { size: 10 } },
+        grid: { color: tokens.line },
+        ticks: { color: tokens.muted, font: { size: 10 } },
         border: { display: false },
       },
     },
