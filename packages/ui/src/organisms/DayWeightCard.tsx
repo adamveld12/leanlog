@@ -41,7 +41,6 @@ export function DayWeightCard({ saved, saving, weightLbs, onSave }: DayWeightCar
           />
           <Button
             variant="primary"
-            size="sm"
             disabled={!canSave}
             onClick={() => {
               if (draft != null && draft > 0) onSave(draft);

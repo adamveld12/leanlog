@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { DailyTotalsCard } from '../organisms/DailyTotalsCard';
+import { DayWeightCard } from '../organisms/DayWeightCard';
 import { DayDetailTemplate } from './DayDetailTemplate';
 
 const meta: Meta<typeof DayDetailTemplate> = {
@@ -26,3 +27,9 @@ const meta: Meta<typeof DayDetailTemplate> = {
 export default meta;
 type Story = StoryObj<typeof DayDetailTemplate>;
 export const Default: Story = {};
+
+export const WithWeightSection: Story = {
+  args: {
+    weightSection: <DayWeightCard weightLbs={182} onSave={() => undefined} />,
+  },
+};

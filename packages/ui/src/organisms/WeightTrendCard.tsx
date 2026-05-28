@@ -75,19 +75,17 @@ export function WeightTrendCard({
           onChange={(key) => setRange(key as WeightTrendRange)}
         />
         <div
-          className="relative mt-2.5 h-56 w-full"
+          className="relative mt-3 h-56 w-full"
           role="img"
           aria-label={ariaLabelFor(range, filtered.length)}
         >
           <Line data={data} options={options} />
           {filtered.length === 0 ? (
             <div
-              role="status"
+              role="note"
               className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--ll-surface)_88%,transparent)] p-4 text-center"
             >
-              <Text variant="body" style={{ color: 'var(--ll-text-muted)' }}>
-                {EMPTY_TEXT}
-              </Text>
+              <Text variant="meta">{EMPTY_TEXT}</Text>
             </div>
           ) : null}
         </div>
