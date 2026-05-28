@@ -19,7 +19,6 @@
     "ctx7": "^0.4.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0"
   },
   "exports": {
