@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { dailyMealLogs, meals, ingredients } from '../schema';
@@ -93,6 +93,7 @@ export function createDayRepository(db: D1Database): DayRepository {
         meals: [],
         ...data,
         mealCountTarget: data.mealCountTarget ?? 3,
+        weightLbs: null,
         createdAt: ts,
         updatedAt: ts,
       };
@@ -106,6 +107,16 @@ export function createDayRepository(db: D1Database): DayRepository {
         .where(eq(dailyMealLogs.id, dayId));
       const updated = await this.getById(userId, dayId);
       return updated!;
+    },
+
+    async getMostRecentWeightDate(userId) {
+      const rows = await d
+        .select({ date: dailyMealLogs.date })
+        .from(dailyMealLogs)
+        .where(and(eq(dailyMealLogs.userId, userId), isNotNull(dailyMealLogs.weightLbs)))
+        .orderBy(desc(dailyMealLogs.date))
+        .limit(1);
+      return rows[0]?.date ?? null;
     },
 
     async delete(userId, dayId) {

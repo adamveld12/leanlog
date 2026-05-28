@@ -8,6 +8,7 @@ import {
   todayLog,
   trackedDatesMap,
   aggregateStats,
+  selectWeightEntries,
 } from '../selectors';
 
 const now = new Date().toISOString();
@@ -22,6 +23,7 @@ function makeDay(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
     targetCarbs: 236,
     targetProtein: 270,
     mealCountTarget: 4,
+    weightLbs: null,
     meals: [],
     createdAt: now,
     updatedAt: now,
@@ -207,5 +209,30 @@ describe('aggregateStats', () => {
     expect(result.accuracy.overall).toBe(0);
     expect(result.coverage).toBe(0);
     expect(result.estimatedWeightLost).toBe(0);
+  });
+});
+
+describe('selectWeightEntries', () => {
+  it('filters out days without a logged weight', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-26', weightLbs: 182 }),
+      makeDay({ id: 'b', date: '2026-05-27' }),
+      makeDay({ id: 'c', date: '2026-05-28', weightLbs: 181 }),
+    ];
+    const entries = selectWeightEntries(days);
+    expect(entries).toEqual([
+      { date: '2026-05-26', weightLbs: 182 },
+      { date: '2026-05-28', weightLbs: 181 },
+    ]);
+  });
+
+  it('sorts entries ascending by date', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-28', weightLbs: 181 }),
+      makeDay({ id: 'b', date: '2026-05-26', weightLbs: 182 }),
+      makeDay({ id: 'c', date: '2026-05-27', weightLbs: 181.5 }),
+    ];
+    const entries = selectWeightEntries(days);
+    expect(entries.map((e) => e.date)).toEqual(['2026-05-26', '2026-05-27', '2026-05-28']);
   });
 });

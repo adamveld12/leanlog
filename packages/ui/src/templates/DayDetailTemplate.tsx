@@ -5,6 +5,7 @@ import { AppShell } from './AppShell';
 
 export type DayDetailTemplateProps = {
   heading: ComponentProps<typeof PageNavHeading>;
+  weightSection?: ReactNode;
   totalsSection: ReactNode;
   mealsTitle: string;
   mealsItems: ComponentProps<typeof ListSectionCard>['items'];
@@ -15,6 +16,7 @@ export type DayDetailTemplateProps = {
 
 export function DayDetailTemplate({
   heading,
+  weightSection,
   totalsSection,
   mealsTitle,
   mealsItems,
@@ -25,6 +27,7 @@ export function DayDetailTemplate({
   return (
     <AppShell>
       <PageNavHeading {...heading} />
+      {weightSection}
       {totalsSection}
       <ListSectionCard title={mealsTitle} items={mealsItems} emptyText={mealsEmptyText} childrenTop>
         {mealsControls}

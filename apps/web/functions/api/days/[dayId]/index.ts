@@ -1,4 +1,4 @@
-import { createDayRepository } from '@leanlog/data-d1';
+import { createDayRepository, createProfileRepository } from '@leanlog/data-d1';
 import { DayTargetsSchema } from '@leanlog/data-access';
 import type { Env } from '../../_env';
 
@@ -27,6 +27,14 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
   const repo = createDayRepository(context.env.DB);
   const updated = await repo.updateTargets(userId, dayId, parsed.data);
   if (!updated) return new Response('Not found', { status: 404 });
+
+  if (parsed.data.weightLbs !== undefined) {
+    const latestDate = await repo.getMostRecentWeightDate(userId);
+    if (!latestDate || updated.date >= latestDate) {
+      const profileRepo = createProfileRepository(context.env.DB);
+      await profileRepo.update(userId, { weightLbs: parsed.data.weightLbs });
+    }
+  }
   return Response.json(updated);
 };
 

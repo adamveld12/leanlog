@@ -36,6 +36,7 @@ export const dailyMealLogs = sqliteTable(
     targetCarbs: integer('target_carbs').notNull().default(250),
     targetProtein: integer('target_protein').notNull().default(140),
     mealCountTarget: integer('meal_count_target').notNull().default(3),
+    weightLbs: real('weight_lbs'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },

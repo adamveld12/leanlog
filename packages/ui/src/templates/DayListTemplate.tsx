@@ -7,6 +7,7 @@ export type DayListTemplateProps = {
   heading: ComponentProps<typeof PageNavHeading>;
   quickActions: ReactNode;
   statistics: ReactNode;
+  weightTrend?: ReactNode;
   calendar: ReactNode;
   addDay: ComponentProps<typeof AddDayControl>;
   footer?: ReactNode;
@@ -16,6 +17,7 @@ export function DayListTemplate({
   heading,
   quickActions,
   statistics,
+  weightTrend,
   calendar,
   addDay,
   footer,
@@ -25,6 +27,7 @@ export function DayListTemplate({
       <PageNavHeading {...heading} />
       {quickActions}
       {statistics}
+      {weightTrend}
       {calendar}
       <AddDayControl {...addDay} />
       {footer}

@@ -78,6 +78,15 @@ export function trackedDatesMap(days: DailyMealLog[]): Map<string, string> {
   return map;
 }
 
+export type WeightEntry = { date: string; weightLbs: number };
+
+export function selectWeightEntries(days: DailyMealLog[]): WeightEntry[] {
+  return days
+    .filter((d): d is DailyMealLog & { weightLbs: number } => d.weightLbs != null)
+    .map((d) => ({ date: d.date, weightLbs: d.weightLbs }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 export type PeriodStats = {
   accuracy: { calories: number; protein: number; carbs: number; fat: number; overall: number };
   coverage: number;

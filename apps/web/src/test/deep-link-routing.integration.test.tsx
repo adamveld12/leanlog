@@ -45,6 +45,7 @@ function makeDay(): DailyMealLog {
     targetCarbs: 236,
     targetProtein: 270,
     mealCountTarget: 4,
+    weightLbs: null,
     meals: [
       {
         id: 'm1',

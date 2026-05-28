@@ -16,6 +16,7 @@ import {
   DailyTotalsCard,
   DayDetailTemplate,
   DayListTemplate,
+  DayWeightCard,
   FileInput,
   HelperText,
   Input,
@@ -34,6 +35,7 @@ import {
   SectionHeading,
   WarningText,
   WeeklyStatsCard,
+  WeightTrendCard,
 } from '@leanlog/ui';
 import type { CalendarDay } from '@leanlog/ui';
 import { caloriesFromMode, dayTargetsFromProfile } from '@leanlog/data-access';
@@ -46,6 +48,7 @@ import {
   todayLog,
   trackedDatesMap,
   aggregateStats,
+  selectWeightEntries,
 } from '../selectors';
 import { useStore } from '../state';
 import { api } from '../api';
@@ -208,6 +211,7 @@ function DayList() {
 
   const dateMap = useMemo(() => trackedDatesMap(days), [days]);
   const calendarDays = useMemo(() => buildCalendarDays(dateMap, nav), [dateMap, nav]);
+  const weightEntries = useMemo(() => selectWeightEntries(days), [days]);
 
   const hasDays = days.length > 0;
   const pendingNavRef = useRef(false);
@@ -310,6 +314,9 @@ function DayList() {
           hasOverallData={last90Days.length > 0}
         />
       }
+      weightTrend={
+        <WeightTrendCard entries={weightEntries} goalWeightLbs={profile?.goalWeightLbs ?? null} />
+      }
       calendar={
         <MonthCalendarCard
           title={formatMonthTitle(new Date())}
@@ -390,10 +397,13 @@ function buildCalendarDays(
 function DayDetail() {
   const { dayId } = useParams();
   const nav = useNavigate();
-  const { days, profile, ensureDayLoaded, addMeal, removeMeal, updateDayTargets } = useStore();
+  const { days, profile, ensureDayLoaded, addMeal, removeMeal, updateDayTargets, updateDayWeight } =
+    useStore();
+  const { saved, markDirty, markSaved } = useSavedSections();
   const [isEditingMealTarget, setIsEditingMealTarget] = useState(false);
   const [draftMealCountTarget, setDraftMealCountTarget] = useState(0);
   const [confirmMealTargetUpdate, setConfirmMealTargetUpdate] = useState(false);
+  const weightDraftRef = useRef<number | null>(null);
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
     dayId: dayId ?? '',
     status: 'loading',
@@ -435,6 +445,25 @@ function DayDetail() {
         renderNavLink: renderRouterNavLink,
         rightContent: <HeaderAuthControl />,
       }}
+      weightSection={
+        <DayWeightCard
+          key={day.id}
+          saved={saved.dayWeight}
+          weightLbs={day.weightLbs}
+          onWeightChange={(n) => {
+            weightDraftRef.current = n;
+            markDirty('dayWeight');
+          }}
+          onWeightBlur={() => {
+            const next = weightDraftRef.current;
+            if (next == null || next <= 0 || next === day.weightLbs) {
+              markSaved('dayWeight');
+              return;
+            }
+            void updateDayWeight(day.id, next).then(() => markSaved('dayWeight'));
+          }}
+        />
+      }
       totalsSection={
         <DailyTotalsCard
           calories={totals.calories}

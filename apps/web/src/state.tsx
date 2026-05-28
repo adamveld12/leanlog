@@ -41,6 +41,7 @@ type Store = {
   upsertIngredient(dayId: string, mealId: string, ingredient: UpsertIngredient): Promise<void>;
   removeIngredient(dayId: string, mealId: string, ingredientId: string): Promise<void>;
   updateDayTargets(dayId: string, targets: DayTargets): Promise<void>;
+  updateDayWeight(dayId: string, weightLbs: number): Promise<void>;
   patchProfileLocal(data: Partial<UserProfile>): void;
   updateProfile(data: UpdateProfile): Promise<void>;
 };
@@ -218,6 +219,19 @@ export function StateProvider({ children }: PropsWithChildren) {
     async updateDayTargets(dayId, targets) {
       const updated = await withToken((t) => api.days.updateTargets(t, dayId, targets));
       setDays((prev) => prev.map((d) => (d.id === dayId ? updated : d)));
+    },
+
+    async updateDayWeight(dayId, weightLbs) {
+      const updated = await withToken((t) => api.days.updateTargets(t, dayId, { weightLbs }));
+      setDays((prev) => prev.map((d) => (d.id === dayId ? updated : d)));
+      const latestWeightDate = daysRef.current
+        .filter((d) => d.id !== dayId && d.weightLbs != null)
+        .map((d) => d.date)
+        .sort()
+        .pop();
+      if (!latestWeightDate || updated.date >= latestWeightDate) {
+        setProfile((prev) => (prev ? { ...prev, weightLbs } : prev));
+      }
     },
 
     patchProfileLocal(data) {
