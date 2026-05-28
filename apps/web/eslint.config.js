@@ -23,6 +23,27 @@ export default defineConfig([
       'no-restricted-syntax': [
         'error',
         {
+          selector: 'JSXOpeningElement[name.name="button"]',
+          message: 'Use <Button> from @leanlog/ui instead of raw <button>',
+        },
+        {
+          selector: 'JSXOpeningElement[name.name="input"]',
+          message:
+            'Use <Input>, <NumberInput>, or <IntegerInput> from @leanlog/ui instead of raw <input>',
+        },
+        {
+          selector: 'JSXOpeningElement[name.name="select"]',
+          message: 'Use <Select> from @leanlog/ui instead of raw <select>',
+        },
+        {
+          selector: 'JSXOpeningElement[name.name="textarea"]',
+          message: 'Use a design system atom instead of raw <textarea>',
+        },
+        {
+          selector: 'JSXOpeningElement[name.name="label"]',
+          message: 'Use <Label> from @leanlog/ui instead of raw <label>',
+        },
+        {
           selector: 'JSXOpeningElement[name.name="small"]',
           message: 'Use <WarningText> or <HelperText> instead of raw <small>',
         },
