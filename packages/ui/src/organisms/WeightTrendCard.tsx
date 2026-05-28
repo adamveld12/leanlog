@@ -81,10 +81,7 @@ export function WeightTrendCard({
         >
           <Line data={data} options={options} />
           {filtered.length === 0 ? (
-            <div
-              role="note"
-              className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--ll-surface)_88%,transparent)] p-4 text-center"
-            >
+            <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_srgb,var(--ll-surface)_88%,transparent)] p-4 text-center">
               <Text variant="meta">{EMPTY_TEXT}</Text>
             </div>
           ) : null}
