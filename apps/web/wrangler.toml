@@ -4,9 +4,9 @@ compatibility_date = "2026-05-17"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-CLERK_PUBLISHABLE_KEY = "pk_live_Y2xlcmsubGVhbmxvZy52ZGhzbi5jb20k"
-POSTHOG_API_KEY = "phc_LtP1UAE1BEhuRqcbt8t5dyCFWBQ9ncJ4DvqwCWTbchs"
-POSTHOG_HOST = "https://us.i.posthog.com"
+VITE_CLERK_PUBLISHABLE_KEY = "pk_live_Y2xlcmsubGVhbmxvZy52ZGhzbi5jb20k"
+VITE_POSTHOG_API_KEY = "phc_LtP1UAE1BEhuRqcbt8t5dyCFWBQ9ncJ4DvqwCWTbchs"
+VITE_POSTHOG_HOST = "https://us.i.posthog.com"
 
 [[d1_databases]]
 binding = "DB"
@@ -16,9 +16,9 @@ migrations_dir = "../../packages/data-d1/drizzle"
 
 [env.preview]
 [env.preview.vars]
-CLERK_PUBLISHABLE_KEY = "pk_test_bmV3LXdpbGRjYXQtMzkuY2xlcmsuYWNjb3VudHMuZGV2JA"
-POSTHOG_API_KEY = "phc_LtP1UAE1BEhuRqcbt8t5dyCFWBQ9ncJ4DvqwCWTbchs"
-POSTHOG_HOST = "https://us.i.posthog.com"
+VITE_CLERK_PUBLISHABLE_KEY = "pk_test_bmV3LXdpbGRjYXQtMzkuY2xlcmsuYWNjb3VudHMuZGV2JA"
+VITE_POSTHOG_API_KEY = "phc_LtP1UAE1BEhuRqcbt8t5dyCFWBQ9ncJ4DvqwCWTbchs"
+VITE_POSTHOG_HOST = "https://us.i.posthog.com"
 
 [[env.preview.d1_databases]]
 binding = "DB"
