@@ -2,15 +2,18 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { DayWeightCard } from './DayWeightCard';
 
-function DayWeightDemo({ initial, saved }: { initial: number | null; saved?: boolean }) {
+function DayWeightDemo({
+  initial,
+  saved,
+  saving,
+}: {
+  initial: number | null;
+  saved?: boolean;
+  saving?: boolean;
+}) {
   const [weight, setWeight] = useState<number | null>(initial);
   return (
-    <DayWeightCard
-      saved={saved}
-      weightLbs={weight}
-      onWeightChange={(n) => setWeight(n)}
-      onWeightBlur={() => undefined}
-    />
+    <DayWeightCard saved={saved} saving={saving} weightLbs={weight} onSave={(n) => setWeight(n)} />
   );
 }
 
@@ -25,3 +28,4 @@ type Story = StoryObj<typeof DayWeightCard>;
 export const Empty: Story = { render: () => <DayWeightDemo initial={null} /> };
 export const WithWeight: Story = { render: () => <DayWeightDemo initial={182} /> };
 export const Saved: Story = { render: () => <DayWeightDemo initial={182} saved /> };
+export const Saving: Story = { render: () => <DayWeightDemo initial={182} saving /> };

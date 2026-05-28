@@ -7,6 +7,8 @@ import { api, ApiError } from '../api';
 import { StateProvider } from '../state';
 import type { DailyMealLog } from '@leanlog/data-access';
 
+vi.mock('react-chartjs-2', () => ({ Line: () => null }));
+
 const setSignedIn = (ClerkReact as unknown as { __setSignedIn: (value: boolean) => void })
   .__setSignedIn;
 

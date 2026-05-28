@@ -1,9 +1,22 @@
 import { useMemo, useState } from 'react';
+import {
+  CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Tooltip,
+  type ChartOptions,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
-import { HelperText } from '../atoms/HelperText';
 import { SectionCard } from '../molecules/SectionCard';
 import { Tabs } from '../molecules/Tabs';
 import { Text } from '../atoms/Text';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
 export type WeightEntry = { date: string; weightLbs: number };
 export type WeightTrendRange = '7d' | '30d' | '90d' | 'all';
@@ -30,10 +43,6 @@ const RANGE_TABS = [
 
 const EMPTY_TEXT = 'Start logging your weight on the day page! Your progress will appear here';
 
-const VIEW_W = 600;
-const VIEW_H = 220;
-const PAD = { top: 12, right: 16, bottom: 24, left: 36 };
-
 export function WeightTrendCard({
   entries,
   goalWeightLbs,
@@ -41,7 +50,6 @@ export function WeightTrendCard({
   now,
 }: WeightTrendCardProps) {
   const [range, setRange] = useState<WeightTrendRange>(defaultRange);
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
   const filtered = useMemo(() => {
     if (range === 'all') return entries;
@@ -53,7 +61,10 @@ export function WeightTrendCard({
     return entries.filter((e) => e.date >= cutoffIso);
   }, [entries, range, now]);
 
-  const layout = useMemo(() => buildLayout(filtered, goalWeightLbs), [filtered, goalWeightLbs]);
+  const { data, options } = useMemo(
+    () => buildChart(filtered, goalWeightLbs),
+    [filtered, goalWeightLbs],
+  );
 
   return (
     <AnalyticsScope properties={{ organism: 'WeightTrendCard' }}>
@@ -64,119 +75,11 @@ export function WeightTrendCard({
           onChange={(key) => setRange(key as WeightTrendRange)}
         />
         <div
-          className="relative mt-2.5 w-full"
+          className="relative mt-2.5 h-56 w-full"
           role="img"
           aria-label={ariaLabelFor(range, filtered.length)}
         >
-          <svg
-            viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-            preserveAspectRatio="none"
-            className="block h-56 w-full"
-            onMouseLeave={() => setHoverIdx(null)}
-          >
-            {/* Y gridlines + labels */}
-            {layout.yTicks.map((t) => (
-              <g key={`yt-${t.value}`}>
-                <line
-                  x1={PAD.left}
-                  x2={VIEW_W - PAD.right}
-                  y1={t.y}
-                  y2={t.y}
-                  stroke="var(--ll-line)"
-                  strokeDasharray="2 3"
-                />
-                <text
-                  x={PAD.left - 6}
-                  y={t.y}
-                  dominantBaseline="middle"
-                  textAnchor="end"
-                  fontSize="10"
-                  fill="var(--ll-text-muted)"
-                >
-                  {t.value}
-                </text>
-              </g>
-            ))}
-
-            {/* X labels */}
-            {layout.xTicks.map((t) => (
-              <text
-                key={`xt-${t.iso}`}
-                x={t.x}
-                y={VIEW_H - PAD.bottom + 14}
-                textAnchor="middle"
-                fontSize="10"
-                fill="var(--ll-text-muted)"
-              >
-                {formatTickDate(t.iso)}
-              </text>
-            ))}
-
-            {/* Goal line */}
-            {layout.goalY != null && goalWeightLbs != null ? (
-              <g>
-                <line
-                  x1={PAD.left}
-                  x2={VIEW_W - PAD.right}
-                  y1={layout.goalY}
-                  y2={layout.goalY}
-                  stroke="var(--ll-text-muted)"
-                  strokeDasharray="4 4"
-                />
-                <text
-                  x={VIEW_W - PAD.right - 4}
-                  y={layout.goalY - 4}
-                  textAnchor="end"
-                  fontSize="10"
-                  fill="var(--ll-text-muted)"
-                >
-                  Goal {goalWeightLbs}
-                </text>
-              </g>
-            ) : null}
-
-            {/* Data line + dots */}
-            {layout.points.length > 1 ? (
-              <polyline
-                points={layout.points.map((p) => `${p.x},${p.y}`).join(' ')}
-                fill="none"
-                stroke="var(--ll-text)"
-                strokeWidth="2"
-              />
-            ) : null}
-            {layout.points.map((p, i) => (
-              <circle
-                key={`d-${p.iso}`}
-                cx={p.x}
-                cy={p.y}
-                r={i === hoverIdx ? 5 : 3}
-                fill="var(--ll-text)"
-              />
-            ))}
-
-            {/* Hit-targets for hover */}
-            {layout.points.map((p, i) => (
-              <rect
-                key={`h-${p.iso}`}
-                x={p.x - layout.hitWidth / 2}
-                y={PAD.top}
-                width={layout.hitWidth}
-                height={VIEW_H - PAD.top - PAD.bottom}
-                fill="transparent"
-                onMouseEnter={() => setHoverIdx(i)}
-              />
-            ))}
-          </svg>
-
-          {hoverIdx != null && layout.points[hoverIdx] ? (
-            <Tooltip
-              x={layout.points[hoverIdx].x}
-              y={layout.points[hoverIdx].y}
-              iso={layout.points[hoverIdx].iso}
-              weightLbs={layout.points[hoverIdx].weightLbs}
-            />
-          ) : null}
-
+          <Line data={data} options={options} />
           {filtered.length === 0 ? (
             <div
               role="status"
@@ -193,87 +96,93 @@ export function WeightTrendCard({
   );
 }
 
-function Tooltip({
-  x,
-  y,
-  iso,
-  weightLbs,
-}: {
-  x: number;
-  y: number;
-  iso: string;
-  weightLbs: number;
-}) {
-  const leftPct = (x / VIEW_W) * 100;
-  const topPct = (y / VIEW_H) * 100;
-  return (
-    <div
-      className="pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-[10px] border border-[var(--ll-line)] bg-[var(--ll-surface)] px-2 py-1 shadow-sm"
-      style={{ left: `${leftPct}%`, top: `calc(${topPct}% - 8px)` }}
-    >
-      <HelperText>{formatTooltipDate(iso)}</HelperText>
-      <Text variant="body" className="font-medium">
-        {weightLbs} lbs
-      </Text>
-    </div>
-  );
-}
-
-type YTick = { value: number; y: number };
-type XTick = { iso: string; x: number };
-type Point = { iso: string; weightLbs: number; x: number; y: number };
-type Layout = {
-  yTicks: YTick[];
-  xTicks: XTick[];
-  points: Point[];
-  goalY: number | null;
-  hitWidth: number;
-};
-
-function buildLayout(entries: WeightEntry[], goal: number | null): Layout {
-  if (entries.length === 0) {
-    return { yTicks: [], xTicks: [], points: [], goalY: null, hitWidth: 0 };
-  }
-  const innerW = VIEW_W - PAD.left - PAD.right;
-  const innerH = VIEW_H - PAD.top - PAD.bottom;
+function buildChart(
+  entries: WeightEntry[],
+  goal: number | null,
+): { data: Parameters<typeof Line>[0]['data']; options: ChartOptions<'line'> } {
+  const labels = entries.map((e) => e.date);
+  const values = entries.map((e) => e.weightLbs);
   const [yMin, yMax] = domainFor(entries, goal);
-  const yRange = yMax - yMin || 1;
-  const yToPx = (v: number) => PAD.top + ((yMax - v) / yRange) * innerH;
 
-  const points: Point[] = entries.map((e, i) => {
-    const x =
-      entries.length === 1 ? PAD.left + innerW / 2 : PAD.left + (i / (entries.length - 1)) * innerW;
-    return { iso: e.date, weightLbs: e.weightLbs, x, y: yToPx(e.weightLbs) };
-  });
+  const goalDataset =
+    goal != null && entries.length > 0
+      ? [
+          {
+            label: `Goal ${goal}`,
+            data: entries.map(() => goal),
+            borderColor: 'var(--ll-text-muted)',
+            borderDash: [4, 4],
+            borderWidth: 1,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            tension: 0,
+            fill: false,
+          },
+        ]
+      : [];
 
-  const yTicks: YTick[] = [];
-  const tickCount = 4;
-  for (let i = 0; i <= tickCount; i++) {
-    const value = Math.round(yMin + ((yMax - yMin) * i) / tickCount);
-    yTicks.push({ value, y: yToPx(value) });
-  }
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: 'Weight',
+        data: values,
+        borderColor: 'var(--ll-text)',
+        backgroundColor: 'var(--ll-text)',
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+      },
+      ...goalDataset,
+    ],
+  };
 
-  const xTicks: XTick[] = pickXTicks(points);
-  const hitWidth = entries.length > 1 ? innerW / (entries.length - 1) : innerW;
-  const goalY = goal != null ? yToPx(goal) : null;
+  const options: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: (items) => formatTooltipDate(items[0]?.label ?? ''),
+          label: (item) => `${item.parsed.y} lbs`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        type: 'category',
+        grid: { color: 'var(--ll-line)', display: true, drawTicks: false },
+        ticks: {
+          color: 'var(--ll-text-muted)',
+          font: { size: 10 },
+          maxRotation: 0,
+          autoSkipPadding: 16,
+          callback: function (_value, index) {
+            const iso = (this.getLabelForValue?.(index as number) as string) ?? labels[index] ?? '';
+            return formatTickDate(iso);
+          },
+        },
+        border: { display: false },
+      },
+      y: {
+        min: yMin,
+        max: yMax,
+        grid: { color: 'var(--ll-line)' },
+        ticks: { color: 'var(--ll-text-muted)', font: { size: 10 } },
+        border: { display: false },
+      },
+    },
+  };
 
-  return { yTicks, xTicks, points, goalY, hitWidth };
-}
-
-function pickXTicks(points: Point[]): XTick[] {
-  if (points.length === 0) return [];
-  const maxTicks = 5;
-  if (points.length <= maxTicks) {
-    return points.map((p) => ({ iso: p.iso, x: p.x }));
-  }
-  const step = (points.length - 1) / (maxTicks - 1);
-  return Array.from({ length: maxTicks }, (_, i) => {
-    const p = points[Math.round(i * step)];
-    return { iso: p.iso, x: p.x };
-  });
+  return { data, options };
 }
 
 function domainFor(entries: WeightEntry[], goal: number | null): [number, number] {
+  if (entries.length === 0) return [0, 1];
   const values = entries.map((e) => e.weightLbs);
   if (goal != null) values.push(goal);
   const min = Math.min(...values);
@@ -295,11 +204,13 @@ function parseIso(iso: string): Date {
 }
 
 function formatTickDate(iso: string): string {
+  if (!iso) return '';
   const d = parseIso(iso);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function formatTooltipDate(iso: string): string {
+  if (!iso) return '';
   const d = parseIso(iso);
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }

@@ -224,7 +224,10 @@ export function StateProvider({ children }: PropsWithChildren) {
     async updateDayWeight(dayId, weightLbs) {
       const updated = await withToken((t) => api.days.updateTargets(t, dayId, { weightLbs }));
       setDays((prev) => prev.map((d) => (d.id === dayId ? updated : d)));
-      setProfile((prev) => (prev ? { ...prev, weightLbs: Math.round(weightLbs) } : prev));
+      // Server only updates profile.weightLbs when this is the most recent weight-logged
+      // day. Refetch profile to reflect (or skip) that change rather than guessing locally.
+      const refreshed = await withToken((t) => api.profile.get(t));
+      setProfile(refreshed);
     },
 
     patchProfileLocal(data) {

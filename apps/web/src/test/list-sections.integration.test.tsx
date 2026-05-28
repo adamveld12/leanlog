@@ -7,6 +7,8 @@ import App from '../App';
 import { todayIso } from '../lib';
 import type { DailyMealLog, UserProfile } from '@leanlog/data-access';
 
+vi.mock('react-chartjs-2', () => ({ Line: () => null }));
+
 const now = new Date().toISOString();
 
 const mockProfile: UserProfile = {

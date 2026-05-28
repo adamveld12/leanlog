@@ -1,9 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import * as ClerkReact from '@clerk/clerk-react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import App from '../App';
 import { StateProvider } from '../state';
+
+// chart.js's ResizeObserver tick reads getComputedStyle on a parent that jsdom has
+// already detached. Stub the wrapper for integration tests that mount the chart.
+vi.mock('react-chartjs-2', () => ({ Line: () => null }));
 
 const setSignedIn = (ClerkReact as unknown as { __setSignedIn: (value: boolean) => void })
   .__setSignedIn;

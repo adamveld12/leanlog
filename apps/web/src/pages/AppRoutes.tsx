@@ -403,7 +403,7 @@ function DayDetail() {
   const [isEditingMealTarget, setIsEditingMealTarget] = useState(false);
   const [draftMealCountTarget, setDraftMealCountTarget] = useState(0);
   const [confirmMealTargetUpdate, setConfirmMealTargetUpdate] = useState(false);
-  const weightDraftRef = useRef<number | null>(null);
+  const [savingWeight, setSavingWeight] = useState(false);
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
     dayId: dayId ?? '',
     status: 'loading',
@@ -449,18 +449,14 @@ function DayDetail() {
         <DayWeightCard
           key={day.id}
           saved={saved.dayWeight}
+          saving={savingWeight}
           weightLbs={day.weightLbs}
-          onWeightChange={(n) => {
-            weightDraftRef.current = n;
+          onSave={(next) => {
             markDirty('dayWeight');
-          }}
-          onWeightBlur={() => {
-            const next = weightDraftRef.current;
-            if (next == null || next <= 0 || next === day.weightLbs) {
-              markSaved('dayWeight');
-              return;
-            }
-            void updateDayWeight(day.id, next).then(() => markSaved('dayWeight'));
+            setSavingWeight(true);
+            void updateDayWeight(day.id, next)
+              .then(() => markSaved('dayWeight'))
+              .finally(() => setSavingWeight(false));
           }}
         />
       }
