@@ -1,4 +1,4 @@
-import type { Ingredient, Meal, DailyMealLog } from '@leanlog/data-access';
+import type { Ingredient, Meal, DailyMealLog, WeightEntry } from '@leanlog/data-access';
 import {
   macroAccuracy,
   trackingCoverage,
@@ -76,6 +76,13 @@ export function trackedDatesMap(days: DailyMealLog[]): Map<string, string> {
     map.set(day.date, day.id);
   }
   return map;
+}
+
+export function selectWeightEntries(days: DailyMealLog[]): WeightEntry[] {
+  return days
+    .filter((d): d is DailyMealLog & { weightLbs: number } => d.weightLbs != null)
+    .map((d) => ({ date: d.date, weightLbs: d.weightLbs }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 export type PeriodStats = {

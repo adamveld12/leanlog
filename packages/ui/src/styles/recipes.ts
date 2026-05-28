@@ -3,7 +3,10 @@ export const recipes = {
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--ll-focus)_35%,transparent)]',
   transition: 'transition duration-[140ms] ease-[var(--ll-ease)]',
   radius: { control: 'rounded-[10px]', card: 'rounded-[14px]', pill: 'rounded-[999px]' },
-  surface: { card: 'border border-[var(--ll-line)] bg-[var(--ll-surface)]' },
+  surface: {
+    card: 'border border-[var(--ll-line)] bg-[var(--ll-surface)]',
+    overlay: 'bg-[color-mix(in_srgb,var(--ll-surface)_88%,transparent)]',
+  },
   text: {
     title: 'text-2xl font-semibold tracking-tight text-[var(--ll-text)]',
     sectionHeading:
@@ -22,6 +25,7 @@ export const recipes = {
     sm: 'flex flex-col gap-2.5',
     lg: 'flex flex-col gap-4',
     row: 'flex items-center gap-2',
+    rowEnd: 'flex items-end gap-2',
     between: 'justify-between',
   },
   grid: {

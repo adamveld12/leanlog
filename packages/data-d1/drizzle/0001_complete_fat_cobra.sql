@@ -1,0 +1,1 @@
+ALTER TABLE `daily_meal_logs` ADD `weight_lbs` real;

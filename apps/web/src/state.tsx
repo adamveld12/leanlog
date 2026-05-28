@@ -41,6 +41,7 @@ type Store = {
   upsertIngredient(dayId: string, mealId: string, ingredient: UpsertIngredient): Promise<void>;
   removeIngredient(dayId: string, mealId: string, ingredientId: string): Promise<void>;
   updateDayTargets(dayId: string, targets: DayTargets): Promise<void>;
+  updateDayWeight(dayId: string, weightLbs: number): Promise<void>;
   patchProfileLocal(data: Partial<UserProfile>): void;
   updateProfile(data: UpdateProfile): Promise<void>;
 };
@@ -218,6 +219,15 @@ export function StateProvider({ children }: PropsWithChildren) {
     async updateDayTargets(dayId, targets) {
       const updated = await withToken((t) => api.days.updateTargets(t, dayId, targets));
       setDays((prev) => prev.map((d) => (d.id === dayId ? updated : d)));
+    },
+
+    async updateDayWeight(dayId, weightLbs) {
+      const updated = await withToken((t) => api.days.updateTargets(t, dayId, { weightLbs }));
+      setDays((prev) => prev.map((d) => (d.id === dayId ? updated : d)));
+      // Server only updates profile.weightLbs when this is the most recent weight-logged
+      // day. Refetch profile to reflect (or skip) that change rather than guessing locally.
+      const refreshed = await withToken((t) => api.profile.get(t));
+      setProfile(refreshed);
     },
 
     patchProfileLocal(data) {

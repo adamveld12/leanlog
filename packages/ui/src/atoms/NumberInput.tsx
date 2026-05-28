@@ -4,28 +4,35 @@ import { Input } from './Input';
 
 type NumberInputProps = {
   label: string;
-  value: number;
+  value: number | null;
   onChange: (next: number) => void;
   onBlur?: () => void;
+  placeholder?: string;
   labelClassName?: string;
   inputClassName?: string;
 };
+
+function display(value: number | null): string {
+  return value == null ? '' : String(value);
+}
 
 export function NumberInput({
   label,
   value,
   onChange,
   onBlur,
+  placeholder,
   labelClassName = '',
   inputClassName = '',
 }: NumberInputProps) {
-  const [text, setText] = useState(String(value));
+  const [text, setText] = useState(display(value));
   const [editing, setEditing] = useState(false);
 
   return (
     <Field label={label} className={labelClassName}>
       <Input
-        value={editing ? text : String(value)}
+        value={editing ? text : display(value)}
+        placeholder={placeholder}
         onChange={(e) => {
           const next = e.target.value;
           setText(next);
@@ -40,11 +47,11 @@ export function NumberInput({
         }}
         onFocus={() => {
           setEditing(true);
-          setText(String(value));
+          setText(display(value));
         }}
         onBlur={() => {
           setEditing(false);
-          setText(String(value));
+          setText(display(value));
           onBlur?.();
         }}
         inputMode="decimal"

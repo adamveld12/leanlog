@@ -59,6 +59,7 @@ export const DailyMealLogSchema = z.object({
   targetCarbs: z.number().min(0),
   targetProtein: z.number().min(0),
   mealCountTarget: z.number().min(0).default(3),
+  weightLbs: z.number().positive().nullable().default(null),
   meals: z.array(MealSchema).default([]),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -86,6 +87,7 @@ export const CreateDailyMealLogSchema = DailyMealLogSchema.omit({
   id: true,
   userId: true,
   meals: true,
+  weightLbs: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -94,9 +96,10 @@ export const CreateDailyMealLogSchema = DailyMealLogSchema.omit({
 export const UpdateProfileSchema = z.object(profileFields).partial();
 export const UpsertIngredientSchema = IngredientSchema.omit({ createdAt: true, updatedAt: true });
 export const DayTargetsSchema = z.object({
-  targetCalories: z.number().min(0),
-  targetFat: z.number().min(0),
-  targetCarbs: z.number().min(0),
-  targetProtein: z.number().min(0),
+  targetCalories: z.number().min(0).optional(),
+  targetFat: z.number().min(0).optional(),
+  targetCarbs: z.number().min(0).optional(),
+  targetProtein: z.number().min(0).optional(),
   mealCountTarget: z.number().min(0).optional(),
+  weightLbs: z.number().positive().optional(),
 });

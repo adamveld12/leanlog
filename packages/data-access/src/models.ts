@@ -18,3 +18,5 @@ export type CreateDailyMealLog = z.infer<typeof CreateDailyMealLogSchema>;
 export type UpdateProfile = z.infer<typeof UpdateProfileSchema>;
 export type UpsertIngredient = z.infer<typeof UpsertIngredientSchema>;
 export type DayTargets = z.infer<typeof DayTargetsSchema>;
+
+export type WeightEntry = { date: string; weightLbs: number };

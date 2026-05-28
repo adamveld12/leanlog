@@ -7,6 +7,8 @@ import App from '../App';
 import { todayIso } from '../lib';
 import type { DailyMealLog, UserProfile } from '@leanlog/data-access';
 
+vi.mock('react-chartjs-2', () => ({ Line: () => null }));
+
 const now = new Date().toISOString();
 
 const mockProfile: UserProfile = {
@@ -130,6 +132,7 @@ function makeDayWithMeals(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
     targetCarbs: 236,
     targetProtein: 270,
     mealCountTarget: 4,
+    weightLbs: null,
     meals: [],
     createdAt: now,
     updatedAt: now,
