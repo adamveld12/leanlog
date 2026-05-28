@@ -2,6 +2,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import type { Env } from './_env';
+import { captureAiGeneration } from './_posthog';
 
 const mb15 = 15 * 1024 * 1024;
 
@@ -24,6 +25,8 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 const safe = (n: number) => round1(Math.max(0, n));
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
+  const userId = (context.data as Record<string, unknown>).userId as string;
+  const start = Date.now();
   try {
     const { env, request } = context;
 
@@ -61,7 +64,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       'Keep numbers realistic and non-negative.',
     ].join(' ');
 
-    const { object } = await generateObject({
+    const { object, usage } = await generateObject({
       model: google('gemini-2.5-flash'),
       schema: scanSchema,
       messages: [
@@ -116,8 +119,35 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       notes,
     };
 
+    if (env.VITE_POSTHOG_API_KEY && env.VITE_POSTHOG_HOST) {
+      context.waitUntil(
+        captureAiGeneration(env.VITE_POSTHOG_API_KEY, env.VITE_POSTHOG_HOST, {
+          distinctId: userId,
+          model: 'gemini-2.5-flash',
+          provider: 'google',
+          latencyMs: Date.now() - start,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          endpoint: 'scan-nutrition',
+        }),
+      );
+    }
+
     return Response.json(response);
   } catch (error) {
+    if (context.env.VITE_POSTHOG_API_KEY && context.env.VITE_POSTHOG_HOST) {
+      context.waitUntil(
+        captureAiGeneration(context.env.VITE_POSTHOG_API_KEY, context.env.VITE_POSTHOG_HOST, {
+          distinctId: userId,
+          model: 'gemini-2.5-flash',
+          provider: 'google',
+          latencyMs: Date.now() - start,
+          isError: true,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          endpoint: 'scan-nutrition',
+        }),
+      );
+    }
     return new Response(error instanceof Error ? error.message : 'Scan failed', {
       status: 500,
     });

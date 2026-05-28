@@ -4,6 +4,15 @@ import { beforeEach, vi } from 'vitest';
 
 let signedIn = true;
 
+vi.mock('posthog-js', () => ({
+  default: {
+    init: vi.fn(),
+    capture: vi.fn(),
+    identify: vi.fn(),
+    reset: vi.fn(),
+  },
+}));
+
 vi.mock('@clerk/clerk-react', () => ({
   __setSignedIn: (value: boolean) => {
     signedIn = value;
@@ -19,6 +28,16 @@ vi.mock('@clerk/clerk-react', () => ({
   useAuth: () => ({
     isSignedIn: signedIn,
     getToken: () => Promise.resolve('test-token'),
+  }),
+  useUser: () => ({
+    isSignedIn: signedIn,
+    user: signedIn
+      ? {
+          id: 'user_test',
+          primaryEmailAddress: { emailAddress: 'test@example.com' },
+          fullName: 'Test User',
+        }
+      : null,
   }),
 }));
 

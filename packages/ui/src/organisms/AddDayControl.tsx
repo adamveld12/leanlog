@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
 import { IntegerInput } from '../atoms/IntegerInput';
@@ -50,21 +51,28 @@ export function AddDayControl({
   const [totalMealsValue, setTotalMealsValue] = useState<number>(totalMeals);
 
   return (
-    <SectionCard title={title}>
-      {note ? <HelperText>{note}</HelperText> : null}
-      <DateSelect3 month={picker.month} day={picker.day} year={picker.year} onChange={setPicker} />
-      {hideTotalMealsInput ? null : (
-        <div>
-          <HelperText>Total meals for the day</HelperText>
-          <IntegerInput min={0} step={1} value={totalMealsValue} onChange={setTotalMealsValue} />
-        </div>
-      )}
-      <Button
-        disabled={disabled}
-        onClick={() => onDayAdded({ ...picker, totalMeals: totalMealsValue })}
-      >
-        {buttonLabel}
-      </Button>
-    </SectionCard>
+    <AnalyticsScope properties={{ organism: 'AddDayControl' }}>
+      <SectionCard title={title}>
+        {note ? <HelperText>{note}</HelperText> : null}
+        <DateSelect3
+          month={picker.month}
+          day={picker.day}
+          year={picker.year}
+          onChange={setPicker}
+        />
+        {hideTotalMealsInput ? null : (
+          <div>
+            <HelperText>Total meals for the day</HelperText>
+            <IntegerInput min={0} step={1} value={totalMealsValue} onChange={setTotalMealsValue} />
+          </div>
+        )}
+        <Button
+          disabled={disabled}
+          onClick={() => onDayAdded({ ...picker, totalMeals: totalMealsValue })}
+        >
+          {buttonLabel}
+        </Button>
+      </SectionCard>
+    </AnalyticsScope>
   );
 }

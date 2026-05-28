@@ -26,7 +26,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  const issuerUrl = getIssuerUrl(context.env.CLERK_PUBLISHABLE_KEY);
+  const issuerUrl = getIssuerUrl(context.env.VITE_CLERK_PUBLISHABLE_KEY);
 
   try {
     const { payload } = await jwtVerify(token, getJWKS(issuerUrl), {
