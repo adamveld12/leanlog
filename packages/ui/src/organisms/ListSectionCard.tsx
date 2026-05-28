@@ -4,6 +4,7 @@ import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
 import { ListRow } from '../molecules/ListRow';
 import { SectionCard } from '../molecules/SectionCard';
+import { recipes } from '../styles/recipes';
 
 export type ListSectionItem = {
   id: string;
@@ -39,7 +40,7 @@ export function ListSectionCard({
       <SectionCard title={title} saved={saved}>
         {note ? <HelperText as="p">{note}</HelperText> : null}
         {childrenTop ? children : null}
-        <div className="flex flex-col gap-2.5">
+        <div className={recipes.stack.sm}>
           {items.map((item) => {
             const actions = item.onDelete ? (
               <Button

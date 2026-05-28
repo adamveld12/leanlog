@@ -30,7 +30,10 @@ export class AnalyticsErrorBoundary extends Component<PropsWithChildren, State> 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
+        <div
+          role="alert"
+          className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center"
+        >
           <SectionHeading>Something went wrong</SectionHeading>
           <Text as="p" variant="meta">
             An unexpected error occurred.

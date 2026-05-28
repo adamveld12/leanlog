@@ -5,6 +5,7 @@ import { NumberInput } from '../atoms/NumberInput';
 import { WarningText } from '../atoms/WarningText';
 import { RadioGroup } from '../molecules/RadioGroup';
 import { SectionCard } from '../molecules/SectionCard';
+import { recipes } from '../styles/recipes';
 
 type BodyInfoCardProps = {
   saved?: boolean;
@@ -21,7 +22,7 @@ export function BodyInfoCard(props: BodyInfoCardProps) {
   return (
     <AnalyticsScope properties={{ organism: 'BodyInfoCard' }}>
       <SectionCard title="Body Info" saved={props.saved}>
-        <div className="grid grid-cols-2 gap-2">
+        <div className={recipes.grid.two}>
           <NumberInput
             label="Weight (lbs)"
             value={props.weightLbs}
@@ -118,7 +119,7 @@ export function MacroTargetsCard(props: MacroTargetsCardProps) {
             { value: 'custom', label: 'Custom Macro Ratios' },
           ]}
         />
-        <div className="grid grid-cols-2 gap-2">
+        <div className={recipes.grid.two}>
           <NumberInput
             label={`Fats (${unit}): ${props.fatsHint}`}
             value={props.fats}

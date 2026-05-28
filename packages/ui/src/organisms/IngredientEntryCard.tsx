@@ -7,6 +7,7 @@ import { NumberInput } from '../atoms/NumberInput';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { WarningText } from '../atoms/WarningText';
 import { SectionCard } from '../molecules/SectionCard';
+import { recipes } from '../styles/recipes';
 
 export type IngredientEntryValue = {
   name: string;
@@ -69,7 +70,7 @@ export function IngredientEntryCard({
           />
         </Field>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className={recipes.grid.two}>
           <div className="flex items-center gap-2 items-end">
             <div className="flex-1">
               <NumberInput
@@ -89,7 +90,7 @@ export function IngredientEntryCard({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className={recipes.grid.two}>
           <NumberInput
             label="Fat"
             value={value.fat}
@@ -104,7 +105,7 @@ export function IngredientEntryCard({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-2 [&>*:first-child]:col-span-2">
+        <div className={recipes.grid.carbFiber}>
           <NumberInput
             label="Carbs"
             value={value.carbs}
