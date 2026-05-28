@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type PropsWithChildren } from 'react';
-import { Text } from '@leanlog/ui';
+import { Button, SectionHeading, Text } from '@leanlog/ui';
 
 type State = { hasError: boolean };
 
@@ -31,16 +31,11 @@ export class AnalyticsErrorBoundary extends Component<PropsWithChildren, State> 
     if (this.state.hasError) {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-          <h1 className="text-lg font-semibold">Something went wrong</h1>
+          <SectionHeading>Something went wrong</SectionHeading>
           <Text as="p" variant="meta">
             An unexpected error occurred.
           </Text>
-          <button
-            className="rounded-lg bg-[var(--ll-focus)] px-4 py-2 text-sm font-medium text-white"
-            onClick={() => window.location.reload()}
-          >
-            Refresh page
-          </button>
+          <Button onClick={() => window.location.reload()}>Refresh page</Button>
         </div>
       );
     }
