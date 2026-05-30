@@ -10,6 +10,7 @@ import {
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { uuidv7 } from '@leanlog/data-access';
 import {
+  AnalyticsScope,
   BodyInfoCard,
   Button,
   CalorieTargetCard,
@@ -19,7 +20,9 @@ import {
   DayWeightCard,
   FileInput,
   HelperText,
+  IngredientEntryCard,
   Input,
+  LabelScanCard,
   LandingTemplate,
   ListRow,
   LoadingState,
@@ -31,13 +34,17 @@ import {
   NumberInput,
   ProfileTemplate,
   QuickActionsCard,
+  ScanReviewModal,
   SectionCard,
   SectionHeading,
+  Tabs,
+  Text,
   WarningText,
   WeeklyStatsCard,
   WeightTrendCard,
+  useAnalytics,
 } from '@leanlog/ui';
-import type { CalendarDay } from '@leanlog/ui';
+import type { CalendarDay, LabelScanValue } from '@leanlog/ui';
 import { caloriesFromMode, dayTargetsFromProfile } from '@leanlog/data-access';
 import { normalizeIngredientName, prettyDate, round1, todayIso } from '../lib';
 import {
@@ -572,13 +579,22 @@ function MealEdit() {
   const mealName = mealNameDraft.mealId === meal?.id ? mealNameDraft.name : (meal?.name ?? '');
   const setMealName = (name: string) => setMealNameDraft({ mealId: meal?.id ?? null, name });
   const [draft, setDraft] = useState<IngredientDraft>(emptyDraft);
+  const [draftSource, setDraftSource] = useState<'manual' | 'scanned'>('manual');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [entryTab, setEntryTab] = useState<'manual' | 'scan' | 'database'>('manual');
+  const [scanForm, setScanForm] = useState<LabelScanValue>({
+    name: '',
+    checkForServings: false,
+    entirePackage: false,
+    amount: 0,
+  });
   const [showBlankNamePrompt, setShowBlankNamePrompt] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
   const [scanError, setScanError] = useState('');
   const [scanResult, setScanResult] = useState<NutritionScanResult | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const track = useAnalytics();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -667,8 +683,10 @@ function MealEdit() {
       name: normalizeIngredientName(draft.name),
     };
     void upsertIngredient(day.id, meal.id, next);
+    track('meal.ingredient.added', { source: draftSource });
     markSaved('ingredientForm');
     setDraft(emptyDraft);
+    setDraftSource('manual');
     setEditingId(null);
   };
   const totals = mealTotals(meal);
@@ -697,8 +715,11 @@ function MealEdit() {
     try {
       const formData = new FormData();
       formData.append('photo', file);
-      formData.append('weightGrams', draft.weight > 0 ? String(draft.weight) : '');
-      formData.append('name', draft.name);
+      formData.append('mode', scanForm.checkForServings ? 'servings' : 'weight');
+      formData.append('entirePackage', String(scanForm.entirePackage));
+      formData.append('weightGrams', scanForm.checkForServings ? '' : String(scanForm.amount));
+      formData.append('servings', scanForm.checkForServings ? String(scanForm.amount) : '');
+      formData.append('name', scanForm.name);
       const token = await getToken();
       const response = await fetch('/api/scan-nutrition', {
         method: 'POST',
@@ -707,9 +728,12 @@ function MealEdit() {
       });
       if (!response.ok) throw new Error('Scan failed. Try again with a clearer label photo.');
       const result = (await response.json()) as NutritionScanResult;
+      track('meal.ingredient.scanned', {});
       setScanResult(result);
     } catch (error) {
-      setScanError(error instanceof Error ? error.message : 'Scan failed');
+      const message = error instanceof Error ? error.message : 'Scan failed';
+      track('meal.ingredient.scanned.error', { error: message });
+      setScanError(message);
     } finally {
       setScanLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -721,7 +745,7 @@ function MealEdit() {
     markDirty('ingredientForm');
     setDraft((prev) => ({
       ...prev,
-      name: prev.name.trim() ? prev.name : (scanResult.proposed.name ?? prev.name),
+      name: scanForm.name.trim() || (scanResult.proposed.name ?? prev.name),
       weight: scanResult.proposed.weight,
       calories: scanResult.proposed.calories,
       fat: scanResult.proposed.fat,
@@ -730,240 +754,281 @@ function MealEdit() {
       fiber: scanResult.proposed.fiber,
       protein: scanResult.proposed.protein,
     }));
+    setDraftSource('scanned');
     setScanResult(null);
+    setEntryTab('manual');
   };
 
   return (
-    <MealEditTemplate
-      heading={{
-        title: meal.name || 'Meal',
-        subtitle: (
-          <MacroSummaryLine
-            calories={totals.calories}
-            protein={totals.protein}
-            carbs={totals.carbs}
-            fat={totals.fat}
-          />
-        ),
-        backHref: `/track/day/${day.id}`,
-        profileHref: '/track/profile',
-        renderNavLink: renderRouterNavLink,
-        rightContent: <HeaderAuthControl />,
-      }}
-      mealSection={
-        <SectionCard title="Meal name" saved={saved.mealName}>
-          <HelperText as="p">Name is required before leaving this page.</HelperText>
-          <Input
-            value={mealName}
-            onChange={(e) => {
-              setMealName(e.target.value);
-              markDirty('mealName');
-            }}
-            normalizeOnBlur={normalizeIngredientName}
-            onNormalized={(name) => {
-              setMealName(name);
-              void renameMeal(day.id, meal.id, name);
-              markSaved('mealName');
-            }}
-            onBlur={() => {
-              void renameMeal(day.id, meal.id, normalizeIngredientName(mealName));
-              markSaved('mealName');
-            }}
-          />
+    <AnalyticsScope properties={{ dayId: day.id, mealId: meal.id }}>
+      <MealEditTemplate
+        heading={{
+          title: meal.name || 'Meal',
+          subtitle: (
+            <MacroSummaryLine
+              calories={totals.calories}
+              protein={totals.protein}
+              carbs={totals.carbs}
+              fat={totals.fat}
+            />
+          ),
+          backHref: `/track/day/${day.id}`,
+          profileHref: '/track/profile',
+          renderNavLink: renderRouterNavLink,
+          rightContent: <HeaderAuthControl />,
+        }}
+        mealSection={
+          <SectionCard title="Meal name" saved={saved.mealName}>
+            <HelperText as="p">Name is required before leaving this page.</HelperText>
+            <Input
+              value={mealName}
+              onChange={(e) => {
+                setMealName(e.target.value);
+                markDirty('mealName');
+              }}
+              normalizeOnBlur={normalizeIngredientName}
+              onNormalized={(name) => {
+                setMealName(name);
+                void renameMeal(day.id, meal.id, name);
+                markSaved('mealName');
+              }}
+              onBlur={() => {
+                void renameMeal(day.id, meal.id, normalizeIngredientName(mealName));
+                markSaved('mealName');
+              }}
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => {
+                  void removeMeal(day.id, meal.id);
+                  nav(`/track/day/${day.id}`);
+                }}
+              >
+                Delete meal and all ingredients
+              </Button>
+            </div>
+            <div className="flex flex-col gap-2.5 mt-3">
+              <SectionHeading as="h4" noMargin>
+                Ingredients
+              </SectionHeading>
+              <HelperText as="p">Tap an ingredient row to edit values.</HelperText>
+              {meal.ingredients.length ? null : <HelperText as="p">No items</HelperText>}
+              {meal.ingredients.map((i) => (
+                <ListRow
+                  key={i.id}
+                  title={i.name}
+                  meta={
+                    <MacroSummaryLine
+                      calories={i.calories}
+                      protein={i.protein}
+                      carbs={i.carbs}
+                      fat={i.fat}
+                    />
+                  }
+                  actions={
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void removeIngredient(day.id, meal.id, i.id);
+                        track('meal.ingredient.deleted', { ingredientId: i.id });
+                      }}
+                    >
+                      Delete ingredient
+                    </Button>
+                  }
+                  onOpen={() => {
+                    setEditingId(i.id);
+                    setDraftSource('manual');
+                    setEntryTab('manual');
+                    setDraft({
+                      name: i.name,
+                      weight: i.weight,
+                      calories: i.calories,
+                      fat: i.fat,
+                      saturatedFat: i.saturatedFat,
+                      carbs: i.carbs,
+                      fiber: i.fiber,
+                      protein: i.protein,
+                    });
+                  }}
+                />
+              ))}
+            </div>
+          </SectionCard>
+        }
+        ingredientSection={
+          <div className="flex flex-col gap-4">
+            <Tabs
+              tabs={[
+                { key: 'manual', label: 'Manual Entry' },
+                { key: 'scan', label: 'Label Scan' },
+                { key: 'database', label: 'Nutrition Database' },
+              ]}
+              active={entryTab}
+              onChange={(key) => {
+                const next = key as 'manual' | 'scan' | 'database';
+                if (next === 'database') track('meal.ingredient.database.viewed', {});
+                setEntryTab(next);
+              }}
+            />
+            {entryTab === 'manual' ? (
+              <IngredientEntryCard
+                value={draft}
+                saved={saved.ingredientForm}
+                submitLabel={editingId ? 'Update' : 'Add'}
+                onChange={(next) => {
+                  markDirty('ingredientForm');
+                  setDraft(next);
+                }}
+                onSubmit={saveIngredient}
+                normalizeNameOnBlur={normalizeIngredientName}
+              />
+            ) : null}
+            {entryTab === 'scan' ? (
+              <LabelScanCard
+                value={scanForm}
+                loading={scanLoading}
+                error={scanError || cameraError}
+                onChange={setScanForm}
+                onScan={openCamera}
+                normalizeNameOnBlur={normalizeIngredientName}
+              />
+            ) : null}
+            {entryTab === 'database' ? (
+              <SectionCard>
+                <div className="py-6 text-center">
+                  <Text as="p" variant="meta">
+                    Instantly look up any ingredient. Speed up your meal logging.
+                  </Text>
+                </div>
+              </SectionCard>
+            ) : null}
+          </div>
+        }
+      >
+        <FileInput
+          ref={fileInputRef}
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void onScanFile(file);
+          }}
+        />
+        <Modal
+          open={cameraOpen}
+          title="Take nutrition photo"
+          onClose={() => {
+            stopCamera();
+            setCameraOpen(false);
+          }}
+        >
+          <div className="flex flex-col gap-2.5">
+            <video
+              ref={videoRef}
+              className="w-full rounded-[10px] border"
+              autoPlay
+              playsInline
+              muted
+            />
+            <div className="flex items-center gap-2 justify-between">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  stopCamera();
+                  setCameraOpen(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={() => void capturePhoto()}>Capture</Button>
+            </div>
+          </div>
+        </Modal>
+        <ScanReviewModal
+          open={!!scanResult}
+          onClose={() => setScanResult(null)}
+          onAccept={applyScan}
+          onRetake={openCamera}
+          canAccept={scanResult?.canApply ?? false}
+          blockReason={scanResult?.blockReason}
+          notes={scanResult?.notes}
+          fields={
+            scanResult
+              ? [
+                  {
+                    label: 'Weight',
+                    current: draft.weight,
+                    proposed: scanResult.proposed.weight,
+                    unit: 'g',
+                  },
+                  {
+                    label: 'Calories',
+                    current: draft.calories,
+                    proposed: scanResult.proposed.calories,
+                  },
+                  {
+                    label: 'Fat',
+                    current: draft.fat,
+                    proposed: scanResult.proposed.fat,
+                    unit: 'g',
+                  },
+                  {
+                    label: 'Saturated fat',
+                    current: draft.saturatedFat,
+                    proposed: scanResult.proposed.saturatedFat,
+                    unit: 'g',
+                  },
+                  {
+                    label: 'Carbs',
+                    current: draft.carbs,
+                    proposed: scanResult.proposed.carbs,
+                    unit: 'g',
+                  },
+                  {
+                    label: 'Fiber',
+                    current: draft.fiber,
+                    proposed: scanResult.proposed.fiber,
+                    unit: 'g',
+                  },
+                  {
+                    label: 'Protein',
+                    current: draft.protein,
+                    proposed: scanResult.proposed.protein,
+                    unit: 'g',
+                  },
+                ]
+              : []
+          }
+        />
+        <Modal
+          open={showBlankNamePrompt}
+          title="Meal name is required"
+          onClose={() => setShowBlankNamePrompt(false)}
+        >
+          <HelperText as="p">
+            Name this meal before leaving, or discard this whole meal draft.
+          </HelperText>
           <div className="flex items-center gap-2">
+            <Button onClick={() => setShowBlankNamePrompt(false)}>Stay and edit</Button>
             <Button
-              size="sm"
               variant="danger"
               onClick={() => {
                 void removeMeal(day.id, meal.id);
                 nav(`/track/day/${day.id}`);
               }}
             >
-              Delete meal and all ingredients
+              Discard meal draft and all ingredients
             </Button>
           </div>
-          <div className="flex flex-col gap-2.5 mt-3">
-            <SectionHeading as="h4" noMargin>
-              Ingredients
-            </SectionHeading>
-            <HelperText as="p">Tap an ingredient row to edit values.</HelperText>
-            {meal.ingredients.length ? null : <HelperText as="p">No items</HelperText>}
-            {meal.ingredients.map((i) => (
-              <ListRow
-                key={i.id}
-                title={i.name}
-                meta={
-                  <MacroSummaryLine
-                    calories={i.calories}
-                    protein={i.protein}
-                    carbs={i.carbs}
-                    fat={i.fat}
-                  />
-                }
-                actions={
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void removeIngredient(day.id, meal.id, i.id);
-                    }}
-                  >
-                    Delete ingredient
-                  </Button>
-                }
-                onOpen={() => {
-                  setEditingId(i.id);
-                  setDraft({
-                    name: i.name,
-                    weight: i.weight,
-                    calories: i.calories,
-                    fat: i.fat,
-                    saturatedFat: i.saturatedFat,
-                    carbs: i.carbs,
-                    fiber: i.fiber,
-                    protein: i.protein,
-                  });
-                }}
-              />
-            ))}
-          </div>
-        </SectionCard>
-      }
-      ingredientEntry={{
-        value: draft,
-        saved: saved.ingredientForm,
-        submitLabel: editingId ? 'Update' : 'Add',
-        onChange: (next) => {
-          markDirty('ingredientForm');
-          setDraft(next);
-        },
-        onSubmit: saveIngredient,
-        normalizeNameOnBlur: normalizeIngredientName,
-        weightAction: (
-          <Button size="sm" variant="ghost" onClick={openCamera} disabled={scanLoading}>
-            {scanLoading ? 'Scanning…' : 'Scan Label'}
-          </Button>
-        ),
-      }}
-    >
-      <FileInput
-        ref={fileInputRef}
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void onScanFile(file);
-        }}
-      />
-      {scanError ? <WarningText>{scanError}</WarningText> : null}
-      {cameraError ? <WarningText>{cameraError}</WarningText> : null}
-      <Modal
-        open={cameraOpen}
-        title="Take nutrition photo"
-        onClose={() => {
-          stopCamera();
-          setCameraOpen(false);
-        }}
-      >
-        <div className="flex flex-col gap-2.5">
-          <video
-            ref={videoRef}
-            className="w-full rounded-[10px] border"
-            autoPlay
-            playsInline
-            muted
-          />
-          <div className="flex items-center gap-2 justify-between">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                stopCamera();
-                setCameraOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={() => void capturePhoto()}>Capture</Button>
-          </div>
-        </div>
-      </Modal>
-      <Modal open={!!scanResult} title="Review nutrition scan" onClose={() => setScanResult(null)}>
-        {scanResult ? (
-          <div className="flex flex-col gap-2.5">
-            <HelperText as="p">
-              Compare current values with scanned values before applying.
-            </HelperText>
-            <HelperText as="p">
-              Weight: {draft.weight} → {scanResult.proposed.weight}g
-            </HelperText>
-            <HelperText as="p">
-              Calories: {draft.calories} → {scanResult.proposed.calories}
-            </HelperText>
-            <HelperText as="p">
-              Fat: {draft.fat} → {scanResult.proposed.fat}g
-            </HelperText>
-            <HelperText as="p">
-              Saturated fat: {draft.saturatedFat} → {scanResult.proposed.saturatedFat}g
-            </HelperText>
-            <HelperText as="p">
-              Carbs: {draft.carbs} → {scanResult.proposed.carbs}g
-            </HelperText>
-            <HelperText as="p">
-              Fiber: {draft.fiber} → {scanResult.proposed.fiber}g
-            </HelperText>
-            <HelperText as="p">
-              Protein: {draft.protein} → {scanResult.proposed.protein}g
-            </HelperText>
-            {draft.name.trim() ? null : (
-              <HelperText as="p">
-                Ingredient title: {draft.name || '(blank)'} →{' '}
-                {scanResult.proposed.name || '(unchanged)'}
-              </HelperText>
-            )}
-            {scanResult.notes.length ? <HelperText>{scanResult.notes.join(' ')}</HelperText> : null}
-            {scanResult.canApply ? null : (
-              <WarningText>{scanResult.blockReason ?? 'Scan cannot be applied.'}</WarningText>
-            )}
-            <div className="flex items-center gap-2 justify-between">
-              <Button variant="ghost" onClick={openCamera} disabled={scanLoading}>
-                Retake photo
-              </Button>
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" onClick={() => setScanResult(null)}>
-                  Cancel
-                </Button>
-                <Button onClick={applyScan} disabled={!scanResult.canApply}>
-                  Apply
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </Modal>
-      <Modal
-        open={showBlankNamePrompt}
-        title="Meal name is required"
-        onClose={() => setShowBlankNamePrompt(false)}
-      >
-        <HelperText as="p">
-          Name this meal before leaving, or discard this whole meal draft.
-        </HelperText>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setShowBlankNamePrompt(false)}>Stay and edit</Button>
-          <Button
-            variant="danger"
-            onClick={() => {
-              void removeMeal(day.id, meal.id);
-              nav(`/track/day/${day.id}`);
-            }}
-          >
-            Discard meal draft and all ingredients
-          </Button>
-        </div>
-      </Modal>
-    </MealEditTemplate>
+        </Modal>
+      </MealEditTemplate>
+    </AnalyticsScope>
   );
 }
 

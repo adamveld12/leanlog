@@ -1,26 +1,25 @@
 import type { ComponentProps, ReactNode } from 'react';
-import { IngredientEntryCard } from '../organisms/IngredientEntryCard';
 import { PageNavHeading } from '../organisms/PageNavHeading';
 import { AppShell } from './AppShell';
 
 export type MealEditTemplateProps = {
   heading: ComponentProps<typeof PageNavHeading>;
   mealSection: ReactNode;
-  ingredientEntry: ComponentProps<typeof IngredientEntryCard>;
+  ingredientSection: ReactNode;
   children?: ReactNode;
 };
 
 export function MealEditTemplate({
   heading,
   mealSection,
-  ingredientEntry,
+  ingredientSection,
   children,
 }: MealEditTemplateProps) {
   return (
     <AppShell>
       <PageNavHeading {...heading} />
       {mealSection}
-      <IngredientEntryCard {...ingredientEntry} />
+      {ingredientSection}
       {children}
     </AppShell>
   );

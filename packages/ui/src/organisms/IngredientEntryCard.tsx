@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
@@ -27,7 +26,6 @@ type IngredientEntryCardProps = {
   onChange: (next: IngredientEntryValue) => void;
   onSubmit: () => void;
   normalizeNameOnBlur?: (value: string) => string;
-  weightAction?: ReactNode;
 };
 
 const clamp999 = (n: number) => Math.max(0, Math.min(999, n));
@@ -41,7 +39,6 @@ export function IngredientEntryCard({
   onChange,
   onSubmit,
   normalizeNameOnBlur,
-  weightAction,
 }: IngredientEntryCardProps) {
   const setNum = (key: keyof Omit<IngredientEntryValue, 'name'>, next: number) =>
     onChange({ ...value, [key]: sanitize(next) });
@@ -71,17 +68,12 @@ export function IngredientEntryCard({
         </Field>
 
         <div className={recipes.grid.two}>
-          <div className="flex items-center gap-2 items-end">
-            <div className="flex-1">
-              <NumberInput
-                label="Weight (g)"
-                value={value.weight}
-                onChange={(n) => setNum('weight', n)}
-                onBlur={() => roundField('weight')}
-              />
-            </div>
-            {weightAction ? <div className="mb-2.5">{weightAction}</div> : null}
-          </div>
+          <NumberInput
+            label="Weight (g)"
+            value={value.weight}
+            onChange={(n) => setNum('weight', n)}
+            onBlur={() => roundField('weight')}
+          />
           <NumberInput
             label="Calories"
             value={value.calories}

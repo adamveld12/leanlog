@@ -8,6 +8,7 @@ type NumberInputProps = {
   onChange: (next: number) => void;
   onBlur?: () => void;
   placeholder?: string;
+  disabled?: boolean;
   labelClassName?: string;
   inputClassName?: string;
 };
@@ -22,6 +23,7 @@ export function NumberInput({
   onChange,
   onBlur,
   placeholder,
+  disabled,
   labelClassName = '',
   inputClassName = '',
 }: NumberInputProps) {
@@ -33,6 +35,7 @@ export function NumberInput({
       <Input
         value={editing ? text : display(value)}
         placeholder={placeholder}
+        disabled={disabled}
         onChange={(e) => {
           const next = e.target.value;
           setText(next);

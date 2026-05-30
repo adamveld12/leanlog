@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { HelperText } from '../atoms/HelperText';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { SectionCard } from '../molecules/SectionCard';
+import { IngredientEntryCard } from '../organisms/IngredientEntryCard';
 import { MealEditTemplate } from './MealEditTemplate';
 
 const value = {
@@ -26,12 +27,14 @@ const meta: Meta<typeof MealEditTemplate> = {
         <HelperText as="p">CHICKEN · 220 kcal</HelperText>
       </SectionCard>
     ),
-    ingredientEntry: {
-      value,
-      submitLabel: 'Add',
-      onChange: () => undefined,
-      onSubmit: () => undefined,
-    },
+    ingredientSection: (
+      <IngredientEntryCard
+        value={value}
+        submitLabel="Add"
+        onChange={() => undefined}
+        onSubmit={() => undefined}
+      />
+    ),
   },
 };
 export default meta;
