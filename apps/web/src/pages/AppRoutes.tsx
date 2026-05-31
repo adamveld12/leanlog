@@ -573,7 +573,6 @@ function MealEdit() {
     entirePackage: false,
     amount: 0,
   });
-  const [showBlankNamePrompt, setShowBlankNamePrompt] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
   const [scanError, setScanError] = useState('');
   const [scanResult, setScanResult] = useState<ScanResolution | null>(null);
@@ -995,27 +994,6 @@ function MealEdit() {
               : []
           }
         />
-        <Modal
-          open={showBlankNamePrompt}
-          title="Meal name is required"
-          onClose={() => setShowBlankNamePrompt(false)}
-        >
-          <HelperText as="p">
-            Name this meal before leaving, or discard this whole meal draft.
-          </HelperText>
-          <div className="flex items-center gap-2">
-            <Button onClick={() => setShowBlankNamePrompt(false)}>Stay and edit</Button>
-            <Button
-              variant="danger"
-              onClick={() => {
-                void removeMeal(day.id, meal.id);
-                nav(`/track/day/${day.id}`);
-              }}
-            >
-              Discard meal draft and all ingredients
-            </Button>
-          </div>
-        </Modal>
       </MealEditTemplate>
     </AnalyticsScope>
   );
