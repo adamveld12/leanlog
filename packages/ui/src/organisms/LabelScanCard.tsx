@@ -75,7 +75,7 @@ export function LabelScanCard({
         />
         <HelperText as="p">Uses serving size times the servings in the package.</HelperText>
 
-        <Button className="w-full" aria-busy={loading} onClick={onScan} disabled={loading}>
+        <Button fullWidth aria-busy={loading} onClick={onScan} disabled={loading}>
           {loading ? 'Scanning…' : 'Scan Label'}
         </Button>
 

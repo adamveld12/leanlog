@@ -9,8 +9,8 @@ const mb15 = 15 * 1024 * 1024;
 
 const scanSchema = z.object({
   basis: z.enum(['per_serving', 'per_100g', 'unknown']),
-  servingSizeGrams: z.number().nullable(),
-  servingsPerContainer: z.number().nullable(),
+  servingSizeGrams: z.number().finite().nonnegative().nullable(),
+  servingsPerContainer: z.number().finite().nonnegative().nullable(),
   nutrients: z.object({
     calories: z.number().finite().nonnegative(),
     fat: z.number().finite().nonnegative(),
