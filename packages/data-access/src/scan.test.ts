@@ -122,6 +122,17 @@ describe('resolveScan', () => {
     expect(r.blockReason).toMatch(/serving size unreadable/i);
   });
 
+  it('servings mode + per-serving + null serving size proceeds with weight 0', () => {
+    const r = resolveScan(
+      { ...perServingLabel, servingSizeGrams: null },
+      req({ mode: 'servings', servings: 3 }),
+    );
+    expect(r.canApply).toBe(true);
+    expect(r.proposed.weight).toBe(0); // no serving size to derive a weight
+    expect(r.proposed.calories).toBe(360); // macros still scale by serving count (120 * 3)
+    expect(r.notes.join(' ')).toMatch(/weight left blank/i);
+  });
+
   it('offers an inferred name only when the form name is blank', () => {
     expect(resolveScan(perServingLabel, req({ weight: 30, name: '' })).proposed.name).toBe(
       'Granola',

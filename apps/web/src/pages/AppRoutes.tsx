@@ -727,22 +727,22 @@ function MealEdit() {
 
   const applyScan = () => {
     if (!scanResult || !scanResult.canApply) return;
-    const clamp999 = (n: number) => Math.max(0, Math.min(999, n));
     const { proposed } = scanResult;
     markDirty('ingredientForm');
     setDraft((prev) => ({
       ...prev,
       name: scanForm.name.trim() || (proposed.name ?? prev.name),
-      weight: clamp999(proposed.weight),
-      calories: clamp999(proposed.calories),
-      fat: clamp999(proposed.fat),
-      saturatedFat: clamp999(proposed.saturatedFat),
-      carbs: clamp999(proposed.carbs),
-      fiber: clamp999(proposed.fiber),
-      protein: clamp999(proposed.protein),
+      weight: proposed.weight,
+      calories: proposed.calories,
+      fat: proposed.fat,
+      saturatedFat: proposed.saturatedFat,
+      carbs: proposed.carbs,
+      fiber: proposed.fiber,
+      protein: proposed.protein,
     }));
     setDraftSource('scanned');
     setScanResult(null);
+    setScanForm({ name: '', checkForServings: false, entirePackage: false, amount: 0 });
     setEntryTab('manual');
   };
 
