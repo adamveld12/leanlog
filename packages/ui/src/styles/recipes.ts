@@ -27,6 +27,7 @@ export const recipes = {
     row: 'flex items-center gap-2',
     rowEnd: 'flex items-end gap-2',
     between: 'justify-between',
+    center: 'flex justify-center text-center',
   },
   grid: {
     two: 'grid grid-cols-2 gap-2',

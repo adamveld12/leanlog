@@ -15,6 +15,11 @@ export function Checkbox({
   ...props
 }: CheckboxProps) {
   const track = useAnalytics();
+  if (import.meta.env.DEV && !label && props['aria-label'] == null) {
+    console.warn(
+      'Checkbox: provide a `label` or `aria-label` so the control has an accessible name.',
+    );
+  }
   return (
     <label className="flex items-center gap-2 text-sm font-medium text-[var(--ll-text)]">
       <input

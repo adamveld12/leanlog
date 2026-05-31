@@ -12,4 +12,6 @@ type Story = StoryObj<typeof Checkbox>;
 
 export const Unchecked: Story = { args: { checked: false } };
 export const Checked: Story = { args: { checked: true } };
-export const NoLabel: Story = { args: { label: undefined, checked: true } };
+export const NoLabel: Story = {
+  args: { label: undefined, checked: true, 'aria-label': 'Standalone checkbox' },
+};

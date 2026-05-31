@@ -8,6 +8,7 @@ import { NumberInput } from '../atoms/NumberInput';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { WarningText } from '../atoms/WarningText';
 import { SectionCard } from '../molecules/SectionCard';
+import { recipes } from '../styles/recipes';
 
 export type LabelScanValue = {
   name: string;
@@ -74,12 +75,12 @@ export function LabelScanCard({
         />
         <HelperText as="p">Uses serving size times the servings in the package.</HelperText>
 
-        <Button className="w-full" onClick={onScan} disabled={loading}>
+        <Button className="w-full" aria-busy={loading} onClick={onScan} disabled={loading}>
           {loading ? 'Scanning…' : 'Scan Label'}
         </Button>
 
         {error ? (
-          <div className="flex justify-center text-center">
+          <div role="alert" className={recipes.stack.center}>
             <WarningText>{error}</WarningText>
           </div>
         ) : null}
