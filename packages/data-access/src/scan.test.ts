@@ -73,13 +73,27 @@ describe('resolveScan', () => {
     expect(r.proposed.calories).toBe(200); // 200 * (100/100)
   });
 
-  it('blocks entire package when servings-per-container is unreadable', () => {
+  it('entire package + unreadable servings-per-container falls back to one serving with a warning', () => {
     const r = resolveScan(
       { ...perServingLabel, servingsPerContainer: null },
       req({ entirePackage: true }),
     );
-    expect(r.canApply).toBe(false);
-    expect(r.blockReason).toMatch(/servings per container/i);
+    expect(r.canApply).toBe(true);
+    expect(r.proposed.weight).toBe(30); // one serving size
+    expect(r.proposed.calories).toBe(120); // single-serving macros (factor 1)
+    expect(r.warning).toMatch(/servings per container/i);
+    expect(r.blockReason).toBeUndefined();
+  });
+
+  it('entire package + per-100g + unreadable servings-per-container scales one serving', () => {
+    const r = resolveScan(
+      { ...per100gLabel, servingsPerContainer: null },
+      req({ entirePackage: true }),
+    );
+    expect(r.canApply).toBe(true);
+    expect(r.proposed.weight).toBe(50); // one serving size
+    expect(r.proposed.calories).toBe(100); // 200 * (50/100)
+    expect(r.warning).toMatch(/servings per container/i);
   });
 
   it('blocks per-100g servings mode when serving size is unreadable', () => {

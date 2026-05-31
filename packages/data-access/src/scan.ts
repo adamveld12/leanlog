@@ -45,6 +45,8 @@ export type ScanResolution = {
   proposed: ScanProposed;
   canApply: boolean;
   blockReason?: string;
+  /** A non-blocking caution shown alongside an applyable result. */
+  warning?: string;
   notes: string[];
 };
 
@@ -68,10 +70,17 @@ export function resolveScan(label: ScanLabel, request: ScanRequest): ScanResolut
   let factor = 1;
   let canApply = false;
   let blockReason: string | undefined;
+  let warning: string | undefined;
 
   if (request.entirePackage) {
     if (!perContainer) {
-      blockReason = 'Servings per container unreadable. Retake photo or uncheck entire package.';
+      // Can't compute the package total without a servings-per-container count.
+      // Fall back to a single serving and warn instead of blocking.
+      factor = label.basis === 'per_100g' && serving ? serving / 100 : 1;
+      targetWeight = serving ?? 0;
+      warning =
+        'Servings per container unreadable. Applied a single serving — adjust the weight if needed.';
+      canApply = true;
     } else if (label.basis === 'per_serving') {
       if (!serving) {
         blockReason =
@@ -148,6 +157,7 @@ export function resolveScan(label: ScanLabel, request: ScanRequest): ScanResolut
     },
     canApply,
     blockReason: canApply ? undefined : blockReason,
+    warning,
     notes,
   };
 }

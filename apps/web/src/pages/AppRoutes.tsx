@@ -943,9 +943,13 @@ function MealEdit() {
           open={!!scanResult}
           onClose={() => setScanResult(null)}
           onAccept={applyScan}
-          onRetake={openCamera}
+          onRetake={() => {
+            setScanResult(null);
+            void openCamera();
+          }}
           canAccept={scanResult?.canApply ?? false}
           blockReason={scanResult?.blockReason}
+          warning={scanResult?.warning}
           notes={scanResult?.notes}
           fields={
             scanResult

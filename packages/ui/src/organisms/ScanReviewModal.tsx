@@ -18,6 +18,7 @@ export type ScanReviewModalProps = {
   onRetake?: () => void;
   canAccept?: boolean;
   blockReason?: string;
+  warning?: string;
   notes?: string[];
   fields: ScanField[];
   acceptLabel?: string;
@@ -30,6 +31,7 @@ export function ScanReviewModal({
   onRetake,
   canAccept = true,
   blockReason,
+  warning,
   notes,
   fields,
   acceptLabel = 'Apply',
@@ -47,6 +49,8 @@ export function ScanReviewModal({
         ))}
 
         {notes && notes.length > 0 ? <HelperText as="p">{notes.join(' ')}</HelperText> : null}
+
+        {warning ? <WarningText>{warning}</WarningText> : null}
 
         {!canAccept && blockReason ? <WarningText>{blockReason}</WarningText> : null}
 
