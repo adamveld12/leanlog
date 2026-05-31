@@ -26,6 +26,7 @@ export const recipes = {
     lg: 'flex flex-col gap-4',
     row: 'flex items-center gap-2',
     rowEnd: 'flex items-end gap-2',
+    actions: 'flex flex-wrap items-center justify-end gap-2',
     between: 'justify-between',
     center: 'flex justify-center text-center',
   },

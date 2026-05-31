@@ -3,6 +3,7 @@ import { HelperText } from '../atoms/HelperText';
 import { WarningText } from '../atoms/WarningText';
 import { AnalyticsScope } from '../analytics';
 import { Modal } from '../molecules/Modal';
+import { recipes } from '../styles/recipes';
 
 export type ScanField = {
   label: string;
@@ -54,7 +55,7 @@ export function ScanReviewModal({
 
         {!canAccept && blockReason ? <WarningText>{blockReason}</WarningText> : null}
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className={recipes.stack.actions}>
           {onRetake ? (
             <Button variant="ghost" size="sm" onClick={onRetake}>
               Retake photo
