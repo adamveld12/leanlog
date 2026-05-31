@@ -888,6 +888,7 @@ function MealEdit() {
             {entryTab === 'database' ? (
               <SectionCard>
                 <div className="py-6 text-center">
+                  <SectionHeading as="h4">Coming soon</SectionHeading>
                   <Text as="p" variant="meta">
                     Instantly look up any ingredient. Speed up your meal logging.
                   </Text>
