@@ -5,6 +5,7 @@ import { SectionCard } from '../molecules/SectionCard';
 import { Tabs } from '../molecules/Tabs';
 import { IngredientEntryCard } from '../organisms/IngredientEntryCard';
 import { LabelScanCard } from '../organisms/LabelScanCard';
+import { recipes } from '../styles/recipes';
 import { MealEditTemplate } from './MealEditTemplate';
 
 const value = {
@@ -49,7 +50,7 @@ export const Default: Story = {};
 export const WithTabs: Story = {
   args: {
     ingredientSection: (
-      <div className="flex flex-col gap-4">
+      <div className={recipes.stack.lg}>
         <Tabs
           tabs={[
             { key: 'manual', label: 'Manual Entry' },
