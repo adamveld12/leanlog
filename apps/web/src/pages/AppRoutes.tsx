@@ -46,6 +46,7 @@ import {
 } from '@leanlog/ui';
 import type { CalendarDay, LabelScanValue } from '@leanlog/ui';
 import { caloriesFromMode, dayTargetsFromProfile } from '@leanlog/data-access';
+import type { ScanResolution } from '@leanlog/data-access';
 import { normalizeIngredientName, prettyDate, round1, todayIso } from '../lib';
 import {
   dayTotals,
@@ -62,22 +63,6 @@ import { api } from '../api';
 import type { UpsertIngredient, SaveSections } from '../types';
 
 type IngredientDraft = Omit<UpsertIngredient, 'id' | 'mealId' | 'createdAt' | 'updatedAt'>;
-
-type NutritionScanResult = {
-  proposed: {
-    name?: string;
-    weight: number;
-    calories: number;
-    fat: number;
-    saturatedFat: number;
-    carbs: number;
-    fiber: number;
-    protein: number;
-  };
-  canApply: boolean;
-  blockReason?: string;
-  notes: string[];
-};
 
 const emptyDraft: IngredientDraft = {
   name: '',
@@ -591,7 +576,7 @@ function MealEdit() {
   const [showBlankNamePrompt, setShowBlankNamePrompt] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
   const [scanError, setScanError] = useState('');
-  const [scanResult, setScanResult] = useState<NutritionScanResult | null>(null);
+  const [scanResult, setScanResult] = useState<ScanResolution | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const track = useAnalytics();
@@ -711,6 +696,7 @@ function MealEdit() {
 
   const onScanFile = async (file: File) => {
     setScanError('');
+    setCameraError('');
     setScanLoading(true);
     try {
       const formData = new FormData();
@@ -727,7 +713,7 @@ function MealEdit() {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!response.ok) throw new Error('Scan failed. Try again with a clearer label photo.');
-      const result = (await response.json()) as NutritionScanResult;
+      const result = (await response.json()) as ScanResolution;
       track('meal.ingredient.scanned', {});
       setScanResult(result);
     } catch (error) {
@@ -742,17 +728,19 @@ function MealEdit() {
 
   const applyScan = () => {
     if (!scanResult || !scanResult.canApply) return;
+    const clamp999 = (n: number) => Math.max(0, Math.min(999, n));
+    const { proposed } = scanResult;
     markDirty('ingredientForm');
     setDraft((prev) => ({
       ...prev,
-      name: scanForm.name.trim() || (scanResult.proposed.name ?? prev.name),
-      weight: scanResult.proposed.weight,
-      calories: scanResult.proposed.calories,
-      fat: scanResult.proposed.fat,
-      saturatedFat: scanResult.proposed.saturatedFat,
-      carbs: scanResult.proposed.carbs,
-      fiber: scanResult.proposed.fiber,
-      protein: scanResult.proposed.protein,
+      name: scanForm.name.trim() || (proposed.name ?? prev.name),
+      weight: clamp999(proposed.weight),
+      calories: clamp999(proposed.calories),
+      fat: clamp999(proposed.fat),
+      saturatedFat: clamp999(proposed.saturatedFat),
+      carbs: clamp999(proposed.carbs),
+      fiber: clamp999(proposed.fiber),
+      protein: clamp999(proposed.protein),
     }));
     setDraftSource('scanned');
     setScanResult(null);
@@ -931,6 +919,7 @@ function MealEdit() {
           <div className="flex flex-col gap-2.5">
             <video
               ref={videoRef}
+              aria-label="Nutrition label viewfinder"
               className="w-full rounded-[10px] border"
               autoPlay
               playsInline

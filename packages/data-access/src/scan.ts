@@ -73,10 +73,14 @@ export function resolveScan(label: ScanLabel, request: ScanRequest): ScanResolut
     if (!perContainer) {
       blockReason = 'Servings per container unreadable. Retake photo or uncheck entire package.';
     } else if (label.basis === 'per_serving') {
-      factor = perContainer;
-      targetWeight = serving ? serving * perContainer : 0;
-      if (!serving) notes.push('Serving size unreadable. Package macros scaled by serving count.');
-      canApply = true;
+      if (!serving) {
+        blockReason =
+          'Serving size unreadable. Cannot compute package weight. Enter weight instead.';
+      } else {
+        factor = perContainer;
+        targetWeight = serving * perContainer;
+        canApply = true;
+      }
     } else if (label.basis === 'per_100g') {
       if (!serving) {
         blockReason = 'Serving size unreadable for per-100g label. Enter weight instead.';

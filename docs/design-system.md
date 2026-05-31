@@ -75,17 +75,17 @@
 
 ## Component Catalog
 
-### Atoms (18)
+### Atoms (19)
 
-Button, Card, Field, FileInput, HelperText, Input, IntegerInput, Label, NumberInput, PageTitle, ProgressBar, Radio, SectionHeading, Select, Spinner, Text, UnitText, WarningText
+Button, Card, Checkbox, Field, FileInput, HelperText, Input, IntegerInput, Label, NumberInput, PageTitle, ProgressBar, Radio, SectionHeading, Select, Spinner, Text, UnitText, WarningText
 
 ### Molecules (10)
 
 ActionRow, DateSelect3, ListRow, LoadingState, MacroSummaryLine, Modal, RadioGroup, SectionCard, StickyFooter, Tabs
 
-### Organisms (9)
+### Organisms (10)
 
-AddDayControl, AppPageHeading, AuthLanding, DailyTotalsCard, IngredientEntryCard, ListSectionCard, PageNavHeading, ProfileSectionCards, ScanReviewModal
+AddDayControl, AppPageHeading, AuthLanding, DailyTotalsCard, IngredientEntryCard, LabelScanCard, ListSectionCard, PageNavHeading, ProfileSectionCards, ScanReviewModal
 
 ### Templates (6)
 

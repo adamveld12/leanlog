@@ -1,6 +1,7 @@
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import { useAnalytics } from '../analytics';
 import { cn } from '../styles/cn';
+import { recipes } from '../styles/recipes';
 
 type CheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
   label?: ReactNode;
@@ -26,10 +27,7 @@ export function Checkbox({
         type="checkbox"
         name={name}
         checked={checked}
-        className={cn(
-          'h-4 w-4 accent-[var(--ll-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--ll-focus)_35%,transparent)]',
-          className,
-        )}
+        className={cn('h-4 w-4 accent-[var(--ll-text)]', recipes.focusRing, className)}
         onChange={(event) => {
           track('ui.checkbox.change', { atom: 'Checkbox', name, value: event.target.checked });
           onChange?.(event);

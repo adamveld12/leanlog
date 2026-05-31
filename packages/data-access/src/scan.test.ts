@@ -91,6 +91,37 @@ describe('resolveScan', () => {
     expect(r.blockReason).toMatch(/serving size unreadable/i);
   });
 
+  it('weight mode + per-serving + null serving size keeps one-serving macros unscaled', () => {
+    const r = resolveScan(
+      { ...perServingLabel, servingSizeGrams: null },
+      req({ mode: 'weight', weight: 200 }),
+    );
+    expect(r.canApply).toBe(true);
+    expect(r.proposed.weight).toBe(200); // user-entered weight preserved
+    expect(r.proposed.calories).toBe(120); // 1x serving, not scaled
+    expect(r.notes.join(' ')).toMatch(/without scaling/i);
+  });
+
+  it('weight mode + unknown basis applies values without scaling', () => {
+    const r = resolveScan(
+      { ...perServingLabel, basis: 'unknown' },
+      req({ mode: 'weight', weight: 75 }),
+    );
+    expect(r.canApply).toBe(true);
+    expect(r.proposed.weight).toBe(75);
+    expect(r.proposed.calories).toBe(120); // factor 1, no scaling
+    expect(r.notes.join(' ')).toMatch(/basis unclear/i);
+  });
+
+  it('blocks entire package + per-serving when serving size is unreadable', () => {
+    const r = resolveScan(
+      { ...perServingLabel, servingSizeGrams: null },
+      req({ entirePackage: true }),
+    );
+    expect(r.canApply).toBe(false);
+    expect(r.blockReason).toMatch(/serving size unreadable/i);
+  });
+
   it('offers an inferred name only when the form name is blank', () => {
     expect(resolveScan(perServingLabel, req({ weight: 30, name: '' })).proposed.name).toBe(
       'Granola',
