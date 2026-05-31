@@ -15,3 +15,4 @@ export const Checked: Story = { args: { checked: true } };
 export const NoLabel: Story = {
   args: { label: undefined, checked: true, 'aria-label': 'Standalone checkbox' },
 };
+export const Disabled: Story = { args: { checked: true, disabled: true } };

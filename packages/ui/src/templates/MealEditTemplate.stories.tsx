@@ -61,7 +61,7 @@ export const WithTabs: Story = {
           onChange={() => undefined}
         />
         <LabelScanCard
-          value={{ name: '', checkForServings: false, entirePackage: false, amount: 0 }}
+          value={{ name: '', mode: 'weight', amount: 0 }}
           onChange={() => undefined}
           onScan={() => undefined}
         />

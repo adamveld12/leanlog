@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { cn } from '../styles/cn';
 import { Field } from './Field';
 import { Input } from './Input';
 
@@ -31,7 +32,7 @@ export function NumberInput({
   const [editing, setEditing] = useState(false);
 
   return (
-    <Field label={label} className={labelClassName}>
+    <Field label={label} className={cn(labelClassName, disabled && 'opacity-50')}>
       <Input
         value={editing ? text : display(value)}
         placeholder={placeholder}

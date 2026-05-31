@@ -34,3 +34,11 @@ const meta: Meta<typeof Demo> = {
 export default meta;
 type Story = StoryObj<typeof Demo>;
 export const Default: Story = {};
+export const Disabled: Story = {
+  render: () => (
+    <Field className="flex-row items-center gap-2">
+      <Radio name="radio-disabled-demo" value="x" checked readOnly disabled />
+      <span className="text-sm font-medium text-[var(--ll-text)]">Disabled option</span>
+    </Field>
+  ),
+};

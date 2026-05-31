@@ -9,8 +9,7 @@ afterEach(cleanup);
 function Harness({ onScan = () => {} }: { onScan?: () => void }) {
   const [value, setValue] = useState<LabelScanValue>({
     name: '',
-    checkForServings: false,
-    entirePackage: false,
+    mode: 'weight',
     amount: 0,
   });
   return <LabelScanCard value={value} onChange={setValue} onScan={onScan} />;
@@ -21,13 +20,13 @@ describe('LabelScanCard', () => {
     render(<Harness />);
     expect(screen.getByLabelText('Weight (g or ml)')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Check for servings' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Servings' }));
     expect(screen.getByLabelText('# of Servings')).toBeInTheDocument();
   });
 
-  it('disables the numeric input when entire package is checked', async () => {
+  it('disables the numeric input when entire package is selected', async () => {
     render(<Harness />);
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Entire package' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Entire package' }));
     expect(screen.getByLabelText('Weight (g or ml)')).toBeDisabled();
   });
 
@@ -41,7 +40,7 @@ describe('LabelScanCard', () => {
   it('shows error text and a scanning state', () => {
     render(
       <LabelScanCard
-        value={{ name: 'Granola', checkForServings: false, entirePackage: false, amount: 30 }}
+        value={{ name: 'Granola', mode: 'weight', amount: 30 }}
         loading
         error="Scan failed."
         onChange={() => {}}

@@ -569,8 +569,7 @@ function MealEdit() {
   const [entryTab, setEntryTab] = useState<'manual' | 'scan' | 'database'>('manual');
   const [scanForm, setScanForm] = useState<LabelScanValue>({
     name: '',
-    checkForServings: false,
-    entirePackage: false,
+    mode: 'weight',
     amount: 0,
   });
   const [scanLoading, setScanLoading] = useState(false);
@@ -700,10 +699,12 @@ function MealEdit() {
     try {
       const formData = new FormData();
       formData.append('photo', file);
-      formData.append('mode', scanForm.checkForServings ? 'servings' : 'weight');
-      formData.append('entirePackage', String(scanForm.entirePackage));
-      formData.append('weightGrams', scanForm.checkForServings ? '' : String(scanForm.amount));
-      formData.append('servings', scanForm.checkForServings ? String(scanForm.amount) : '');
+      const isServings = scanForm.mode === 'servings';
+      const isPackage = scanForm.mode === 'package';
+      formData.append('mode', isServings ? 'servings' : 'weight');
+      formData.append('entirePackage', String(isPackage));
+      formData.append('weightGrams', scanForm.mode === 'weight' ? String(scanForm.amount) : '');
+      formData.append('servings', isServings ? String(scanForm.amount) : '');
       formData.append('name', scanForm.name);
       const token = await getToken();
       const response = await fetch('/api/scan-nutrition', {
@@ -742,7 +743,7 @@ function MealEdit() {
     }));
     setDraftSource('scanned');
     setScanResult(null);
-    setScanForm({ name: '', checkForServings: false, entirePackage: false, amount: 0 });
+    setScanForm({ name: '', mode: 'weight', amount: 0 });
     setEntryTab('manual');
   };
 

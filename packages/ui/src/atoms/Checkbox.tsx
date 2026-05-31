@@ -24,7 +24,12 @@ export function Checkbox({
         type="checkbox"
         name={name}
         checked={checked}
-        className={cn('h-4 w-4 accent-[var(--ll-text)]', recipes.focusRing, className)}
+        className={cn(
+          'h-4 w-4 accent-[var(--ll-text)]',
+          recipes.focusRing,
+          recipes.controlDisabled,
+          className,
+        )}
         onChange={(event) => {
           track('ui.checkbox.change', { atom: 'Checkbox', name, value: event.target.checked });
           onChange?.(event);

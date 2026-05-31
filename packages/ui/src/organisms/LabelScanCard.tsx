@@ -1,20 +1,21 @@
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
-import { Checkbox } from '../atoms/Checkbox';
 import { Field } from '../atoms/Field';
 import { HelperText } from '../atoms/HelperText';
 import { Input } from '../atoms/Input';
 import { NumberInput } from '../atoms/NumberInput';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { WarningText } from '../atoms/WarningText';
+import { RadioGroup } from '../molecules/RadioGroup';
 import { SectionCard } from '../molecules/SectionCard';
 import { recipes } from '../styles/recipes';
 
+export type ScanMode = 'weight' | 'servings' | 'package';
+
 export type LabelScanValue = {
   name: string;
-  checkForServings: boolean;
-  entirePackage: boolean;
-  /** Weight (g/ml) when checkForServings is false, otherwise a serving count. */
+  mode: ScanMode;
+  /** Weight (g/ml) in 'weight' mode, a serving count in 'servings' mode, unused in 'package'. */
   amount: number;
 };
 
@@ -37,7 +38,7 @@ export function LabelScanCard({
   onScan,
   normalizeNameOnBlur,
 }: LabelScanCardProps) {
-  const amountLabel = value.checkForServings ? '# of Servings' : 'Weight (g or ml)';
+  const amountLabel = value.mode === 'servings' ? '# of Servings' : 'Weight (g or ml)';
 
   return (
     <AnalyticsScope properties={{ organism: 'LabelScanCard' }}>
@@ -53,27 +54,27 @@ export function LabelScanCard({
           />
         </Field>
 
-        <Checkbox
-          name="checkForServings"
-          label="Check for servings"
-          checked={value.checkForServings}
-          onChange={(e) => onChange({ ...value, checkForServings: e.target.checked })}
-        />
-
         <NumberInput
           label={amountLabel}
           value={value.amount}
-          disabled={value.entirePackage}
+          disabled={value.mode === 'package'}
           onChange={(n) => onChange({ ...value, amount: clamp(n) })}
         />
 
-        <Checkbox
-          name="entirePackage"
-          label="Entire package"
-          checked={value.entirePackage}
-          onChange={(e) => onChange({ ...value, entirePackage: e.target.checked })}
+        <RadioGroup
+          name="scan-mode"
+          label="Scan mode"
+          value={value.mode}
+          onChange={(mode) => onChange({ ...value, mode })}
+          options={[
+            { value: 'weight', label: 'Weight' },
+            { value: 'servings', label: 'Servings' },
+            { value: 'package', label: 'Entire package' },
+          ]}
         />
-        <HelperText as="p">Uses serving size times the servings in the package.</HelperText>
+        {value.mode === 'package' ? (
+          <HelperText as="p">Uses serving size times the servings in the package.</HelperText>
+        ) : null}
 
         <Button fullWidth aria-busy={loading} onClick={onScan} disabled={loading}>
           {loading ? 'Scanning…' : 'Scan Label'}
