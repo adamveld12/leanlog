@@ -43,9 +43,14 @@ export function LabelScanCard({
   return (
     <AnalyticsScope properties={{ organism: 'LabelScanCard' }}>
       <SectionCard>
-        <SectionHeading noMargin>Label Scan</SectionHeading>
+        <div className="flex items-center gap-2 justify-between">
+          <SectionHeading noMargin>Label Scan</SectionHeading>
+          <Button size="sm" aria-busy={loading} onClick={onScan} disabled={loading}>
+            {loading ? 'Scanning…' : 'Scan Label'}
+          </Button>
+        </div>
 
-        <Field label="Ingredient name">
+        <Field label="Ingredient Name">
           <Input
             value={value.name}
             onChange={(e) => onChange({ ...value, name: e.target.value })}
@@ -53,13 +58,6 @@ export function LabelScanCard({
             onNormalized={(name) => onChange({ ...value, name })}
           />
         </Field>
-
-        <NumberInput
-          label={amountLabel}
-          value={value.amount}
-          disabled={value.mode === 'package'}
-          onChange={(n) => onChange({ ...value, amount: clamp(n) })}
-        />
 
         <RadioGroup
           name="scan-mode"
@@ -76,9 +74,12 @@ export function LabelScanCard({
           <HelperText as="p">Uses serving size times the servings in the package.</HelperText>
         ) : null}
 
-        <Button fullWidth aria-busy={loading} onClick={onScan} disabled={loading}>
-          {loading ? 'Scanning…' : 'Scan Label'}
-        </Button>
+        <NumberInput
+          label={amountLabel}
+          value={value.amount}
+          disabled={value.mode === 'package'}
+          onChange={(n) => onChange({ ...value, amount: clamp(n) })}
+        />
 
         {error ? (
           <div role="alert" className={recipes.stack.center}>

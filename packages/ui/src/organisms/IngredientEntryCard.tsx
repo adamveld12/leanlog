@@ -58,7 +58,7 @@ export function IngredientEntryCard({
           </Button>
         </div>
 
-        <Field label="Ingredient title">
+        <Field label="Ingredient Name">
           <Input
             value={value.name}
             onChange={(e) => onChange({ ...value, name: e.target.value })}
