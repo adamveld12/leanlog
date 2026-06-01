@@ -96,6 +96,7 @@ AppShell, DayDetailTemplate, DayListTemplate, LandingTemplate, MealEditTemplate,
 Reusable Tailwind class strings. Components in molecules/organisms/templates must use these tokens — do not duplicate the class strings inline.
 
 - `focusRing` — keyboard focus ring
+- `controlDisabled` — disabled control styling (reduced contrast, no-allowed cursor)
 - `transition` — standard motion transition
 - `radius.control` / `radius.card` / `radius.pill` — border radius tokens
 - `surface.card` — card border + background
