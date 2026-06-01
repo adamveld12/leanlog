@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react';
+import { useId, type PropsWithChildren } from 'react';
 import { AnalyticsScope } from '../analytics';
 import { Button } from '../atoms/Button';
 import { Text } from '../atoms/Text';
@@ -11,6 +11,7 @@ export function Modal({
   children,
   onClose,
 }: PropsWithChildren<{ open: boolean; title: string; onClose: () => void }>) {
+  const titleId = useId();
   if (!open) return null;
   return (
     <AnalyticsScope properties={{ molecule: 'Modal' }}>
@@ -18,11 +19,11 @@ export function Modal({
         className="fixed inset-0 z-20 grid place-items-center bg-black/45 p-4"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
+        aria-labelledby={titleId}
       >
         <div className="w-full max-w-[560px] rounded-[14px] border border-[var(--ll-line)] bg-[var(--ll-surface)] p-3 text-[var(--ll-text)] shadow-[0_10px_24px_rgb(0_0_0/0.12)]">
           <div className={cn(recipes.stack.rowBetween, 'mb-3')}>
-            <Text as="h3" id="modal-title" className="text-sm font-semibold tracking-tight">
+            <Text as="h3" id={titleId} className="text-sm font-semibold tracking-tight">
               {title}
             </Text>
             <Button variant="subtle" size="sm" onClick={onClose}>
