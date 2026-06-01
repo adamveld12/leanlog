@@ -42,8 +42,8 @@ export function ScanReviewModal({
       <Modal open={open} title="Review nutrition scan" onClose={onClose}>
         <HelperText as="p">Compare current values with scanned values before applying.</HelperText>
 
-        {fields.map((field, i) => (
-          <HelperText as="p" key={i}>
+        {fields.map((field) => (
+          <HelperText as="p" key={field.label}>
             {field.label}: {field.current} → {field.proposed}
             {field.unit ?? ''}
           </HelperText>
