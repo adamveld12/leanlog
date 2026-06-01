@@ -242,7 +242,7 @@ export function MonthCalendarCard({
                   // Today uses the neutral strong-line ring so it stays distinct
                   // from the accent focus-visible ring (recipes.focusRing).
                   day.isToday && recipes.ring.today,
-                  day.status === 'tracked' ? 'cursor-pointer' : 'cursor-default',
+                  day.status === 'tracked' ? 'cursor-pointer' : 'disabled:cursor-default',
                 )}
               >
                 {dayNumber}
