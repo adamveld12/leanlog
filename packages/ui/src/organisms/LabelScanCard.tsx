@@ -8,6 +8,7 @@ import { SectionHeading } from '../atoms/SectionHeading';
 import { WarningText } from '../atoms/WarningText';
 import { RadioGroup } from '../molecules/RadioGroup';
 import { SectionCard } from '../molecules/SectionCard';
+import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
 export type ScanMode = 'weight' | 'servings' | 'package';
@@ -43,9 +44,9 @@ export function LabelScanCard({
   return (
     <AnalyticsScope properties={{ organism: 'LabelScanCard' }}>
       <SectionCard>
-        <div className="flex items-center gap-2 justify-between">
+        <div className={cn(recipes.stack.row, recipes.stack.between)}>
           <SectionHeading noMargin>Label Scan</SectionHeading>
-          <Button size="sm" aria-busy={loading} onClick={onScan} disabled={loading}>
+          <Button size="sm" onClick={onScan} disabled={loading}>
             {loading ? 'Scanning…' : 'Scan Label'}
           </Button>
         </div>

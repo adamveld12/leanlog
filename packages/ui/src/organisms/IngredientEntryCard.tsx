@@ -6,6 +6,7 @@ import { NumberInput } from '../atoms/NumberInput';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { WarningText } from '../atoms/WarningText';
 import { SectionCard } from '../molecules/SectionCard';
+import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
 export type IngredientEntryValue = {
@@ -51,7 +52,7 @@ export function IngredientEntryCard({
   return (
     <AnalyticsScope properties={{ organism: 'IngredientEntryCard' }}>
       <SectionCard saved={saved}>
-        <div className="flex items-center gap-2 justify-between">
+        <div className={cn(recipes.stack.row, recipes.stack.between)}>
           <SectionHeading noMargin>Ingredient Entry</SectionHeading>
           <Button size="sm" onClick={onSubmit} disabled={fiberInvalid}>
             {submitLabel}

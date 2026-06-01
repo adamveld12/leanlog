@@ -32,7 +32,7 @@ export function NumberInput({
   const [editing, setEditing] = useState(false);
 
   return (
-    <Field label={label} className={cn(labelClassName, disabled && 'opacity-50')}>
+    <Field label={label} className={labelClassName} labelClassName={cn(disabled && 'opacity-50')}>
       <Input
         value={editing ? text : display(value)}
         placeholder={placeholder}
