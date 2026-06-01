@@ -19,7 +19,7 @@ export function Checkbox({
 }: CheckboxProps) {
   const track = useAnalytics();
   return (
-    <label className="-m-2.5 flex items-center gap-2 p-2.5 text-sm font-medium text-[var(--ll-text)]">
+    <label className="-m-3 flex items-center gap-2 p-3 text-sm font-medium text-[var(--ll-text)]">
       <input
         type="checkbox"
         name={name}
