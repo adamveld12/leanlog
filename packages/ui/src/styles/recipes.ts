@@ -39,7 +39,12 @@ export const recipes = {
     carbFiber: 'grid grid-cols-3 gap-2 [&>*:first-child]:col-span-2',
     calendar7: 'grid grid-cols-7 gap-0.5',
   },
-  calendar: { dayHeader: 'py-1 text-center' },
+  calendar: {
+    dayHeader: 'py-1 text-center',
+    // my-0 intentionally overrides the my-2.5 control margin; min-h-[44px]
+    // keeps the 44px touch target on every day cell.
+    cell: 'my-0 flex min-h-[44px] items-center justify-center',
+  },
   control: {
     base: 'my-2.5 inline-flex items-center justify-center text-sm font-semibold disabled:opacity-50',
     size: { md: 'h-11 px-4', sm: 'h-9 px-3 text-xs' },

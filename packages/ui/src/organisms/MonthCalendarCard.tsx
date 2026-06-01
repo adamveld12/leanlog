@@ -207,9 +207,7 @@ export function MonthCalendarCard({
                       : `${day.dayOfMonth}`
               }
               className={[
-                // Calendar cells opt out of the default my-2.5 control margin so
-                // the grid stays tight; min-h-[44px] keeps the touch target.
-                'my-0 flex min-h-[44px] items-center justify-center',
+                recipes.calendar.cell,
                 // Today uses the neutral strong-line ring so it stays distinct
                 // from the accent focus-visible ring (recipes.focusRing).
                 day.isToday && recipes.ring.today,
