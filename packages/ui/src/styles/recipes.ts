@@ -16,6 +16,8 @@ export const recipes = {
     meta: 'text-xs leading-4 font-medium text-[var(--ll-text-muted)]',
     pageSubtitle: 'text-sm font-medium text-[var(--ll-text-muted)]',
     warn: 'text-xs font-medium text-[var(--ll-warn)]',
+    tracked: 'font-semibold text-[var(--ll-saved)]',
+    missed: 'font-semibold text-[var(--ll-danger)]',
   },
   page: {
     shell: 'mx-auto min-h-screen w-full max-w-[620px] p-4 pb-24 text-[var(--ll-text)]',
@@ -34,6 +36,7 @@ export const recipes = {
   grid: {
     two: 'grid grid-cols-2 gap-2',
     carbFiber: 'grid grid-cols-3 gap-2 [&>*:first-child]:col-span-2',
+    calendar7: 'grid grid-cols-7 gap-0.5',
   },
   control: {
     base: 'my-2.5 inline-flex items-center justify-center text-sm font-semibold disabled:opacity-50',

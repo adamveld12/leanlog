@@ -99,6 +99,23 @@ export function MonthCalendarCard({
     viewMonth.year < now.getFullYear() ||
     (viewMonth.year === now.getFullYear() && viewMonth.month < now.getMonth());
 
+  // Lower bound: don't page back past the earliest tracked month, or at least
+  // 12 months back when there's no data, so navigation can't run away forever.
+  const minMonth = useMemo(() => {
+    const floor = new Date(now.getFullYear(), now.getMonth() - 12, 1);
+    let earliest = floor;
+    for (const key of trackedDates.keys()) {
+      const [y, m] = key.split('-').map(Number);
+      const d = new Date(y, m - 1, 1);
+      if (d < earliest) earliest = d;
+    }
+    return { year: earliest.getFullYear(), month: earliest.getMonth() };
+  }, [trackedDates, now]);
+
+  const canGoPrev =
+    viewMonth.year > minMonth.year ||
+    (viewMonth.year === minMonth.year && viewMonth.month > minMonth.month);
+
   const days = useMemo(
     () => buildCalendarDays(trackedDates, viewMonth.year, viewMonth.month, onSelectDay),
     [trackedDates, viewMonth, onSelectDay],
@@ -107,6 +124,7 @@ export function MonthCalendarCard({
   const title = formatMonthTitle(new Date(viewMonth.year, viewMonth.month, 1));
 
   function goPrevMonth() {
+    if (!canGoPrev) return;
     const d = new Date(viewMonth.year, viewMonth.month - 1, 1);
     setViewMonth({ year: d.getFullYear(), month: d.getMonth() });
   }
@@ -121,15 +139,19 @@ export function MonthCalendarCard({
     <AnalyticsScope properties={{ organism: 'MonthCalendarCard' }}>
       <SectionCard>
         <div className={cn(recipes.stack.row, recipes.stack.between)}>
-          <Button
-            type="button"
-            variant="subtle"
-            size="sm"
-            aria-label="Previous month"
-            onClick={goPrevMonth}
-          >
-            ‹
-          </Button>
+          {canGoPrev ? (
+            <Button
+              type="button"
+              variant="subtle"
+              size="sm"
+              aria-label="Previous month"
+              onClick={goPrevMonth}
+            >
+              ‹
+            </Button>
+          ) : (
+            <div aria-hidden className="h-9 w-9" />
+          )}
           <SectionHeading noMargin>{title}</SectionHeading>
           {canGoNext ? (
             <Button
@@ -146,7 +168,7 @@ export function MonthCalendarCard({
           )}
         </div>
 
-        <div className="grid grid-cols-7 gap-0.5">
+        <div className={recipes.grid.calendar7}>
           {DAY_HEADERS.map((h) => (
             <Text key={h} as="span" variant="meta" className="py-1 text-center">
               {h}
@@ -169,8 +191,12 @@ export function MonthCalendarCard({
                     : `${day.dayOfMonth}`
               }
               className={[
-                'my-0 flex min-h-[44px] items-center justify-center rounded-[10px]',
-                day.isToday && 'ring-2 ring-[var(--ll-focus)]',
+                // Calendar cells opt out of the default my-2.5 control margin so
+                // the grid stays tight; min-h-[44px] keeps the touch target.
+                'my-0 flex min-h-[44px] items-center justify-center',
+                // Today uses the neutral strong-line ring so it stays distinct
+                // from the accent focus-visible ring (recipes.focusRing).
+                day.isToday && 'ring-2 ring-[var(--ll-line-strong)]',
                 day.status === 'tracked' && 'cursor-pointer',
                 day.status !== 'tracked' && 'cursor-default',
               ]
@@ -182,9 +208,9 @@ export function MonthCalendarCard({
                 variant={day.status === 'future' ? 'meta' : undefined}
                 className={
                   day.status === 'tracked'
-                    ? 'font-semibold text-[var(--ll-saved)]'
+                    ? recipes.text.tracked
                     : day.status === 'missed'
-                      ? 'font-semibold text-[var(--ll-danger)]'
+                      ? recipes.text.missed
                       : undefined
                 }
               >
