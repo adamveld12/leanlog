@@ -26,7 +26,7 @@ export function Modal({
             Close
           </Button>
         </div>
-        <div className="flex flex-col gap-3">{children}</div>
+        <div className={recipes.stack.md}>{children}</div>
       </div>
     </div>
   );

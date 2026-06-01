@@ -27,7 +27,7 @@ export function AuthLanding({
       className={`${recipes.page.shell} ${recipes.page.main} min-h-[100dvh] justify-center pb-8`}
     >
       <Card className={cn(recipes.stack.lg, 'p-4 md:p-5')}>
-        <div className="flex items-center gap-3">
+        <div className={recipes.stack.rowMd}>
           <img
             src={iconSrc}
             alt=""

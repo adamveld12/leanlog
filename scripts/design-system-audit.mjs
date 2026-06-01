@@ -156,13 +156,19 @@ const layoutTokens = [
     token: 'recipes.stack.rowBetween',
     classes: ['flex', 'items-center', 'justify-between'],
   },
+  {
+    token: 'recipes.stack.centerFull',
+    classes: ['flex', 'items-center', 'justify-center', 'text-center'],
+  },
   { token: 'recipes.grid.two', classes: ['grid', 'grid-cols-2', 'gap-2'] },
   { token: 'recipes.grid.calendar7', classes: ['grid', 'grid-cols-7', 'gap-0.5'] },
   { token: 'recipes.stack.xs', classes: ['flex', 'flex-col', 'gap-1.5'] },
   { token: 'recipes.stack.sm', classes: ['flex', 'flex-col', 'gap-2.5'] },
+  { token: 'recipes.stack.md', classes: ['flex', 'flex-col', 'gap-3'] },
   { token: 'recipes.stack.lg', classes: ['flex', 'flex-col', 'gap-4'] },
   { token: 'recipes.stack.center', classes: ['flex', 'justify-center', 'text-center'] },
   { token: 'recipes.stack.row', classes: ['flex', 'items-center', 'gap-2'] },
+  { token: 'recipes.stack.rowMd', classes: ['flex', 'items-center', 'gap-3'] },
   { token: 'recipes.stack.rowEnd', classes: ['flex', 'items-end', 'gap-2'] },
 ].sort((a, b) => b.classes.length - a.classes.length);
 
