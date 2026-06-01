@@ -143,3 +143,53 @@ Reusable Tailwind class strings. Components in molecules/organisms/templates mus
 - Maintains 44px touch targets.
 - Keeps destructive language explicit.
 - Preserves mobile swipe + desktop delete parity.
+
+## Design Self-Review Checklist
+
+Run through this before pushing any UI change. Items marked **[audit]** are
+enforced by `pnpm design:audit` (and CI) — they will fail the build, so treat
+them as a reminder of what's already automated. Items marked **[manual]** are
+judgment calls the audit can't catch cheaply but the design review reliably
+flags; check them by eye.
+
+### Tokens & classes
+
+- **[audit]** Layout uses `recipes.stack.*` / `recipes.grid.*` — never inline
+  `flex …`, `gap-*`, `justify-between` literals that duplicate a token. Compose
+  extra utilities with `cn(recipes.stack.row, '…')`.
+- **[audit]** Typography uses the `Text`/`HelperText`/`WarningText`/`UnitText`/
+  `SectionHeading` atoms — no raw `<span>/<p>/<a>` carrying text styling, in app
+  pages, UI molecules/organisms/templates, **or stories**.
+- **[audit]** No `.ll-*` component classes; no raw `button/input/select/textarea`
+  outside atoms (or app pages).
+- **[manual]** Colors, radius, and spacing come from tokens (`var(--ll-*)`, the
+  10/14/999 radii, the 4–24 spacing scale). No one-off hex or arbitrary spacing.
+
+### Components & structure
+
+- **[audit]** Every new atom/molecule/organism/template ships a `.stories.tsx`.
+- **[manual]** Reuse an existing atom/molecule before adding local markup. New
+  shared styling belongs in `recipes.ts`, referenced — not duplicated inline.
+- **[manual]** Disabled styling lives in **one** layer. Atoms already carry
+  `recipes.controlDisabled` / `disabled:opacity-50`; don't also dim a wrapping
+  container, or opacity stacks (e.g. dim only the label, not the whole `Field`).
+- **[manual]** Prefer component props over utility classes when one exists
+  (e.g. `<Button fullWidth>` over `className="w-full"`).
+
+### Accessibility & behavior
+
+- **[manual]** Interactive controls don't carry container-only ARIA. No
+  `aria-busy` / `role="status"` on a `<button>`/`<input>` — convey loading via
+  `disabled` + label text; reserve those attributes for status regions.
+- **[manual]** Every input/icon-action has an accessible name (visible label or
+  `aria-label`); dynamic error/status text uses `role="alert"` or `aria-live`.
+- **[manual]** Touch targets stay ≥ 44×44; focus ring (`recipes.focusRing`) is
+  present on all interactive controls.
+- **[manual]** Mobile-first single column (375–430); macros stay in P/C/F order
+  via `MacroSummaryLine`.
+
+### When the design review still finds something
+
+Fix the instance, then ask: _is this a class of issue?_ If a static rule can
+catch it, add it to `scripts/design-system-audit.mjs` (and fix existing
+violations) so it can't recur. If it's a judgment call, add it here.
