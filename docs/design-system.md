@@ -102,7 +102,7 @@ Reusable Tailwind class strings. Components in molecules/organisms/templates mus
 - `surface.card` — card border + background
 - `text.*` — typography variants (title, sectionHeading, body, meta, pageSubtitle, warn)
 - `page.shell` / `page.main` — page layout
-- `stack.xs` / `stack.sm` / `stack.lg` / `stack.row` / `stack.rowEnd` / `stack.actions` / `stack.between` / `stack.center` — flex column/row layouts
+- `stack.xs` / `stack.sm` / `stack.md` / `stack.lg` / `stack.row` / `stack.rowMd` / `stack.rowEnd` / `stack.actions` / `stack.rowBetween` / `stack.between` / `stack.center` / `stack.centerFull` — flex column/row layouts
 - `grid.two` / `grid.carbFiber` — grid layouts
 - `control.base` / `control.size` — interactive control sizing
 - `button.*` — button variant colors

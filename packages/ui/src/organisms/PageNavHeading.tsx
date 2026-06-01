@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AnalyticsScope } from '../analytics';
 import { PageTitle } from '../atoms/PageTitle';
 import { recipes } from '../styles/recipes';
 import { cn } from '../styles/cn';
@@ -45,23 +46,25 @@ export function PageNavHeading({
     );
 
   return (
-    <div className={cn(recipes.stack.sm, 'w-full')}>
-      <div className={cn(recipes.stack.row, recipes.stack.between, 'w-full')}>
-        <div className={cn(recipes.stack.row, 'min-w-0')}>
-          {backHref ? (
-            <div className="md:inline-flex max-[512px]:hidden">
-              {renderLink({ href: backHref, label: backLabel })}
-            </div>
-          ) : null}
-          <PageTitle>{title}</PageTitle>
-          {subtitle ? <div className="px-5 md:inline max-[512px]:hidden">{subtitle}</div> : null}
+    <AnalyticsScope properties={{ organism: 'PageNavHeading' }}>
+      <div className={cn(recipes.stack.sm, 'w-full')}>
+        <div className={cn(recipes.stack.row, recipes.stack.between, 'w-full')}>
+          <div className={cn(recipes.stack.row, 'min-w-0')}>
+            {backHref ? (
+              <div className="md:inline-flex max-[512px]:hidden">
+                {renderLink({ href: backHref, label: backLabel })}
+              </div>
+            ) : null}
+            <PageTitle>{title}</PageTitle>
+            {subtitle ? <div className="px-5 md:inline max-[512px]:hidden">{subtitle}</div> : null}
+          </div>
+          <div className={cn(recipes.stack.row, 'shrink-0')}>
+            {renderLink({ href: profileHref, label: profileLabel })}
+            {rightContent}
+          </div>
         </div>
-        <div className={cn(recipes.stack.row, 'shrink-0')}>
-          {renderLink({ href: profileHref, label: profileLabel })}
-          {rightContent}
-        </div>
+        {subtitle ? <div className="w-full min-[512px]:hidden">{subtitle}</div> : null}
       </div>
-      {subtitle ? <div className="w-full min-[512px]:hidden">{subtitle}</div> : null}
-    </div>
+    </AnalyticsScope>
   );
 }
