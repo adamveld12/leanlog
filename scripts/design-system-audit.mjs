@@ -144,8 +144,14 @@ for (const dir of uiRawTypographyDirs) {
 // 'justify-between') add no composition value and are intentionally excluded.
 // Sorted most-specific-first so a superset literal reports the closest token.
 const layoutTokens = [
-  { token: 'recipes.calendar.cell', classes: ['my-0', 'flex', 'min-h-[44px]', 'items-center', 'justify-center'] },
-  { token: 'recipes.stack.actions', classes: ['flex', 'flex-wrap', 'items-center', 'justify-end', 'gap-2'] },
+  {
+    token: 'recipes.calendar.cell',
+    classes: ['my-0', 'flex', 'min-h-[44px]', 'items-center', 'justify-center'],
+  },
+  {
+    token: 'recipes.stack.actions',
+    classes: ['flex', 'flex-wrap', 'items-center', 'justify-end', 'gap-2'],
+  },
   { token: 'recipes.grid.two', classes: ['grid', 'grid-cols-2', 'gap-2'] },
   { token: 'recipes.grid.calendar7', classes: ['grid', 'grid-cols-7', 'gap-0.5'] },
   { token: 'recipes.stack.xs', classes: ['flex', 'flex-col', 'gap-1.5'] },
