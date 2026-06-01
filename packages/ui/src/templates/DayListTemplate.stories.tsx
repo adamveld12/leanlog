@@ -43,8 +43,8 @@ const meta: Meta<typeof DayListTemplate> = {
     ),
     calendar: (
       <MonthCalendarCard
-        title="May 2026"
-        days={[]}
+        trackedDates={new Map()}
+        onSelectDay={() => {}}
         emptyHint="Start logging to fill in your calendar!"
       />
     ),
