@@ -1,6 +1,7 @@
 export const recipes = {
   focusRing:
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--ll-focus)_35%,transparent)]',
+  ring: { today: 'ring-2 ring-[var(--ll-line-strong)]' },
   controlDisabled: 'disabled:opacity-50 disabled:cursor-not-allowed',
   transition: 'transition duration-[140ms] ease-[var(--ll-ease)]',
   radius: { control: 'rounded-[10px]', card: 'rounded-[14px]', pill: 'rounded-[999px]' },
@@ -16,6 +17,8 @@ export const recipes = {
     meta: 'text-xs leading-4 font-medium text-[var(--ll-text-muted)]',
     pageSubtitle: 'text-sm font-medium text-[var(--ll-text-muted)]',
     warn: 'text-xs font-medium text-[var(--ll-warn)]',
+    tracked: 'font-semibold text-[var(--ll-saved)]',
+    missed: 'font-semibold text-[var(--ll-danger)]',
   },
   page: {
     shell: 'mx-auto min-h-screen w-full max-w-[620px] p-4 pb-24 text-[var(--ll-text)]',
@@ -34,6 +37,13 @@ export const recipes = {
   grid: {
     two: 'grid grid-cols-2 gap-2',
     carbFiber: 'grid grid-cols-3 gap-2 [&>*:first-child]:col-span-2',
+    calendar7: 'grid grid-cols-7 gap-0.5',
+  },
+  calendar: {
+    dayHeader: 'py-1 text-center',
+    // my-0 intentionally overrides the my-2.5 control margin; min-h-[44px]
+    // keeps the 44px touch target on every day cell.
+    cell: 'my-0 flex min-h-[44px] items-center justify-center',
   },
   control: {
     base: 'my-2.5 inline-flex items-center justify-center text-sm font-semibold disabled:opacity-50',

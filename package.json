@@ -37,8 +37,8 @@
     "vitest": "^4.0.18"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,md,css}": [
-      "prettier --write"
+    "*": [
+      "prettier --ignore-unknown --write"
     ]
   }
 }

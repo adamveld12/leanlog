@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import {
   useAuth,
   PricingTable,
@@ -44,7 +44,7 @@ import {
   WeightTrendCard,
   useAnalytics,
 } from '@leanlog/ui';
-import type { CalendarDay, LabelScanValue } from '@leanlog/ui';
+import type { LabelScanValue } from '@leanlog/ui';
 import { caloriesFromMode, dayTargetsFromProfile } from '@leanlog/data-access';
 import type { ScanResolution } from '@leanlog/data-access';
 import { normalizeIngredientName, prettyDate, round1, todayIso } from '../lib';
@@ -202,8 +202,8 @@ function DayList() {
   );
 
   const dateMap = useMemo(() => trackedDatesMap(days), [days]);
-  const calendarDays = useMemo(() => buildCalendarDays(dateMap, nav), [dateMap, nav]);
   const weightEntries = useMemo(() => selectWeightEntries(days), [days]);
+  const selectDay = useCallback((dayId: string) => nav(`/track/day/${dayId}`), [nav]);
 
   const hasDays = days.length > 0;
   const pendingNavRef = useRef(false);
@@ -311,8 +311,8 @@ function DayList() {
       }
       calendar={
         <MonthCalendarCard
-          title={formatMonthTitle(new Date())}
-          days={calendarDays}
+          trackedDates={dateMap}
+          onSelectDay={selectDay}
           emptyHint={!hasDays ? 'Start logging to fill in your calendar!' : undefined}
         />
       }
@@ -326,64 +326,6 @@ function DayList() {
       }}
     />
   );
-}
-
-function formatMonthTitle(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
-
-function buildCalendarDays(
-  dateMap: Map<string, string>,
-  nav: ReturnType<typeof useNavigate>,
-): CalendarDay[] {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const todayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
-  const firstDay = new Date(year, month, 1);
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  // ISO week: Monday = 0
-  let startOffset = firstDay.getDay() - 1;
-  if (startOffset < 0) startOffset = 6;
-
-  const cells: CalendarDay[] = [];
-
-  // Padding from previous month
-  const prevMonthDays = new Date(year, month, 0).getDate();
-  for (let i = startOffset - 1; i >= 0; i--) {
-    const d = prevMonthDays - i;
-    const prevMonth = month === 0 ? 12 : month;
-    const prevYear = month === 0 ? year - 1 : year;
-    const dateStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    cells.push({
-      date: dateStr,
-      dayOfMonth: d,
-      isToday: false,
-      isFuture: false,
-      status: 'future' as const,
-    });
-  }
-
-  // Current month days
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const isToday = dateStr === todayStr;
-    const isFuture = new Date(year, month, d) > now;
-    const dayId = dateMap.get(dateStr);
-
-    cells.push({
-      date: dateStr,
-      dayOfMonth: d,
-      isToday,
-      isFuture,
-      status: isFuture || isToday ? (dayId ? 'tracked' : 'future') : dayId ? 'tracked' : 'missed',
-      onTap: dayId ? () => nav(`/track/day/${dayId}`) : undefined,
-    });
-  }
-
-  return cells;
 }
 
 function DayDetail() {

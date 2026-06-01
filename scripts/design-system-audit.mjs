@@ -133,29 +133,106 @@ for (const dir of uiRawTypographyDirs) {
   }
 }
 
-// Check: layout recipe-token duplication (inline flex/stack class strings)
-// These exact strings are defined in recipes.stack.* — using them inline duplicates the token.
-// A trailing (?![\d.]) guards against matching a longer utility (e.g. gap-2 vs gap-2.5).
-const layoutTokenLiterals = [
-  { literal: 'flex flex-col gap-1.5', token: 'recipes.stack.xs' },
-  { literal: 'flex flex-col gap-2.5', token: 'recipes.stack.sm' },
-  { literal: 'flex flex-col gap-4', token: 'recipes.stack.lg' },
-  { literal: 'flex items-center gap-2', token: 'recipes.stack.row' },
-  { literal: 'flex items-end gap-2', token: 'recipes.stack.rowEnd' },
-  { literal: 'flex flex-wrap items-center justify-end gap-2', token: 'recipes.stack.actions' },
-  { literal: 'flex justify-center text-center', token: 'recipes.stack.center' },
-];
+// Check: layout composition (#1 cross-file duplication, #2 token re-specification)
+// The design system requires composing layout from recipes.* tokens via cn()
+// rather than hand-rolling flex/grid class clusters inline. Unlike a verbatim
+// string match, this normalizes to the set of layout primitives, so it catches
+// a token re-specified even with extra utilities interspersed (#2) and a novel
+// layout pattern duplicated across files (#1).
+//
+// Multi-class layout tokens only — single-class tokens (e.g. stack.between =
+// 'justify-between') add no composition value and are intentionally excluded.
+// Sorted most-specific-first so a superset literal reports the closest token.
+const layoutTokens = [
+  {
+    token: 'recipes.calendar.cell',
+    classes: ['my-0', 'flex', 'min-h-[44px]', 'items-center', 'justify-center'],
+  },
+  {
+    token: 'recipes.stack.actions',
+    classes: ['flex', 'flex-wrap', 'items-center', 'justify-end', 'gap-2'],
+  },
+  { token: 'recipes.grid.two', classes: ['grid', 'grid-cols-2', 'gap-2'] },
+  { token: 'recipes.grid.calendar7', classes: ['grid', 'grid-cols-7', 'gap-0.5'] },
+  { token: 'recipes.stack.xs', classes: ['flex', 'flex-col', 'gap-1.5'] },
+  { token: 'recipes.stack.sm', classes: ['flex', 'flex-col', 'gap-2.5'] },
+  { token: 'recipes.stack.lg', classes: ['flex', 'flex-col', 'gap-4'] },
+  { token: 'recipes.stack.center', classes: ['flex', 'justify-center', 'text-center'] },
+  { token: 'recipes.stack.row', classes: ['flex', 'items-center', 'gap-2'] },
+  { token: 'recipes.stack.rowEnd', classes: ['flex', 'items-end', 'gap-2'] },
+].sort((a, b) => b.classes.length - a.classes.length);
+
+const layoutPrimitive =
+  /^(flex|grid|inline-flex|flex-row|flex-col|flex-wrap|items-[\w-]+|justify-[\w-]+|content-[\w-]+|self-[\w-]+|place-(?:items|content)-[\w-]+|gap-[\d.]+|gap-[xy]-[\d.]+|grid-cols-\d+|grid-rows-\d+)$/;
+const layoutContainer = /^(flex|grid|inline-flex|flex-row|flex-col|flex-wrap)$/;
+const stringLiteral = /(['"`])((?:\\.|(?!\1).)*)\1/g;
+
+// Baseline of pre-existing inline-layout literals, grandfathered in so the new
+// check fails only on NEW violations. Keyed by `${file}|${sorted-layout-classes}`
+// so edits to surrounding utilities don't shift the key.
+// TODO(design-system): burn this down by composing each site from cn(recipes.*).
+const layoutBaseline = new Set([
+  'packages/ui/src/molecules/ListRow.tsx|flex gap-2 items-center justify-between',
+  'packages/ui/src/molecules/ListRow.tsx|flex gap-2 items-center',
+  'packages/ui/src/molecules/LoadingState.tsx|flex flex-col gap-2.5 items-center',
+  'packages/ui/src/molecules/Modal.tsx|flex items-center justify-between',
+  'packages/ui/src/molecules/StatMetric.tsx|flex items-center justify-between',
+  'packages/ui/src/organisms/AuthLanding.tsx|flex flex-col gap-2.5',
+  'packages/ui/src/organisms/DailyTotalsCard.tsx|flex gap-2 items-center justify-between',
+  'packages/ui/src/organisms/DailyTotalsCard.tsx|flex flex-wrap gap-2 items-center',
+  'packages/ui/src/organisms/PageNavHeading.tsx|flex flex-col gap-2.5',
+  'packages/ui/src/organisms/PageNavHeading.tsx|flex gap-2 items-center justify-between',
+  'packages/ui/src/organisms/PageNavHeading.tsx|flex gap-2 items-center',
+  'packages/ui/src/organisms/WeightTrendCard.tsx|flex items-center justify-center',
+]);
+
+const layoutSignatures = new Map(); // signature -> Map(file -> key)
+const layoutViolations = []; // { key, message }
+
 for (const dir of uiRawTypographyDirs) {
   for (const file of files(dir).filter((f) => f.endsWith('.tsx') && !f.endsWith('.stories.tsx'))) {
     const text = readFileSync(file, 'utf8');
-    for (const { literal, token } of layoutTokenLiterals) {
-      const re = new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\d.])', 'g');
-      for (const m of text.matchAll(re)) {
-        if (hasEslintDisable(text, m.index)) continue;
-        errors.push(`Inline layout class instead of ${token} in UI package: ${file}`);
+    for (const m of text.matchAll(stringLiteral)) {
+      if (hasEslintDisable(text, m.index)) continue;
+      const classList = m[2].split(/\s+/).filter(Boolean);
+      const layoutClasses = classList.filter((c) => layoutPrimitive.test(c));
+      if (layoutClasses.length < 2 || !layoutClasses.some((c) => layoutContainer.test(c))) continue;
+      const classSet = new Set(classList);
+      const signature = [...new Set(layoutClasses)].sort().join(' ');
+      const key = `${file}|${signature}`;
+      // #2: literal is a superset of an existing multi-class layout token.
+      const matched = layoutTokens.find((t) => t.classes.every((c) => classSet.has(c)));
+      if (matched) {
+        layoutViolations.push({
+          key,
+          message: `Inline layout classes should compose from ${matched.token} via cn(): ${file}`,
+        });
+        continue;
       }
+      // #1: bucket by normalized signature for cross-file duplication.
+      if (!layoutSignatures.has(signature)) layoutSignatures.set(signature, new Map());
+      layoutSignatures.get(signature).set(file, key);
     }
   }
+}
+
+for (const [signature, fileMap] of layoutSignatures) {
+  if (fileMap.size < 2) continue;
+  for (const [file, key] of fileMap) {
+    layoutViolations.push({
+      key,
+      message: `Repeated inline layout signature "${signature}" across ${fileMap.size} files (extract a recipes.* token): ${file}`,
+    });
+  }
+}
+
+if (process.env.AUDIT_PRINT_LAYOUT) {
+  const keys = [...new Set(layoutViolations.map((v) => v.key))].sort();
+  console.error('LAYOUT KEYS:\n' + keys.map((k) => `  '${k}',`).join('\n'));
+}
+for (const v of layoutViolations) {
+  if (layoutBaseline.has(v.key)) continue;
+  errors.push(v.message);
 }
 
 // Check: raw typography tags carrying text styling in story files (use Text/UnitText atoms).

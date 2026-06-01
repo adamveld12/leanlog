@@ -1,63 +1,47 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MonthCalendarCard, type CalendarDay } from './MonthCalendarCard';
+import { MonthCalendarCard } from './MonthCalendarCard';
 
 const meta: Meta<typeof MonthCalendarCard> = {
   title: 'Design System/Organisms/MonthCalendarCard',
   component: MonthCalendarCard,
+  args: {
+    onSelectDay: () => {},
+  },
 };
 
 export default meta;
 type Story = StoryObj<typeof MonthCalendarCard>;
 
-function buildMay2026Days(trackedDates: Set<number>): CalendarDay[] {
-  const days: CalendarDay[] = [];
-  // May 2026 starts on Friday. ISO week starts Monday.
-  // Padding: May 1 is Friday -> 4 blank cells (Mon-Thu)
-  for (let pad = 0; pad < 4; pad++) {
-    days.push({
-      date: `2026-04-${27 + pad}`,
-      dayOfMonth: 27 + pad,
-      isToday: false,
-      isFuture: false,
-      status: 'future',
-    });
+// Build a tracked-dates map (ISO 'yyyy-MM-dd' -> dayId) for the given month.
+function trackedMap(year: number, month: number, days: number[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const d of days) {
+    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    map.set(iso, `day-${iso}`);
   }
-
-  const today = 27;
-  for (let d = 1; d <= 31; d++) {
-    const isFuture = d > today;
-    const isToday = d === today;
-    const tracked = trackedDates.has(d);
-    days.push({
-      date: `2026-05-${String(d).padStart(2, '0')}`,
-      dayOfMonth: d,
-      isToday,
-      isFuture,
-      status: isFuture ? 'future' : tracked ? 'tracked' : 'missed',
-      onTap: tracked ? () => {} : undefined,
-    });
-  }
-  return days;
+  return map;
 }
 
-export const MidMonth: Story = {
+const now = new Date();
+
+export const CurrentMonth: Story = {
   args: {
-    title: 'May 2026',
-    days: buildMay2026Days(new Set([21, 22, 23, 24, 25, 26, 27])),
+    // Defaults to the current month, so the "next" arrow is hidden.
+    trackedDates: trackedMap(now.getFullYear(), now.getMonth(), [1, 2, 3]),
   },
 };
 
-export const StartOfMonth: Story = {
+export const PastMonth: Story = {
   args: {
-    title: 'May 2026',
-    days: buildMay2026Days(new Set([1, 2, 3])),
+    // A prior month shows both arrows; tracked days are tappable.
+    initialMonth: { year: 2026, month: 0 }, // January 2026
+    trackedDates: trackedMap(2026, 0, [6, 7, 8, 9, 10, 13, 14, 15]),
   },
 };
 
 export const ZeroDays: Story = {
   args: {
-    title: 'May 2026',
-    days: buildMay2026Days(new Set()),
+    trackedDates: new Map(),
     emptyHint: 'Start logging to fill in your calendar!',
   },
 };
