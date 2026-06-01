@@ -45,9 +45,9 @@ export function PageNavHeading({
     );
 
   return (
-    <div className="flex w-full flex-col gap-2.5">
-      <div className="flex w-full items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+    <div className={cn(recipes.stack.sm, 'w-full')}>
+      <div className={cn(recipes.stack.row, recipes.stack.between, 'w-full')}>
+        <div className={cn(recipes.stack.row, 'min-w-0')}>
           {backHref ? (
             <div className="md:inline-flex max-[512px]:hidden">
               {renderLink({ href: backHref, label: backLabel })}
@@ -56,7 +56,7 @@ export function PageNavHeading({
           <PageTitle>{title}</PageTitle>
           {subtitle ? <div className="px-5 md:inline max-[512px]:hidden">{subtitle}</div> : null}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className={cn(recipes.stack.row, 'shrink-0')}>
           {renderLink({ href: profileHref, label: profileLabel })}
           {rightContent}
         </div>

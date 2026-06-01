@@ -7,6 +7,8 @@ import { UnitText } from '../atoms/UnitText';
 import { AnalyticsScope } from '../analytics';
 import { calorieColor } from '../molecules/MacroSummaryLine';
 import { SectionCard } from '../molecules/SectionCard';
+import { cn } from '../styles/cn';
+import { recipes } from '../styles/recipes';
 
 export type DailyTotalsCardProps = {
   calories: number;
@@ -35,7 +37,7 @@ export function DailyTotalsCard({
   return (
     <AnalyticsScope properties={{ organism: 'DailyTotalsCard' }}>
       <SectionCard>
-        <div className="flex items-center justify-between gap-2">
+        <div className={cn(recipes.stack.row, recipes.stack.between)}>
           <SectionHeading noMargin>Daily totals</SectionHeading>
           {onUpdateTargets ? (
             <Button variant="ghost" size="sm" onClick={onUpdateTargets}>
@@ -61,7 +63,7 @@ export function DailyTotalsCard({
           color={calorieStyle?.color as string}
         />
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={cn(recipes.stack.row, 'flex-wrap')}>
           <HelperText as="p">
             FAT {fat} / {macroTargets.fat}g
           </HelperText>

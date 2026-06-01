@@ -1,6 +1,8 @@
 import type { PropsWithChildren } from 'react';
 import { Button } from '../atoms/Button';
 import { Text } from '../atoms/Text';
+import { cn } from '../styles/cn';
+import { recipes } from '../styles/recipes';
 
 export function Modal({
   open,
@@ -16,7 +18,7 @@ export function Modal({
       aria-modal="true"
     >
       <div className="w-full max-w-[560px] rounded-[14px] border border-[var(--ll-line)] bg-[var(--ll-surface)] p-3 text-[var(--ll-text)] shadow-[0_10px_24px_rgb(0_0_0/0.12)]">
-        <div className="mb-3 flex items-center justify-between">
+        <div className={cn(recipes.stack.rowBetween, 'mb-3')}>
           <Text as="h3" className="text-sm font-semibold tracking-tight">
             {title}
           </Text>

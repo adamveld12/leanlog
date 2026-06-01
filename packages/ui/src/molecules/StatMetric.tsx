@@ -25,7 +25,7 @@ export function StatMetric({
 }: StatMetricProps) {
   return (
     <div className={cn(recipes.stack.xs)}>
-      <div className="flex items-center justify-between">
+      <div className={recipes.stack.rowBetween}>
         <SectionHeading as="h4" noMargin>
           {label}
         </SectionHeading>

@@ -95,7 +95,8 @@ export function WeightTrendCard({
             <div
               aria-live="polite"
               className={cn(
-                'absolute inset-0 flex items-center justify-center p-4 text-center',
+                recipes.stack.center,
+                'absolute inset-0 items-center p-4',
                 recipes.surface.overlay,
               )}
             >

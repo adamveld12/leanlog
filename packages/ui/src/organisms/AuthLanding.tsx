@@ -51,7 +51,7 @@ export function AuthLanding({
         <Text as="p" variant="sectionHeading">
           What you get
         </Text>
-        <ul className="m-0 flex list-none flex-col gap-2.5 p-0" aria-label="Product highlights">
+        <ul className={cn(recipes.stack.sm, 'm-0 list-none p-0')} aria-label="Product highlights">
           {highlights.map((highlight) => (
             <li
               key={highlight}

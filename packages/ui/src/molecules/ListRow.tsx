@@ -31,7 +31,9 @@ export function ListRow({
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-2 rounded-[10px] px-1.5 py-0 hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]',
+        recipes.stack.row,
+        recipes.stack.between,
+        'rounded-[10px] px-1.5 py-0 hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]',
         onOpen && 'cursor-pointer',
         className,
       )}
@@ -46,7 +48,7 @@ export function ListRow({
         </Text>
         {meta ? <HelperText>{meta}</HelperText> : null}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className={cn(recipes.stack.row, 'shrink-0')}>
         {rightMetric ? <div className="whitespace-nowrap">{rightMetric}</div> : null}
         {actions}
       </div>
