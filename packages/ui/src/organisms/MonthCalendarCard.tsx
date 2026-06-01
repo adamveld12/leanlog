@@ -188,35 +188,8 @@ export function MonthCalendarCard({
             </Text>
           ))}
 
-          {days.map((day) => (
-            <Button
-              key={day.date}
-              type="button"
-              variant="subtle"
-              size="sm"
-              disabled={day.status !== 'tracked'}
-              onClick={day.onTap}
-              aria-hidden={day.ariaHidden}
-              aria-label={
-                day.status === 'tracked'
-                  ? `${day.dayOfMonth}, tracked`
-                  : day.status === 'missed'
-                    ? `${day.dayOfMonth}, not tracked`
-                    : day.isToday
-                      ? `${day.dayOfMonth}, today`
-                      : `${day.dayOfMonth}`
-              }
-              className={[
-                recipes.calendar.cell,
-                // Today uses the neutral strong-line ring so it stays distinct
-                // from the accent focus-visible ring (recipes.focusRing).
-                day.isToday && recipes.ring.today,
-                day.status === 'tracked' && 'cursor-pointer',
-                day.status !== 'tracked' && 'cursor-default',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            >
+          {days.map((day) => {
+            const dayNumber = (
               <Text
                 as="span"
                 variant={day.status === 'future' ? 'meta' : undefined}
@@ -230,8 +203,52 @@ export function MonthCalendarCard({
               >
                 {day.dayOfMonth}
               </Text>
-            </Button>
-          ))}
+            );
+
+            // Previous-month overflow cells are purely visual padding: render a
+            // non-interactive, aria-hidden container rather than a disabled
+            // Button so aria-hidden never lands on a focusable element.
+            if (day.ariaHidden) {
+              return (
+                <div
+                  key={day.date}
+                  aria-hidden
+                  className={cn(recipes.calendar.cell, 'select-none opacity-50')}
+                >
+                  {dayNumber}
+                </div>
+              );
+            }
+
+            return (
+              <Button
+                key={day.date}
+                type="button"
+                variant="subtle"
+                size="sm"
+                disabled={day.status !== 'tracked'}
+                onClick={day.onTap}
+                aria-label={
+                  day.status === 'tracked'
+                    ? `${day.dayOfMonth}, tracked`
+                    : day.status === 'missed'
+                      ? `${day.dayOfMonth}, not tracked`
+                      : day.isToday
+                        ? `${day.dayOfMonth}, today`
+                        : `${day.dayOfMonth}`
+                }
+                className={cn(
+                  recipes.calendar.cell,
+                  // Today uses the neutral strong-line ring so it stays distinct
+                  // from the accent focus-visible ring (recipes.focusRing).
+                  day.isToday && recipes.ring.today,
+                  day.status === 'tracked' ? 'cursor-pointer' : 'cursor-default',
+                )}
+              >
+                {dayNumber}
+              </Button>
+            );
+          })}
         </div>
 
         {emptyHint && (
