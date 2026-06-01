@@ -8,12 +8,13 @@ import { SectionCard } from '../molecules/SectionCard';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
-export type CalendarDay = {
+type CalendarDay = {
   date: string;
   dayOfMonth: number;
   isToday: boolean;
   isFuture: boolean;
   status: 'tracked' | 'missed' | 'future';
+  ariaHidden?: boolean;
   onTap?: () => void;
 };
 
@@ -26,6 +27,10 @@ export type MonthCalendarCardProps = {
 
 const DAY_HEADERS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
+// Invisible placeholder that mirrors a nav button's footprint so the month
+// title stays centered when the prev/next arrow is hidden.
+const NAV_SPACER_CLS = 'invisible select-none px-3 text-xs font-semibold';
+
 function formatMonthTitle(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
@@ -34,9 +39,9 @@ function buildCalendarDays(
   trackedDates: Map<string, string>,
   year: number,
   month: number,
+  now: Date,
   onSelectDay: (dayId: string) => void,
 ): CalendarDay[] {
-  const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   const firstDay = new Date(year, month, 1);
@@ -61,6 +66,7 @@ function buildCalendarDays(
       isToday: false,
       isFuture: false,
       status: 'future' as const,
+      ariaHidden: true,
     });
   }
 
@@ -90,7 +96,7 @@ export function MonthCalendarCard({
   emptyHint,
   initialMonth,
 }: MonthCalendarCardProps) {
-  const now = useMemo(() => new Date(), []);
+  const [now] = useState(() => new Date());
   const [viewMonth, setViewMonth] = useState(
     () => initialMonth ?? { year: now.getFullYear(), month: now.getMonth() },
   );
@@ -117,8 +123,8 @@ export function MonthCalendarCard({
     (viewMonth.year === minMonth.year && viewMonth.month > minMonth.month);
 
   const days = useMemo(
-    () => buildCalendarDays(trackedDates, viewMonth.year, viewMonth.month, onSelectDay),
-    [trackedDates, viewMonth, onSelectDay],
+    () => buildCalendarDays(trackedDates, viewMonth.year, viewMonth.month, now, onSelectDay),
+    [trackedDates, viewMonth, now, onSelectDay],
   );
 
   const title = formatMonthTitle(new Date(viewMonth.year, viewMonth.month, 1));
@@ -150,11 +156,7 @@ export function MonthCalendarCard({
               ‹ Previous
             </Button>
           ) : (
-            <Text
-              as="span"
-              aria-hidden
-              className="invisible select-none px-3 text-xs font-semibold"
-            >
+            <Text as="span" aria-hidden className={NAV_SPACER_CLS}>
               ‹ Previous
             </Text>
           )}
@@ -170,11 +172,7 @@ export function MonthCalendarCard({
               Next ›
             </Button>
           ) : (
-            <Text
-              as="span"
-              aria-hidden
-              className="invisible select-none px-3 text-xs font-semibold"
-            >
+            <Text as="span" aria-hidden className={NAV_SPACER_CLS}>
               Next ›
             </Text>
           )}
@@ -195,6 +193,7 @@ export function MonthCalendarCard({
               size="sm"
               disabled={day.status !== 'tracked'}
               onClick={day.onTap}
+              aria-hidden={day.ariaHidden}
               aria-label={
                 day.status === 'tracked'
                   ? `${day.dayOfMonth}, tracked`

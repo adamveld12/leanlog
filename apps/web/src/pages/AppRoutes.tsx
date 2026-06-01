@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import {
   useAuth,
   PricingTable,
@@ -203,6 +203,7 @@ function DayList() {
 
   const dateMap = useMemo(() => trackedDatesMap(days), [days]);
   const weightEntries = useMemo(() => selectWeightEntries(days), [days]);
+  const selectDay = useCallback((dayId: string) => nav(`/track/day/${dayId}`), [nav]);
 
   const hasDays = days.length > 0;
   const pendingNavRef = useRef(false);
@@ -311,7 +312,7 @@ function DayList() {
       calendar={
         <MonthCalendarCard
           trackedDates={dateMap}
-          onSelectDay={(dayId) => nav(`/track/day/${dayId}`)}
+          onSelectDay={selectDay}
           emptyHint={!hasDays ? 'Start logging to fill in your calendar!' : undefined}
         />
       }
