@@ -147,10 +147,16 @@ export function MonthCalendarCard({
               aria-label="Previous month"
               onClick={goPrevMonth}
             >
-              ‹
+              ‹ Previous
             </Button>
           ) : (
-            <div aria-hidden className="h-9 w-9" />
+            <Text
+              as="span"
+              aria-hidden
+              className="invisible select-none px-3 text-xs font-semibold"
+            >
+              ‹ Previous
+            </Text>
           )}
           <SectionHeading noMargin>{title}</SectionHeading>
           {canGoNext ? (
@@ -161,10 +167,16 @@ export function MonthCalendarCard({
               aria-label="Next month"
               onClick={goNextMonth}
             >
-              ›
+              Next ›
             </Button>
           ) : (
-            <div aria-hidden className="h-9 w-9" />
+            <Text
+              as="span"
+              aria-hidden
+              className="invisible select-none px-3 text-xs font-semibold"
+            >
+              Next ›
+            </Text>
           )}
         </div>
 
