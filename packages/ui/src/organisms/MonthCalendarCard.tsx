@@ -28,8 +28,9 @@ export type MonthCalendarCardProps = {
 const DAY_HEADERS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 // Invisible placeholder that mirrors a nav button's footprint so the month
-// title stays centered when the prev/next arrow is hidden.
-const NAV_SPACER_CLS = 'invisible select-none px-3 text-xs font-semibold';
+// title stays centered when the prev/next arrow is hidden. Composed from the
+// sm control recipe so it tracks the Button's size if that ever changes.
+const NAV_SPACER_CLS = cn(recipes.control.size.sm, 'invisible select-none');
 
 function formatMonthTitle(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -160,7 +161,9 @@ export function MonthCalendarCard({
               ‹ Previous
             </Text>
           )}
-          <SectionHeading noMargin>{title}</SectionHeading>
+          <div aria-live="polite" aria-atomic="true">
+            <SectionHeading noMargin>{title}</SectionHeading>
+          </div>
           {canGoNext ? (
             <Button
               type="button"
