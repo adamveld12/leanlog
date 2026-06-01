@@ -3,6 +3,7 @@ import { HelperText } from '../atoms/HelperText';
 import { WarningText } from '../atoms/WarningText';
 import { AnalyticsScope } from '../analytics';
 import { Modal } from '../molecules/Modal';
+import { recipes } from '../styles/recipes';
 
 export type ScanField = {
   label: string;
@@ -18,6 +19,7 @@ export type ScanReviewModalProps = {
   onRetake?: () => void;
   canAccept?: boolean;
   blockReason?: string;
+  warning?: string;
   notes?: string[];
   fields: ScanField[];
   acceptLabel?: string;
@@ -30,6 +32,7 @@ export function ScanReviewModal({
   onRetake,
   canAccept = true,
   blockReason,
+  warning,
   notes,
   fields,
   acceptLabel = 'Apply',
@@ -39,8 +42,8 @@ export function ScanReviewModal({
       <Modal open={open} title="Review nutrition scan" onClose={onClose}>
         <HelperText as="p">Compare current values with scanned values before applying.</HelperText>
 
-        {fields.map((field, i) => (
-          <HelperText as="p" key={i}>
+        {fields.map((field) => (
+          <HelperText as="p" key={field.label}>
             {field.label}: {field.current} → {field.proposed}
             {field.unit ?? ''}
           </HelperText>
@@ -48,9 +51,11 @@ export function ScanReviewModal({
 
         {notes && notes.length > 0 ? <HelperText as="p">{notes.join(' ')}</HelperText> : null}
 
+        {warning ? <WarningText>{warning}</WarningText> : null}
+
         {!canAccept && blockReason ? <WarningText>{blockReason}</WarningText> : null}
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className={recipes.stack.actions}>
           {onRetake ? (
             <Button variant="ghost" size="sm" onClick={onRetake}>
               Retake photo

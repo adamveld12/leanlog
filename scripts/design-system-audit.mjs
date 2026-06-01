@@ -133,6 +133,46 @@ for (const dir of uiRawTypographyDirs) {
   }
 }
 
+// Check: layout recipe-token duplication (inline flex/stack class strings)
+// These exact strings are defined in recipes.stack.* — using them inline duplicates the token.
+// A trailing (?![\d.]) guards against matching a longer utility (e.g. gap-2 vs gap-2.5).
+const layoutTokenLiterals = [
+  { literal: 'flex flex-col gap-1.5', token: 'recipes.stack.xs' },
+  { literal: 'flex flex-col gap-2.5', token: 'recipes.stack.sm' },
+  { literal: 'flex flex-col gap-4', token: 'recipes.stack.lg' },
+  { literal: 'flex items-center gap-2', token: 'recipes.stack.row' },
+  { literal: 'flex items-end gap-2', token: 'recipes.stack.rowEnd' },
+  { literal: 'flex flex-wrap items-center justify-end gap-2', token: 'recipes.stack.actions' },
+  { literal: 'flex justify-center text-center', token: 'recipes.stack.center' },
+];
+for (const dir of uiRawTypographyDirs) {
+  for (const file of files(dir).filter((f) => f.endsWith('.tsx') && !f.endsWith('.stories.tsx'))) {
+    const text = readFileSync(file, 'utf8');
+    for (const { literal, token } of layoutTokenLiterals) {
+      const re = new RegExp(literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\d.])', 'g');
+      for (const m of text.matchAll(re)) {
+        if (hasEslintDisable(text, m.index)) continue;
+        errors.push(`Inline layout class instead of ${token} in UI package: ${file}`);
+      }
+    }
+  }
+}
+
+// Check: raw typography tags carrying text styling in story files (use Text/UnitText atoms).
+// Only styled tags are flagged — bare structural tags and non-text spans (e.g. color swatches)
+// are fine. Add an eslint-disable comment on the preceding line to opt out (typography demos).
+const storyTypographyTag = /<(span|p|a)\b[\s\S]*?>/g;
+const typographySignal =
+  /text-\[var\(--ll-[\w-]+\)\]|text-(?:xs|sm|base|lg|2xl)|font-(?:medium|semibold|normal)/;
+for (const file of files('packages/ui/src').filter((f) => f.endsWith('.stories.tsx'))) {
+  const text = readFileSync(file, 'utf8');
+  for (const m of text.matchAll(storyTypographyTag)) {
+    if (!typographySignal.test(m[0])) continue;
+    if (hasEslintDisable(text, m.index)) continue;
+    errors.push(`Raw <${m[1]}> with typography styling in story (use Text/UnitText atom): ${file}`);
+  }
+}
+
 // Check: Storybook coverage — every component .tsx must have a .stories.tsx
 // Typography.stories.tsx covers: PageTitle, SectionHeading, HelperText, WarningText, UnitText
 const typographyStoryCovered = new Set([

@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { Text } from '../atoms/Text';
+import { UnitText } from '../atoms/UnitText';
 import { ListSectionCard } from './ListSectionCard';
 
 const baseItems = [
@@ -7,13 +9,17 @@ const baseItems = [
     title: 'Meals',
     meta: (
       <>
-        520<span className="text-[var(--ll-text-muted)]"> kcal</span> · P 30
-        <span className="text-[var(--ll-text-muted)]">g</span> · C 20
-        <span className="text-[var(--ll-text-muted)]">g</span> · F 34
-        <span className="text-[var(--ll-text-muted)]">g</span>
+        520<UnitText> kcal</UnitText> · P 30
+        <UnitText>g</UnitText> · C 20
+        <UnitText>g</UnitText> · F 34
+        <UnitText>g</UnitText>
       </>
     ),
-    rightMetric: <span className="text-xs font-medium text-[var(--ll-text-muted)]">3 items</span>,
+    rightMetric: (
+      <Text as="span" variant="meta">
+        3 items
+      </Text>
+    ),
     onOpen: () => undefined,
     onDelete: () => undefined,
   },
@@ -22,13 +28,17 @@ const baseItems = [
     title: 'Meals',
     meta: (
       <>
-        640<span className="text-[var(--ll-text-muted)]"> kcal</span> · P 42
-        <span className="text-[var(--ll-text-muted)]">g</span> · C 18
-        <span className="text-[var(--ll-text-muted)]">g</span> · F 44
-        <span className="text-[var(--ll-text-muted)]">g</span>
+        640<UnitText> kcal</UnitText> · P 42
+        <UnitText>g</UnitText> · C 18
+        <UnitText>g</UnitText> · F 44
+        <UnitText>g</UnitText>
       </>
     ),
-    rightMetric: <span className="text-xs font-medium text-[var(--ll-text-muted)]">4 items</span>,
+    rightMetric: (
+      <Text as="span" variant="meta">
+        4 items
+      </Text>
+    ),
     onOpen: () => undefined,
     onDelete: () => undefined,
     deleteLabel: 'Delete meal',

@@ -48,3 +48,11 @@ export const NoRetake: Story = {
     onRetake: undefined,
   },
 };
+
+export const WithWarning: Story = {
+  args: {
+    canAccept: true,
+    warning:
+      'Servings per container unreadable. Applied a single serving — adjust the weight if needed.',
+  },
+};

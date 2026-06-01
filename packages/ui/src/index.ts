@@ -2,6 +2,7 @@ import './index.css';
 
 export * from './analytics';
 export * from './atoms/Button';
+export * from './atoms/Checkbox';
 export * from './atoms/Input';
 export * from './atoms/Card';
 export * from './atoms/Field';
@@ -34,6 +35,7 @@ export * from './molecules/Tabs';
 export * from './organisms/AddDayControl';
 export * from './organisms/AuthLanding';
 export * from './organisms/IngredientEntryCard';
+export * from './organisms/LabelScanCard';
 export * from './organisms/ListSectionCard';
 export * from './organisms/PageNavHeading';
 export * from './organisms/QuickActionsCard';

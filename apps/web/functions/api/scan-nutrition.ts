@@ -1,4 +1,5 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { resolveScan, type ScanMode } from '@leanlog/data-access';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import type { Env } from './_env';
@@ -8,21 +9,19 @@ const mb15 = 15 * 1024 * 1024;
 
 const scanSchema = z.object({
   basis: z.enum(['per_serving', 'per_100g', 'unknown']),
-  servingSizeGrams: z.number().nullable(),
+  servingSizeGrams: z.number().finite().nonnegative().nullable(),
+  servingsPerContainer: z.number().finite().nonnegative().nullable(),
   nutrients: z.object({
-    calories: z.number(),
-    fat: z.number(),
-    saturatedFat: z.number(),
-    carbs: z.number(),
-    fiber: z.number(),
-    protein: z.number(),
+    calories: z.number().finite().nonnegative(),
+    fat: z.number().finite().nonnegative(),
+    saturatedFat: z.number().finite().nonnegative(),
+    carbs: z.number().finite().nonnegative(),
+    fiber: z.number().finite().nonnegative(),
+    protein: z.number().finite().nonnegative(),
   }),
   inferredName: z.string().nullable(),
   notes: z.array(z.string()).default([]),
 });
-
-const round1 = (n: number) => Math.round(n * 10) / 10;
-const safe = (n: number) => round1(Math.max(0, n));
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const userId = (context.data as Record<string, unknown>).userId as string;
@@ -37,6 +36,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const form = await request.formData();
     const photo = form.get('photo') as unknown as File | null;
     const weightRaw = String(form.get('weightGrams') ?? '').trim();
+    const servingsRaw = String(form.get('servings') ?? '').trim();
+    const mode: ScanMode = form.get('mode') === 'servings' ? 'servings' : 'weight';
+    const entirePackage = String(form.get('entirePackage') ?? '') === 'true';
     const name = String(form.get('name') ?? '').trim();
 
     if (!photo || typeof photo === 'string') {
@@ -50,7 +52,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     const weight = Number(weightRaw);
-    const hasWeight = Number.isFinite(weight) && weight > 0;
+    const servings = Number(servingsRaw);
 
     const image = new Uint8Array(await photo.arrayBuffer());
     const google = createGoogleGenerativeAI({ apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY });
@@ -60,6 +62,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       'Return nutrition values in grams/calories and infer the basis.',
       'basis=per_serving if values represent one serving; per_100g if values are per 100g; unknown otherwise.',
       'Extract servingSizeGrams if explicitly shown.',
+      'Extract servingsPerContainer (servings per package/container) if explicitly shown, otherwise null.',
       'If a field is missing, return 0 and add a note.',
       'Keep numbers realistic and non-negative.',
     ].join(' ');
@@ -78,45 +81,20 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       ],
     });
 
-    const notes = [...object.notes];
-    const serving = object.servingSizeGrams;
-    let targetWeight = hasWeight ? weight : 0;
-
-    if (!hasWeight && object.basis === 'per_serving' && serving && serving > 0) {
-      targetWeight = serving;
-    }
-
-    let factor = 1;
-    if (hasWeight) {
-      if (object.basis === 'per_serving') {
-        if (serving && serving > 0) factor = weight / serving;
-        else notes.push('Serving size unreadable. Using one-serving values without scaling.');
-      } else if (object.basis === 'per_100g') {
-        factor = weight / 100;
-      }
-    } else if (object.basis === 'per_100g') {
-      notes.push('Serving size unreadable for per-100g label without weight.');
-    }
-
-    const canApply = hasWeight || (object.basis === 'per_serving' && !!serving && serving > 0);
-    const blockReason = canApply
-      ? undefined
-      : 'Serving size unreadable. Retake photo or enter weight first.';
+    const resolution = resolveScan(
+      {
+        basis: object.basis,
+        servingSizeGrams: object.servingSizeGrams,
+        servingsPerContainer: object.servingsPerContainer,
+        nutrients: object.nutrients,
+        inferredName: object.inferredName,
+      },
+      { mode, weight, servings, entirePackage, name },
+    );
 
     const response = {
-      proposed: {
-        name: !name && object.inferredName ? object.inferredName : undefined,
-        weight: safe(targetWeight),
-        calories: safe(object.nutrients.calories * factor),
-        fat: safe(object.nutrients.fat * factor),
-        saturatedFat: safe(object.nutrients.saturatedFat * factor),
-        carbs: safe(object.nutrients.carbs * factor),
-        fiber: safe(object.nutrients.fiber * factor),
-        protein: safe(object.nutrients.protein * factor),
-      },
-      canApply,
-      blockReason,
-      notes,
+      ...resolution,
+      notes: [...object.notes, ...resolution.notes],
     };
 
     if (env.VITE_POSTHOG_API_KEY && env.VITE_POSTHOG_HOST) {
