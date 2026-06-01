@@ -2,6 +2,7 @@ import { Field } from '../atoms/Field';
 import { HelperText } from '../atoms/HelperText';
 import { Radio } from '../atoms/Radio';
 import { Text } from '../atoms/Text';
+import { recipes } from '../styles/recipes';
 
 type RadioOption<T extends string> = { value: T; label: string };
 
@@ -21,11 +22,11 @@ export function RadioGroup<T extends string>({
   onChange,
 }: RadioGroupProps<T>) {
   return (
-    <fieldset className="flex flex-col gap-1.5">
+    <fieldset className={recipes.stack.xs}>
       <legend>
         <HelperText as="span">{label}</HelperText>
       </legend>
-      <div className="flex flex-col gap-2.5">
+      <div className={recipes.stack.sm}>
         {options.map((option) => (
           <Field key={option.value} className="flex-row items-center gap-2">
             <Radio

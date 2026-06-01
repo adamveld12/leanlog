@@ -6,6 +6,7 @@ import { recipes } from '../styles/recipes';
 type ButtonProps = PropsWithChildren<ButtonHTMLAttributes<HTMLButtonElement>> & {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle';
   size?: 'md' | 'sm';
+  fullWidth?: boolean;
   analyticsName?: string;
 };
 
@@ -14,6 +15,7 @@ export function Button({
   className = '',
   variant = 'primary',
   size = 'md',
+  fullWidth,
   analyticsName,
   name,
   value,
@@ -31,6 +33,7 @@ export function Button({
         recipes.focusRing,
         'active:scale-[0.98]',
         recipes.button[variant],
+        fullWidth && 'w-full',
         className,
       )}
       name={name}

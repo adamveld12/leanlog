@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { HelperText } from './HelperText';
 import { PageTitle } from './PageTitle';
 import { SectionHeading } from './SectionHeading';
+import { Text } from './Text';
 import { UnitText } from './UnitText';
 import { WarningText } from './WarningText';
 
@@ -13,9 +14,9 @@ function Typography() {
       <SectionHeading>Section heading</SectionHeading>
       <HelperText>Helper text explains a constraint without competing with totals.</HelperText>
       <WarningText>Warning text explains a validation issue.</WarningText>
-      <p className="text-sm text-[var(--ll-text)]">
+      <Text as="p" variant="body">
         Calories<UnitText> kcal</UnitText>
-      </p>
+      </Text>
     </div>
   );
 }

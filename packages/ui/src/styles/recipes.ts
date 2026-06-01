@@ -1,6 +1,7 @@
 export const recipes = {
   focusRing:
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--ll-focus)_35%,transparent)]',
+  controlDisabled: 'disabled:opacity-50 disabled:cursor-not-allowed',
   transition: 'transition duration-[140ms] ease-[var(--ll-ease)]',
   radius: { control: 'rounded-[10px]', card: 'rounded-[14px]', pill: 'rounded-[999px]' },
   surface: {
@@ -26,7 +27,9 @@ export const recipes = {
     lg: 'flex flex-col gap-4',
     row: 'flex items-center gap-2',
     rowEnd: 'flex items-end gap-2',
+    actions: 'flex flex-wrap items-center justify-end gap-2',
     between: 'justify-between',
+    center: 'flex justify-center text-center',
   },
   grid: {
     two: 'grid grid-cols-2 gap-2',
@@ -47,6 +50,6 @@ export const recipes = {
       'bg-transparent text-[var(--ll-text-muted)] hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)] hover:text-[var(--ll-text)]',
   },
   input: {
-    base: 'my-2.5 h-11 w-full rounded-[10px] border border-[var(--ll-line)] bg-[var(--ll-surface)] px-3 text-sm text-[var(--ll-text)] outline-none transition duration-[140ms] ease-[var(--ll-ease)] focus-visible:border-[var(--ll-line-strong)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--ll-focus)_35%,transparent)]',
+    base: 'my-2.5 h-11 w-full rounded-[10px] border border-[var(--ll-line)] bg-[var(--ll-surface)] px-3 text-sm text-[var(--ll-text)] outline-none transition duration-[140ms] ease-[var(--ll-ease)] focus-visible:border-[var(--ll-line-strong)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--ll-focus)_35%,transparent)] disabled:opacity-50 disabled:cursor-not-allowed',
   },
 } as const;

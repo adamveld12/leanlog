@@ -34,3 +34,17 @@ export const WithSelectedValue: Story = {
     ),
   },
 };
+
+export const Disabled: Story = {
+  args: {
+    disabled: true,
+    defaultValue: 'g',
+    children: (
+      <>
+        <option value="g">Grams (g)</option>
+        <option value="ml">Millilitres (ml)</option>
+        <option value="oz">Ounces (oz)</option>
+      </>
+    ),
+  },
+};

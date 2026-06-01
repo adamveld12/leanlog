@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { cn } from '../styles/cn';
 import { Field } from './Field';
 import { Input } from './Input';
 
@@ -8,6 +9,7 @@ type NumberInputProps = {
   onChange: (next: number) => void;
   onBlur?: () => void;
   placeholder?: string;
+  disabled?: boolean;
   labelClassName?: string;
   inputClassName?: string;
 };
@@ -22,6 +24,7 @@ export function NumberInput({
   onChange,
   onBlur,
   placeholder,
+  disabled,
   labelClassName = '',
   inputClassName = '',
 }: NumberInputProps) {
@@ -29,10 +32,11 @@ export function NumberInput({
   const [editing, setEditing] = useState(false);
 
   return (
-    <Field label={label} className={labelClassName}>
+    <Field label={label} className={labelClassName} labelClassName={cn(disabled && 'opacity-50')}>
       <Input
         value={editing ? text : display(value)}
         placeholder={placeholder}
+        disabled={disabled}
         onChange={(e) => {
           const next = e.target.value;
           setText(next);

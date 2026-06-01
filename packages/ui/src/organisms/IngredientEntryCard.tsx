@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
@@ -7,6 +6,7 @@ import { NumberInput } from '../atoms/NumberInput';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { WarningText } from '../atoms/WarningText';
 import { SectionCard } from '../molecules/SectionCard';
+import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
 export type IngredientEntryValue = {
@@ -27,7 +27,6 @@ type IngredientEntryCardProps = {
   onChange: (next: IngredientEntryValue) => void;
   onSubmit: () => void;
   normalizeNameOnBlur?: (value: string) => string;
-  weightAction?: ReactNode;
 };
 
 const clamp999 = (n: number) => Math.max(0, Math.min(999, n));
@@ -41,7 +40,6 @@ export function IngredientEntryCard({
   onChange,
   onSubmit,
   normalizeNameOnBlur,
-  weightAction,
 }: IngredientEntryCardProps) {
   const setNum = (key: keyof Omit<IngredientEntryValue, 'name'>, next: number) =>
     onChange({ ...value, [key]: sanitize(next) });
@@ -54,14 +52,14 @@ export function IngredientEntryCard({
   return (
     <AnalyticsScope properties={{ organism: 'IngredientEntryCard' }}>
       <SectionCard saved={saved}>
-        <div className="flex items-center gap-2 justify-between">
+        <div className={cn(recipes.stack.row, recipes.stack.between)}>
           <SectionHeading noMargin>Ingredient Entry</SectionHeading>
           <Button size="sm" onClick={onSubmit} disabled={fiberInvalid}>
             {submitLabel}
           </Button>
         </div>
 
-        <Field label="Ingredient title">
+        <Field label="Ingredient Name">
           <Input
             value={value.name}
             onChange={(e) => onChange({ ...value, name: e.target.value })}
@@ -71,17 +69,12 @@ export function IngredientEntryCard({
         </Field>
 
         <div className={recipes.grid.two}>
-          <div className="flex items-center gap-2 items-end">
-            <div className="flex-1">
-              <NumberInput
-                label="Weight (g)"
-                value={value.weight}
-                onChange={(n) => setNum('weight', n)}
-                onBlur={() => roundField('weight')}
-              />
-            </div>
-            {weightAction ? <div className="mb-2.5">{weightAction}</div> : null}
-          </div>
+          <NumberInput
+            label="Weight (g)"
+            value={value.weight}
+            onChange={(n) => setNum('weight', n)}
+            onBlur={() => roundField('weight')}
+          />
           <NumberInput
             label="Calories"
             value={value.calories}

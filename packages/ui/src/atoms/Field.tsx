@@ -9,11 +9,19 @@ export type FieldProps = PropsWithChildren<{
   helperText?: ReactNode;
   errorText?: ReactNode;
   className?: string;
+  labelClassName?: string;
 }>;
-export function Field({ label, helperText, errorText, className = '', children }: FieldProps) {
+export function Field({
+  label,
+  helperText,
+  errorText,
+  className = '',
+  labelClassName = '',
+  children,
+}: FieldProps) {
   return (
     <Label className={cn(className)}>
-      {label ? <span>{label}</span> : null}
+      {label ? <span className={cn(labelClassName)}>{label}</span> : null}
       {children}
       {helperText ? <HelperText>{helperText}</HelperText> : null}
       {errorText ? <WarningText>{errorText}</WarningText> : null}

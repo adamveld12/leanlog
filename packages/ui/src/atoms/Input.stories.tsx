@@ -11,3 +11,4 @@ export default meta;
 type Story = StoryObj<typeof Input>;
 
 export const Default: Story = {};
+export const Disabled: Story = { args: { disabled: true, defaultValue: '30' } };

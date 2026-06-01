@@ -47,7 +47,7 @@ describe('IngredientEntryCard', () => {
     );
 
     expect(screen.getByText('Ingredient Entry')).toBeInTheDocument();
-    expect(screen.getByLabelText('Ingredient title')).toBeInTheDocument();
+    expect(screen.getByLabelText('Ingredient Name')).toBeInTheDocument();
     expect(screen.getByLabelText('Weight (g)')).toBeInTheDocument();
     expect(screen.getByLabelText('Calories')).toBeInTheDocument();
     expect(screen.getByLabelText('Fat')).toBeInTheDocument();
@@ -112,7 +112,7 @@ describe('IngredientEntryCard', () => {
     const onSubmit = vi.fn();
     render(<Harness onSubmit={onSubmit} />);
 
-    await userEvent.type(screen.getByLabelText('Ingredient title'), '{enter}');
+    await userEvent.type(screen.getByLabelText('Ingredient Name'), '{enter}');
     expect(onSubmit).not.toHaveBeenCalled();
   });
 });

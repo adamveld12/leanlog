@@ -12,3 +12,4 @@ type Story = StoryObj<typeof Button>;
 export const Primary: Story = { args: { children: 'Save', variant: 'primary' } };
 export const Ghost: Story = { args: { children: 'Cancel', variant: 'ghost' } };
 export const Danger: Story = { args: { children: 'Delete', variant: 'danger' } };
+export const FullWidth: Story = { args: { children: 'Scan Label', fullWidth: true } };

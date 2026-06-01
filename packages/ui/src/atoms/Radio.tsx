@@ -1,6 +1,7 @@
 import type { InputHTMLAttributes } from 'react';
 import { useAnalytics } from '../analytics';
 import { cn } from '../styles/cn';
+import { recipes } from '../styles/recipes';
 
 type RadioProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>;
 
@@ -12,7 +13,9 @@ export function Radio({ className = '', name, value, onChange, ...props }: Radio
       name={name}
       value={value}
       className={cn(
-        'accent-[var(--ll-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--ll-focus)_35%,transparent)]',
+        'accent-[var(--ll-text)]',
+        recipes.focusRing,
+        recipes.controlDisabled,
         className,
       )}
       onChange={(event) => {
