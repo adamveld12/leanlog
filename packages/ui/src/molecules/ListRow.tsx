@@ -2,6 +2,7 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { HelperText } from '../atoms/HelperText';
 import { Text } from '../atoms/Text';
 import { cn } from '../styles/cn';
+import { recipes } from '../styles/recipes';
 
 export type ListRowProps = {
   title: ReactNode;
@@ -39,7 +40,7 @@ export function ListRow({
       onClick={onOpen}
       onKeyDown={onKeyDown}
     >
-      <div className="flex flex-col gap-2.5">
+      <div className={recipes.stack.sm}>
         <Text as="span" className="font-medium">
           {title}
         </Text>
