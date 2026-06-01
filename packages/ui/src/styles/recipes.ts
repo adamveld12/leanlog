@@ -1,6 +1,7 @@
 export const recipes = {
   focusRing:
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--ll-focus)_35%,transparent)]',
+  ring: { today: 'ring-2 ring-[var(--ll-line-strong)]' },
   controlDisabled: 'disabled:opacity-50 disabled:cursor-not-allowed',
   transition: 'transition duration-[140ms] ease-[var(--ll-ease)]',
   radius: { control: 'rounded-[10px]', card: 'rounded-[14px]', pill: 'rounded-[999px]' },
@@ -38,6 +39,7 @@ export const recipes = {
     carbFiber: 'grid grid-cols-3 gap-2 [&>*:first-child]:col-span-2',
     calendar7: 'grid grid-cols-7 gap-0.5',
   },
+  calendar: { dayHeader: 'py-1 text-center' },
   control: {
     base: 'my-2.5 inline-flex items-center justify-center text-sm font-semibold disabled:opacity-50',
     size: { md: 'h-11 px-4', sm: 'h-9 px-3 text-xs' },

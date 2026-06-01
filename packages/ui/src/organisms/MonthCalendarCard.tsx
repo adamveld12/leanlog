@@ -183,7 +183,7 @@ export function MonthCalendarCard({
 
         <div className={recipes.grid.calendar7}>
           {DAY_HEADERS.map((h) => (
-            <Text key={h} as="span" variant="meta" className="py-1 text-center">
+            <Text key={h} as="span" variant="meta" className={recipes.calendar.dayHeader}>
               {h}
             </Text>
           ))}
@@ -202,7 +202,9 @@ export function MonthCalendarCard({
                   ? `${day.dayOfMonth}, tracked`
                   : day.status === 'missed'
                     ? `${day.dayOfMonth}, not tracked`
-                    : `${day.dayOfMonth}`
+                    : day.isToday
+                      ? `${day.dayOfMonth}, today`
+                      : `${day.dayOfMonth}`
               }
               className={[
                 // Calendar cells opt out of the default my-2.5 control margin so
@@ -210,7 +212,7 @@ export function MonthCalendarCard({
                 'my-0 flex min-h-[44px] items-center justify-center',
                 // Today uses the neutral strong-line ring so it stays distinct
                 // from the accent focus-visible ring (recipes.focusRing).
-                day.isToday && 'ring-2 ring-[var(--ll-line-strong)]',
+                day.isToday && recipes.ring.today,
                 day.status === 'tracked' && 'cursor-pointer',
                 day.status !== 'tracked' && 'cursor-default',
               ]
