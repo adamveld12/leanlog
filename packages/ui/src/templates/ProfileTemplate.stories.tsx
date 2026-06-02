@@ -6,7 +6,15 @@ const meta: Meta<typeof ProfileTemplate> = {
   title: 'Design System/Templates/ProfileTemplate',
   component: ProfileTemplate,
   args: {
-    heading: { title: 'Profile', profileHref: '/profile' },
+    heading: {
+      title: 'Profile',
+      profileHref: '/profile',
+      renderNavLink: ({ href, label, className }) => (
+        <a className={className} href={href}>
+          {label}
+        </a>
+      ),
+    },
     children: (
       <BodyInfoCard
         weightLbs={180}

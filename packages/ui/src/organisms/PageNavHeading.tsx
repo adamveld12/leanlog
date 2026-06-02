@@ -13,7 +13,7 @@ export type PageNavHeadingProps = {
   profileHref: string;
   backLabel?: string;
   profileLabel?: string;
-  renderNavLink?: (props: NavLinkRenderProps) => ReactNode;
+  renderNavLink: (props: NavLinkRenderProps) => ReactNode;
   rightContent?: ReactNode;
 };
 
@@ -36,14 +36,7 @@ export function PageNavHeading({
     recipes.button.subtle,
   );
   const renderLink = ({ href, label }: { href: string; label: string }) =>
-    renderNavLink ? (
-      renderNavLink({ href, label, className: linkClassName })
-    ) : (
-      // eslint-disable-next-line no-restricted-syntax -- fallback for non-router contexts; app always provides renderNavLink
-      <a className={linkClassName} href={href}>
-        {label}
-      </a>
-    );
+    renderNavLink({ href, label, className: linkClassName });
 
   return (
     <AnalyticsScope properties={{ organism: 'PageNavHeading' }}>

@@ -7,7 +7,15 @@ const meta: Meta<typeof DayDetailTemplate> = {
   title: 'Design System/Templates/DayDetailTemplate',
   component: DayDetailTemplate,
   args: {
-    heading: { title: 'May 22', profileHref: '/profile' },
+    heading: {
+      title: 'May 22',
+      profileHref: '/profile',
+      renderNavLink: ({ href, label, className }) => (
+        <a className={className} href={href}>
+          {label}
+        </a>
+      ),
+    },
     totalsSection: (
       <DailyTotalsCard
         calories={1800}

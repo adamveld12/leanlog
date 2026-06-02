@@ -19,7 +19,23 @@ const value = {
   protein: 42,
 };
 
-const heading = { title: 'LUNCH', profileHref: '/profile' };
+const heading = {
+  title: 'LUNCH',
+  profileHref: '/profile',
+  renderNavLink: ({
+    href,
+    label,
+    className,
+  }: {
+    href: string;
+    label: string;
+    className: string;
+  }) => (
+    <a className={className} href={href}>
+      {label}
+    </a>
+  ),
+};
 const mealSection = (
   <SectionCard>
     <SectionHeading>LUNCH</SectionHeading>

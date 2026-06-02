@@ -6,6 +6,11 @@ const meta: Meta<typeof AppPageHeading> = {
   component: AppPageHeading,
   args: {
     title: 'Day Detail',
+    renderNavLink: ({ href, label, className }) => (
+      <a className={className} href={href}>
+        {label}
+      </a>
+    ),
   },
 };
 
