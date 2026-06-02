@@ -5,6 +5,13 @@ import { PageNavHeading } from './PageNavHeading';
 const meta: Meta<typeof PageNavHeading> = {
   title: 'Design System/Organisms/PageNavHeading',
   component: PageNavHeading,
+  args: {
+    renderNavLink: ({ href, label, className }) => (
+      <a className={className} href={href}>
+        {label}
+      </a>
+    ),
+  },
 };
 
 export default meta;

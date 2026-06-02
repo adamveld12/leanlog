@@ -27,12 +27,16 @@ export const recipes = {
   stack: {
     xs: 'flex flex-col gap-1.5',
     sm: 'flex flex-col gap-2.5',
+    md: 'flex flex-col gap-3',
     lg: 'flex flex-col gap-4',
     row: 'flex items-center gap-2',
+    rowMd: 'flex items-center gap-3',
     rowEnd: 'flex items-end gap-2',
     actions: 'flex flex-wrap items-center justify-end gap-2',
+    rowBetween: 'flex items-center justify-between',
     between: 'justify-between',
     center: 'flex justify-center text-center',
+    centerFull: 'flex items-center justify-center text-center',
   },
   grid: {
     two: 'grid grid-cols-2 gap-2',

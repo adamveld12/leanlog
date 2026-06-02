@@ -152,13 +152,23 @@ const layoutTokens = [
     token: 'recipes.stack.actions',
     classes: ['flex', 'flex-wrap', 'items-center', 'justify-end', 'gap-2'],
   },
+  {
+    token: 'recipes.stack.rowBetween',
+    classes: ['flex', 'items-center', 'justify-between'],
+  },
+  {
+    token: 'recipes.stack.centerFull',
+    classes: ['flex', 'items-center', 'justify-center', 'text-center'],
+  },
   { token: 'recipes.grid.two', classes: ['grid', 'grid-cols-2', 'gap-2'] },
   { token: 'recipes.grid.calendar7', classes: ['grid', 'grid-cols-7', 'gap-0.5'] },
   { token: 'recipes.stack.xs', classes: ['flex', 'flex-col', 'gap-1.5'] },
   { token: 'recipes.stack.sm', classes: ['flex', 'flex-col', 'gap-2.5'] },
+  { token: 'recipes.stack.md', classes: ['flex', 'flex-col', 'gap-3'] },
   { token: 'recipes.stack.lg', classes: ['flex', 'flex-col', 'gap-4'] },
   { token: 'recipes.stack.center', classes: ['flex', 'justify-center', 'text-center'] },
   { token: 'recipes.stack.row', classes: ['flex', 'items-center', 'gap-2'] },
+  { token: 'recipes.stack.rowMd', classes: ['flex', 'items-center', 'gap-3'] },
   { token: 'recipes.stack.rowEnd', classes: ['flex', 'items-end', 'gap-2'] },
 ].sort((a, b) => b.classes.length - a.classes.length);
 
@@ -166,25 +176,6 @@ const layoutPrimitive =
   /^(flex|grid|inline-flex|flex-row|flex-col|flex-wrap|items-[\w-]+|justify-[\w-]+|content-[\w-]+|self-[\w-]+|place-(?:items|content)-[\w-]+|gap-[\d.]+|gap-[xy]-[\d.]+|grid-cols-\d+|grid-rows-\d+)$/;
 const layoutContainer = /^(flex|grid|inline-flex|flex-row|flex-col|flex-wrap)$/;
 const stringLiteral = /(['"`])((?:\\.|(?!\1).)*)\1/g;
-
-// Baseline of pre-existing inline-layout literals, grandfathered in so the new
-// check fails only on NEW violations. Keyed by `${file}|${sorted-layout-classes}`
-// so edits to surrounding utilities don't shift the key.
-// TODO(design-system): burn this down by composing each site from cn(recipes.*).
-const layoutBaseline = new Set([
-  'packages/ui/src/molecules/ListRow.tsx|flex gap-2 items-center justify-between',
-  'packages/ui/src/molecules/ListRow.tsx|flex gap-2 items-center',
-  'packages/ui/src/molecules/LoadingState.tsx|flex flex-col gap-2.5 items-center',
-  'packages/ui/src/molecules/Modal.tsx|flex items-center justify-between',
-  'packages/ui/src/molecules/StatMetric.tsx|flex items-center justify-between',
-  'packages/ui/src/organisms/AuthLanding.tsx|flex flex-col gap-2.5',
-  'packages/ui/src/organisms/DailyTotalsCard.tsx|flex gap-2 items-center justify-between',
-  'packages/ui/src/organisms/DailyTotalsCard.tsx|flex flex-wrap gap-2 items-center',
-  'packages/ui/src/organisms/PageNavHeading.tsx|flex flex-col gap-2.5',
-  'packages/ui/src/organisms/PageNavHeading.tsx|flex gap-2 items-center justify-between',
-  'packages/ui/src/organisms/PageNavHeading.tsx|flex gap-2 items-center',
-  'packages/ui/src/organisms/WeightTrendCard.tsx|flex items-center justify-center',
-]);
 
 const layoutSignatures = new Map(); // signature -> Map(file -> key)
 const layoutViolations = []; // { key, message }
@@ -231,7 +222,6 @@ if (process.env.AUDIT_PRINT_LAYOUT) {
   console.error('LAYOUT KEYS:\n' + keys.map((k) => `  '${k}',`).join('\n'));
 }
 for (const v of layoutViolations) {
-  if (layoutBaseline.has(v.key)) continue;
   errors.push(v.message);
 }
 

@@ -30,7 +30,15 @@ const meta: Meta<typeof DayListTemplate> = {
   title: 'Design System/Templates/DayListTemplate',
   component: DayListTemplate,
   args: {
-    heading: { title: 'leanlog', profileHref: '/profile' },
+    heading: {
+      title: 'leanlog',
+      profileHref: '/profile',
+      renderNavLink: ({ href, label, className }) => (
+        <a className={className} href={href}>
+          {label}
+        </a>
+      ),
+    },
     addDay: { onDayAdded: () => undefined },
     quickActions: <QuickActionsCard hasToday={false} hasDays={false} onAction={() => {}} />,
     statistics: (
