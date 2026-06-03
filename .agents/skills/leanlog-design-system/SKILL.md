@@ -84,9 +84,9 @@ ActionRow, DateSelect3, ListRow, MacroSummaryLine, Modal, RadioGroup, SectionCar
 
 AddDayControl, AppPageHeading, AuthLanding, DailyTotalsCard, IngredientEntryCard, ListSectionCard, PageNavHeading, ProfileSectionCards, ScanReviewModal
 
-### Templates (6)
+### Templates (7)
 
-AppShell, DayDetailTemplate, DayListTemplate, LandingTemplate, MealEditTemplate, ProfileTemplate
+AppShell, DayDetailTemplate, DayListTemplate, ErrorTemplate, LandingTemplate, MealEditTemplate, ProfileTemplate
 
 ## Atom-to-HTML Usage Map
 

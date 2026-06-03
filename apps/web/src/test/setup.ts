@@ -90,6 +90,7 @@ vi.mock('../api', () => ({
         }),
       update: vi.fn(),
     },
+    scanNutrition: vi.fn(),
   },
 }));
 

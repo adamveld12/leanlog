@@ -16,6 +16,7 @@ import {
   CalorieTargetCard,
   DailyTotalsCard,
   DayDetailTemplate,
+  ErrorTemplate,
   DayListTemplate,
   DayWeightCard,
   FileInput,
@@ -39,7 +40,6 @@ import {
   SectionHeading,
   Tabs,
   Text,
-  WarningText,
   WeeklyStatsCard,
   WeightTrendCard,
   useAnalytics,
@@ -136,15 +136,18 @@ function RouteErrorState({ message }: { message: string }) {
   const nav = useNavigate();
 
   return (
-    <div className="mx-auto max-w-xl p-4">
-      <SectionCard title="Unable to load tracker data">
-        <WarningText>{message}</WarningText>
-        <Button variant="secondary" onClick={() => nav('/track')}>
-          Back to days
-        </Button>
-      </SectionCard>
-    </div>
+    <ErrorTemplate
+      title="Unable to load tracker data"
+      message={message}
+      homeHref="/"
+      retryLabel="Back to days"
+      onRetry={() => nav('/track')}
+    />
   );
+}
+
+function TrackerErrorState({ message }: { message: string }) {
+  return <ErrorTemplate title="Unable to load LeanLog" message={message} homeHref="/" />;
 }
 
 function RequireSignedIn({ children }: PropsWithChildren) {
@@ -230,7 +233,7 @@ function DayList() {
   }
 
   if (loading) return <PageLoadingState label="Loading your days…" />;
-  if (error) return <div>Error: {error}</div>;
+  if (error) return <TrackerErrorState message={error} />;
 
   return (
     <DayListTemplate
@@ -649,13 +652,8 @@ function MealEdit() {
       formData.append('servings', isServings ? String(scanForm.amount) : '');
       formData.append('name', scanForm.name);
       const token = await getToken();
-      const response = await fetch('/api/scan-nutrition', {
-        method: 'POST',
-        body: formData,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!response.ok) throw new Error('Scan failed. Try again with a clearer label photo.');
-      const result = (await response.json()) as ScanResolution;
+      if (!token) throw new Error('Not authenticated');
+      const result = await api.scanNutrition(token, formData);
       track('meal.ingredient.scanned', {});
       setScanResult(result);
     } catch (error) {
