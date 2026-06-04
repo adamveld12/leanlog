@@ -87,9 +87,9 @@ ActionRow, DateSelect3, ListRow, LoadingState, MacroSummaryLine, Modal, RadioGro
 
 AddDayControl, AppPageHeading, AuthLanding, DailyTotalsCard, IngredientEntryCard, LabelScanCard, ListSectionCard, PageNavHeading, ProfileSectionCards, ScanReviewModal
 
-### Templates (6)
+### Templates (7)
 
-AppShell, DayDetailTemplate, DayListTemplate, LandingTemplate, MealEditTemplate, ProfileTemplate
+AppShell, DayDetailTemplate, DayListTemplate, ErrorTemplate, LandingTemplate, MealEditTemplate, ProfileTemplate
 
 ## Recipes (`packages/ui/src/styles/recipes.ts`)
 

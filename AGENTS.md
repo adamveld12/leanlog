@@ -53,3 +53,5 @@ skill:tdd
 skill:react-best-practices
 skill:context7-cli
 ```
+
+- When asked about local dev, load `skill:leanlog-local-dev`.

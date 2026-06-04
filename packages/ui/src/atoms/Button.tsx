@@ -1,54 +1,129 @@
-import type { ButtonHTMLAttributes, PropsWithChildren } from 'react';
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, PropsWithChildren } from 'react';
 import { useAnalytics } from '../analytics';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
-type ButtonProps = PropsWithChildren<ButtonHTMLAttributes<HTMLButtonElement>> & {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle';
-  size?: 'md' | 'sm';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle';
+type ButtonSize = 'md' | 'sm';
+type AnalyticsValue = string | number | readonly string[] | undefined;
+
+type ButtonOwnProps = {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   fullWidth?: boolean;
   analyticsName?: string;
 };
 
-export function Button({
-  children,
-  className = '',
-  variant = 'primary',
-  size = 'md',
+type NativeButtonProps = PropsWithChildren<ButtonHTMLAttributes<HTMLButtonElement>> &
+  ButtonOwnProps & { as?: 'button' };
+
+type AnchorButtonProps = PropsWithChildren<AnchorHTMLAttributes<HTMLAnchorElement>> &
+  ButtonOwnProps & {
+    as: 'a';
+    name?: string;
+    value?: AnalyticsValue;
+  };
+
+type ButtonProps = NativeButtonProps | AnchorButtonProps;
+
+function buttonClassName({
+  className,
   fullWidth,
-  analyticsName,
-  name,
-  value,
-  onClick,
-  ...props
-}: ButtonProps) {
+  size,
+  variant,
+}: {
+  className: string;
+  fullWidth?: boolean;
+  size: ButtonSize;
+  variant: ButtonVariant;
+}) {
+  return cn(
+    recipes.control.base,
+    recipes.control.size[size],
+    recipes.radius.control,
+    recipes.transition,
+    recipes.focusRing,
+    'active:scale-[0.98]',
+    recipes.button[variant],
+    fullWidth && 'w-full',
+    className,
+  );
+}
+
+function analyticsValue(value: AnalyticsValue): string | number | undefined {
+  return typeof value === 'string' || typeof value === 'number' ? value : undefined;
+}
+
+export function Button(props: ButtonProps) {
   const track = useAnalytics();
+
+  if (props.as === 'a') {
+    const {
+      children,
+      className = '',
+      variant = 'primary',
+      size = 'md',
+      fullWidth,
+      analyticsName,
+      name,
+      value,
+      onClick,
+      href,
+      as,
+      ...anchorProps
+    } = props;
+    void as;
+
+    return (
+      <a
+        className={buttonClassName({ className, fullWidth, size, variant })}
+        href={href}
+        onClick={(event) => {
+          track('ui.button.click', {
+            atom: 'Button',
+            name: analyticsName ?? name,
+            value: analyticsValue(value),
+            variant,
+            text: typeof children === 'string' ? children : undefined,
+          });
+          onClick?.(event);
+        }}
+        {...anchorProps}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  const {
+    children,
+    className = '',
+    variant = 'primary',
+    size = 'md',
+    fullWidth,
+    analyticsName,
+    name,
+    value,
+    onClick,
+    ...buttonProps
+  } = props;
+
   return (
     <button
-      className={cn(
-        recipes.control.base,
-        recipes.control.size[size],
-        recipes.radius.control,
-        recipes.transition,
-        recipes.focusRing,
-        'active:scale-[0.98]',
-        recipes.button[variant],
-        fullWidth && 'w-full',
-        className,
-      )}
+      className={buttonClassName({ className, fullWidth, size, variant })}
       name={name}
       value={value}
       onClick={(event) => {
         track('ui.button.click', {
           atom: 'Button',
           name: analyticsName ?? name,
-          value: typeof value === 'string' || typeof value === 'number' ? value : undefined,
+          value: analyticsValue(value),
           variant,
           text: typeof children === 'string' ? children : undefined,
         });
         onClick?.(event);
       }}
-      {...props}
+      {...buttonProps}
     >
       {children}
     </button>

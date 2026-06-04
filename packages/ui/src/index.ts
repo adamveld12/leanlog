@@ -48,6 +48,7 @@ export * from './organisms/DayWeightCard';
 export * from './organisms/ScanReviewModal';
 export * from './organisms/WeightTrendCard';
 export * from './templates/AppShell';
+export * from './templates/ErrorTemplate';
 export * from './templates/LandingTemplate';
 export * from './templates/DayListTemplate';
 export * from './templates/DayDetailTemplate';

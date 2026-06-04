@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -n vite,api -c cyan,magenta \"pnpm dev:vite\" \"pnpm dev:api\"",
     "build": "tsc -b && vite build",
     "pages:build": "node scripts/migrate.mjs && tsc -b && vite build",
     "lint": "tsc -b --noEmit && eslint .",
@@ -12,7 +12,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:vite": "vite --host localhost --port 5173 --strictPort",
+    "dev:api": "node scripts/dev-api.mjs",
+    "dev:db:migrate": "CI=1 wrangler d1 migrations apply DB --local --persist-to .wrangler/state",
+    "dev:db:reset": "wrangler d1 execute DB --local --persist-to .wrangler/state --yes --file scripts/reset-local-d1.sql && pnpm dev:db:migrate",
+    "dev:reset": "rm -rf .wrangler/state && pnpm dev:db:migrate"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.14",
@@ -40,6 +45,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "chart.js": "^4.5.1",
+    "concurrently": "^9.2.0",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
@@ -48,6 +54,7 @@
     "tailwindcss": "^4.2.2",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "wrangler": "^4.98.0"
   }
 }

@@ -16,7 +16,12 @@
     "test:coverage": "pnpm -r test:coverage",
     "format": "prettier --write .",
     "prepare": "husky",
-    "design:audit": "node scripts/design-system-audit.mjs"
+    "design:audit": "node scripts/design-system-audit.mjs",
+    "dev:vite": "pnpm --filter @leanlog/web dev:vite",
+    "dev:api": "pnpm --filter @leanlog/web dev:api",
+    "dev:db:migrate": "pnpm --filter @leanlog/web dev:db:migrate",
+    "dev:db:reset": "pnpm --filter @leanlog/web dev:db:reset",
+    "dev:reset": "pnpm --filter @leanlog/web dev:reset"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

@@ -6,3 +6,8 @@ coverage
 storybook-static
 *.log
 .env
+.env.functions.local
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.wrangler/
