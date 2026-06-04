@@ -66,7 +66,8 @@ async function main() {
 
   wrangler.on('error', (error) => {
     cleanupGeneratedDevVars();
-    throw error;
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
   });
 
   wrangler.on('exit', (code, signal) => {

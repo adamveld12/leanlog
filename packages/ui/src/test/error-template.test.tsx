@@ -18,6 +18,11 @@ describe('ErrorTemplate', () => {
     expect(
       screen.getByText('API returned invalid payload (Not JSON) for /api/days'),
     ).toBeInTheDocument();
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Unable to load LeanLog');
+    expect(alert).toHaveTextContent('API returned invalid payload (Not JSON) for /api/days');
+    expect(alert).not.toHaveTextContent('Go home');
+    expect(alert).not.toHaveTextContent('Refresh page');
     expect(screen.getByRole('link', { name: 'Go home' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('button', { name: 'Refresh page' })).toBeInTheDocument();
   });

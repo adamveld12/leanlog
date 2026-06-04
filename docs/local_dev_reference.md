@@ -209,6 +209,7 @@ Fix:
 
 - Sign in again at `http://localhost:5173`.
 - Confirm `apps/web/.env.local` contains the local/test Clerk publishable key.
+- Use `pnpm dev` or `pnpm dev:api`; running `wrangler pages dev` directly can fall back to production `[vars]` in `wrangler.toml` and cause test-token issuer mismatches.
 - Restart `pnpm dev` after changing env files.
 
 ### D1 table does not exist
@@ -251,6 +252,23 @@ Fix:
 cp apps/web/.env.functions.local.example apps/web/.env.functions.local
 # Add GOOGLE_GENERATIVE_AI_API_KEY locally, then restart pnpm dev.
 ```
+
+### `pnpm dev:api` fails with `.dev.vars already exists`
+
+Cause: a prior run was killed before cleanup, for example by OOM or `kill -9`.
+
+Fix:
+
+```bash
+rm apps/web/.dev.vars
+pnpm dev:api
+```
+
+### Wrangler cannot find `./public`
+
+Cause: `apps/web/public` is missing or was deleted locally.
+
+Fix: restore `apps/web/public` from git before running `pnpm dev:api`.
 
 ## Best practices
 

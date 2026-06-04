@@ -30,8 +30,8 @@ export function ErrorTemplate({
     <AnalyticsScope properties={{ template: 'ErrorTemplate' }}>
       <AppShell className="justify-center pb-4">
         <Card>
-          <div role="alert" className={cn(recipes.stack.lg, 'py-4')}>
-            <div className={recipes.stack.sm}>
+          <div className={cn(recipes.stack.lg, 'py-4')}>
+            <div role="alert" className={recipes.stack.sm}>
               <Text as="h1" variant="title">
                 {title}
               </Text>

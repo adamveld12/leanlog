@@ -61,10 +61,11 @@ Optional local label scan requires `GOOGLE_GENERATIVE_AI_API_KEY` in `apps/web/.
 ## Troubleshooting checklist
 
 1. `/api/*` returns HTML: Vite proxy or Wrangler API is not running. Start `pnpm dev`.
-2. `/api/*` returns `401`: auth is missing/expired or Clerk local key is wrong. Check `apps/web/.env.local` and sign in again.
+2. `/api/*` returns `401`: auth is missing/expired or Clerk local key is wrong. Check `apps/web/.env.local`, avoid direct `wrangler pages dev`, and sign in again.
 3. D1 table missing: run `pnpm dev:db:migrate`.
 4. D1 data broken: run `pnpm dev:db:reset`.
 5. Wrangler state broken: run `pnpm dev:reset`.
+6. `.dev.vars already exists`: a prior run was hard-killed before cleanup. Remove `apps/web/.dev.vars` and retry.
 
 ## Validation
 
