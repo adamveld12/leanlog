@@ -5,7 +5,13 @@ import { LandingTemplate } from './LandingTemplate';
 const meta: Meta<typeof LandingTemplate> = {
   title: 'Design System/Templates/LandingTemplate',
   component: LandingTemplate,
-  args: { cta: <Button>Sign in / Sign up</Button> },
+  args: {
+    cta: (
+      <Button fullWidth className="md:w-auto">
+        Sign in / Sign up
+      </Button>
+    ),
+  },
 };
 export default meta;
 type Story = StoryObj<typeof LandingTemplate>;

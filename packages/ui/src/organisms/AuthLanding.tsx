@@ -42,7 +42,7 @@ export function AuthLanding({
           <Text as="p" variant="pageSubtitle" className="leading-6">
             {subtitle}
           </Text>
-          <div className="pt-2 [&_.inline-flex]:w-full md:[&_.inline-flex]:w-auto">{cta}</div>
+          <div className="pt-2">{cta}</div>
         </Card>
         <Card className={cn(recipes.stack.sm, 'p-4 md:p-5')}>
           <Text as="h2" variant="subheading">

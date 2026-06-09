@@ -175,7 +175,9 @@ function LandingPage() {
           iconSrc="/icon-192.png"
           cta={
             <SignInButton mode="modal">
-              <Button>Sign in / Sign up</Button>
+              <Button fullWidth className="md:w-auto">
+                Sign in / Sign up
+              </Button>
             </SignInButton>
           }
           pricing={<PricingTable />}
