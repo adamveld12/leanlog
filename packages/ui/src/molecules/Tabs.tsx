@@ -4,7 +4,7 @@ import { Button } from '../atoms/Button';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
-type Tab = { key: string; label: string };
+type Tab = { key: string; label: string; panelId?: string };
 type TabsProps = { tabs: Tab[]; active: string; onChange: (key: string) => void; label: string };
 
 export function Tabs({ tabs, active, onChange, label }: TabsProps) {
@@ -43,8 +43,10 @@ export function Tabs({ tabs, active, onChange, label }: TabsProps) {
           <Button
             type="button"
             key={tab.key}
+            id={tab.panelId ? `${tab.panelId}-tab` : undefined}
             role="tab"
             aria-selected={active === tab.key}
+            aria-controls={tab.panelId}
             tabIndex={active === tab.key ? 0 : -1}
             variant={active === tab.key ? 'primary' : 'subtle'}
             size="sm"

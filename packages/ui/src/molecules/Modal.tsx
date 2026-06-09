@@ -5,13 +5,6 @@ import { Text } from '../atoms/Text';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
-const FOCUSABLE =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-function getFocusable(container: HTMLElement): HTMLElement[] {
-  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE));
-}
-
 export function Modal({
   open,
   title,
@@ -19,101 +12,60 @@ export function Modal({
   onClose,
 }: PropsWithChildren<{ open: boolean; title: string; onClose: () => void }>) {
   const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
-  // Capture the element that had focus before the modal opened so we can restore it.
-  const returnFocusRef = useRef<Element | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
-  // Store the pre-open focused element and restore it when the modal closes/unmounts.
+  // Drive the native dialog open/close state from the `open` prop.
   useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
     if (open) {
-      returnFocusRef.current = document.activeElement;
-    }
-    return () => {
-      if (returnFocusRef.current instanceof HTMLElement) {
-        returnFocusRef.current.focus();
-      }
-    };
-  }, [open]);
-
-  // Move focus into the dialog when it opens; also handles Escape and Tab trap.
-  useEffect(() => {
-    if (!open || !dialogRef.current) return;
-
-    const container = dialogRef.current;
-
-    // Initial focus: first focusable child, or the container itself.
-    const focusable = getFocusable(container);
-    if (focusable.length > 0) {
-      focusable[0].focus();
+      // showModal places the element in the top layer, makes background content
+      // inert, traps focus, and restores focus on close — all natively.
+      if (!el.open) el.showModal();
     } else {
-      container.focus();
+      if (el.open) el.close();
     }
-
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-
-      if (e.key !== 'Tab') return;
-
-      const items = getFocusable(container);
-      if (items.length === 0) return;
-
-      const first = items[0];
-      const last = items[items.length - 1];
-
-      if (e.shiftKey) {
-        // Shift+Tab from first → wrap to last.
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else {
-        // Tab from last → wrap to first.
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    }
-
-    container.addEventListener('keydown', handleKeyDown);
-    return () => {
-      container.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [open, onClose]);
-
-  if (!open) return null;
+  }, [open]);
 
   return (
     <AnalyticsScope properties={{ molecule: 'Modal' }}>
-      <div className="fixed inset-0 z-20 grid place-items-center bg-black/45 p-4">
-        <div
-          ref={dialogRef}
-          // tabIndex allows the panel to receive focus when no child is focusable.
-          tabIndex={-1}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-          className={cn(
-            recipes.radius.card,
-            recipes.surface.card,
-            'w-full max-w-[560px] p-4 text-[var(--ll-text)] outline-none shadow-[0_10px_24px_rgb(0_0_0/0.12)]',
-          )}
-        >
-          <div className={cn(recipes.stack.rowBetween, 'mb-3')}>
-            <Text as="h3" id={titleId} variant="subheading">
-              {title}
-            </Text>
-            <Button variant="subtle" size="sm" onClick={onClose}>
-              Close
-            </Button>
-          </div>
-          <div className={recipes.stack.md}>{children}</div>
+      {/*
+       * The dialog is always mounted so the effect can call showModal/close.
+       * `hidden` keeps it out of the accessibility tree and layout when closed
+       * without relying on the boolean `open` attribute (which would conflict
+       * with showModal's own open management).
+       */}
+      <dialog
+        ref={dialogRef}
+        aria-labelledby={titleId}
+        // onCancel fires on Escape; prevent the UA default close so our handler
+        // controls state, then delegate to onClose.
+        onCancel={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+        // onClose fires when the dialog closes by any means (including .close()).
+        onClose={onClose}
+        className={cn(
+          recipes.radius.card,
+          recipes.surface.card,
+          // m-auto centers the dialog in the top layer (Tailwind preflight resets
+          // the UA margin:auto that native dialog relies on for centering).
+          'm-auto w-full max-w-[560px] p-4 text-[var(--ll-text)] shadow-[0_10px_24px_rgb(0_0_0/0.12)] outline-none',
+          // Semi-transparent backdrop via CSS backdrop pseudo-element.
+          'backdrop:bg-black/45',
+        )}
+      >
+        <div className={cn(recipes.stack.rowBetween, 'mb-3')}>
+          <Text as="h3" id={titleId} variant="subheading">
+            {title}
+          </Text>
+          <Button variant="subtle" size="sm" onClick={onClose}>
+            Close
+          </Button>
         </div>
-      </div>
+        <div className={recipes.stack.md}>{children}</div>
+      </dialog>
     </AnalyticsScope>
   );
 }

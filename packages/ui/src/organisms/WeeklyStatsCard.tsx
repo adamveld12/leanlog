@@ -27,8 +27,8 @@ export type WeeklyStatsCardProps = {
 };
 
 const TABS = [
-  { key: 'weekly', label: 'Weekly' },
-  { key: 'overall', label: 'Overall' },
+  { key: 'weekly', label: 'Weekly', panelId: 'weekly-stats-panel' },
+  { key: 'overall', label: 'Overall', panelId: 'overall-stats-panel' },
 ];
 
 export function WeeklyStatsCard({
@@ -46,7 +46,12 @@ export function WeeklyStatsCard({
       <SectionCard title="Statistics">
         <Tabs tabs={TABS} active={tab} onChange={setTab} label="Stats period" />
 
-        <div className={recipes.stack.lg}>
+        <div
+          role="tabpanel"
+          id={tab === 'weekly' ? 'weekly-stats-panel' : 'overall-stats-panel'}
+          aria-labelledby={tab === 'weekly' ? 'weekly-stats-panel-tab' : 'overall-stats-panel-tab'}
+          className={recipes.stack.lg}
+        >
           <StatMetric
             label="Macro Accuracy"
             value={hasDays ? `${stats.accuracyOverall}%` : '--'}
