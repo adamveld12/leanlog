@@ -12,7 +12,7 @@ export function Select({
   const track = useAnalytics();
   return (
     <select
-      className={cn(recipes.input.base, 'h-10 px-2', className)}
+      className={cn(recipes.input.base, className)}
       name={name}
       onChange={(e) => {
         track('ui.select.change', { atom: 'Select', name, value: e.currentTarget.value });
