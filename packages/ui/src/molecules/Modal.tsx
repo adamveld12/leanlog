@@ -31,9 +31,9 @@ export function Modal({
     <AnalyticsScope properties={{ molecule: 'Modal' }}>
       {/*
        * The dialog is always mounted so the effect can call showModal/close.
-       * `hidden` keeps it out of the accessibility tree and layout when closed
-       * without relying on the boolean `open` attribute (which would conflict
-       * with showModal's own open management).
+       * When closed (no `open` attribute, managed by showModal()/close()),
+       * browser UA styles give the dialog display:none, removing it from
+       * layout and the accessibility tree.
        */}
       <dialog
         ref={dialogRef}

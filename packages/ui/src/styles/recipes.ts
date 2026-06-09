@@ -57,8 +57,9 @@ export const recipes = {
     cell: 'flex min-h-[44px] items-center justify-center',
   },
   // Bordered list item with a leading dot marker; compose with stack.row.
+  // Layout/border only — text styling comes from a Text atom inside the item.
   listItem:
-    'rounded-[10px] border border-[var(--ll-line)] px-3 py-2 text-sm font-medium before:block before:h-1.5 before:w-1.5 before:rounded-[999px] before:bg-[var(--ll-text-muted)]',
+    'rounded-[10px] border border-[var(--ll-line)] px-3 py-2 before:block before:h-1.5 before:w-1.5 before:rounded-[999px] before:bg-[var(--ll-text-muted)]',
   control: {
     base: 'inline-flex items-center justify-center text-sm font-semibold disabled:opacity-50',
     size: { md: 'h-11 px-4', sm: 'h-9 px-3 text-xs' },
