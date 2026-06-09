@@ -709,86 +709,84 @@ function MealEdit() {
         }}
         mealSection={
           <SectionCard title="Meal name" saved={saved.mealName}>
-            <div className={recipes.stack.sm}>
-              <HelperText as="p">Name is required before leaving this page.</HelperText>
-              <Input
-                value={mealName}
-                onChange={(e) => {
-                  setMealName(e.target.value);
-                  markDirty('mealName');
+            <HelperText as="p">Name is required before leaving this page.</HelperText>
+            <Input
+              value={mealName}
+              onChange={(e) => {
+                setMealName(e.target.value);
+                markDirty('mealName');
+              }}
+              normalizeOnBlur={normalizeIngredientName}
+              onNormalized={(name) => {
+                setMealName(name);
+                void renameMeal(day.id, meal.id, name);
+                markSaved('mealName');
+              }}
+              onBlur={() => {
+                void renameMeal(day.id, meal.id, normalizeIngredientName(mealName));
+                markSaved('mealName');
+              }}
+            />
+            <div className={recipes.stack.row}>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => {
+                  void removeMeal(day.id, meal.id);
+                  nav(`/track/day/${day.id}`);
                 }}
-                normalizeOnBlur={normalizeIngredientName}
-                onNormalized={(name) => {
-                  setMealName(name);
-                  void renameMeal(day.id, meal.id, name);
-                  markSaved('mealName');
-                }}
-                onBlur={() => {
-                  void renameMeal(day.id, meal.id, normalizeIngredientName(mealName));
-                  markSaved('mealName');
-                }}
-              />
-              <div className={recipes.stack.row}>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => {
-                    void removeMeal(day.id, meal.id);
-                    nav(`/track/day/${day.id}`);
+              >
+                Delete meal and all ingredients
+              </Button>
+            </div>
+            <div className={cn(recipes.stack.sm, 'mt-3')}>
+              <SectionHeading as="h4" noMargin>
+                Ingredients
+              </SectionHeading>
+              <HelperText as="p">Tap an ingredient row to edit values.</HelperText>
+              {meal.ingredients.length ? null : <HelperText as="p">No items</HelperText>}
+              {meal.ingredients.map((i) => (
+                <ListRow
+                  key={i.id}
+                  title={i.name}
+                  meta={
+                    <MacroSummaryLine
+                      calories={i.calories}
+                      protein={i.protein}
+                      carbs={i.carbs}
+                      fat={i.fat}
+                    />
+                  }
+                  actions={
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void removeIngredient(day.id, meal.id, i.id);
+                        track('meal.ingredient.deleted', { ingredientId: i.id });
+                      }}
+                    >
+                      Delete ingredient
+                    </Button>
+                  }
+                  onOpen={() => {
+                    setEditingId(i.id);
+                    setDraftSource('manual');
+                    setEntryTab('manual');
+                    setDraft({
+                      name: i.name,
+                      weight: i.weight,
+                      calories: i.calories,
+                      fat: i.fat,
+                      saturatedFat: i.saturatedFat,
+                      carbs: i.carbs,
+                      fiber: i.fiber,
+                      protein: i.protein,
+                    });
                   }}
-                >
-                  Delete meal and all ingredients
-                </Button>
-              </div>
-              <div className={cn(recipes.stack.sm, 'mt-3')}>
-                <SectionHeading as="h4" noMargin>
-                  Ingredients
-                </SectionHeading>
-                <HelperText as="p">Tap an ingredient row to edit values.</HelperText>
-                {meal.ingredients.length ? null : <HelperText as="p">No items</HelperText>}
-                {meal.ingredients.map((i) => (
-                  <ListRow
-                    key={i.id}
-                    title={i.name}
-                    meta={
-                      <MacroSummaryLine
-                        calories={i.calories}
-                        protein={i.protein}
-                        carbs={i.carbs}
-                        fat={i.fat}
-                      />
-                    }
-                    actions={
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void removeIngredient(day.id, meal.id, i.id);
-                          track('meal.ingredient.deleted', { ingredientId: i.id });
-                        }}
-                      >
-                        Delete ingredient
-                      </Button>
-                    }
-                    onOpen={() => {
-                      setEditingId(i.id);
-                      setDraftSource('manual');
-                      setEntryTab('manual');
-                      setDraft({
-                        name: i.name,
-                        weight: i.weight,
-                        calories: i.calories,
-                        fat: i.fat,
-                        saturatedFat: i.saturatedFat,
-                        carbs: i.carbs,
-                        fiber: i.fiber,
-                        protein: i.protein,
-                      });
-                    }}
-                  />
-                ))}
-              </div>
+                />
+              ))}
             </div>
           </SectionCard>
         }
