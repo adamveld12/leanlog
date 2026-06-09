@@ -67,6 +67,7 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
+      'react-hooks/exhaustive-deps': 'error',
       'react-refresh/only-export-components': 'off',
     },
   },
