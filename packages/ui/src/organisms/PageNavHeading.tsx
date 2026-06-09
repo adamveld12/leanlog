@@ -44,12 +44,14 @@ export function PageNavHeading({
         <div className={cn(recipes.stack.row, recipes.stack.between, 'w-full')}>
           <div className={cn(recipes.stack.row, 'min-w-0')}>
             {backHref ? (
-              <div className="md:inline-flex max-[512px]:hidden">
+              <div className="min-[512px]:inline-flex max-[512px]:hidden">
                 {renderLink({ href: backHref, label: backLabel })}
               </div>
             ) : null}
             <PageTitle>{title}</PageTitle>
-            {subtitle ? <div className="px-5 md:inline max-[512px]:hidden">{subtitle}</div> : null}
+            {subtitle ? (
+              <div className="px-4 min-[512px]:inline max-[512px]:hidden">{subtitle}</div>
+            ) : null}
           </div>
           <div className={cn(recipes.stack.row, 'shrink-0')}>
             {renderLink({ href: profileHref, label: profileLabel })}

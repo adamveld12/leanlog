@@ -110,7 +110,6 @@ export function IngredientEntryCard({
             value={value.fiber}
             onChange={(n) => setNum('fiber', n)}
             onBlur={() => roundField('fiber')}
-            labelClassName="text-[11px]"
             inputClassName={fiberInvalid ? 'border-[var(--ll-danger)]' : ''}
           />
         </div>
