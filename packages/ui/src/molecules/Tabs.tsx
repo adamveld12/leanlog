@@ -1,4 +1,6 @@
 import { Button } from '../atoms/Button';
+import { cn } from '../styles/cn';
+import { recipes } from '../styles/recipes';
 
 type Tab = { key: string; label: string };
 type TabsProps = { tabs: Tab[]; active: string; onChange: (key: string) => void };
@@ -18,7 +20,7 @@ export function Tabs({ tabs, active, onChange }: TabsProps) {
           aria-selected={active === tab.key}
           variant={active === tab.key ? 'primary' : 'subtle'}
           size="sm"
-          className="my-0 h-[34px] flex-1 rounded-[8px]"
+          className={cn('h-10 flex-1', recipes.radius.controlInner)}
           onClick={() => onChange(tab.key)}
         >
           {tab.label}

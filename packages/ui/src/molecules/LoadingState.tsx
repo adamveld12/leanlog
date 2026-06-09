@@ -9,7 +9,7 @@ type LoadingStateProps = { label?: string; size?: 'sm' | 'md' | 'lg' };
 export function LoadingState({ label, size = 'lg' }: LoadingStateProps) {
   return (
     <AnalyticsScope properties={{ molecule: 'LoadingState' }}>
-      <div className={cn(recipes.stack.sm, 'items-center py-8')}>
+      <div className={cn(recipes.stack.sm, 'items-center py-6')}>
         <Spinner size={size} />
         {label ? <HelperText as="p">{label}</HelperText> : null}
       </div>

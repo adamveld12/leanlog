@@ -35,7 +35,7 @@ export function ListRow({
         className={cn(
           recipes.stack.row,
           recipes.stack.between,
-          'rounded-[10px] px-1.5 py-0 hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]',
+          'min-h-[44px] rounded-[10px] px-1.5 py-0 hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]',
           onOpen && 'cursor-pointer',
           className,
         )}
@@ -44,7 +44,7 @@ export function ListRow({
         onClick={onOpen}
         onKeyDown={onKeyDown}
       >
-        <div className={recipes.stack.sm}>
+        <div className={recipes.stack.xs}>
           <Text as="span" className="font-medium">
             {title}
           </Text>
