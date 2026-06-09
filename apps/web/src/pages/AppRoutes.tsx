@@ -864,7 +864,7 @@ function MealEdit() {
             <video
               ref={videoRef}
               aria-label="Nutrition label viewfinder"
-              className="w-full rounded-[10px] border border-[var(--ll-line)]"
+              className={cn(recipes.radius.control, 'w-full border border-[var(--ll-line)]')}
               autoPlay
               playsInline
               muted
