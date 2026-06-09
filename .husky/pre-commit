@@ -1,3 +1,4 @@
 pnpm -r lint
+pnpm react-lint
 pnpm design:audit
 pnpm lint-staged

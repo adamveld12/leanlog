@@ -21,7 +21,8 @@
     "dev:api": "pnpm --filter @leanlog/web dev:api",
     "dev:db:migrate": "pnpm --filter @leanlog/web dev:db:migrate",
     "dev:db:reset": "pnpm --filter @leanlog/web dev:db:reset",
-    "dev:reset": "pnpm --filter @leanlog/web dev:reset"
+    "dev:reset": "pnpm --filter @leanlog/web dev:reset",
+    "react-lint": "react-doctor --yes --verbose --diff"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -39,6 +40,7 @@
     "jsdom": "^29.0.1",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
+    "react-doctor": "0.5.0",
     "vitest": "^4.1.0"
   },
   "lint-staged": {
