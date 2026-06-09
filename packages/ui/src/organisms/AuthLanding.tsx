@@ -34,7 +34,7 @@ export function AuthLanding({
               src={iconSrc}
               alt=""
               aria-hidden
-              className="h-10 w-10 rounded-[10px] border border-[var(--ll-line)]"
+              className={cn(recipes.radius.control, 'h-10 w-10 border border-[var(--ll-line)]')}
             />
             <PageTitle hero>{appName}</PageTitle>
           </div>
@@ -43,7 +43,7 @@ export function AuthLanding({
           </Text>
           <div className="pt-2 [&_.inline-flex]:w-full md:[&_.inline-flex]:w-auto">{cta}</div>
         </Card>
-        <Card className={cn(recipes.stack.sm, 'p-4 md:p-5')} aria-label="Product highlights">
+        <Card className={cn(recipes.stack.sm, 'p-4 md:p-5')}>
           <Text as="h2" variant="subheading">
             What is lean log?
           </Text>
