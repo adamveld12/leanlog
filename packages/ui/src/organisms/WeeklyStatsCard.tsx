@@ -4,7 +4,6 @@ import { AnalyticsScope } from '../analytics';
 import { SectionCard } from '../molecules/SectionCard';
 import { StatMetric } from '../molecules/StatMetric';
 import { Tabs } from '../molecules/Tabs';
-import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
 export type StatsData = {
@@ -28,8 +27,8 @@ export type WeeklyStatsCardProps = {
 };
 
 const TABS = [
-  { key: 'weekly', label: 'Weekly' },
-  { key: 'overall', label: 'Overall' },
+  { key: 'weekly', label: 'Weekly', panelId: 'weekly-stats-panel' },
+  { key: 'overall', label: 'Overall', panelId: 'overall-stats-panel' },
 ];
 
 export function WeeklyStatsCard({
@@ -45,9 +44,14 @@ export function WeeklyStatsCard({
   return (
     <AnalyticsScope properties={{ organism: 'WeeklyStatsCard' }}>
       <SectionCard title="Statistics">
-        <Tabs tabs={TABS} active={tab} onChange={setTab} />
+        <Tabs tabs={TABS} active={tab} onChange={setTab} label="Stats period" />
 
-        <div className={cn(recipes.stack.lg, 'mt-3')}>
+        <div
+          role="tabpanel"
+          id={tab === 'weekly' ? 'weekly-stats-panel' : 'overall-stats-panel'}
+          aria-labelledby={tab === 'weekly' ? 'weekly-stats-panel-tab' : 'overall-stats-panel-tab'}
+          className={recipes.stack.lg}
+        >
           <StatMetric
             label="Macro Accuracy"
             value={hasDays ? `${stats.accuracyOverall}%` : '--'}

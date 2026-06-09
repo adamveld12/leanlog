@@ -10,7 +10,11 @@ const meta: Meta<typeof AuthLanding> = {
     appName: 'LeanLog',
     subtitle: 'A quiet, fast nutrition tracker for meals, calories, and macros.',
     highlights: ['Log meals quickly', 'Track calories and macros', 'Keep your data portable'],
-    cta: <Button variant="primary">Sign in with Google</Button>,
+    cta: (
+      <Button variant="primary" fullWidth className="md:w-auto">
+        Sign in with Google
+      </Button>
+    ),
   },
 };
 
@@ -34,6 +38,10 @@ export const CustomApp: Story = {
     appName: 'NutriTrack',
     subtitle: 'Simple, fast, and private nutrition tracking.',
     highlights: ['Fast logging', 'Macro breakdown', 'Export your data'],
-    cta: <Button variant="primary">Get started</Button>,
+    cta: (
+      <Button variant="primary" fullWidth className="md:w-auto">
+        Get started
+      </Button>
+    ),
   },
 };

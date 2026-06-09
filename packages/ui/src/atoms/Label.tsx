@@ -1,5 +1,6 @@
 import type { LabelHTMLAttributes, PropsWithChildren } from 'react';
 import { cn } from '../styles/cn';
+import { recipes } from '../styles/recipes';
 
 export function Label({
   children,
@@ -7,13 +8,7 @@ export function Label({
   ...props
 }: PropsWithChildren<LabelHTMLAttributes<HTMLLabelElement>>) {
   return (
-    <label
-      className={cn(
-        'flex flex-col gap-1.5 text-xs font-medium text-[var(--ll-text-muted)]',
-        className,
-      )}
-      {...props}
-    >
+    <label className={cn('flex flex-col gap-1.5', recipes.text.label, className)} {...props}>
       {children}
     </label>
   );

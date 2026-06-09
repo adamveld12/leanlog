@@ -46,7 +46,7 @@ export function ListSectionCard({
               <Button
                 size="sm"
                 variant="danger"
-                className="my-0 min-w-[72px] shrink-0 rounded-[10px] px-3"
+                className="min-w-[72px] shrink-0 px-3"
                 onClick={(e) => {
                   e.stopPropagation();
                   item.onDelete?.();

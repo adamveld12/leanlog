@@ -252,7 +252,7 @@ export function MonthCalendarCard({
         </div>
 
         {emptyHint && (
-          <HelperText as="p" className="mt-3 text-center">
+          <HelperText as="p" className="text-center">
             {emptyHint}
           </HelperText>
         )}

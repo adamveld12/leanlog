@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { AnalyticsScope } from '../analytics';
 import { Card } from '../atoms/Card';
 import { PageTitle } from '../atoms/PageTitle';
+import { SectionHeading } from '../atoms/SectionHeading';
 import { Text } from '../atoms/Text';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
@@ -12,7 +13,7 @@ export type AuthLandingProps = {
   subtitle?: string;
   cta: ReactNode;
   pricing?: ReactNode;
-  highlights?: string[];
+  highlights?: ReactNode[];
 };
 
 export function AuthLanding({
@@ -34,44 +35,37 @@ export function AuthLanding({
               src={iconSrc}
               alt=""
               aria-hidden
-              className="h-10 w-10 rounded-[10px] border border-[var(--ll-line)]"
+              className={cn(recipes.radius.control, 'h-10 w-10 border border-[var(--ll-line)]')}
             />
             <PageTitle hero>{appName}</PageTitle>
           </div>
           <Text as="p" variant="pageSubtitle" className="leading-6">
             {subtitle}
           </Text>
-          <div className="pt-2 [&_.inline-flex]:w-full md:[&_.inline-flex]:w-auto">{cta}</div>
+          <div className="pt-2">{cta}</div>
         </Card>
-        <Card className={cn(recipes.stack.sm, 'p-4 md:p-5')} aria-label="Product highlights">
-          <Text
-            as="h2"
-            className="text-base font-semibold normal-case tracking-tight text-[var(--ll-text)]"
-          >
+        <Card className={cn(recipes.stack.sm, 'p-4 md:p-5')}>
+          <Text as="h2" variant="subheading">
             What is lean log?
           </Text>
-          <Text as="p" variant="sectionHeading">
+          <SectionHeading as="h3" noMargin>
             What you get
-          </Text>
+          </SectionHeading>
           <ul className={cn(recipes.stack.sm, 'm-0 list-none p-0')} aria-label="Product highlights">
-            {highlights.map((highlight) => (
-              <li
-                key={highlight}
-                className={cn(
-                  recipes.stack.row,
-                  'rounded-[10px] border border-[var(--ll-line)] px-3 py-2 text-sm font-medium before:block before:h-1.5 before:w-1.5 before:rounded-[999px] before:bg-[var(--ll-text-muted)]',
-                )}
-              >
-                {highlight}
+            {highlights.map((highlight, index) => (
+              <li key={index} className={cn(recipes.stack.row, recipes.listItem)}>
+                <Text as="span" variant="body">
+                  {highlight}
+                </Text>
               </li>
             ))}
           </ul>
         </Card>
         {pricing ? (
           <Card className={cn(recipes.stack.sm, 'p-4 md:p-5')}>
-            <Text as="h2" variant="sectionHeading">
+            <SectionHeading as="h2" noMargin>
               Pricing
-            </Text>
+            </SectionHeading>
             {pricing}
           </Card>
         ) : null}

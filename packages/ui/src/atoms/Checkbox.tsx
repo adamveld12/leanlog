@@ -2,6 +2,7 @@ import type { InputHTMLAttributes, ReactNode } from 'react';
 import { useAnalytics } from '../analytics';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
+import { Text } from './Text';
 
 type CheckboxBaseProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>;
 
@@ -19,7 +20,8 @@ export function Checkbox({
 }: CheckboxProps) {
   const track = useAnalytics();
   return (
-    <label className="-m-3 flex items-center gap-2 p-3 text-sm font-medium text-[var(--ll-text)]">
+    // -m-3/p-3 expands touch target to 44px
+    <label className={cn(recipes.stack.row, '-m-3 p-3')}>
       <input
         type="checkbox"
         name={name}
@@ -36,7 +38,11 @@ export function Checkbox({
         }}
         {...props}
       />
-      {label ? <span>{label}</span> : null}
+      {label ? (
+        <Text as="span" variant="body">
+          {label}
+        </Text>
+      ) : null}
     </label>
   );
 }

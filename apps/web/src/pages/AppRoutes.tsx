@@ -14,6 +14,7 @@ import {
   BodyInfoCard,
   Button,
   CalorieTargetCard,
+  cn,
   DailyTotalsCard,
   DayDetailTemplate,
   ErrorTemplate,
@@ -35,6 +36,7 @@ import {
   NumberInput,
   ProfileTemplate,
   QuickActionsCard,
+  recipes,
   ScanReviewModal,
   SectionCard,
   SectionHeading,
@@ -122,7 +124,7 @@ type RouteLoadState = { dayId: string; status: RouteLoadStatus; error: string };
 
 function PageLoadingState({ label }: { label: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className={cn(recipes.stack.centerFull, 'min-h-screen')}>
       <LoadingState label={label} />
     </div>
   );
@@ -173,7 +175,9 @@ function LandingPage() {
           iconSrc="/icon-192.png"
           cta={
             <SignInButton mode="modal">
-              <Button>Sign in / Sign up</Button>
+              <Button fullWidth className="md:w-auto">
+                Sign in / Sign up
+              </Button>
             </SignInButton>
           }
           pricing={<PricingTable />}
@@ -434,7 +438,7 @@ function DayDetail() {
         };
       })}
       mealsControls={
-        <div className="flex flex-col gap-2.5 mb-5">
+        <div className={cn(recipes.stack.sm, 'mb-5')}>
           <Button
             className="w-full"
             variant="secondary"
@@ -449,7 +453,7 @@ function DayDetail() {
             ✎ Edit meal target
           </Button>
           {isEditingMealTarget ? (
-            <div className="flex items-center gap-2">
+            <div className={recipes.stack.row}>
               <NumberInput
                 label="Meal count target"
                 value={draftMealCountTarget}
@@ -725,7 +729,7 @@ function MealEdit() {
                 markSaved('mealName');
               }}
             />
-            <div className="flex items-center gap-2">
+            <div className={recipes.stack.row}>
               <Button
                 size="sm"
                 variant="danger"
@@ -737,7 +741,7 @@ function MealEdit() {
                 Delete meal and all ingredients
               </Button>
             </div>
-            <div className="flex flex-col gap-2.5 mt-3">
+            <div className={cn(recipes.stack.sm, 'mt-3')}>
               <SectionHeading as="h4" noMargin>
                 Ingredients
               </SectionHeading>
@@ -789,12 +793,16 @@ function MealEdit() {
           </SectionCard>
         }
         ingredientSection={
-          <div className="flex flex-col gap-4">
+          <div className={recipes.stack.lg}>
             <Tabs
               tabs={[
-                { key: 'manual', label: 'Manual Entry' },
-                { key: 'scan', label: 'Label Scan' },
-                { key: 'database', label: 'Nutrition Database' },
+                { key: 'manual', label: 'Manual Entry', panelId: 'ingredient-manual-panel' },
+                { key: 'scan', label: 'Label Scan', panelId: 'ingredient-scan-panel' },
+                {
+                  key: 'database',
+                  label: 'Nutrition Database',
+                  panelId: 'ingredient-database-panel',
+                },
               ]}
               active={entryTab}
               onChange={(key) => {
@@ -802,40 +810,47 @@ function MealEdit() {
                 if (next === 'database') track('meal.ingredient.database.viewed', {});
                 setEntryTab(next);
               }}
+              label="Ingredient entry method"
             />
-            {entryTab === 'manual' ? (
-              <IngredientEntryCard
-                value={draft}
-                saved={saved.ingredientForm}
-                submitLabel={editingId ? 'Update' : 'Add'}
-                onChange={(next) => {
-                  markDirty('ingredientForm');
-                  setDraft(next);
-                }}
-                onSubmit={saveIngredient}
-                normalizeNameOnBlur={normalizeIngredientName}
-              />
-            ) : null}
-            {entryTab === 'scan' ? (
-              <LabelScanCard
-                value={scanForm}
-                loading={scanLoading}
-                error={scanError || cameraError}
-                onChange={setScanForm}
-                onScan={openCamera}
-                normalizeNameOnBlur={normalizeIngredientName}
-              />
-            ) : null}
-            {entryTab === 'database' ? (
-              <SectionCard>
-                <div className="py-6 text-center">
-                  <SectionHeading as="h4">Coming soon</SectionHeading>
-                  <Text as="p" variant="meta">
-                    Instantly look up any ingredient. Speed up your meal logging.
-                  </Text>
-                </div>
-              </SectionCard>
-            ) : null}
+            <div
+              role="tabpanel"
+              id={`ingredient-${entryTab}-panel`}
+              aria-labelledby={`ingredient-${entryTab}-panel-tab`}
+            >
+              {entryTab === 'manual' ? (
+                <IngredientEntryCard
+                  value={draft}
+                  saved={saved.ingredientForm}
+                  submitLabel={editingId ? 'Update' : 'Add'}
+                  onChange={(next) => {
+                    markDirty('ingredientForm');
+                    setDraft(next);
+                  }}
+                  onSubmit={saveIngredient}
+                  normalizeNameOnBlur={normalizeIngredientName}
+                />
+              ) : null}
+              {entryTab === 'scan' ? (
+                <LabelScanCard
+                  value={scanForm}
+                  loading={scanLoading}
+                  error={scanError || cameraError}
+                  onChange={setScanForm}
+                  onScan={openCamera}
+                  normalizeNameOnBlur={normalizeIngredientName}
+                />
+              ) : null}
+              {entryTab === 'database' ? (
+                <SectionCard>
+                  <div className="py-6 text-center">
+                    <SectionHeading as="h4">Coming soon</SectionHeading>
+                    <Text as="p" variant="meta">
+                      Instantly look up any ingredient. Speed up your meal logging.
+                    </Text>
+                  </div>
+                </SectionCard>
+              ) : null}
+            </div>
           </div>
         }
       >
@@ -857,16 +872,16 @@ function MealEdit() {
             setCameraOpen(false);
           }}
         >
-          <div className="flex flex-col gap-2.5">
+          <div className={recipes.stack.sm}>
             <video
               ref={videoRef}
               aria-label="Nutrition label viewfinder"
-              className="w-full rounded-[10px] border border-[var(--ll-line)]"
+              className={cn(recipes.radius.control, 'w-full border border-[var(--ll-line)]')}
               autoPlay
               playsInline
               muted
             />
-            <div className="flex items-center gap-2 justify-between">
+            <div className={cn(recipes.stack.row, recipes.stack.between)}>
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -1102,7 +1117,7 @@ function ProfilePage() {
       />
 
       <SectionCard title="Theme" saved={saved.theme}>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className={cn(recipes.stack.row, 'flex-wrap')}>
           {(['system', 'light', 'dark'] as const).map((t) => (
             <Button
               key={t}

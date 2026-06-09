@@ -7,8 +7,14 @@ function AllVariants() {
       <Text variant="title" as="h1">
         title — Today&apos;s Log
       </Text>
+      <Text variant="subheading" as="h3">
+        subheading — Modal / panel title
+      </Text>
       <Text variant="sectionHeading" as="h2">
         sectionHeading — Macros
+      </Text>
+      <Text variant="label" as="span">
+        label — Form field label
       </Text>
       <Text variant="pageSubtitle" as="p">
         pageSubtitle — Track your daily nutrition

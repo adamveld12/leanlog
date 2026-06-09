@@ -41,10 +41,10 @@ const RANGE_DAYS: Record<Exclude<WeightTrendRange, 'all'>, number> = {
 };
 
 const RANGE_TABS = [
-  { key: '7d', label: '7d' },
-  { key: '30d', label: '30d' },
-  { key: '90d', label: '90d' },
-  { key: 'all', label: 'All' },
+  { key: '7d', label: '7d', panelId: 'weight-trend-7d-panel' },
+  { key: '30d', label: '30d', panelId: 'weight-trend-30d-panel' },
+  { key: '90d', label: '90d', panelId: 'weight-trend-90d-panel' },
+  { key: 'all', label: 'All', panelId: 'weight-trend-all-panel' },
 ];
 
 const EMPTY_TEXT = 'Start logging your weight on the day page! Your progress will appear here';
@@ -82,8 +82,14 @@ export function WeightTrendCard({
           tabs={RANGE_TABS}
           active={range}
           onChange={(key) => setRange(key as WeightTrendRange)}
+          label="Weight trend range"
         />
-        <div className="relative mt-3 h-56 w-full">
+        <div
+          role="tabpanel"
+          id={`weight-trend-${range}-panel`}
+          aria-labelledby={`weight-trend-${range}-panel-tab`}
+          className="relative h-56 w-full"
+        >
           <div
             className="absolute inset-0"
             role="img"

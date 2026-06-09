@@ -69,18 +69,29 @@ export const WithTabs: Story = {
       <div className={recipes.stack.lg}>
         <Tabs
           tabs={[
-            { key: 'manual', label: 'Manual Entry' },
-            { key: 'scan', label: 'Label Scan' },
-            { key: 'database', label: 'Nutrition Database' },
+            { key: 'manual', label: 'Manual Entry', panelId: 'story-ingredient-manual-panel' },
+            { key: 'scan', label: 'Label Scan', panelId: 'story-ingredient-scan-panel' },
+            {
+              key: 'database',
+              label: 'Nutrition Database',
+              panelId: 'story-ingredient-database-panel',
+            },
           ]}
           active="scan"
           onChange={() => undefined}
+          label="Ingredient entry method"
         />
-        <LabelScanCard
-          value={{ name: '', mode: 'weight', amount: 0 }}
-          onChange={() => undefined}
-          onScan={() => undefined}
-        />
+        <div
+          role="tabpanel"
+          id="story-ingredient-scan-panel"
+          aria-labelledby="story-ingredient-scan-panel-tab"
+        >
+          <LabelScanCard
+            value={{ name: '', mode: 'weight', amount: 0 }}
+            onChange={() => undefined}
+            onScan={() => undefined}
+          />
+        </div>
       </div>
     ),
   },
