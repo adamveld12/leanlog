@@ -11,7 +11,13 @@ function Typography() {
     <div className="flex min-w-[320px] flex-col gap-4">
       <PageTitle>Page title</PageTitle>
       <PageTitle hero>Hero title</PageTitle>
+      <Text as="h3" variant="subheading">
+        Subheading — modal / panel title
+      </Text>
       <SectionHeading>Section heading</SectionHeading>
+      <Text as="span" variant="label">
+        Label — form field label
+      </Text>
       <HelperText>Helper text explains a constraint without competing with totals.</HelperText>
       <WarningText>Warning text explains a validation issue.</WarningText>
       <Text as="p" variant="body">
