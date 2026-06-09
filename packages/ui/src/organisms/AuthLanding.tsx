@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { AnalyticsScope } from '../analytics';
 import { Card } from '../atoms/Card';
 import { PageTitle } from '../atoms/PageTitle';
+import { SectionHeading } from '../atoms/SectionHeading';
 import { Text } from '../atoms/Text';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
@@ -47,9 +48,9 @@ export function AuthLanding({
           <Text as="h2" variant="subheading">
             What is lean log?
           </Text>
-          <Text as="h3" variant="sectionHeading">
+          <SectionHeading as="h3" noMargin>
             What you get
-          </Text>
+          </SectionHeading>
           <ul className={cn(recipes.stack.sm, 'm-0 list-none p-0')} aria-label="Product highlights">
             {highlights.map((highlight) => (
               <li key={highlight} className={cn(recipes.stack.row, recipes.listItem)}>
@@ -60,9 +61,9 @@ export function AuthLanding({
         </Card>
         {pricing ? (
           <Card className={cn(recipes.stack.sm, 'p-4 md:p-5')}>
-            <Text as="h2" variant="sectionHeading">
+            <SectionHeading as="h2" noMargin>
               Pricing
-            </Text>
+            </SectionHeading>
             {pricing}
           </Card>
         ) : null}

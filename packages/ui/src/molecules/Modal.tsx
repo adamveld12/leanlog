@@ -89,20 +89,18 @@ export function Modal({
 
   return (
     <AnalyticsScope properties={{ molecule: 'Modal' }}>
-      <div
-        ref={dialogRef}
-        // tabIndex allows the container to receive focus when no child is focusable.
-        tabIndex={-1}
-        className="fixed inset-0 z-20 grid place-items-center bg-black/45 p-4 outline-none"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-      >
+      <div className="fixed inset-0 z-20 grid place-items-center bg-black/45 p-4">
         <div
+          ref={dialogRef}
+          // tabIndex allows the panel to receive focus when no child is focusable.
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
           className={cn(
             recipes.radius.card,
             recipes.surface.card,
-            'w-full max-w-[560px] p-4 text-[var(--ll-text)] shadow-[0_10px_24px_rgb(0_0_0/0.12)]',
+            'w-full max-w-[560px] p-4 text-[var(--ll-text)] outline-none shadow-[0_10px_24px_rgb(0_0_0/0.12)]',
           )}
         >
           <div className={cn(recipes.stack.rowBetween, 'mb-3')}>
