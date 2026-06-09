@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { AnalyticsScope } from '../analytics';
 import { Button } from '../atoms/Button';
 import { Card } from '../atoms/Card';
+import { PageTitle } from '../atoms/PageTitle';
 import { Text } from '../atoms/Text';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
@@ -32,9 +33,7 @@ export function ErrorTemplate({
         <Card>
           <div className={cn(recipes.stack.lg, 'py-4')}>
             <div role="alert" className={recipes.stack.sm}>
-              <Text as="h1" variant="title">
-                {title}
-              </Text>
+              <PageTitle>{title}</PageTitle>
               <Text as="p">{message}</Text>
             </div>
             {details ? <div>{details}</div> : null}

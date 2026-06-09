@@ -83,7 +83,7 @@ export function WeightTrendCard({
           active={range}
           onChange={(key) => setRange(key as WeightTrendRange)}
         />
-        <div className="relative mt-3 h-56 w-full">
+        <div className="relative h-56 w-full">
           <div
             className="absolute inset-0"
             role="img"

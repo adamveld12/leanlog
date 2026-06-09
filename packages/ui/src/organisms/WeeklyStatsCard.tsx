@@ -4,7 +4,6 @@ import { AnalyticsScope } from '../analytics';
 import { SectionCard } from '../molecules/SectionCard';
 import { StatMetric } from '../molecules/StatMetric';
 import { Tabs } from '../molecules/Tabs';
-import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
 export type StatsData = {
@@ -47,7 +46,7 @@ export function WeeklyStatsCard({
       <SectionCard title="Statistics">
         <Tabs tabs={TABS} active={tab} onChange={setTab} />
 
-        <div className={cn(recipes.stack.lg, 'mt-3')}>
+        <div className={recipes.stack.lg}>
           <StatMetric
             label="Macro Accuracy"
             value={hasDays ? `${stats.accuracyOverall}%` : '--'}

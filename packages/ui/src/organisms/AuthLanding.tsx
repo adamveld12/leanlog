@@ -44,24 +44,15 @@ export function AuthLanding({
           <div className="pt-2 [&_.inline-flex]:w-full md:[&_.inline-flex]:w-auto">{cta}</div>
         </Card>
         <Card className={cn(recipes.stack.sm, 'p-4 md:p-5')} aria-label="Product highlights">
-          <Text
-            as="h2"
-            className="text-base font-semibold normal-case tracking-tight text-[var(--ll-text)]"
-          >
+          <Text as="h2" variant="subheading">
             What is lean log?
           </Text>
-          <Text as="p" variant="sectionHeading">
+          <Text as="h3" variant="sectionHeading">
             What you get
           </Text>
           <ul className={cn(recipes.stack.sm, 'm-0 list-none p-0')} aria-label="Product highlights">
             {highlights.map((highlight) => (
-              <li
-                key={highlight}
-                className={cn(
-                  recipes.stack.row,
-                  'rounded-[10px] border border-[var(--ll-line)] px-3 py-2 text-sm font-medium before:block before:h-1.5 before:w-1.5 before:rounded-[999px] before:bg-[var(--ll-text-muted)]',
-                )}
-              >
+              <li key={highlight} className={cn(recipes.stack.row, recipes.listItem)}>
                 {highlight}
               </li>
             ))}
