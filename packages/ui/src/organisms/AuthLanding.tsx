@@ -13,7 +13,7 @@ export type AuthLandingProps = {
   subtitle?: string;
   cta: ReactNode;
   pricing?: ReactNode;
-  highlights?: string[];
+  highlights?: ReactNode[];
 };
 
 export function AuthLanding({
@@ -52,8 +52,8 @@ export function AuthLanding({
             What you get
           </SectionHeading>
           <ul className={cn(recipes.stack.sm, 'm-0 list-none p-0')} aria-label="Product highlights">
-            {highlights.map((highlight) => (
-              <li key={highlight} className={cn(recipes.stack.row, recipes.listItem)}>
+            {highlights.map((highlight, index) => (
+              <li key={index} className={cn(recipes.stack.row, recipes.listItem)}>
                 <Text as="span" variant="body">
                   {highlight}
                 </Text>
