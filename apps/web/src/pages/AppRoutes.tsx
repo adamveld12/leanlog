@@ -794,9 +794,13 @@ function MealEdit() {
           <div className={recipes.stack.lg}>
             <Tabs
               tabs={[
-                { key: 'manual', label: 'Manual Entry' },
-                { key: 'scan', label: 'Label Scan' },
-                { key: 'database', label: 'Nutrition Database' },
+                { key: 'manual', label: 'Manual Entry', panelId: 'ingredient-manual-panel' },
+                { key: 'scan', label: 'Label Scan', panelId: 'ingredient-scan-panel' },
+                {
+                  key: 'database',
+                  label: 'Nutrition Database',
+                  panelId: 'ingredient-database-panel',
+                },
               ]}
               active={entryTab}
               onChange={(key) => {
@@ -806,39 +810,45 @@ function MealEdit() {
               }}
               label="Ingredient entry method"
             />
-            {entryTab === 'manual' ? (
-              <IngredientEntryCard
-                value={draft}
-                saved={saved.ingredientForm}
-                submitLabel={editingId ? 'Update' : 'Add'}
-                onChange={(next) => {
-                  markDirty('ingredientForm');
-                  setDraft(next);
-                }}
-                onSubmit={saveIngredient}
-                normalizeNameOnBlur={normalizeIngredientName}
-              />
-            ) : null}
-            {entryTab === 'scan' ? (
-              <LabelScanCard
-                value={scanForm}
-                loading={scanLoading}
-                error={scanError || cameraError}
-                onChange={setScanForm}
-                onScan={openCamera}
-                normalizeNameOnBlur={normalizeIngredientName}
-              />
-            ) : null}
-            {entryTab === 'database' ? (
-              <SectionCard>
-                <div className="py-6 text-center">
-                  <SectionHeading as="h4">Coming soon</SectionHeading>
-                  <Text as="p" variant="meta">
-                    Instantly look up any ingredient. Speed up your meal logging.
-                  </Text>
-                </div>
-              </SectionCard>
-            ) : null}
+            <div
+              role="tabpanel"
+              id={`ingredient-${entryTab}-panel`}
+              aria-labelledby={`ingredient-${entryTab}-panel-tab`}
+            >
+              {entryTab === 'manual' ? (
+                <IngredientEntryCard
+                  value={draft}
+                  saved={saved.ingredientForm}
+                  submitLabel={editingId ? 'Update' : 'Add'}
+                  onChange={(next) => {
+                    markDirty('ingredientForm');
+                    setDraft(next);
+                  }}
+                  onSubmit={saveIngredient}
+                  normalizeNameOnBlur={normalizeIngredientName}
+                />
+              ) : null}
+              {entryTab === 'scan' ? (
+                <LabelScanCard
+                  value={scanForm}
+                  loading={scanLoading}
+                  error={scanError || cameraError}
+                  onChange={setScanForm}
+                  onScan={openCamera}
+                  normalizeNameOnBlur={normalizeIngredientName}
+                />
+              ) : null}
+              {entryTab === 'database' ? (
+                <SectionCard>
+                  <div className="py-6 text-center">
+                    <SectionHeading as="h4">Coming soon</SectionHeading>
+                    <Text as="p" variant="meta">
+                      Instantly look up any ingredient. Speed up your meal logging.
+                    </Text>
+                  </div>
+                </SectionCard>
+              ) : null}
+            </div>
           </div>
         }
       >
