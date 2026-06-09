@@ -10,6 +10,10 @@ on:
       - 'AGENTS.md'
       - '.agents/**'
 
+concurrency:
+  group: design-review-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   claude-design-review:
     runs-on: ubuntu-latest
@@ -24,7 +28,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
-          fetch-depth: 1
+          # Full history so the review can diff against the last-reviewed SHA.
+          fetch-depth: 0
 
       - name: Run Claude advisory design review
         uses: anthropics/claude-code-action@v1
@@ -37,87 +42,86 @@ jobs:
           prompt: |
             You are performing an advisory design-system review for this Leanlog pull request. This is a read-only review — do not modify any files or create branches.
 
-            ## Your Task
+            ## Step 0 — Load prior review state (REQUIRED, do this first)
 
-            Review the PR diff against:
-            - `docs/design-reference.md`
-            - `docs/design-system.md`
-            - `packages/ui/specs/*.md`
-            - `AGENTS.md`
+            Fetch your previous sticky comment on this PR (if any). Its final line contains a machine-readable state trailer:
 
-            ## Review Criteria (9 areas)
+            `<!-- design-review-state {"reviewedSha":"<sha>","findings":["<file>:<rule-id>", ...],"notes":["<note-id>", ...]} -->`
 
-            Check each area in order and update the comment after completing each one:
+            - If the trailer exists, parse it. Set DELTA = `git diff <reviewedSha>..HEAD` — this is the ONLY code you may raise NEW findings on. Code that existed at `reviewedSha` and was not flagged then is APPROVED; never raise a new finding on it, even if you would flag it today.
+            - For each fingerprint in `findings`, check whether it is fixed at HEAD. Report it as resolved (✅) or still open.
+            - If there is no trailer (first run), DELTA = the full PR diff against the base branch.
 
-            1. **Atomic Design tier boundaries** — molecules/organisms/templates must not use raw HTML elements; only atoms may. Check for banned elements (`<small>`, `<p>`, `<span>`, `<h3>`, `<h4>`, `<a>`) outside atoms.
-            2. **Template slot-based architecture** — templates must accept ReactNode slots, not raw data props. App pages must use the appropriate template (DayListTemplate, DayDetailTemplate, MealEditTemplate, ProfileTemplate, LandingTemplate).
-            3. **Recipe-approved class usage** — reusable class strings in `packages/ui` must come from `recipes.ts` tokens. No inline duplication of recipe values.
-            4. **No `.ll-*` classes** — legacy ll-* classes are banned everywhere.
-            5. **Raw control usage** — no raw `<input>`, `<select>`, `<button>`, `<textarea>` outside atom components.
-            6. **Storybook story coverage** — every new component in atoms/, molecules/, organisms/, templates/ needs a `.stories.tsx` file.
-            7. **App page template usage** — app pages must not build layouts manually with AppShell + PageNavHeading; they must use the appropriate template.
-            8. **Analytics scope decoration** — molecules/organisms/templates that contain interactive atoms must wrap them in `<AnalyticsScope>`.
-            9. **Accessibility & mobile-first** — check for missing ARIA labels, keyboard navigation issues, and non-mobile-first layout patterns.
+            ## Step 1 — Deterministic checks (do not re-derive by eye)
 
-            ## Comment Format
+            Run `node scripts/design-system-audit.mjs` and `pnpm -r lint` if dependencies install cleanly (`pnpm install --frozen-lockfile`). Their output IS the Blocking section: report each failure verbatim as `**[Blocking]**`. If they pass, the deterministic areas (recipe class duplication, .ll-* classes, raw controls, banned raw elements, story coverage, off-scale font sizes/radii, control margins) are clean — do not re-litigate them manually.
 
-            Structure your comment exactly like this and update it progressively:
+            ## Step 2 — Judgment review (9 areas, scoped to DELTA)
 
-            ```
-            ### Design System Review
+            Review DELTA against `docs/design-reference.md`, `docs/design-system.md`, `packages/ui/specs/*.md`, and `AGENTS.md`:
 
-            **Status:** Reviewing... [spinner] — N/9 areas checked
+            1. **Atomic Design tier boundaries** — molecules/organisms/templates must not use raw HTML elements carrying text styling; only atoms may.
+            2. **Template slot-based architecture** — templates accept ReactNode slots, not raw data props. App pages use the appropriate template.
+            3. **Recipe-approved class usage** — judgment cases the audit script can't catch (e.g. a recipe value duplicated inline with different ordering).
+            4. **No .ll-* classes** — covered by Step 1; only verify DELTA if the audit could not run.
+            5. **Raw control usage** — covered by Step 1; only verify DELTA if the audit could not run.
+            6. **Storybook story coverage** — every NEW component in atoms/molecules/organisms/templates has a `.stories.tsx`.
+            7. **App page template usage** — app pages must not hand-build layouts that bypass templates.
+            8. **Analytics scope decoration** — molecules/organisms/templates containing interactive atoms wrap them in `<AnalyticsScope>`.
+            9. **Accessibility & mobile-first** — missing ARIA names, keyboard traps, max-width-first breakpoints, touch targets under 44px.
 
-            #### Review Areas
-            - [ ] Atomic Design tier boundaries
-            - [ ] Template slot-based architecture
-            - [ ] Recipe-approved class usage
-            - [ ] No .ll-* classes
-            - [ ] Raw control usage
-            - [ ] Storybook story coverage
-            - [ ] App page template usage
-            - [ ] Analytics scope decoration
-            - [ ] Accessibility & mobile-first
+            ## Finding rules (severity floor — apply strictly)
 
-            #### Findings
-            *(filling in as review progresses)*
-            ```
+            - A finding MUST cite a specific written rule from the docs above (quote or name the section). No citation → it is not a finding.
+            - A finding MUST be on lines changed in DELTA. Pre-existing code is out of scope — do not report it, not even as "advisory" or "worth noting".
+            - `**[Blocking]**` is reserved for Step 1 script failures and unambiguous written-rule violations.
+            - `**[Advisory]**` is for cited-rule violations where remediation involves judgment.
+            - Improvement ideas with no rule citation (refactors, "more durable patterns", forward-looking suggestions) go in an optional **#### Notes** section: maximum 2, one line each, give each a stable kebab-case id, and NEVER repeat a note id already present in the state trailer's `notes` list. Notes do not count as findings.
 
-            After checking each area:
-            - Mark it `[x]` in the checklist
-            - Add any findings under **#### Findings** with this format:
-              - `**[Blocking]** Area name — description` for deterministic lint/audit violations (raw elements, ll-* classes, missing stories, etc.)
-              - `**[Advisory]** Area name — description` for design feedback (naming, structure, pattern suggestions)
-            - Call `mcp__github_comment__update_claude_comment` to update the comment
+            ## Step 3 — Completeness pass (before publishing)
 
-            ## Final Comment Format
+            - For every finding, search the ENTIRE DELTA for other instances of the same pattern and fold them into that one finding with all locations listed. Do not leave sibling instances for a future run.
+            - List every file in DELTA. Any file you have not explicitly considered, re-check now.
+            - Sanity-check each finding against the severity floor; drop anything that fails it.
 
-            When all 9 areas are checked, update the comment to the final format:
+            ## Comment format
 
-            If issues found:
+            Maintain the sticky comment progressively (checklist of the 9 areas, then findings), via `mcp__github_comment__update_claude_comment`. Final format:
+
+            If findings exist:
             ```
             ### Design System Review
 
             **Result:** N finding(s) — B blocking, A advisory
 
             #### Review Areas
-            - [x] all items checked...
+            - [x] ...all 9...
+
+            #### Previously reported
+            - ✅ resolved / ⏳ still open fingerprints from the prior run
 
             #### Findings
-            [list of findings]
+            [findings, each citing the rule violated]
+
+            #### Notes
+            [optional, max 2, non-gating]
 
             #### Summary
-            [1-2 sentence summary of what was reviewed and the overall verdict]
+            [1-2 sentences]
             ```
 
-            If no issues found:
+            If no findings and no open prior findings:
             ```
             ### Design System Review — No Issues Found
 
-            All 9 review areas passed. No blocking or advisory findings.
+            All 9 review areas passed for changes since <reviewedSha or PR base>. No blocking or advisory findings.
 
             #### Review Areas
-            - [x] all items checked...
+            - [x] ...all 9...
             ```
 
-            Always include the job run link at the bottom.
+            Always include the job run link, and ALWAYS end the comment with an updated state trailer on its own line:
+
+            `<!-- design-review-state {"reviewedSha":"<HEAD sha>","findings":[...all fingerprints ever raised, including resolved...],"notes":[...all note ids ever raised...]} -->`
+
+            Fingerprint format: `path/to/file.tsx:<short-rule-id>` (e.g. `packages/ui/src/molecules/Tabs.tsx:radius-token`). Keep fingerprints stable across runs so dedup works.
