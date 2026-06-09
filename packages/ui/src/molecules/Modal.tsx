@@ -21,7 +21,13 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
       >
-        <div className="w-full max-w-[560px] rounded-[14px] border border-[var(--ll-line)] bg-[var(--ll-surface)] p-4 text-[var(--ll-text)] shadow-[0_10px_24px_rgb(0_0_0/0.12)]">
+        <div
+          className={cn(
+            recipes.radius.card,
+            recipes.surface.card,
+            'w-full max-w-[560px] p-4 text-[var(--ll-text)] shadow-[0_10px_24px_rgb(0_0_0/0.12)]',
+          )}
+        >
           <div className={cn(recipes.stack.rowBetween, 'mb-3')}>
             <Text as="h3" id={titleId} variant="subheading">
               {title}

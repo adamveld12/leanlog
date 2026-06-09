@@ -35,7 +35,8 @@ export function ListRow({
         className={cn(
           recipes.stack.row,
           recipes.stack.between,
-          'min-h-[44px] rounded-[10px] px-1.5 py-0 hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]',
+          recipes.radius.control,
+          'min-h-[44px] px-1.5 py-0 hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]',
           onOpen && 'cursor-pointer',
           className,
         )}
