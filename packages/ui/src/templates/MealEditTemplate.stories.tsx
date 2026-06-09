@@ -75,6 +75,7 @@ export const WithTabs: Story = {
           ]}
           active="scan"
           onChange={() => undefined}
+          label="Ingredient entry method"
         />
         <LabelScanCard
           value={{ name: '', mode: 'weight', amount: 0 }}

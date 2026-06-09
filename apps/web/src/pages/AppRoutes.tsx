@@ -804,6 +804,7 @@ function MealEdit() {
                 if (next === 'database') track('meal.ingredient.database.viewed', {});
                 setEntryTab(next);
               }}
+              label="Ingredient entry method"
             />
             {entryTab === 'manual' ? (
               <IngredientEntryCard

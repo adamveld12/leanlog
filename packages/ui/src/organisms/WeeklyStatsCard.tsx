@@ -44,7 +44,7 @@ export function WeeklyStatsCard({
   return (
     <AnalyticsScope properties={{ organism: 'WeeklyStatsCard' }}>
       <SectionCard title="Statistics">
-        <Tabs tabs={TABS} active={tab} onChange={setTab} />
+        <Tabs tabs={TABS} active={tab} onChange={setTab} label="Stats period" />
 
         <div className={recipes.stack.lg}>
           <StatMetric

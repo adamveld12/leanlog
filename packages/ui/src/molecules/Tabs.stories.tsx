@@ -14,6 +14,7 @@ const meta: Meta<typeof Tabs> = {
     tabs,
     active: 'overview',
     onChange: () => {},
+    label: 'Day summary section',
   },
 };
 

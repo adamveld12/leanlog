@@ -82,6 +82,7 @@ export function WeightTrendCard({
           tabs={RANGE_TABS}
           active={range}
           onChange={(key) => setRange(key as WeightTrendRange)}
+          label="Weight trend range"
         />
         <div className="relative h-56 w-full">
           <div
