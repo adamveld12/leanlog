@@ -146,7 +146,7 @@ for (const dir of uiRawTypographyDirs) {
 const layoutTokens = [
   {
     token: 'recipes.calendar.cell',
-    classes: ['my-0', 'flex', 'min-h-[44px]', 'items-center', 'justify-center'],
+    classes: ['flex', 'min-h-[44px]', 'items-center', 'justify-center'],
   },
   {
     token: 'recipes.stack.actions',
@@ -180,7 +180,7 @@ const stringLiteral = /(['"`])((?:\\.|(?!\1).)*)\1/g;
 const layoutSignatures = new Map(); // signature -> Map(file -> key)
 const layoutViolations = []; // { key, message }
 
-for (const dir of uiRawTypographyDirs) {
+for (const dir of [...uiRawTypographyDirs, 'apps/web/src/pages']) {
   for (const file of files(dir).filter((f) => f.endsWith('.tsx') && !f.endsWith('.stories.tsx'))) {
     const text = readFileSync(file, 'utf8');
     for (const m of text.matchAll(stringLiteral)) {
@@ -223,6 +223,51 @@ if (process.env.AUDIT_PRINT_LAYOUT) {
 }
 for (const v of layoutViolations) {
   errors.push(v.message);
+}
+
+// Check: off-scale arbitrary font sizes — the type scale lives in recipes.text.*.
+// Stories are exempt (typography demos); recipes.ts is .ts so naturally excluded.
+const componentSourceDirs = ['packages/ui/src', 'apps/web/src'];
+const arbitraryFontSize = /text-\[\d+(?:\.\d+)?(?:px|rem|em)\]/g;
+for (const dir of componentSourceDirs) {
+  for (const file of files(dir).filter((f) => f.endsWith('.tsx') && !f.endsWith('.stories.tsx'))) {
+    const text = readFileSync(file, 'utf8');
+    for (const m of text.matchAll(arbitraryFontSize)) {
+      if (hasEslintDisable(text, m.index)) continue;
+      errors.push(`Off-scale font size "${m[0]}" (use a recipes.text.* variant): ${file}`);
+    }
+  }
+}
+
+// Check: non-token radii — allowed: 10 (controls), 14 (cards), 999 (pills),
+// 8 (controlInner, nested inside a 10px container with 2px padding only).
+const arbitraryRadius = /rounded(?:-[trbl]{1,2})?-\[([^\]]+)\]/g;
+const allowedRadii = new Set(['10px', '14px', '999px', '8px']);
+for (const dir of componentSourceDirs) {
+  for (const file of files(dir).filter((f) => f.endsWith('.tsx') && !f.endsWith('.stories.tsx'))) {
+    const text = readFileSync(file, 'utf8');
+    for (const m of text.matchAll(arbitraryRadius)) {
+      if (allowedRadii.has(m[1])) continue;
+      if (hasEslintDisable(text, m.index)) continue;
+      errors.push(`Non-token radius "${m[0]}" (allowed: 10/14/999 + nested 8): ${file}`);
+    }
+  }
+}
+
+// Check: obsolete control-margin overrides. Controls carry no outer margins;
+// vertical rhythm comes from stack gaps, so my-0 counter-overrides and the old
+// my-2.5 control margin must not reappear.
+const controlMarginOverride = /\bmy-(?:0|2\.5)\b/g;
+for (const dir of componentSourceDirs) {
+  for (const file of files(dir).filter((f) => f.endsWith('.tsx'))) {
+    const text = readFileSync(file, 'utf8');
+    for (const m of text.matchAll(controlMarginOverride)) {
+      if (hasEslintDisable(text, m.index)) continue;
+      errors.push(
+        `Obsolete control-margin override "${m[0]}" (rhythm comes from stack gaps): ${file}`,
+      );
+    }
+  }
 }
 
 // Check: raw typography tags carrying text styling in story files (use Text/UnitText atoms).
