@@ -14,6 +14,7 @@ import {
   BodyInfoCard,
   Button,
   CalorieTargetCard,
+  cn,
   DailyTotalsCard,
   DayDetailTemplate,
   ErrorTemplate,
@@ -35,6 +36,7 @@ import {
   NumberInput,
   ProfileTemplate,
   QuickActionsCard,
+  recipes,
   ScanReviewModal,
   SectionCard,
   SectionHeading,
@@ -122,7 +124,7 @@ type RouteLoadState = { dayId: string; status: RouteLoadStatus; error: string };
 
 function PageLoadingState({ label }: { label: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className={cn(recipes.stack.centerFull, 'min-h-screen')}>
       <LoadingState label={label} />
     </div>
   );
@@ -434,7 +436,7 @@ function DayDetail() {
         };
       })}
       mealsControls={
-        <div className="flex flex-col gap-2.5 mb-5">
+        <div className={cn(recipes.stack.sm, 'mb-5')}>
           <Button
             className="w-full"
             variant="secondary"
@@ -449,7 +451,7 @@ function DayDetail() {
             ✎ Edit meal target
           </Button>
           {isEditingMealTarget ? (
-            <div className="flex items-center gap-2">
+            <div className={recipes.stack.row}>
               <NumberInput
                 label="Meal count target"
                 value={draftMealCountTarget}
@@ -707,89 +709,91 @@ function MealEdit() {
         }}
         mealSection={
           <SectionCard title="Meal name" saved={saved.mealName}>
-            <HelperText as="p">Name is required before leaving this page.</HelperText>
-            <Input
-              value={mealName}
-              onChange={(e) => {
-                setMealName(e.target.value);
-                markDirty('mealName');
-              }}
-              normalizeOnBlur={normalizeIngredientName}
-              onNormalized={(name) => {
-                setMealName(name);
-                void renameMeal(day.id, meal.id, name);
-                markSaved('mealName');
-              }}
-              onBlur={() => {
-                void renameMeal(day.id, meal.id, normalizeIngredientName(mealName));
-                markSaved('mealName');
-              }}
-            />
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="danger"
-                onClick={() => {
-                  void removeMeal(day.id, meal.id);
-                  nav(`/track/day/${day.id}`);
+            <div className={recipes.stack.sm}>
+              <HelperText as="p">Name is required before leaving this page.</HelperText>
+              <Input
+                value={mealName}
+                onChange={(e) => {
+                  setMealName(e.target.value);
+                  markDirty('mealName');
                 }}
-              >
-                Delete meal and all ingredients
-              </Button>
-            </div>
-            <div className="flex flex-col gap-2.5 mt-3">
-              <SectionHeading as="h4" noMargin>
-                Ingredients
-              </SectionHeading>
-              <HelperText as="p">Tap an ingredient row to edit values.</HelperText>
-              {meal.ingredients.length ? null : <HelperText as="p">No items</HelperText>}
-              {meal.ingredients.map((i) => (
-                <ListRow
-                  key={i.id}
-                  title={i.name}
-                  meta={
-                    <MacroSummaryLine
-                      calories={i.calories}
-                      protein={i.protein}
-                      carbs={i.carbs}
-                      fat={i.fat}
-                    />
-                  }
-                  actions={
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void removeIngredient(day.id, meal.id, i.id);
-                        track('meal.ingredient.deleted', { ingredientId: i.id });
-                      }}
-                    >
-                      Delete ingredient
-                    </Button>
-                  }
-                  onOpen={() => {
-                    setEditingId(i.id);
-                    setDraftSource('manual');
-                    setEntryTab('manual');
-                    setDraft({
-                      name: i.name,
-                      weight: i.weight,
-                      calories: i.calories,
-                      fat: i.fat,
-                      saturatedFat: i.saturatedFat,
-                      carbs: i.carbs,
-                      fiber: i.fiber,
-                      protein: i.protein,
-                    });
+                normalizeOnBlur={normalizeIngredientName}
+                onNormalized={(name) => {
+                  setMealName(name);
+                  void renameMeal(day.id, meal.id, name);
+                  markSaved('mealName');
+                }}
+                onBlur={() => {
+                  void renameMeal(day.id, meal.id, normalizeIngredientName(mealName));
+                  markSaved('mealName');
+                }}
+              />
+              <div className={recipes.stack.row}>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => {
+                    void removeMeal(day.id, meal.id);
+                    nav(`/track/day/${day.id}`);
                   }}
-                />
-              ))}
+                >
+                  Delete meal and all ingredients
+                </Button>
+              </div>
+              <div className={cn(recipes.stack.sm, 'mt-3')}>
+                <SectionHeading as="h4" noMargin>
+                  Ingredients
+                </SectionHeading>
+                <HelperText as="p">Tap an ingredient row to edit values.</HelperText>
+                {meal.ingredients.length ? null : <HelperText as="p">No items</HelperText>}
+                {meal.ingredients.map((i) => (
+                  <ListRow
+                    key={i.id}
+                    title={i.name}
+                    meta={
+                      <MacroSummaryLine
+                        calories={i.calories}
+                        protein={i.protein}
+                        carbs={i.carbs}
+                        fat={i.fat}
+                      />
+                    }
+                    actions={
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void removeIngredient(day.id, meal.id, i.id);
+                          track('meal.ingredient.deleted', { ingredientId: i.id });
+                        }}
+                      >
+                        Delete ingredient
+                      </Button>
+                    }
+                    onOpen={() => {
+                      setEditingId(i.id);
+                      setDraftSource('manual');
+                      setEntryTab('manual');
+                      setDraft({
+                        name: i.name,
+                        weight: i.weight,
+                        calories: i.calories,
+                        fat: i.fat,
+                        saturatedFat: i.saturatedFat,
+                        carbs: i.carbs,
+                        fiber: i.fiber,
+                        protein: i.protein,
+                      });
+                    }}
+                  />
+                ))}
+              </div>
             </div>
           </SectionCard>
         }
         ingredientSection={
-          <div className="flex flex-col gap-4">
+          <div className={recipes.stack.lg}>
             <Tabs
               tabs={[
                 { key: 'manual', label: 'Manual Entry' },
@@ -857,7 +861,7 @@ function MealEdit() {
             setCameraOpen(false);
           }}
         >
-          <div className="flex flex-col gap-2.5">
+          <div className={recipes.stack.sm}>
             <video
               ref={videoRef}
               aria-label="Nutrition label viewfinder"
@@ -866,7 +870,7 @@ function MealEdit() {
               playsInline
               muted
             />
-            <div className="flex items-center gap-2 justify-between">
+            <div className={cn(recipes.stack.row, recipes.stack.between)}>
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -1102,7 +1106,7 @@ function ProfilePage() {
       />
 
       <SectionCard title="Theme" saved={saved.theme}>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className={cn(recipes.stack.row, 'flex-wrap')}>
           {(['system', 'light', 'dark'] as const).map((t) => (
             <Button
               key={t}
