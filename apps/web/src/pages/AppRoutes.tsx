@@ -558,7 +558,6 @@ function MealEdit() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [entryTab, setEntryTab] = useState<'manual' | 'scan' | 'database'>('database');
   const [scanForm, setScanForm] = useState<LabelScanValue>({
-    name: '',
     mode: 'weight',
     amount: null,
   });
@@ -740,7 +739,7 @@ function MealEdit() {
         scanForm.mode === 'weight' ? String(scanForm.amount ?? '') : '',
       );
       formData.append('servings', isServings ? String(scanForm.amount ?? '') : '');
-      formData.append('name', scanForm.name);
+      formData.append('name', '');
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
       const result = await api.scanNutrition(token, formData);
@@ -762,7 +761,7 @@ function MealEdit() {
     markDirty('ingredientForm');
     setDraft((prev) => ({
       ...prev,
-      name: scanForm.name.trim() || (proposed.name ?? prev.name),
+      name: proposed.name ?? prev.name,
       weight: proposed.weight,
       fat: proposed.fat,
       saturatedFat: proposed.saturatedFat,
@@ -775,7 +774,7 @@ function MealEdit() {
     }));
     setDraftSource('scanned');
     setScanResult(null);
-    setScanForm({ name: '', mode: 'weight', amount: null });
+    setScanForm({ mode: 'weight', amount: null });
   };
 
   return (
@@ -997,7 +996,6 @@ function MealEdit() {
                     error={scanError || cameraError}
                     onChange={setScanForm}
                     onScan={openCamera}
-                    normalizeNameOnBlur={normalizeIngredientName}
                   />
                   {draftSource === 'scanned' ? (
                     <IngredientEntryCard
@@ -1201,9 +1199,7 @@ function MealEdit() {
           warning={scanResult?.warning}
           notes={scanResult?.notes}
           onSaveToDatabase={
-            scanResult &&
-            'databaseCandidate' in scanResult &&
-            (scanForm.name.trim() || scanResult.proposed.name)
+            scanResult && 'databaseCandidate' in scanResult && scanResult.proposed.name
               ? () => {
                   const candidate = scanResult.databaseCandidate;
                   if (!candidate) return;
@@ -1241,11 +1237,9 @@ function MealEdit() {
                   {
                     label: 'Name',
                     current: draft.name || '—',
-                    proposed: scanForm.name.trim()
-                      ? scanForm.name.trim()
-                      : scanResult.proposed.name
-                        ? `${scanResult.proposed.name} (detected)`
-                        : '—',
+                    proposed: scanResult.proposed.name
+                      ? `${scanResult.proposed.name} (detected)`
+                      : '—',
                   },
                   {
                     label: 'Weight',

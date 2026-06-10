@@ -667,10 +667,13 @@ describe('scan apply in-place', () => {
     // Scan Label button still visible
     expect(screen.getByRole('button', { name: 'Scan Label' })).toBeInTheDocument();
 
-    // Ingredient entry card now visible with the proposed weight
+    // Ingredient entry card now visible with the proposed name and weight
     await waitFor(() => {
       expect(screen.getByLabelText('Weight (g)')).toHaveValue('120');
     });
+
+    // Proposed name flows from the scan resolution into the entry card's Ingredient Name input
+    expect(screen.getByLabelText('Ingredient Name')).toHaveValue('GRANOLA');
 
     // Cancel removes the ingredient entry card while staying on the scan tab
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
