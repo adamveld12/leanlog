@@ -24,10 +24,10 @@ describe('LabelScanCard', () => {
     expect(screen.getByLabelText('# of Servings')).toBeInTheDocument();
   });
 
-  it('disables the numeric input when entire package is selected', async () => {
+  it('hides the numeric input when entire package is selected', async () => {
     render(<Harness />);
     await userEvent.click(screen.getByRole('radio', { name: 'Entire package' }));
-    expect(screen.getByLabelText('Weight (g or ml)')).toBeDisabled();
+    expect(screen.queryByLabelText('Weight (g or ml)')).not.toBeInTheDocument();
   });
 
   it('invokes onScan when Scan Label is clicked', async () => {

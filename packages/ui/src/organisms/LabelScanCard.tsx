@@ -75,12 +75,13 @@ export function LabelScanCard({
           <HelperText as="p">Uses serving size times the servings in the package.</HelperText>
         ) : null}
 
-        <NumberInput
-          label={amountLabel}
-          value={value.amount}
-          disabled={value.mode === 'package'}
-          onChange={(n) => onChange({ ...value, amount: clamp(n) })}
-        />
+        {value.mode !== 'package' ? (
+          <NumberInput
+            label={amountLabel}
+            value={value.amount}
+            onChange={(n) => onChange({ ...value, amount: clamp(n) })}
+          />
+        ) : null}
 
         {error ? (
           <div role="alert" className={recipes.stack.center}>
