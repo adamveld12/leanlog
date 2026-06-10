@@ -842,7 +842,7 @@ function MealEdit() {
                     />
                   }
                   actions={
-                    <div className={cn(recipes.stack.row, 'flex-wrap gap-2')}>
+                    <div className={cn(recipes.stack.row, 'flex-wrap')}>
                       {i.sourceDatabaseIngredientId ? null : (
                         <Button
                           size="sm"

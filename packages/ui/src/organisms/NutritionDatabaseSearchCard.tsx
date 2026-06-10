@@ -141,7 +141,7 @@ export function NutritionDatabaseSearchCard({
         ) : null}
 
         {onCreateNew ? (
-          <Button variant="secondary" size="sm" onClick={onCreateNew}>
+          <Button variant="subtle" size="sm" onClick={onCreateNew}>
             Add database ingredient
           </Button>
         ) : null}
