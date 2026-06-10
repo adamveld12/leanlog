@@ -558,7 +558,6 @@ function MealEdit() {
   const [dbError, setDbError] = useState('');
   // "Save to database" state per ingredient row
   const [savingToDbId, setSavingToDbId] = useState<string | null>(null);
-  const [savedToDbIds, setSavedToDbIds] = useState<Set<string>>(new Set());
   // Scan → save to database
   const [scanSavedToDb, setScanSavedToDb] = useState(false);
   const dbSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -796,9 +795,7 @@ function MealEdit() {
                   }
                   actions={
                     <div className={cn(recipes.stack.row, 'flex-wrap gap-2')}>
-                      {i.sourceDatabaseIngredientId ? null : savedToDbIds.has(i.id) ? (
-                        <HelperText as="span">Saved</HelperText>
-                      ) : (
+                      {i.sourceDatabaseIngredientId ? null : (
                         <Button
                           size="sm"
                           variant="primary"
@@ -816,10 +813,29 @@ function MealEdit() {
                               fiber: i.fiber ?? undefined,
                               creationSource: 'meal_ingredient',
                             })
-                              .then(() => {
-                                setSavedToDbIds((prev) => new Set(prev).add(i.id));
+                              .then((created) => {
                                 track('nutrition_database.ingredient.published', {
                                   source: 'meal_ingredient',
+                                });
+                                // Link the meal ingredient to its new database entry so it
+                                // can't be saved (and duplicated) again.
+                                return upsertIngredient(day.id, meal.id, {
+                                  id: i.id,
+                                  mealId: i.mealId,
+                                  name: i.name,
+                                  weight: i.weight,
+                                  fat: i.fat,
+                                  saturatedFat: i.saturatedFat,
+                                  carbs: i.carbs,
+                                  fiber: i.fiber,
+                                  protein: i.protein,
+                                  unsaturatedFat: i.unsaturatedFat ?? null,
+                                  monounsaturatedFat: i.monounsaturatedFat ?? null,
+                                  polyunsaturatedFat: i.polyunsaturatedFat ?? null,
+                                  transFat: i.transFat ?? null,
+                                  sugar: i.sugar ?? null,
+                                  micronutrients: i.micronutrients ?? null,
+                                  sourceDatabaseIngredientId: created.id,
                                 });
                               })
                               .catch(() => {

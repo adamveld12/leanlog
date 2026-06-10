@@ -64,6 +64,7 @@ function FakeStateProvider({
   onAddIngredientFromDatabase,
   onCreateIngredient,
   onSearch,
+  onUpsertIngredient,
 }: PropsWithChildren<{
   initialDays: DailyMealLog[];
   onAddIngredientFromDatabase?: (
@@ -73,6 +74,7 @@ function FakeStateProvider({
   ) => Promise<void>;
   onCreateIngredient?: (input: unknown) => Promise<unknown>;
   onSearch?: (query: string) => Promise<unknown[]>;
+  onUpsertIngredient?: (dayId: string, mealId: string, ingredient: unknown) => Promise<void>;
 }>) {
   const [days, setDays] = useState<DailyMealLog[]>(initialDays);
 
@@ -92,7 +94,29 @@ function FakeStateProvider({
     addMeal: async () => null,
     removeMeal: async () => {},
     renameMeal: async () => {},
-    upsertIngredient: async () => {},
+    upsertIngredient: async (...args: unknown[]) => {
+      const [dayId, mealId, ingredient] = args as [string, string, Ingredient];
+      if (onUpsertIngredient) await onUpsertIngredient(dayId, mealId, ingredient);
+      setDays((prev) =>
+        prev.map((d) =>
+          d.id === dayId
+            ? {
+                ...d,
+                meals: d.meals.map((m) =>
+                  m.id === mealId
+                    ? {
+                        ...m,
+                        ingredients: m.ingredients.map((i) =>
+                          i.id === ingredient.id ? { ...i, ...ingredient } : i,
+                        ),
+                      }
+                    : m,
+                ),
+              }
+            : d,
+        ),
+      );
+    },
     removeIngredient: async () => {},
     addIngredientFromDatabase: async (dayId, mealId, input) => {
       if (onAddIngredientFromDatabase) {
@@ -168,6 +192,7 @@ function renderApp(
     ) => Promise<void>;
     onCreateIngredient?: (input: unknown) => Promise<unknown>;
     onSearch?: (query: string) => Promise<unknown[]>;
+    onUpsertIngredient?: (dayId: string, mealId: string, ingredient: unknown) => Promise<void>;
   } = {},
 ) {
   return render(
@@ -388,8 +413,9 @@ describe('nutrition database tab', () => {
 });
 
 describe('save ingredient to database from meal row', () => {
-  it('calls createNutritionDatabaseIngredient with creationSource meal_ingredient when Save to database clicked', async () => {
+  it('publishes the ingredient then links it to the new database entry', async () => {
     const onCreateIngredient = vi.fn().mockResolvedValue({ id: 'new1' });
+    const onUpsertIngredient = vi.fn().mockResolvedValue(undefined);
 
     const ingredient: Ingredient = {
       id: 'i1',
@@ -406,7 +432,10 @@ describe('save ingredient to database from meal row', () => {
       updatedAt: now,
     };
 
-    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])], { onCreateIngredient });
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])], {
+      onCreateIngredient,
+      onUpsertIngredient,
+    });
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: /EGG/i })).toBeInTheDocument();
@@ -429,9 +458,18 @@ describe('save ingredient to database from meal row', () => {
       );
     });
 
-    // Should show "Saved" feedback
+    // The ingredient is immediately linked to the new database entry...
     await waitFor(() => {
-      expect(screen.getByText('Saved')).toBeInTheDocument();
+      expect(onUpsertIngredient).toHaveBeenCalledWith(
+        'd1',
+        'm1',
+        expect.objectContaining({ id: 'i1', sourceDatabaseIngredientId: 'new1' }),
+      );
+    });
+
+    // ...so the save action disappears and it cannot be duplicated.
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Save to database' })).not.toBeInTheDocument();
     });
   });
 
