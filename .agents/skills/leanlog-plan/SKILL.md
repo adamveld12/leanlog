@@ -3,8 +3,8 @@ description: |
     🗺️ Develop a detailed multi step action plan.
     Use this skill whenever a user says things like:
     - "plan this feature...."
-    - "I want to work on...."
-    - "lets work on <github issue URL>"
+    - "I want to plan on...."
+    - "lets plan this issue <github issue URL>"
 argument-hint: "[Github issue URL] [task]"
 ---
 
