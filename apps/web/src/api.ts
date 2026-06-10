@@ -8,6 +8,10 @@ import type {
   UpsertIngredient,
   DayTargets,
   ScanResolution,
+  NutritionDatabaseIngredient,
+  NutritionDatabaseIngredientSearchResult,
+  CreateNutritionDatabaseIngredient,
+  AddIngredientFromDatabase,
 } from '@leanlog/data-access';
 
 type ApiErrorKind = 'http' | 'invalid-payload' | 'network';
@@ -238,6 +242,16 @@ export const api = {
         token,
         method: 'DELETE',
       }),
+    addFromDatabase: (
+      token: string,
+      dayId: string,
+      mealId: string,
+      data: AddIngredientFromDatabase,
+    ) =>
+      apiFetch<Ingredient>(
+        `/api/days/${dayId}/meals/${mealId}/ingredients/from-database`,
+        { token, method: 'POST', body: JSON.stringify(data) },
+      ),
   },
   profile: {
     get: (token: string) => apiFetch<UserProfile>('/api/profile', { token, method: 'GET' }),
@@ -246,4 +260,17 @@ export const api = {
   },
   scanNutrition: (token: string, data: FormData) =>
     apiFetch<ScanResolution>('/api/scan-nutrition', { token, method: 'POST', body: data }),
+  nutritionDatabase: {
+    search: (token: string, query: string) =>
+      apiFetch<{ results: NutritionDatabaseIngredientSearchResult[] }>(
+        `/api/nutrition-database?q=${encodeURIComponent(query)}`,
+        { token, method: 'GET' },
+      ),
+    create: (token: string, data: CreateNutritionDatabaseIngredient) =>
+      apiFetch<NutritionDatabaseIngredient>('/api/nutrition-database', {
+        token,
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
 };

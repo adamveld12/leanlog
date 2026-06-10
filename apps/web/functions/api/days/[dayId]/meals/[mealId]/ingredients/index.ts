@@ -17,5 +17,8 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
   }
   const repo = createIngredientRepository(context.env.DB);
   const ingredient = await repo.upsert(userId, mealId, parsed.data);
+  if (!ingredient) {
+    return new Response('Meal not found or not owned by user', { status: 404 });
+  }
   return Response.json(ingredient);
 };

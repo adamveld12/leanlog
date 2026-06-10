@@ -16,6 +16,10 @@ import type {
   UpdateProfile,
   UpsertIngredient,
   DayTargets,
+  NutritionDatabaseIngredient,
+  NutritionDatabaseIngredientSearchResult,
+  CreateNutritionDatabaseIngredient,
+  AddIngredientFromDatabase,
 } from '@leanlog/data-access';
 import { api, ApiError } from './api';
 
@@ -40,6 +44,17 @@ type Store = {
   renameMeal(dayId: string, mealId: string, name: string): Promise<void>;
   upsertIngredient(dayId: string, mealId: string, ingredient: UpsertIngredient): Promise<void>;
   removeIngredient(dayId: string, mealId: string, ingredientId: string): Promise<void>;
+  addIngredientFromDatabase(
+    dayId: string,
+    mealId: string,
+    input: AddIngredientFromDatabase,
+  ): Promise<void>;
+  searchNutritionDatabase(
+    query: string,
+  ): Promise<NutritionDatabaseIngredientSearchResult[]>;
+  createNutritionDatabaseIngredient(
+    input: CreateNutritionDatabaseIngredient,
+  ): Promise<NutritionDatabaseIngredient>;
   updateDayTargets(dayId: string, targets: DayTargets): Promise<void>;
   updateDayWeight(dayId: string, weightLbs: number): Promise<void>;
   patchProfileLocal(data: Partial<UserProfile>): void;
@@ -214,6 +229,40 @@ export function StateProvider({ children }: PropsWithChildren) {
             : d,
         ),
       );
+    },
+
+    async addIngredientFromDatabase(dayId, mealId, input) {
+      const ingredient = await withToken((t) =>
+        api.ingredients.addFromDatabase(t, dayId, mealId, input),
+      );
+      setDays((prev) =>
+        prev.map((d) =>
+          d.id === dayId
+            ? {
+                ...d,
+                meals: d.meals.map((m) =>
+                  m.id === mealId
+                    ? {
+                        ...m,
+                        ingredients: m.ingredients.some((i) => i.id === ingredient.id)
+                          ? m.ingredients.map((i) => (i.id === ingredient.id ? ingredient : i))
+                          : [...m.ingredients, ingredient],
+                      }
+                    : m,
+                ),
+              }
+            : d,
+        ),
+      );
+    },
+
+    async searchNutritionDatabase(query) {
+      const { results } = await withToken((t) => api.nutritionDatabase.search(t, query));
+      return results;
+    },
+
+    async createNutritionDatabaseIngredient(input) {
+      return withToken((t) => api.nutritionDatabase.create(t, input));
     },
 
     async updateDayTargets(dayId, targets) {
