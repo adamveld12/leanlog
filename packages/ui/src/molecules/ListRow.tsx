@@ -40,7 +40,7 @@ export function ListRow({
           onOpen && 'cursor-pointer',
           className,
         )}
-        role={onOpen ? 'link' : undefined}
+        role={onOpen ? 'button' : undefined}
         tabIndex={onOpen ? 0 : undefined}
         onClick={onOpen}
         onKeyDown={onKeyDown}

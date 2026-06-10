@@ -109,7 +109,7 @@ describe('deep-link routing', () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue('BREAKFAST')).toBeInTheDocument();
     });
-    expect(screen.getByRole('link', { name: /EGG/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /EGG/i })).toBeInTheDocument();
     expect(apiMock.days.get).toHaveBeenCalledWith('test-token', 'd1');
   });
 
