@@ -157,4 +157,28 @@ describe('IngredientEntryCard', () => {
     await userEvent.type(screen.getByLabelText('Ingredient Name'), '{enter}');
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it('renders a Cancel button when onCancel is provided and fires it without submitting', async () => {
+    const onSubmit = vi.fn();
+    const onCancel = vi.fn();
+    render(
+      <IngredientEntryCard
+        value={base}
+        onChange={() => {}}
+        onSubmit={onSubmit}
+        onCancel={onCancel}
+        submitLabel="Update"
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('does not render a Cancel button without onCancel', () => {
+    const onSubmit = vi.fn();
+    render(<Harness onSubmit={onSubmit} />);
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+  });
 });

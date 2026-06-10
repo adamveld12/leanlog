@@ -78,7 +78,7 @@ export function ScanReviewModal({
               onClick={onSaveToDatabase}
               disabled={canSaveToDatabase === false}
             >
-              Save to database
+              Apply and save to database
             </Button>
           ) : null}
           <Button variant="secondary" size="sm" onClick={onClose}>

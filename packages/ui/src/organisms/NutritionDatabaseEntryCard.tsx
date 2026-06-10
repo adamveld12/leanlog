@@ -127,6 +127,7 @@ export function NutritionDatabaseEntryCard({
             onChange={(e) => onChange({ ...value, name: e.target.value })}
           />
         </Field>
+        <HelperText as="p">Calculated calories: {calculatedCalories} kcal</HelperText>
 
         <NumberInput
           label="Serving amount (g/ml)"
@@ -166,8 +167,6 @@ export function NutritionDatabaseEntryCard({
           />
         </div>
         {fiberInvalid ? <WarningText role="alert">Fiber cannot exceed carbs.</WarningText> : null}
-
-        <HelperText as="p">Calculated calories: {calculatedCalories} kcal</HelperText>
 
         <SectionHeading noMargin>Optional Details</SectionHeading>
         <div className={recipes.grid.two}>

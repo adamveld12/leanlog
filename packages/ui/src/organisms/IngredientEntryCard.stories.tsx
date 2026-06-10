@@ -31,6 +31,10 @@ export const Update: Story = {
   args: { submitLabel: 'Update' },
 };
 
+export const Editing: Story = {
+  args: { submitLabel: 'Update', onCancel: () => {} },
+};
+
 export const FiberError: Story = {
   args: {
     value: {

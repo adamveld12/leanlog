@@ -26,6 +26,8 @@ type IngredientEntryCardProps = {
   submitLabel: 'Add' | 'Update';
   onChange: (next: IngredientEntryValue) => void;
   onSubmit: () => void;
+  /** When provided (e.g. while editing), shows a Cancel button beside submit. */
+  onCancel?: () => void;
   normalizeNameOnBlur?: (value: string) => string;
 };
 
@@ -44,6 +46,7 @@ export function IngredientEntryCard({
   submitLabel,
   onChange,
   onSubmit,
+  onCancel,
   normalizeNameOnBlur,
 }: IngredientEntryCardProps) {
   const setNum = (key: keyof Omit<IngredientEntryValue, 'name'>, next: number) =>
@@ -60,9 +63,16 @@ export function IngredientEntryCard({
       <SectionCard saved={saved}>
         <div className={cn(recipes.stack.row, recipes.stack.between)}>
           <SectionHeading noMargin>Ingredient Entry</SectionHeading>
-          <Button size="sm" onClick={onSubmit} disabled={fiberInvalid}>
-            {submitLabel}
-          </Button>
+          <div className={recipes.stack.row}>
+            {onCancel ? (
+              <Button size="sm" variant="secondary" onClick={onCancel}>
+                Cancel
+              </Button>
+            ) : null}
+            <Button size="sm" onClick={onSubmit} disabled={fiberInvalid}>
+              {submitLabel}
+            </Button>
+          </div>
         </div>
 
         <Field label="Ingredient Name">
@@ -73,6 +83,7 @@ export function IngredientEntryCard({
             onNormalized={(name) => onChange({ ...value, name })}
           />
         </Field>
+        <HelperText as="p">Calculated calories: {calculatedCalories} kcal</HelperText>
 
         <NumberInput
           label="Weight (g)"
@@ -119,8 +130,6 @@ export function IngredientEntryCard({
           onChange={(n) => setNum('protein', n)}
           onBlur={() => roundField('protein')}
         />
-
-        <HelperText as="p">Calculated calories: {calculatedCalories} kcal</HelperText>
       </SectionCard>
     </AnalyticsScope>
   );

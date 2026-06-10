@@ -581,9 +581,6 @@ function MealEdit() {
   const [dbError, setDbError] = useState('');
   // "Save to database" state per ingredient row
   const [savingToDbId, setSavingToDbId] = useState<string | null>(null);
-  // Scan → save to database
-  // Database entry id created from the current scan, used to link applied ingredients
-  const [scanSavedDbId, setScanSavedDbId] = useState<string | null>(null);
   const dbSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const track = useAnalytics();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -711,7 +708,6 @@ function MealEdit() {
   const onScanFile = async (file: File) => {
     setScanError('');
     setCameraError('');
-    setScanSavedDbId(null);
     setScanLoading(true);
     try {
       const formData = new FormData();
@@ -738,7 +734,7 @@ function MealEdit() {
     }
   };
 
-  const applyScan = () => {
+  const applyScan = (sourceDbId?: string | null) => {
     if (!scanResult || !scanResult.canApply) return;
     const { proposed } = scanResult;
     markDirty('ingredientForm');
@@ -751,13 +747,12 @@ function MealEdit() {
       carbs: proposed.carbs,
       fiber: proposed.fiber,
       protein: proposed.protein,
-      // If this scan was saved to the database, the applied ingredient is born linked
-      // so it cannot be saved to the database again.
-      sourceDatabaseIngredientId: scanSavedDbId ?? null,
+      // When the scan was also saved to the database, the applied ingredient is
+      // born linked so it cannot be saved to the database again.
+      sourceDatabaseIngredientId: sourceDbId ?? null,
     }));
     setDraftSource('scanned');
     setScanResult(null);
-    setScanSavedDbId(null);
     setScanForm({ name: '', mode: 'weight', amount: 0 });
     setEntryTab('manual');
   };
@@ -962,6 +957,15 @@ function MealEdit() {
                     setDraft(next);
                   }}
                   onSubmit={saveIngredient}
+                  onCancel={
+                    editingId
+                      ? () => {
+                          setDraft(emptyDraft);
+                          setEditingId(null);
+                          setDraftSource('manual');
+                        }
+                      : undefined
+                  }
                   normalizeNameOnBlur={normalizeIngredientName}
                 />
               ) : null}
@@ -1133,12 +1137,10 @@ function MealEdit() {
           open={!!scanResult}
           onClose={() => {
             setScanResult(null);
-            setScanSavedDbId(null);
           }}
-          onAccept={applyScan}
+          onAccept={() => applyScan()}
           onRetake={() => {
             setScanResult(null);
-            setScanSavedDbId(null);
             void openCamera();
           }}
           canAccept={scanResult?.canApply ?? false}
@@ -1165,21 +1167,21 @@ function MealEdit() {
                   })
                     .then((created) => {
                       track('nutrition_database.ingredient.published', { source: 'scan' });
-                      setScanSavedDbId(created.id);
                       setDbTotal((t) => (t == null ? t : t + 1));
+                      applyScan(created.id);
                     })
-                    .catch(() => {});
+                    .catch(() => {
+                      setDbError('Failed to save ingredient to database.');
+                    });
                 }
               : undefined
           }
           canSaveToDatabase={
             scanResult && 'databaseCandidate' in scanResult
-              ? scanResult.databaseCandidate !== null && !scanSavedDbId
+              ? scanResult.databaseCandidate !== null && scanResult.canApply
               : undefined
           }
-          saveToDatabaseBlockReason={
-            scanResult?.databaseBlockReason ?? (scanSavedDbId ? 'Saved to database.' : undefined)
-          }
+          saveToDatabaseBlockReason={scanResult?.databaseBlockReason}
           fields={
             scanResult
               ? [

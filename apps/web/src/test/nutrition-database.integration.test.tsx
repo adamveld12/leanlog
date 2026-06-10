@@ -541,3 +541,39 @@ describe('save ingredient to database from meal row', () => {
     expect(screen.getByRole('button', { name: 'Delete ingredient' })).toBeInTheDocument();
   });
 });
+
+describe('editing a meal ingredient', () => {
+  it('cancel exits edit mode without saving changes', async () => {
+    const onUpsertIngredient = vi.fn().mockResolvedValue(undefined);
+    const ingredient: Ingredient = {
+      id: 'i4',
+      mealId: 'm1',
+      name: 'OATS',
+      weight: 80,
+      calories: 300,
+      fat: 5,
+      saturatedFat: 1,
+      carbs: 54,
+      fiber: 8,
+      protein: 10,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])], { onUpsertIngredient });
+
+    await userEvent.click(await screen.findByText('OATS'));
+
+    // Edit mode: form populated, Update + Cancel visible
+    expect(screen.getByLabelText('Ingredient Name')).toHaveValue('OATS');
+    expect(screen.getByRole('button', { name: 'Update' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    // Back to a fresh Add form, nothing persisted
+    expect(screen.getByLabelText('Ingredient Name')).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+    expect(onUpsertIngredient).not.toHaveBeenCalled();
+  });
+});
