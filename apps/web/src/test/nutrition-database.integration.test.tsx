@@ -438,7 +438,7 @@ describe('save ingredient to database from meal row', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /EGG/i })).toBeInTheDocument();
+      expect(screen.getByText('EGG')).toBeInTheDocument();
     });
 
     const saveBtn = screen.getByRole('button', { name: 'Save to database' });
@@ -492,7 +492,7 @@ describe('save ingredient to database from meal row', () => {
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])]);
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /ZERO WEIGHT/i })).toBeInTheDocument();
+      expect(screen.getByText('ZERO WEIGHT')).toBeInTheDocument();
     });
 
     const saveBtn = screen.getByRole('button', { name: 'Save to database' });
@@ -519,7 +519,7 @@ describe('save ingredient to database from meal row', () => {
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])]);
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /FROM DB/i })).toBeInTheDocument();
+      expect(screen.getByText('FROM DB')).toBeInTheDocument();
     });
 
     expect(screen.queryByRole('button', { name: 'Save to database' })).not.toBeInTheDocument();
