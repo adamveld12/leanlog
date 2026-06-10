@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveScan, type ScanLabel, type ScanRequest } from './scan';
+import { resolveScan, type ScanLabel, type ScanRequest, type DatabaseCandidate } from './scan';
 
 const perServingLabel: ScanLabel = {
   basis: 'per_serving',
@@ -154,5 +154,101 @@ describe('resolveScan', () => {
     expect(
       resolveScan(perServingLabel, req({ weight: 30, name: 'My oats' })).proposed.name,
     ).toBeUndefined();
+  });
+});
+
+describe('resolveScan — databaseCandidate', () => {
+  it('per-serving scan with inferred name yields a database candidate', () => {
+    // perServingLabel has inferredName 'Granola', servingSizeGrams 30
+    const r = resolveScan(perServingLabel, req({ mode: 'weight', weight: 60, name: '' }));
+    expect(r.databaseCandidate).not.toBeNull();
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.name).toBe('Granola');
+    expect(c.servingAmount).toBe(30);
+    expect(c.fat).toBe(6);
+    expect(c.carbs).toBe(14);
+    expect(c.protein).toBe(3);
+  });
+
+  it('per-serving scan with user-provided name uses user name in candidate', () => {
+    const r = resolveScan(perServingLabel, req({ mode: 'weight', weight: 30, name: 'My Granola' }));
+    expect(r.databaseCandidate).not.toBeNull();
+    expect((r.databaseCandidate as DatabaseCandidate).name).toBe('My Granola');
+  });
+
+  it('per-100g scan with known serving size yields candidate with that serving amount', () => {
+    // per100gLabel has servingSizeGrams 50, nutrients per 100g: fat 10, carbs 20, protein 8
+    // expected at 50g: fat = 5, carbs = 10, protein = 4
+    const r = resolveScan(per100gLabel, req({ mode: 'weight', weight: 100, name: 'Oats' }));
+    expect(r.databaseCandidate).not.toBeNull();
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.servingAmount).toBe(50);
+    expect(c.fat).toBe(5);
+    expect(c.carbs).toBe(10);
+    expect(c.protein).toBe(4);
+  });
+
+  it('per-100g scan without serving size yields candidate with servingAmount 100 and unscaled macros', () => {
+    const labelNoServing: ScanLabel = { ...per100gLabel, servingSizeGrams: null, inferredName: 'Rice' };
+    const r = resolveScan(labelNoServing, req({ mode: 'weight', weight: 100, name: '' }));
+    expect(r.databaseCandidate).not.toBeNull();
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.servingAmount).toBe(100);
+    expect(c.fat).toBe(10);
+    expect(c.carbs).toBe(20);
+    expect(c.protein).toBe(8);
+  });
+
+  it('missing protein → no candidate + databaseBlockReason mentions protein, apply still possible', () => {
+    const labelNoProtein: ScanLabel = {
+      ...perServingLabel,
+      nutrients: { ...perServingLabel.nutrients, protein: -1 },
+    };
+    const r = resolveScan(labelNoProtein, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    expect(r.databaseCandidate).toBeNull();
+    expect(r.databaseBlockReason).toMatch(/protein/i);
+    // meal-apply behavior unchanged
+    expect(r.canApply).toBe(true);
+    expect(r.proposed.weight).toBe(30);
+  });
+
+  it('unknown basis → no databaseCandidate and no databaseBlockReason', () => {
+    const unknownLabel: ScanLabel = { ...perServingLabel, basis: 'unknown' };
+    const r = resolveScan(unknownLabel, req({ mode: 'weight', weight: 75, name: 'Mystery food' }));
+    expect(r.databaseCandidate).toBeUndefined();
+    expect(r.databaseBlockReason).toBeUndefined();
+    // existing meal-apply still possible for unknown basis with weight
+    expect(r.canApply).toBe(true);
+  });
+
+  it('per-serving with null serving size → no candidate with block reason', () => {
+    const labelNoServing: ScanLabel = { ...perServingLabel, servingSizeGrams: null };
+    const r = resolveScan(labelNoServing, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    expect(r.databaseCandidate).toBeNull();
+    expect(r.databaseBlockReason).toMatch(/serving size/i);
+  });
+
+  it('per-serving with no name and no inferred name → no candidate', () => {
+    const labelNoName: ScanLabel = { ...perServingLabel, inferredName: null };
+    const r = resolveScan(labelNoName, req({ mode: 'weight', weight: 30, name: '' }));
+    expect(r.databaseCandidate).toBeNull();
+    expect(r.databaseBlockReason).toMatch(/name/i);
+  });
+
+  it('candidate includes optional saturatedFat and fiber when present', () => {
+    const r = resolveScan(perServingLabel, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.saturatedFat).toBe(1);
+    expect(c.fiber).toBe(2);
+  });
+
+  it('candidate includes sugar when label nutrients provide it', () => {
+    const labelWithSugar: ScanLabel = {
+      ...perServingLabel,
+      nutrients: { ...perServingLabel.nutrients, sugar: 5 },
+    };
+    const r = resolveScan(labelWithSugar, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.sugar).toBe(5);
   });
 });

@@ -12,6 +12,8 @@ export type ScanNutrients = {
   carbs: number;
   fiber: number;
   protein: number;
+  /** Optional sugar extracted from the label. */
+  sugar?: number;
 };
 
 export type ScanLabel = {
@@ -41,6 +43,21 @@ export type ScanRequest = {
 
 export type ScanProposed = ScanNutrients & { name?: string; weight: number };
 
+/**
+ * Per-serving nutrition facts suitable for saving to the nutrition database.
+ * Calories are intentionally excluded — derive them downstream via caloriesFromMacros().
+ */
+export type DatabaseCandidate = {
+  name: string;
+  servingAmount: number;
+  fat: number;
+  carbs: number;
+  protein: number;
+  saturatedFat?: number;
+  fiber?: number;
+  sugar?: number;
+};
+
 export type ScanResolution = {
   proposed: ScanProposed;
   canApply: boolean;
@@ -48,10 +65,94 @@ export type ScanResolution = {
   /** A non-blocking caution shown alongside an applyable result. */
   warning?: string;
   notes: string[];
+  /**
+   * When the label provides enough per-serving facts (name, servingAmount, fat, carbs,
+   * protein), this holds the data ready to save to the nutrition database.
+   * null means the data was present but incomplete; see databaseBlockReason.
+   */
+  databaseCandidate?: DatabaseCandidate | null;
+  /**
+   * Human-readable reason why databaseCandidate is null (e.g. "Protein is required").
+   * Only set when databaseCandidate is null.
+   */
+  databaseBlockReason?: string;
 };
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const safe = (n: number) => round1(Math.max(0, n));
+
+function buildDatabaseCandidate(
+  label: ScanLabel,
+  resolvedName: string,
+): { candidate: DatabaseCandidate | null; blockReason?: string } {
+  // unknown basis cannot produce a reliable per-serving candidate
+  if (label.basis === 'unknown') {
+    return { candidate: null, blockReason: undefined };
+  }
+
+  // name is required
+  const name = resolvedName.trim();
+  if (!name) {
+    return { candidate: null, blockReason: 'Name is required' };
+  }
+
+  // Determine serving amount
+  let servingAmount: number;
+  if (label.basis === 'per_serving') {
+    const serving = label.servingSizeGrams && label.servingSizeGrams > 0 ? label.servingSizeGrams : null;
+    if (!serving) {
+      return { candidate: null, blockReason: 'Serving size is required' };
+    }
+    servingAmount = serving;
+  } else {
+    // per_100g: prefer actual serving size when available, fall back to 100
+    const serving = label.servingSizeGrams && label.servingSizeGrams > 0 ? label.servingSizeGrams : null;
+    servingAmount = serving ?? 100;
+  }
+
+  // Required macros
+  if (label.nutrients.fat == null || label.nutrients.fat < 0) {
+    return { candidate: null, blockReason: 'Fat is required' };
+  }
+  if (label.nutrients.carbs == null || label.nutrients.carbs < 0) {
+    return { candidate: null, blockReason: 'Carbs is required' };
+  }
+  if (label.nutrients.protein == null || label.nutrients.protein < 0) {
+    return { candidate: null, blockReason: 'Protein is required' };
+  }
+
+  // For per_100g labels we scale to actual serving size if different from 100
+  let fat = label.nutrients.fat;
+  let carbs = label.nutrients.carbs;
+  let protein = label.nutrients.protein;
+  let saturatedFat = label.nutrients.saturatedFat;
+  let fiber = label.nutrients.fiber;
+  let sugar = label.nutrients.sugar;
+
+  if (label.basis === 'per_100g' && servingAmount !== 100) {
+    const factor = servingAmount / 100;
+    fat = round1(fat * factor);
+    carbs = round1(carbs * factor);
+    protein = round1(protein * factor);
+    if (saturatedFat != null) saturatedFat = round1(saturatedFat * factor);
+    if (fiber != null) fiber = round1(fiber * factor);
+    if (sugar != null) sugar = round1(sugar * factor);
+  }
+
+  const candidate: DatabaseCandidate = {
+    name,
+    servingAmount,
+    fat,
+    carbs,
+    protein,
+  };
+
+  if (saturatedFat != null) candidate.saturatedFat = saturatedFat;
+  if (fiber != null) candidate.fiber = fiber;
+  if (sugar != null) candidate.sugar = sugar;
+
+  return { candidate };
+}
 
 export function resolveScan(label: ScanLabel, request: ScanRequest): ScanResolution {
   const notes: string[] = [];
@@ -144,7 +245,12 @@ export function resolveScan(label: ScanLabel, request: ScanRequest): ScanResolut
     blockReason = 'Enter a weight or serving count, or retake the photo.';
   }
 
-  return {
+  // Derive the name that will be used for the database candidate:
+  // prefer the user-supplied name, then the inferred name.
+  const resolvedName = request.name.trim() || label.inferredName || '';
+  const { candidate, blockReason: dbBlockReason } = buildDatabaseCandidate(label, resolvedName);
+
+  const resolution: ScanResolution = {
     proposed: {
       name: !request.name.trim() && label.inferredName ? label.inferredName : undefined,
       weight: safe(targetWeight),
@@ -160,4 +266,15 @@ export function resolveScan(label: ScanLabel, request: ScanRequest): ScanResolut
     warning,
     notes,
   };
+
+  if (label.basis === 'unknown') {
+    // No candidate for unknown basis; omit databaseCandidate entirely
+  } else if (candidate !== null) {
+    resolution.databaseCandidate = candidate;
+  } else {
+    resolution.databaseCandidate = null;
+    resolution.databaseBlockReason = dbBlockReason;
+  }
+
+  return resolution;
 }
