@@ -1,5 +1,4 @@
 ---
-name: Github PR Claude Review
 description: Initiate a code review from Claude on a PR.
 ---
 
