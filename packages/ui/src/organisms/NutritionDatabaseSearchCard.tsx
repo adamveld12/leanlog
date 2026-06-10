@@ -1,6 +1,7 @@
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
+import { Text } from '../atoms/Text';
 import { NumberInput } from '../atoms/NumberInput';
 import { UnitText } from '../atoms/UnitText';
 import { LoadingState } from '../molecules/LoadingState';
@@ -93,9 +94,9 @@ export function NutritionDatabaseSearchCard({
                 >
                   <div className={cn(recipes.stack.row, recipes.stack.between)}>
                     <div className={recipes.stack.xs}>
-                      <HelperText as="span" className="font-medium text-[var(--ll-text)]">
+                      <Text as="span" variant="subheading">
                         {result.name}
-                      </HelperText>
+                      </Text>
                       <HelperText as="span">
                         {result.servingAmount}
                         <UnitText> g/ml</UnitText>

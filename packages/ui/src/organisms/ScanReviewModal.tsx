@@ -84,7 +84,12 @@ export function ScanReviewModal({
           <Button variant="secondary" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button size="sm" onClick={onAccept} disabled={!canAccept}>
+          <Button
+            size="sm"
+            variant={onSaveToDatabase ? 'ghost' : 'primary'}
+            onClick={onAccept}
+            disabled={!canAccept}
+          >
             {acceptLabel}
           </Button>
         </div>
