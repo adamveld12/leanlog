@@ -254,7 +254,7 @@ describe('list section behaviors', () => {
     expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
     expect(document.querySelector('footer')).toBeNull();
 
-    await userEvent.click(screen.getByRole('link', { name: /CHICKEN/i }));
+    await userEvent.click(screen.getByRole('button', { name: /CHICKEN/i }));
     expect(screen.getByDisplayValue('CHICKEN')).toBeInTheDocument();
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Delete ingredient' })[0]);

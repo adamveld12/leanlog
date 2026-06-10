@@ -30,7 +30,7 @@ describe('ListSectionCard', () => {
     expect(screen.getByText('2 items')).toBeInTheDocument();
     expect(screen.getAllByText('Delete')[0]).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('link'));
+    await userEvent.click(screen.getByRole('button', { name: /MEAL 1/i }));
     expect(onOpen).toHaveBeenCalledTimes(1);
 
     await userEvent.click(screen.getAllByText('Delete')[0]);
