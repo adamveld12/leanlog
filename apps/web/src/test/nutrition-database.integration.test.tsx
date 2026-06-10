@@ -460,4 +460,31 @@ describe('save ingredient to database from meal row', () => {
     const saveBtn = screen.getByRole('button', { name: 'Save to database' });
     expect(saveBtn).toBeDisabled();
   });
+
+  it('hides Save to database for ingredients added from the nutrition database', async () => {
+    const ingredient: Ingredient = {
+      id: 'i3',
+      mealId: 'm1',
+      name: 'FROM DB',
+      weight: 200,
+      calories: 330,
+      fat: 6,
+      saturatedFat: 2,
+      carbs: 0,
+      fiber: 0,
+      protein: 62,
+      sourceDatabaseIngredientId: 'db1',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])]);
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: /FROM DB/i })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: 'Save to database' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete ingredient' })).toBeInTheDocument();
+  });
 });

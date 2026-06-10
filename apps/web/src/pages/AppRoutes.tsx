@@ -796,12 +796,12 @@ function MealEdit() {
                   }
                   actions={
                     <div className={cn(recipes.stack.row, 'flex-wrap gap-2')}>
-                      {savedToDbIds.has(i.id) ? (
+                      {i.sourceDatabaseIngredientId ? null : savedToDbIds.has(i.id) ? (
                         <HelperText as="span">Saved</HelperText>
                       ) : (
                         <Button
                           size="sm"
-                          variant="subtle"
+                          variant="primary"
                           disabled={i.weight <= 0 || savingToDbId === i.id}
                           onClick={(e) => {
                             e.stopPropagation();
