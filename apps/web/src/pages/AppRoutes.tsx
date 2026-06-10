@@ -67,7 +67,11 @@ import {
 } from '../selectors';
 import { useStore } from '../state';
 import { api } from '../api';
-import type { UpsertIngredient, SaveSections } from '../types';
+import type {
+  UpsertIngredient,
+  SaveSections,
+  NutritionDatabaseIngredientSearchResult,
+} from '../types';
 
 type IngredientDraft = Omit<UpsertIngredient, 'id' | 'mealId' | 'createdAt' | 'updatedAt'>;
 
@@ -80,6 +84,24 @@ const emptyDraft: IngredientDraft = {
   fiber: 0,
   protein: 0,
 };
+
+function mapDbSearchResults(
+  raw: NutritionDatabaseIngredientSearchResult[],
+): NutritionDatabaseSearchResult[] {
+  return raw.map((r) => ({
+    id: r.id,
+    name: r.name,
+    servingAmount: r.servingAmount,
+    fat: r.fat,
+    carbs: r.carbs,
+    protein: r.protein,
+    fiber: r.fiber ?? null,
+    calories: r.calories,
+    addedByName: r.addedByName,
+    addedAtLabel: new Date(r.createdAt).toLocaleDateString(),
+    creationSource: r.creationSource,
+  }));
+}
 
 function useSavedSections() {
   const [saved, setSaved] = useState<SaveSections>({});
@@ -544,6 +566,7 @@ function MealEdit() {
   const [dbResults, setDbResults] = useState<NutritionDatabaseSearchResult[]>([]);
   const [dbLoading, setDbLoading] = useState(false);
   const [dbSearched, setDbSearched] = useState(false);
+  const [dbTotal, setDbTotal] = useState<number | null>(null);
   const [dbAmounts, setDbAmounts] = useState<Record<string, number>>({});
   const [dbAddingId, setDbAddingId] = useState<string | null>(null);
   const [dbShowCreate, setDbShowCreate] = useState(false);
@@ -574,6 +597,14 @@ function MealEdit() {
     error: '',
   });
   const routeStatus = routeLoad.dayId === dayId ? routeLoad.status : 'loading';
+
+  // Seed the database ingredient count when the database tab first opens
+  useEffect(() => {
+    if (entryTab !== 'database' || dbTotal !== null) return;
+    void searchNutritionDatabase('')
+      .then(({ total }) => setDbTotal(total))
+      .catch(() => {});
+  }, [entryTab, dbTotal, searchNutritionDatabase]);
 
   useEffect(() => {
     return () => {
@@ -823,6 +854,7 @@ function MealEdit() {
                                 track('nutrition_database.ingredient.published', {
                                   source: 'meal_ingredient',
                                 });
+                                setDbTotal((t) => (t == null ? t : t + 1));
                                 // Link the meal ingredient to its new database entry so it
                                 // can't be saved (and duplicated) again.
                                 return upsertIngredient(day.id, meal.id, {
@@ -959,21 +991,9 @@ function MealEdit() {
                       dbSearchTimerRef.current = setTimeout(() => {
                         setDbLoading(true);
                         void searchNutritionDatabase(q)
-                          .then((raw) => {
-                            const mapped: NutritionDatabaseSearchResult[] = raw.map((r) => ({
-                              id: r.id,
-                              name: r.name,
-                              servingAmount: r.servingAmount,
-                              fat: r.fat,
-                              carbs: r.carbs,
-                              protein: r.protein,
-                              fiber: r.fiber ?? null,
-                              calories: r.calories,
-                              addedByName: r.addedByName,
-                              addedAtLabel: new Date(r.createdAt).toLocaleDateString(),
-                              creationSource: r.creationSource,
-                            }));
-                            setDbResults(mapped);
+                          .then(({ results, total }) => {
+                            setDbResults(mapDbSearchResults(results));
+                            setDbTotal(total);
                             setDbSearched(true);
                           })
                           .catch(() => {
@@ -1014,6 +1034,7 @@ function MealEdit() {
                     addingId={dbAddingId}
                     onCreateNew={() => setDbShowCreate((prev) => !prev)}
                     truncated={dbResults.length >= 25}
+                    totalCount={dbTotal ?? undefined}
                   />
                   {dbShowCreate ? (
                     <NutritionDatabaseEntryCard
@@ -1042,24 +1063,13 @@ function MealEdit() {
                               carbs: 0,
                               protein: 0,
                             });
+                            setDbTotal((t) => (t == null ? t : t + 1));
                             if (dbQuery.length >= 2) {
                               setDbLoading(true);
                               void searchNutritionDatabase(dbQuery)
-                                .then((raw) => {
-                                  const mapped: NutritionDatabaseSearchResult[] = raw.map((r) => ({
-                                    id: r.id,
-                                    name: r.name,
-                                    servingAmount: r.servingAmount,
-                                    fat: r.fat,
-                                    carbs: r.carbs,
-                                    protein: r.protein,
-                                    fiber: r.fiber ?? null,
-                                    calories: r.calories,
-                                    addedByName: r.addedByName,
-                                    addedAtLabel: new Date(r.createdAt).toLocaleDateString(),
-                                    creationSource: r.creationSource,
-                                  }));
-                                  setDbResults(mapped);
+                                .then(({ results, total }) => {
+                                  setDbResults(mapDbSearchResults(results));
+                                  setDbTotal(total);
                                 })
                                 .catch(() => {})
                                 .finally(() => setDbLoading(false));
@@ -1136,7 +1146,9 @@ function MealEdit() {
           warning={scanResult?.warning}
           notes={scanResult?.notes}
           onSaveToDatabase={
-            scanResult && 'databaseCandidate' in scanResult
+            scanResult &&
+            'databaseCandidate' in scanResult &&
+            (scanForm.name.trim() || scanResult.proposed.name)
               ? () => {
                   const candidate = scanResult.databaseCandidate;
                   if (!candidate) return;
@@ -1154,6 +1166,7 @@ function MealEdit() {
                     .then((created) => {
                       track('nutrition_database.ingredient.published', { source: 'scan' });
                       setScanSavedDbId(created.id);
+                      setDbTotal((t) => (t == null ? t : t + 1));
                     })
                     .catch(() => {});
                 }
@@ -1170,6 +1183,15 @@ function MealEdit() {
           fields={
             scanResult
               ? [
+                  {
+                    label: 'Name',
+                    current: draft.name || '—',
+                    proposed: scanForm.name.trim()
+                      ? scanForm.name.trim()
+                      : scanResult.proposed.name
+                        ? `${scanResult.proposed.name} (detected)`
+                        : '—',
+                  },
                   {
                     label: 'Weight',
                     current: draft.weight,

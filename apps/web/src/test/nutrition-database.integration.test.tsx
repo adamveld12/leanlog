@@ -10,6 +10,7 @@ import type { DailyMealLog, Ingredient, UserProfile } from '@leanlog/data-access
 vi.mock('react-chartjs-2', () => ({ Line: () => null }));
 
 const now = new Date().toISOString();
+const fakeDbTotal = 42;
 
 const mockProfile: UserProfile = {
   id: 'p1',
@@ -48,7 +49,7 @@ type StoreCtx = {
     mealId: string,
     input: { databaseIngredientId: string; measuredAmount: number },
   ) => Promise<void>;
-  searchNutritionDatabase: (query: string) => Promise<unknown[]>;
+  searchNutritionDatabase: (query: string) => Promise<{ results: unknown[]; total: number }>;
   createNutritionDatabaseIngredient: (input: unknown) => Promise<unknown>;
   updateDayTargets: (...args: unknown[]) => Promise<void>;
   updateDayWeight: (...args: unknown[]) => Promise<void>;
@@ -151,8 +152,10 @@ function FakeStateProvider({
       );
     },
     searchNutritionDatabase: async (query: string) => {
-      if (onSearch) return onSearch(query);
-      return [];
+      // Mirrors the real client: short queries only seed the total, no search
+      if (query.trim().length < 2) return { results: [], total: fakeDbTotal };
+      const results = onSearch ? await onSearch(query) : [];
+      return { results, total: fakeDbTotal };
     },
     createNutritionDatabaseIngredient: async (input: unknown) => {
       if (onCreateIngredient) return onCreateIngredient(input);
@@ -271,6 +274,18 @@ describe('nutrition database tab', () => {
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText('e.g. Chicken breast')).toBeInTheDocument();
+    });
+  });
+
+  it('shows the total ingredient count in the search label when the tab opens', async () => {
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()]);
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Nutrition Database' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(`${fakeDbTotal} ingredients available for searching`),
+      ).toBeInTheDocument();
     });
   });
 
