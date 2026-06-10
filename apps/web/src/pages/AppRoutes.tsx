@@ -43,6 +43,7 @@ import {
   SectionCard,
   SectionHeading,
   Tabs,
+  WarningText,
   WeeklyStatsCard,
   WeightTrendCard,
   useAnalytics,
@@ -996,11 +997,7 @@ function MealEdit() {
               ) : null}
               {entryTab === 'database' ? (
                 <div className={recipes.stack.sm}>
-                  {dbError ? (
-                    <HelperText as="p" role="alert">
-                      {dbError}
-                    </HelperText>
-                  ) : null}
+                  {dbError ? <WarningText role="alert">{dbError}</WarningText> : null}
                   <NutritionDatabaseSearchCard
                     query={dbQuery}
                     onQueryChange={(q) => {

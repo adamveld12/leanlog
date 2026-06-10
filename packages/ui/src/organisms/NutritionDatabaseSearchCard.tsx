@@ -89,7 +89,8 @@ export function NutritionDatabaseSearchCard({
                   className={cn(
                     recipes.stack.xs,
                     recipes.radius.control,
-                    'border border-[var(--ll-line)] p-3',
+                    recipes.surface.card,
+                    'p-3',
                   )}
                 >
                   <div className={cn(recipes.stack.row, recipes.stack.between)}>
@@ -122,7 +123,7 @@ export function NutritionDatabaseSearchCard({
                       size="sm"
                       onClick={() => onAdd(result.id)}
                       disabled={!canAdd}
-                      className="shrink-0 self-end mb-0"
+                      className="shrink-0 self-end"
                     >
                       {isAdding ? 'Adding…' : 'Add'}
                     </Button>
