@@ -57,12 +57,12 @@ export function ScanReviewModal({
 
         {notes && notes.length > 0 ? <HelperText as="p">{notes.join(' ')}</HelperText> : null}
 
-        {warning ? <WarningText>{warning}</WarningText> : null}
+        {warning ? <WarningText role="alert">{warning}</WarningText> : null}
 
-        {!canAccept && blockReason ? <WarningText>{blockReason}</WarningText> : null}
+        {!canAccept && blockReason ? <WarningText role="alert">{blockReason}</WarningText> : null}
 
         {onSaveToDatabase && !canSaveToDatabase && saveToDatabaseBlockReason ? (
-          <WarningText>{saveToDatabaseBlockReason}</WarningText>
+          <WarningText role="alert">{saveToDatabaseBlockReason}</WarningText>
         ) : null}
 
         <div className={recipes.stack.actions}>
@@ -73,7 +73,7 @@ export function ScanReviewModal({
           ) : null}
           {onSaveToDatabase ? (
             <Button
-              variant="secondary"
+              variant="primary"
               size="sm"
               onClick={onSaveToDatabase}
               disabled={canSaveToDatabase === false}

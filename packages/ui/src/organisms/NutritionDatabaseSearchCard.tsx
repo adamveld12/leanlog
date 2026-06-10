@@ -87,7 +87,8 @@ export function NutritionDatabaseSearchCard({
                   key={rowKey}
                   className={cn(
                     recipes.stack.xs,
-                    'border border-[var(--ll-line)] rounded-[10px] p-3',
+                    recipes.radius.control,
+                    'border border-[var(--ll-line)] p-3',
                   )}
                 >
                   <div className={cn(recipes.stack.row, recipes.stack.between)}>

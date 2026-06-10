@@ -981,7 +981,11 @@ function MealEdit() {
               ) : null}
               {entryTab === 'database' ? (
                 <div className={recipes.stack.sm}>
-                  {dbError ? <HelperText as="p">{dbError}</HelperText> : null}
+                  {dbError ? (
+                    <HelperText as="p" role="alert">
+                      {dbError}
+                    </HelperText>
+                  ) : null}
                   <NutritionDatabaseSearchCard
                     query={dbQuery}
                     onQueryChange={(q) => {
