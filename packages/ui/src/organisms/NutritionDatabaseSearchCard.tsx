@@ -37,6 +37,8 @@ export type NutritionDatabaseSearchCardProps = {
   addingId?: string | null;
   onCreateNew?: () => void;
   truncated?: boolean;
+  /** Total ingredients in the shared database; shown in the search label when known. */
+  totalCount?: number;
 };
 
 export function NutritionDatabaseSearchCard({
@@ -51,11 +53,16 @@ export function NutritionDatabaseSearchCard({
   addingId,
   onCreateNew,
   truncated,
+  totalCount,
 }: NutritionDatabaseSearchCardProps) {
+  const searchLabel =
+    totalCount != null
+      ? `${totalCount} ingredient${totalCount === 1 ? '' : 's'} available for searching`
+      : 'Search ingredients';
   return (
     <AnalyticsScope properties={{ organism: 'NutritionDatabaseSearchCard' }}>
       <SectionCard title="Nutrition Database">
-        <Field label="Search ingredients">
+        <Field label={searchLabel}>
           <Input
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}

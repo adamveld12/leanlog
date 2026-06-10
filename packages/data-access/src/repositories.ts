@@ -43,4 +43,5 @@ export interface NutritionDatabaseRepository {
   ): Promise<NutritionDatabaseIngredient>;
   search(query: string, limit?: number): Promise<NutritionDatabaseIngredient[]>;
   getById(id: string): Promise<NutritionDatabaseIngredient | null>;
+  count(): Promise<number>;
 }

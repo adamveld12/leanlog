@@ -49,7 +49,9 @@ type Store = {
     mealId: string,
     input: AddIngredientFromDatabase,
   ): Promise<void>;
-  searchNutritionDatabase(query: string): Promise<NutritionDatabaseIngredientSearchResult[]>;
+  searchNutritionDatabase(
+    query: string,
+  ): Promise<{ results: NutritionDatabaseIngredientSearchResult[]; total: number }>;
   createNutritionDatabaseIngredient(
     input: CreateNutritionDatabaseIngredient,
   ): Promise<NutritionDatabaseIngredient>;
@@ -255,8 +257,7 @@ export function StateProvider({ children }: PropsWithChildren) {
     },
 
     async searchNutritionDatabase(query) {
-      const { results } = await withToken((t) => api.nutritionDatabase.search(t, query));
-      return results;
+      return withToken((t) => api.nutritionDatabase.search(t, query));
     },
 
     async createNutritionDatabaseIngredient(input) {

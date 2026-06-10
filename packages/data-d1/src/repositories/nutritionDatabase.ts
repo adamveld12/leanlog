@@ -1,4 +1,4 @@
-import { eq, like } from 'drizzle-orm';
+import { count, eq, like } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { nutritionDatabaseIngredients } from '../schema';
@@ -101,6 +101,11 @@ export function createNutritionDatabaseRepository(db: D1Database): NutritionData
         .from(nutritionDatabaseIngredients)
         .where(eq(nutritionDatabaseIngredients.id, id));
       return rows[0] ? rowToDomain(rows[0]) : null;
+    },
+
+    async count(): Promise<number> {
+      const rows = await d.select({ value: count() }).from(nutritionDatabaseIngredients);
+      return rows[0]?.value ?? 0;
     },
   };
 }

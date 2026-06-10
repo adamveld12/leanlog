@@ -263,7 +263,7 @@ export const api = {
     apiFetch<ScanResolution>('/api/scan-nutrition', { token, method: 'POST', body: data }),
   nutritionDatabase: {
     search: (token: string, query: string) =>
-      apiFetch<{ results: NutritionDatabaseIngredientSearchResult[] }>(
+      apiFetch<{ results: NutritionDatabaseIngredientSearchResult[]; total: number }>(
         `/api/nutrition-database?q=${encodeURIComponent(query)}`,
         { token, method: 'GET' },
       ),

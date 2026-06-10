@@ -72,7 +72,7 @@ vi.mock('../api', () => ({
       addFromDatabase: vi.fn(),
     },
     nutritionDatabase: {
-      search: vi.fn(() => Promise.resolve({ results: [] })),
+      search: vi.fn(() => Promise.resolve({ results: [], total: 0 })),
       create: vi.fn(),
     },
     profile: {

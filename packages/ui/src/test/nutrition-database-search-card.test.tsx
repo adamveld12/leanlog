@@ -39,10 +39,12 @@ function Harness({
   results,
   onAdd = () => {},
   onCreateNew,
+  totalCount,
 }: {
   results: NutritionDatabaseSearchResult[];
   onAdd?: (id: string) => void;
   onCreateNew?: () => void;
+  totalCount?: number;
 }) {
   const [query, setQuery] = useState('');
   const [amounts, setAmounts] = useState<Record<string, number>>({});
@@ -57,6 +59,7 @@ function Harness({
       onAmountChange={(id, amount) => setAmounts((prev) => ({ ...prev, [id]: amount }))}
       onAdd={onAdd}
       onCreateNew={onCreateNew}
+      totalCount={totalCount}
     />
   );
 }
@@ -185,5 +188,20 @@ describe('NutritionDatabaseSearchCard', () => {
     expect(
       screen.queryByRole('button', { name: 'Add database ingredient' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('shows the total count in the search label when totalCount provided', () => {
+    render(<Harness results={[]} totalCount={42} />);
+    expect(screen.getByText('42 ingredients available for searching')).toBeInTheDocument();
+  });
+
+  it('uses singular wording when totalCount is 1', () => {
+    render(<Harness results={[]} totalCount={1} />);
+    expect(screen.getByText('1 ingredient available for searching')).toBeInTheDocument();
+  });
+
+  it('falls back to the default search label without totalCount', () => {
+    render(<Harness results={[]} />);
+    expect(screen.getByText('Search ingredients')).toBeInTheDocument();
   });
 });

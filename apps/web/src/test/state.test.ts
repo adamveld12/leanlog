@@ -35,7 +35,7 @@ describe('api.nutritionDatabase mock (state-level contract)', () => {
         updatedAt: now,
       },
     ];
-    vi.mocked(api.nutritionDatabase.search).mockResolvedValue({ results: mockResults });
+    vi.mocked(api.nutritionDatabase.search).mockResolvedValue({ results: mockResults, total: 1 });
 
     const { results } = await api.nutritionDatabase.search('test-token', 'chick');
     expect(results).toEqual(mockResults);

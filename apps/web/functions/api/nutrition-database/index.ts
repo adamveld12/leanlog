@@ -6,11 +6,12 @@ import { getUserDisplayNames } from '../_clerk';
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
   const q = url.searchParams.get('q')?.trim() ?? '';
+  const repo = createNutritionDatabaseRepository(context.env.DB);
+  const total = await repo.count();
   if (q.length < 2) {
-    return Response.json({ results: [] });
+    return Response.json({ results: [], total });
   }
 
-  const repo = createNutritionDatabaseRepository(context.env.DB);
   const rows = await repo.search(q);
 
   const userIds = rows.map((r) => r.addedByUserId);
@@ -27,7 +28,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }),
   }));
 
-  return Response.json({ results });
+  return Response.json({ results, total });
 };
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {

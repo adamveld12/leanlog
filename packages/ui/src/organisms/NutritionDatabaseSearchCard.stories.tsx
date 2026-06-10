@@ -99,3 +99,9 @@ export const NoCreateNew: Story = {
     onCreateNew: undefined,
   },
 };
+
+export const WithTotalCount: Story = {
+  args: {
+    totalCount: 128,
+  },
+};
