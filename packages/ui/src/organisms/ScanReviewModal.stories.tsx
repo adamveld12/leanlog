@@ -56,3 +56,18 @@ export const WithWarning: Story = {
       'Servings per container unreadable. Applied a single serving — adjust the weight if needed.',
   },
 };
+
+export const WithSaveToDatabase: Story = {
+  args: {
+    onSaveToDatabase: () => {},
+    canSaveToDatabase: true,
+  },
+};
+
+export const SaveToDatabaseBlocked: Story = {
+  args: {
+    onSaveToDatabase: () => {},
+    canSaveToDatabase: false,
+    saveToDatabaseBlockReason: 'Protein is required to save to the database.',
+  },
+};

@@ -31,6 +31,30 @@ jobs:
           # Full history so the review can diff against the last-reviewed SHA.
           fetch-depth: 0
 
+      # The review window is computed here, deterministically, instead of asking
+      # the model to recover state from its own sticky comment (track_progress
+      # overwrites that comment at job start, so comment-stored state never
+      # survives between runs). The base is the head SHA of the last successful
+      # run of this workflow on this branch; everything older is already reviewed.
+      - name: Resolve review base
+        id: review_base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          last=$(gh api "repos/${{ github.repository }}/actions/workflows/design-review.yml/runs?branch=${{ github.head_ref }}&event=pull_request&status=success&per_page=1" \
+            --jq '.workflow_runs[0].head_sha // empty')
+          if [ -n "$last" ] \
+            && git cat-file -e "$last^{commit}" 2>/dev/null \
+            && git merge-base --is-ancestor "$last" HEAD \
+            && [ "$last" != "$(git rev-parse HEAD)" ]; then
+            echo "base=$last" >> "$GITHUB_OUTPUT"
+            echo "scope=incremental" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+            echo "scope=full" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Review base: $(cat "$GITHUB_OUTPUT")"
+
       - name: Run Claude advisory design review
         uses: anthropics/claude-code-action@v1
         with:
@@ -42,15 +66,13 @@ jobs:
           prompt: |
             You are performing an advisory design-system review for this Leanlog pull request. This is a read-only review — do not modify any files or create branches.
 
-            ## Step 0 — Load prior review state (REQUIRED, do this first)
+            ## Review window (precomputed — do not re-derive)
 
-            Fetch your previous sticky comment on this PR (if any). Its final line contains a machine-readable state trailer:
+            DELTA = `git diff ${{ steps.review_base.outputs.base }}..HEAD` (scope: ${{ steps.review_base.outputs.scope }}).
 
-            `<!-- design-review-state {"reviewedSha":"<sha>","findings":["<file>:<rule-id>", ...],"notes":["<note-id>", ...]} -->`
+            Everything outside DELTA was approved by a previous review run. You MUST NOT raise findings, advisories, or notes on code that is unchanged since the base SHA — even if a written rule applies to it. If you notice such code, it is out of scope, full stop.
 
-            - If the trailer exists, parse it. Set DELTA = `git diff <reviewedSha>..HEAD` — this is the ONLY code you may raise NEW findings on. Code that existed at `reviewedSha` and was not flagged then is APPROVED; never raise a new finding on it, even if you would flag it today.
-            - For each fingerprint in `findings`, check whether it is fixed at HEAD. Report it as resolved (✅) or still open.
-            - If there is no trailer (first run), DELTA = the full PR diff against the base branch.
+            When scope is `incremental`, the diff is usually a small fix-up responding to the previous review: keep the review proportional to it, verify the fix-up doesn't itself violate a rule, and do not expand back to the full PR.
 
             ## Step 1 — Deterministic checks (do not re-derive by eye)
 
@@ -73,10 +95,10 @@ jobs:
             ## Finding rules (severity floor — apply strictly)
 
             - A finding MUST cite a specific written rule from the docs above (quote or name the section). No citation → it is not a finding.
-            - A finding MUST be on lines changed in DELTA. Pre-existing code is out of scope — do not report it, not even as "advisory" or "worth noting".
+            - A finding MUST be on lines changed in DELTA. Pre-existing code — anything unchanged since `${{ steps.review_base.outputs.base }}` — is out of scope; do not report it, not even as "advisory" or "worth noting".
             - `**[Blocking]**` is reserved for Step 1 script failures and unambiguous written-rule violations.
             - `**[Advisory]**` is for cited-rule violations where remediation involves judgment.
-            - Improvement ideas with no rule citation (refactors, "more durable patterns", forward-looking suggestions) go in an optional **#### Notes** section: maximum 2, one line each, give each a stable kebab-case id, and NEVER repeat a note id already present in the state trailer's `notes` list. Notes do not count as findings.
+            - Improvement ideas with no rule citation (refactors, "more durable patterns", forward-looking suggestions) go in an optional **#### Notes** section: maximum 2, one line each, and only about code in DELTA. When scope is `incremental`, omit the Notes section entirely.
 
             ## Step 3 — Completeness pass (before publishing)
 
@@ -93,35 +115,29 @@ jobs:
             ### Design System Review
 
             **Result:** N finding(s) — B blocking, A advisory
+            **Reviewed range:** ${{ steps.review_base.outputs.base }}..HEAD (${{ steps.review_base.outputs.scope }})
 
             #### Review Areas
             - [x] ...all 9...
-
-            #### Previously reported
-            - ✅ resolved / ⏳ still open fingerprints from the prior run
 
             #### Findings
             [findings, each citing the rule violated]
 
             #### Notes
-            [optional, max 2, non-gating]
+            [optional, max 2, non-gating, full scope only]
 
             #### Summary
             [1-2 sentences]
             ```
 
-            If no findings and no open prior findings:
+            If no findings:
             ```
             ### Design System Review — No Issues Found
 
-            All 9 review areas passed for changes since <reviewedSha or PR base>. No blocking or advisory findings.
+            All 9 review areas passed for `${{ steps.review_base.outputs.base }}..HEAD` (${{ steps.review_base.outputs.scope }}). No blocking or advisory findings.
 
             #### Review Areas
             - [x] ...all 9...
             ```
 
-            Always include the job run link, and ALWAYS end the comment with an updated state trailer on its own line:
-
-            `<!-- design-review-state {"reviewedSha":"<HEAD sha>","findings":[...all fingerprints ever raised, including resolved...],"notes":[...all note ids ever raised...]} -->`
-
-            Fingerprint format: `path/to/file.tsx:<short-rule-id>` (e.g. `packages/ui/src/molecules/Tabs.tsx:radius-token`). Keep fingerprints stable across runs so dedup works.
+            Always include the job run link.

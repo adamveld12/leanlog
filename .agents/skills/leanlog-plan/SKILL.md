@@ -3,8 +3,8 @@ description: |
     🗺️ Develop a detailed multi step action plan.
     Use this skill whenever a user says things like:
     - "plan this feature...."
-    - "I want to work on...."
-    - "lets work on <github issue URL>"
+    - "I want to plan on...."
+    - "lets plan this issue <github issue URL>"
 argument-hint: "[Github issue URL] [task]"
 ---
 
@@ -54,6 +54,10 @@ $ARGUMENTS
 - **The impact report**: Note the downstream impacts, tech debt and future work we are deferring now.
     - Tech debt: explicitly call out short cuts, trade offs and other issues with this implement.
     - Out of Scope: note what is out of scope or otherwise purposefully not considered in this plan.
+
+- **Analytics & Observability**: Note analytics events and error tracking we should handle in Posthog.
+    - **Analytics events**: things like events from buttons or tab controls
+    - **Error capturing**: handle errors and send them to posthog via captureException
 
 - **Q&A**: A list of questions you have for me to add more specificity and clarity to the implementation.
     - Identify ambiguity in the plan request and interview me to fill those gaps.

@@ -12,7 +12,6 @@ type Story = StoryObj<typeof LabelScanCard>;
 
 function Demo(initial: Partial<LabelScanValue> & { loading?: boolean; error?: string }) {
   const [value, setValue] = useState<LabelScanValue>({
-    name: '',
     mode: 'weight',
     amount: 0,
     ...initial,
@@ -31,7 +30,7 @@ function Demo(initial: Partial<LabelScanValue> & { loading?: boolean; error?: st
 export const Default: Story = { render: () => <Demo /> };
 export const ServingsMode: Story = { render: () => <Demo mode="servings" amount={2} /> };
 export const EntirePackage: Story = { render: () => <Demo mode="package" /> };
-export const Loading: Story = { render: () => <Demo name="Granola" amount={30} loading /> };
+export const Loading: Story = { render: () => <Demo amount={30} loading /> };
 export const Error: Story = {
-  render: () => <Demo name="Granola" error="Scan failed. Try again with a clearer label photo." />,
+  render: () => <Demo error="Scan failed. Try again with a clearer label photo." />,
 };

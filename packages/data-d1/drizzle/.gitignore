@@ -1,0 +1,2 @@
+# Migration SQL must always be committed — overrides any global *.sql ignore
+!*.sql

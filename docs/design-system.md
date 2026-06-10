@@ -85,13 +85,13 @@
 
 Button, Card, Checkbox, Field, FileInput, HelperText, Input, IntegerInput, Label, NumberInput, PageTitle, ProgressBar, Radio, SectionHeading, Select, Spinner, Text, UnitText, WarningText
 
-### Molecules (10)
+### Molecules (12)
 
-ActionRow, DateSelect3, ListRow, LoadingState, MacroSummaryLine, Modal, RadioGroup, SectionCard, StickyFooter, Tabs
+ActionRow, DateSelect3, ListRow, LoadingState, MacroProgressBlock, MacroSummaryLine, Modal, RadioGroup, SectionCard, StatMetric, StickyFooter, Tabs
 
-### Organisms (10)
+### Organisms (17)
 
-AddDayControl, AppPageHeading, AuthLanding, DailyTotalsCard, IngredientEntryCard, LabelScanCard, ListSectionCard, PageNavHeading, ProfileSectionCards, ScanReviewModal
+AddDayControl, AppPageHeading, AuthLanding, DailyTotalsCard, DayWeightCard, IngredientEntryCard, LabelScanCard, ListSectionCard, MonthCalendarCard, NutritionDatabaseEntryCard, NutritionDatabaseSearchCard, PageNavHeading, ProfileSectionCards, QuickActionsCard, ScanReviewModal, WeeklyStatsCard, WeightTrendCard
 
 ### Templates (7)
 

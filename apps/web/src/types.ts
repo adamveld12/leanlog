@@ -7,6 +7,11 @@ export type {
   UpdateProfile,
   UpsertIngredient,
   DayTargets,
+  NutritionDatabaseIngredient,
+  CreateNutritionDatabaseIngredient,
+  NutritionDatabaseIngredientSearchResult,
+  AddIngredientFromDatabase,
+  Micronutrient,
 } from '@leanlog/data-access';
 
 export type SaveSections = Partial<

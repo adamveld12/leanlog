@@ -1,0 +1,107 @@
+import type { Meta, StoryObj } from '@storybook/react';
+import { NutritionDatabaseSearchCard } from './NutritionDatabaseSearchCard';
+
+const baseResults = [
+  {
+    id: 'ing-1',
+    name: 'CHICKEN BREAST',
+    servingAmount: 100,
+    fat: 3.6,
+    carbs: 0,
+    protein: 31,
+    fiber: null,
+    calories: 165,
+    addedByName: 'Adam',
+    addedAtLabel: 'Jun 1, 2026',
+    creationSource: 'manual',
+  },
+  {
+    id: 'ing-2',
+    name: 'BROWN RICE',
+    servingAmount: 100,
+    fat: 0.9,
+    carbs: 23,
+    protein: 2.6,
+    fiber: 1.8,
+    calories: 110,
+    addedByName: 'System',
+    addedAtLabel: 'May 15, 2026',
+    creationSource: 'scan',
+  },
+];
+
+const meta: Meta<typeof NutritionDatabaseSearchCard> = {
+  title: 'Design System/Organisms/NutritionDatabaseSearchCard',
+  component: NutritionDatabaseSearchCard,
+  args: {
+    query: 'chicken',
+    onQueryChange: () => {},
+    results: baseResults,
+    loading: false,
+    searched: true,
+    amounts: {},
+    onAmountChange: () => {},
+    onAdd: () => {},
+    addingId: null,
+    onCreateNew: () => {},
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof NutritionDatabaseSearchCard>;
+
+export const Default: Story = {};
+
+export const Loading: Story = {
+  args: {
+    loading: true,
+    results: [],
+    searched: false,
+  },
+};
+
+export const NoResults: Story = {
+  args: {
+    results: [],
+    searched: true,
+    query: 'xyz unknown',
+  },
+};
+
+export const Duplicates: Story = {
+  args: {
+    results: [{ ...baseResults[0] }, { ...baseResults[0] }],
+    amounts: { 'ing-1': 150 },
+  },
+};
+
+export const WithAmount: Story = {
+  args: {
+    amounts: { 'ing-1': 150 },
+  },
+};
+
+export const Adding: Story = {
+  args: {
+    amounts: { 'ing-1': 150 },
+    addingId: 'ing-1',
+  },
+};
+
+export const Truncated: Story = {
+  args: {
+    truncated: true,
+  },
+};
+
+export const NoCreateNew: Story = {
+  args: {
+    onCreateNew: undefined,
+  },
+};
+
+export const WithTotalCount: Story = {
+  args: {
+    totalCount: 128,
+  },
+};

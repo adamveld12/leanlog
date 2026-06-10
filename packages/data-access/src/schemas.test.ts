@@ -5,6 +5,8 @@ import {
   UpdateProfileSchema,
   UserProfileSchema,
   PROFILE_DEFAULTS,
+  CreateNutritionDatabaseIngredientSchema,
+  UpsertIngredientSchema,
 } from './schemas';
 
 describe('UpdateProfileSchema', () => {
@@ -136,5 +138,141 @@ describe('PROFILE_DEFAULTS', () => {
     expect(parsed.data!.macroFats).toBe(PROFILE_DEFAULTS.macroFats);
     expect(parsed.data!.macroCarbs).toBe(PROFILE_DEFAULTS.macroCarbs);
     expect(parsed.data!.macroProtein).toBe(PROFILE_DEFAULTS.macroProtein);
+  });
+});
+
+const validCreateDbIngredient = {
+  name: 'Oats',
+  servingAmount: 40,
+  creationSource: 'manual' as const,
+  fat: 2.5,
+  carbs: 27,
+  protein: 5,
+};
+
+describe('CreateNutritionDatabaseIngredientSchema', () => {
+  it('rejects missing name', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      name: undefined,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects empty name', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      name: '',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing servingAmount', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      servingAmount: undefined,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing fat', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      fat: undefined,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing carbs', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      carbs: undefined,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing protein', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      protein: undefined,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts entry without micronutrients', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse(validCreateDbIngredient);
+    expect(result.success).toBe(true);
+    expect(result.data!.micronutrients).toBeUndefined();
+  });
+
+  it('accepts percentDailyValue of 120 (over 100 allowed)', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      micronutrients: [{ name: 'Vitamin D', percentDailyValue: 120 }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts percentDailyValue of 45', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      micronutrients: [{ name: 'Iron', amount: 8, percentDailyValue: 45 }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts all optional fat subtypes', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      saturatedFat: 0.5,
+      unsaturatedFat: 1.5,
+      monounsaturatedFat: 0.8,
+      polyunsaturatedFat: 0.7,
+      transFat: 0,
+      fiber: 3,
+      sugar: 1,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('REJECTS payload containing calories (strict mode)', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      calories: 200,
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('UpsertIngredientSchema', () => {
+  it('rejects a payload containing calories', () => {
+    const result = UpsertIngredientSchema.safeParse({
+      id: 'some-id',
+      mealId: 'meal-id',
+      name: 'Apple',
+      weight: 100,
+      fat: 0,
+      saturatedFat: 0,
+      carbs: 25,
+      fiber: 4,
+      protein: 0,
+      calories: 95,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts valid ingredient without calories', () => {
+    const result = UpsertIngredientSchema.safeParse({
+      id: 'some-id',
+      mealId: 'meal-id',
+      name: 'Apple',
+      weight: 100,
+      fat: 0,
+      saturatedFat: 0,
+      carbs: 25,
+      fiber: 4,
+      protein: 0,
+    });
+    expect(result.success).toBe(true);
   });
 });

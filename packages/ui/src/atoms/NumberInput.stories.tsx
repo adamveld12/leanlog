@@ -5,14 +5,24 @@ import { NumberInput } from './NumberInput';
 function Demo({
   label,
   initialValue,
+  placeholder,
   disabled,
 }: {
   label: string;
-  initialValue: number;
+  initialValue: number | null;
+  placeholder?: string;
   disabled?: boolean;
 }) {
-  const [value, setValue] = useState(initialValue);
-  return <NumberInput label={label} value={value} disabled={disabled} onChange={setValue} />;
+  const [value, setValue] = useState<number | null>(initialValue);
+  return (
+    <NumberInput
+      label={label}
+      value={value}
+      placeholder={placeholder}
+      disabled={disabled}
+      onChange={setValue}
+    />
+  );
 }
 
 const meta: Meta<typeof Demo> = {
@@ -29,6 +39,10 @@ export const Default: Story = {
 
 export const WithDecimal: Story = {
   args: { label: 'Weight (kg)', initialValue: 72.5 },
+};
+
+export const Empty: Story = {
+  args: { label: 'Weight (g)', initialValue: null, placeholder: 'e.g. 120' },
 };
 
 export const Disabled: Story = {

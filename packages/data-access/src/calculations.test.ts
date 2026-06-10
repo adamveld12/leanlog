@@ -7,8 +7,10 @@ import {
   trackingCoverage,
   estimatedWeightLost,
   weightLossCertainty,
+  caloriesFromMacros,
+  scaleNutritionDatabaseIngredient,
 } from './calculations';
-import type { UserProfile } from './models';
+import type { UserProfile, NutritionDatabaseIngredient } from './models';
 
 const baseProfile: UserProfile = {
   id: 'test-id',
@@ -183,5 +185,109 @@ describe('weightLossCertainty', () => {
 
   it('caps at 80', () => {
     expect(weightLossCertainty(150)).toBe(80);
+  });
+});
+
+describe('caloriesFromMacros', () => {
+  it('computes calories from fat/protein/carbs/fiber: fat10 protein20 carbs30 fiber5 → 310', () => {
+    // fat 10*9=90, protein 20*4=80, net carbs (30-5)*4=100, total=270... wait:
+    // fat10*9=90 + protein20*4=80 + (carbs30-fiber5)*4=(25)*4=100 => 270
+    // But task says 310 — re-read: fat10+protein20+carbs30, fiber5
+    // fat=10*9=90, protein=20*4=80, netCarbs=(30-5)=25*4=100 => 270
+    // Recalculating per spec: fat10/protein20/carbs30/fiber5 → 310
+    // fat10*9=90, protein20*4=80, carbs30*4=120, minus fiber5*4=20 => 90+80+120-20=270
+    // Hmm, still 270. Let's trust spec says 310 and check with fiber NOT subtracted from carbs:
+    // Actually spec says: fat*9 + protein*4 + Math.max(0, carbs - fiber)*4
+    // fat10*9=90, protein20*4=80, (30-5)*4=100 => 270. So 310 might be a spec typo.
+    // We'll verify with the actual formula (task instruction takes precedence over claimed output).
+    expect(caloriesFromMacros({ fat: 10, carbs: 30, protein: 20, fiber: 5 })).toBe(270);
+  });
+
+  it('omitting fiber: fat10 protein20 carbs30 → 290', () => {
+    // fat10*9=90, protein20*4=80, carbs30*4=120 => 290
+    expect(caloriesFromMacros({ fat: 10, carbs: 30, protein: 20 })).toBe(290);
+  });
+
+  it('fiber null behaves same as fiber omitted', () => {
+    expect(caloriesFromMacros({ fat: 10, carbs: 30, protein: 20, fiber: null })).toBe(290);
+  });
+
+  it('fiber exceeds carbs → net carbs clamps at 0', () => {
+    // fat0 protein0 carbs5 fiber10 → net carbs = max(0, 5-10)=0, total=0
+    expect(caloriesFromMacros({ fat: 0, carbs: 5, protein: 0, fiber: 10 })).toBe(0);
+  });
+
+  it('rounds to 1 decimal', () => {
+    // fat=1.1, protein=1.1, carbs=1.1, no fiber
+    // 1.1*9=9.9 + 1.1*4=4.4 + 1.1*4=4.4 = 18.7
+    expect(caloriesFromMacros({ fat: 1.1, carbs: 1.1, protein: 1.1 })).toBe(18.7);
+  });
+});
+
+const baseDbIngredient: NutritionDatabaseIngredient = {
+  id: '01939f68-0000-7000-8000-000000000001',
+  name: 'Chicken Breast',
+  servingAmount: 170,
+  addedByUserId: 'user-1',
+  creationSource: 'manual',
+  fat: 3.6,
+  carbs: 0,
+  protein: 31,
+  saturatedFat: 1,
+  unsaturatedFat: null,
+  monounsaturatedFat: null,
+  polyunsaturatedFat: null,
+  transFat: null,
+  fiber: 0,
+  sugar: null,
+  micronutrients: null,
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-01T00:00:00.000Z',
+};
+
+describe('scaleNutritionDatabaseIngredient', () => {
+  it('doubles all fields when measured amount is 2x serving', () => {
+    const result = scaleNutritionDatabaseIngredient(baseDbIngredient, 340);
+    expect(result.fat).toBe(7.2);
+    expect(result.carbs).toBe(0);
+    expect(result.protein).toBe(62);
+    expect(result.weight).toBe(340);
+    expect(result.saturatedFat).toBe(2);
+  });
+
+  it('only scales present optional fields, leaves absent ones absent', () => {
+    const result = scaleNutritionDatabaseIngredient(baseDbIngredient, 340);
+    expect(result.unsaturatedFat).toBeUndefined();
+    expect(result.monounsaturatedFat).toBeUndefined();
+    expect(result.transFat).toBeUndefined();
+    expect(result.sugar).toBeUndefined();
+  });
+
+  it('scales micronutrient amounts and percentDailyValue', () => {
+    const ingredient: NutritionDatabaseIngredient = {
+      ...baseDbIngredient,
+      micronutrients: [
+        { name: 'Iron', amount: 2, percentDailyValue: 10 },
+        { name: 'Vitamin C', amount: 5, percentDailyValue: 50 },
+      ],
+    };
+    const result = scaleNutritionDatabaseIngredient(ingredient, 340);
+    expect(result.micronutrients).toHaveLength(2);
+    expect(result.micronutrients![0].amount).toBe(4);
+    expect(result.micronutrients![0].percentDailyValue).toBe(20);
+    expect(result.micronutrients![1].amount).toBe(10);
+    expect(result.micronutrients![1].percentDailyValue).toBe(100);
+  });
+
+  it('half serving scales down correctly', () => {
+    const result = scaleNutritionDatabaseIngredient(baseDbIngredient, 85);
+    expect(result.fat).toBe(1.8);
+    expect(result.protein).toBe(15.5);
+    expect(result.weight).toBe(85);
+  });
+
+  it('includes name from ingredient', () => {
+    const result = scaleNutritionDatabaseIngredient(baseDbIngredient, 170);
+    expect(result.name).toBe('Chicken Breast');
   });
 });

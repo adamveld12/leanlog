@@ -47,6 +47,8 @@ export * from './organisms/ProfileSectionCards';
 export * from './organisms/AppPageHeading';
 export * from './organisms/DailyTotalsCard';
 export * from './organisms/DayWeightCard';
+export * from './organisms/NutritionDatabaseSearchCard';
+export * from './organisms/NutritionDatabaseEntryCard';
 export * from './organisms/ScanReviewModal';
 export * from './organisms/WeightTrendCard';
 export * from './templates/AppShell';

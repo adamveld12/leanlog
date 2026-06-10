@@ -8,7 +8,6 @@ afterEach(cleanup);
 
 function Harness({ onScan = () => {} }: { onScan?: () => void }) {
   const [value, setValue] = useState<LabelScanValue>({
-    name: '',
     mode: 'weight',
     amount: 0,
   });
@@ -24,10 +23,10 @@ describe('LabelScanCard', () => {
     expect(screen.getByLabelText('# of Servings')).toBeInTheDocument();
   });
 
-  it('disables the numeric input when entire package is selected', async () => {
+  it('hides the numeric input when entire package is selected', async () => {
     render(<Harness />);
     await userEvent.click(screen.getByRole('radio', { name: 'Entire package' }));
-    expect(screen.getByLabelText('Weight (g or ml)')).toBeDisabled();
+    expect(screen.queryByLabelText('Weight (g or ml)')).not.toBeInTheDocument();
   });
 
   it('invokes onScan when Scan Label is clicked', async () => {
@@ -40,7 +39,7 @@ describe('LabelScanCard', () => {
   it('shows error text and a scanning state', () => {
     render(
       <LabelScanCard
-        value={{ name: 'Granola', mode: 'weight', amount: 30 }}
+        value={{ mode: 'weight', amount: 30 }}
         loading
         error="Scan failed."
         onChange={() => {}}
@@ -49,5 +48,10 @@ describe('LabelScanCard', () => {
     );
     expect(screen.getByText('Scan failed.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Scanning…' })).toBeDisabled();
+  });
+
+  it('does not render an Ingredient Name field', () => {
+    render(<Harness />);
+    expect(screen.queryByLabelText('Ingredient Name')).not.toBeInTheDocument();
   });
 });

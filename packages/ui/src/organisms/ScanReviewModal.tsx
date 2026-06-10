@@ -23,6 +23,9 @@ export type ScanReviewModalProps = {
   notes?: string[];
   fields: ScanField[];
   acceptLabel?: string;
+  onSaveToDatabase?: () => void;
+  canSaveToDatabase?: boolean;
+  saveToDatabaseBlockReason?: string;
 };
 
 export function ScanReviewModal({
@@ -36,6 +39,9 @@ export function ScanReviewModal({
   notes,
   fields,
   acceptLabel = 'Apply',
+  onSaveToDatabase,
+  canSaveToDatabase,
+  saveToDatabaseBlockReason,
 }: ScanReviewModalProps) {
   return (
     <AnalyticsScope properties={{ organism: 'ScanReviewModal' }}>
@@ -51,9 +57,13 @@ export function ScanReviewModal({
 
         {notes && notes.length > 0 ? <HelperText as="p">{notes.join(' ')}</HelperText> : null}
 
-        {warning ? <WarningText>{warning}</WarningText> : null}
+        {warning ? <WarningText role="alert">{warning}</WarningText> : null}
 
-        {!canAccept && blockReason ? <WarningText>{blockReason}</WarningText> : null}
+        {!canAccept && blockReason ? <WarningText role="alert">{blockReason}</WarningText> : null}
+
+        {onSaveToDatabase && !canSaveToDatabase && saveToDatabaseBlockReason ? (
+          <WarningText role="alert">{saveToDatabaseBlockReason}</WarningText>
+        ) : null}
 
         <div className={recipes.stack.actions}>
           {onRetake ? (
@@ -61,10 +71,25 @@ export function ScanReviewModal({
               Retake photo
             </Button>
           ) : null}
+          {onSaveToDatabase ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onSaveToDatabase}
+              disabled={canSaveToDatabase === false}
+            >
+              Apply and save to database
+            </Button>
+          ) : null}
           <Button variant="secondary" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button size="sm" onClick={onAccept} disabled={!canAccept}>
+          <Button
+            size="sm"
+            variant={onSaveToDatabase ? 'ghost' : 'primary'}
+            onClick={onAccept}
+            disabled={!canAccept}
+          >
             {acceptLabel}
           </Button>
         </div>

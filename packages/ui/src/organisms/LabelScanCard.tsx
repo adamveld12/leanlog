@@ -1,8 +1,6 @@
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
-import { Field } from '../atoms/Field';
 import { HelperText } from '../atoms/HelperText';
-import { Input } from '../atoms/Input';
 import { NumberInput } from '../atoms/NumberInput';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { WarningText } from '../atoms/WarningText';
@@ -14,10 +12,9 @@ import { recipes } from '../styles/recipes';
 export type ScanMode = 'weight' | 'servings' | 'package';
 
 export type LabelScanValue = {
-  name: string;
   mode: ScanMode;
   /** Weight (g/ml) in 'weight' mode, a serving count in 'servings' mode, unused in 'package'. */
-  amount: number;
+  amount: number | null;
 };
 
 type LabelScanCardProps = {
@@ -26,19 +23,11 @@ type LabelScanCardProps = {
   error?: string;
   onChange: (next: LabelScanValue) => void;
   onScan: () => void;
-  normalizeNameOnBlur?: (value: string) => string;
 };
 
-const clamp = (n: number) => Math.max(0, Math.min(9999, n));
+const clamp = (n: number | null) => (n == null ? null : Math.max(0, Math.min(9999, n)));
 
-export function LabelScanCard({
-  value,
-  loading,
-  error,
-  onChange,
-  onScan,
-  normalizeNameOnBlur,
-}: LabelScanCardProps) {
+export function LabelScanCard({ value, loading, error, onChange, onScan }: LabelScanCardProps) {
   const amountLabel = value.mode === 'servings' ? '# of Servings' : 'Weight (g or ml)';
 
   return (
@@ -50,15 +39,6 @@ export function LabelScanCard({
             {loading ? 'Scanning…' : 'Scan Label'}
           </Button>
         </div>
-
-        <Field label="Ingredient Name">
-          <Input
-            value={value.name}
-            onChange={(e) => onChange({ ...value, name: e.target.value })}
-            normalizeOnBlur={normalizeNameOnBlur}
-            onNormalized={(name) => onChange({ ...value, name })}
-          />
-        </Field>
 
         <RadioGroup
           name="scan-mode"
@@ -75,12 +55,13 @@ export function LabelScanCard({
           <HelperText as="p">Uses serving size times the servings in the package.</HelperText>
         ) : null}
 
-        <NumberInput
-          label={amountLabel}
-          value={value.amount}
-          disabled={value.mode === 'package'}
-          onChange={(n) => onChange({ ...value, amount: clamp(n) })}
-        />
+        {value.mode !== 'package' ? (
+          <NumberInput
+            label={amountLabel}
+            value={value.amount}
+            onChange={(n) => onChange({ ...value, amount: clamp(n) })}
+          />
+        ) : null}
 
         {error ? (
           <div role="alert" className={recipes.stack.center}>

@@ -18,6 +18,7 @@ const scanSchema = z.object({
     carbs: z.number().finite().nonnegative(),
     fiber: z.number().finite().nonnegative(),
     protein: z.number().finite().nonnegative(),
+    sugar: z.number().finite().nonnegative().optional(),
   }),
   inferredName: z.string().nullable(),
   notes: z.array(z.string()).default([]),
@@ -63,7 +64,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       'basis=per_serving if values represent one serving; per_100g if values are per 100g; unknown otherwise.',
       'Extract servingSizeGrams if explicitly shown.',
       'Extract servingsPerContainer (servings per package/container) if explicitly shown, otherwise null.',
-      'If a field is missing, return 0 and add a note.',
+      'Extract sugar from the label if shown; omit the field if not present.',
+      'If a required field is missing, return 0 and add a note.',
       'Keep numbers realistic and non-negative.',
     ].join(' ');
 
@@ -86,7 +88,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         basis: object.basis,
         servingSizeGrams: object.servingSizeGrams,
         servingsPerContainer: object.servingsPerContainer,
-        nutrients: object.nutrients,
+        nutrients: {
+          ...object.nutrients,
+          sugar: object.nutrients.sugar,
+        },
         inferredName: object.inferredName,
       },
       { mode, weight, servings, entirePackage, name },

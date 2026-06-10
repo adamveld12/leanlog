@@ -6,7 +6,7 @@ import { Input } from './Input';
 type NumberInputProps = {
   label: string;
   value: number | null;
-  onChange: (next: number) => void;
+  onChange: (next: number | null) => void;
   onBlur?: () => void;
   placeholder?: string;
   disabled?: boolean;
@@ -41,7 +41,7 @@ export function NumberInput({
           const next = e.target.value;
           setText(next);
           if (next.trim() === '') {
-            onChange(0);
+            onChange(null);
             return;
           }
           if (!/^\d*\.?\d*$/.test(next)) return;

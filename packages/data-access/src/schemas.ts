@@ -1,5 +1,68 @@
 import { z } from 'zod';
 
+// ---------------------------------------------------------------------------
+// Micronutrient
+// ---------------------------------------------------------------------------
+
+export const MicronutrientSchema = z.object({
+  name: z.string().min(1),
+  amount: z.number().min(0).optional(),
+  unit: z.string().optional(),
+  percentDailyValue: z.number().min(0).optional(),
+});
+
+// ---------------------------------------------------------------------------
+// Nutrition Database Ingredient
+// ---------------------------------------------------------------------------
+
+export const NutritionDatabaseIngredientSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1),
+  servingAmount: z.number().gt(0),
+  addedByUserId: z.string(),
+  creationSource: z.enum(['manual', 'scan', 'meal_ingredient']),
+  fat: z.number().min(0),
+  carbs: z.number().min(0),
+  protein: z.number().min(0),
+  saturatedFat: z.number().min(0).nullable().optional(),
+  unsaturatedFat: z.number().min(0).nullable().optional(),
+  monounsaturatedFat: z.number().min(0).nullable().optional(),
+  polyunsaturatedFat: z.number().min(0).nullable().optional(),
+  transFat: z.number().min(0).nullable().optional(),
+  fiber: z.number().min(0).nullable().optional(),
+  sugar: z.number().min(0).nullable().optional(),
+  micronutrients: z.array(MicronutrientSchema).nullable().optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const CreateNutritionDatabaseIngredientSchema = NutritionDatabaseIngredientSchema.omit({
+  id: true,
+  addedByUserId: true,
+  createdAt: true,
+  updatedAt: true,
+}).strict();
+
+export const AddIngredientFromDatabaseSchema = z
+  .object({
+    databaseIngredientId: z.string().uuid(),
+    measuredAmount: z.number().gt(0),
+  })
+  .strict();
+
+// NutritionDatabaseIngredientSearchResult is expressed as a type (not a schema)
+// because calories is derived — we don't store it, we compute it.
+export type NutritionDatabaseIngredientSearchResult = z.infer<
+  typeof NutritionDatabaseIngredientSchema
+> & {
+  addedByName: string;
+  calories: number;
+};
+
+// ---------------------------------------------------------------------------
+// Profile
+// ---------------------------------------------------------------------------
+
 const profileFields = {
   weightLbs: z.number().min(0),
   heightInches: z.number().min(0),
@@ -37,6 +100,14 @@ export const IngredientSchema = z.object({
   carbs: z.number().min(0).max(999),
   fiber: z.number().min(0).max(999),
   protein: z.number().min(0).max(999),
+  // Extended optional fields
+  unsaturatedFat: z.number().min(0).nullable().optional(),
+  monounsaturatedFat: z.number().min(0).nullable().optional(),
+  polyunsaturatedFat: z.number().min(0).nullable().optional(),
+  transFat: z.number().min(0).nullable().optional(),
+  sugar: z.number().min(0).nullable().optional(),
+  micronutrients: z.array(MicronutrientSchema).nullable().optional(),
+  sourceDatabaseIngredientId: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -94,7 +165,11 @@ export const CreateDailyMealLogSchema = DailyMealLogSchema.omit({
 // Defined from profileFields (not UserProfileSchema) so .partial() keeps missing fields
 // as undefined — prevents Zod 4 defaults from overwriting existing DB values on partial updates.
 export const UpdateProfileSchema = z.object(profileFields).partial();
-export const UpsertIngredientSchema = IngredientSchema.omit({ createdAt: true, updatedAt: true });
+export const UpsertIngredientSchema = IngredientSchema.omit({
+  createdAt: true,
+  updatedAt: true,
+  calories: true,
+}).strict();
 export const DayTargetsSchema = z.object({
   targetCalories: z.number().min(0).optional(),
   targetFat: z.number().min(0).optional(),

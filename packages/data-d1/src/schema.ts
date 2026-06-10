@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 
 export const userProfiles = sqliteTable('user_profiles', {
   id: text('id').primaryKey(),
@@ -66,6 +66,41 @@ export const ingredients = sqliteTable('ingredients', {
   carbs: real('carbs').notNull().default(0),
   fiber: real('fiber').notNull().default(0),
   protein: real('protein').notNull().default(0),
+  // Extended optional fields
+  unsaturatedFat: real('unsaturated_fat'),
+  monounsaturatedFat: real('monounsaturated_fat'),
+  polyunsaturatedFat: real('polyunsaturated_fat'),
+  transFat: real('trans_fat'),
+  sugar: real('sugar'),
+  micronutrientsJson: text('micronutrients_json'),
+  sourceDatabaseIngredientId: text('source_database_ingredient_id'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+export const nutritionDatabaseIngredients = sqliteTable(
+  'nutrition_database_ingredients',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    servingAmount: real('serving_amount').notNull(),
+    addedByUserId: text('added_by_user_id').notNull(),
+    creationSource: text('creation_source', {
+      enum: ['manual', 'scan', 'meal_ingredient'],
+    }).notNull(),
+    fat: real('fat').notNull(),
+    carbs: real('carbs').notNull(),
+    protein: real('protein').notNull(),
+    saturatedFat: real('saturated_fat'),
+    unsaturatedFat: real('unsaturated_fat'),
+    monounsaturatedFat: real('monounsaturated_fat'),
+    polyunsaturatedFat: real('polyunsaturated_fat'),
+    transFat: real('trans_fat'),
+    fiber: real('fiber'),
+    sugar: real('sugar'),
+    micronutrientsJson: text('micronutrients_json'),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => [index('nutrition_database_ingredients_name_idx').on(table.name)],
+);

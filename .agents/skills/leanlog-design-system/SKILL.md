@@ -72,17 +72,17 @@ pnpm build
 
 ## Component Inventory
 
-### Atoms (17)
+### Atoms (19)
 
-Button, Card, Field, FileInput, HelperText, Input, IntegerInput, Label, NumberInput, PageTitle, ProgressBar, Radio, SectionHeading, Select, Text, UnitText, WarningText
+Button, Card, Checkbox, Field, FileInput, HelperText, Input, IntegerInput, Label, NumberInput, PageTitle, ProgressBar, Radio, SectionHeading, Select, Spinner, Text, UnitText, WarningText
 
-### Molecules (9)
+### Molecules (12)
 
-ActionRow, DateSelect3, ListRow, MacroSummaryLine, Modal, RadioGroup, SectionCard, StickyFooter, Tabs
+ActionRow, DateSelect3, ListRow, LoadingState, MacroProgressBlock, MacroSummaryLine, Modal, RadioGroup, SectionCard, StatMetric, StickyFooter, Tabs
 
-### Organisms (9)
+### Organisms (17)
 
-AddDayControl, AppPageHeading, AuthLanding, DailyTotalsCard, IngredientEntryCard, ListSectionCard, PageNavHeading, ProfileSectionCards, ScanReviewModal
+AddDayControl, AppPageHeading, AuthLanding, DailyTotalsCard, DayWeightCard, IngredientEntryCard, LabelScanCard, ListSectionCard, MonthCalendarCard, NutritionDatabaseEntryCard, NutritionDatabaseSearchCard, PageNavHeading, ProfileSectionCards, QuickActionsCard, ScanReviewModal, WeeklyStatsCard, WeightTrendCard
 
 ### Templates (7)
 

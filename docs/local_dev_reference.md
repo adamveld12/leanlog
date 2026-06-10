@@ -80,11 +80,12 @@ Required for normal local tracker development:
 
 Optional for local label scan testing:
 
-| Env var                        | Source                          | Used by                                          |
-| ------------------------------ | ------------------------------- | ------------------------------------------------ |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | `apps/web/.env.functions.local` | `functions/api/scan-nutrition.ts`.               |
-| `VITE_POSTHOG_API_KEY`         | `apps/web/.env.functions.local` | Server-side PostHog capture from scan nutrition. |
-| `VITE_POSTHOG_HOST`            | `apps/web/.env.functions.local` | Server-side PostHog host.                        |
+| Env var                        | Source                          | Used by                                                                                                                                                              |
+| ------------------------------ | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | `apps/web/.env.functions.local` | `functions/api/scan-nutrition.ts`.                                                                                                                                   |
+| `VITE_POSTHOG_API_KEY`         | `apps/web/.env.functions.local` | Server-side PostHog capture from scan nutrition.                                                                                                                     |
+| `VITE_POSTHOG_HOST`            | `apps/web/.env.functions.local` | Server-side PostHog host.                                                                                                                                            |
+| `CLERK_SECRET_KEY`             | `apps/web/.env.functions.local` | Used by `functions/api/_clerk.ts` to hydrate nutrition database contributor names via the Clerk Backend API; optional locally — names fall back to `'LeanLog user'`. |
 
 To set up optional local function secrets:
 

@@ -87,7 +87,7 @@ export const WithTabs: Story = {
           aria-labelledby="story-ingredient-scan-panel-tab"
         >
           <LabelScanCard
-            value={{ name: '', mode: 'weight', amount: 0 }}
+            value={{ mode: 'weight', amount: 0 }}
             onChange={() => undefined}
             onScan={() => undefined}
           />
