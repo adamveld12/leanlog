@@ -15,6 +15,13 @@
       "when": 1779960832993,
       "tag": "0001_complete_fat_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781065154954,
+      "tag": "0002_young_mauler",
+      "breakpoints": true
     }
   ]
 }
