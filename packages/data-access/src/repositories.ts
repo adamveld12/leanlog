@@ -7,6 +7,8 @@ import type {
   UpdateProfile,
   UpsertIngredient,
   DayTargets,
+  NutritionDatabaseIngredient,
+  CreateNutritionDatabaseIngredient,
 } from './models';
 
 export interface DayRepository {
@@ -32,4 +34,10 @@ export interface IngredientRepository {
 export interface ProfileRepository {
   getOrCreate(clerkUserId: string): Promise<UserProfile>;
   update(clerkUserId: string, data: UpdateProfile): Promise<UserProfile>;
+}
+
+export interface NutritionDatabaseRepository {
+  create(userId: string, data: CreateNutritionDatabaseIngredient): Promise<NutritionDatabaseIngredient>;
+  search(query: string, limit?: number): Promise<NutritionDatabaseIngredient[]>;
+  getById(id: string): Promise<NutritionDatabaseIngredient | null>;
 }

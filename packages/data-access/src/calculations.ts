@@ -1,4 +1,4 @@
-import type { UserProfile } from './models';
+import type { UserProfile, NutritionDatabaseIngredient } from './models';
 
 export function caloriesFromMode(
   weightLbs: number,
@@ -61,4 +61,78 @@ export function estimatedWeightLost(totalConsumed: number, totalMaintenance: num
 
 export function weightLossCertainty(coveragePct: number): number {
   return Math.min(80, Math.round(coveragePct * 0.8));
+}
+
+// ---------------------------------------------------------------------------
+// Nutrition database helpers
+// ---------------------------------------------------------------------------
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+export function caloriesFromMacros({
+  fat,
+  carbs,
+  protein,
+  fiber,
+}: {
+  fat: number;
+  carbs: number;
+  protein: number;
+  fiber?: number | null;
+}): number {
+  const netCarbs = Math.max(0, carbs - (fiber ?? 0));
+  return round1(fat * 9 + protein * 4 + netCarbs * 4);
+}
+
+export type ScaledNutritionSnapshot = {
+  name: string;
+  weight: number;
+  fat: number;
+  carbs: number;
+  protein: number;
+  saturatedFat?: number;
+  unsaturatedFat?: number;
+  monounsaturatedFat?: number;
+  polyunsaturatedFat?: number;
+  transFat?: number;
+  fiber?: number;
+  sugar?: number;
+  micronutrients?: Array<{ name: string; amount?: number; unit?: string; percentDailyValue?: number }>;
+  sourceDatabaseIngredientId: string;
+};
+
+export function scaleNutritionDatabaseIngredient(
+  ingredient: NutritionDatabaseIngredient,
+  measuredAmount: number,
+): ScaledNutritionSnapshot {
+  const factor = measuredAmount / ingredient.servingAmount;
+  const scaleVal = (v: number) => round1(v * factor);
+
+  const result: ScaledNutritionSnapshot = {
+    name: ingredient.name,
+    weight: measuredAmount,
+    fat: scaleVal(ingredient.fat),
+    carbs: scaleVal(ingredient.carbs),
+    protein: scaleVal(ingredient.protein),
+    sourceDatabaseIngredientId: ingredient.id,
+  };
+
+  if (ingredient.saturatedFat != null) result.saturatedFat = scaleVal(ingredient.saturatedFat);
+  if (ingredient.unsaturatedFat != null) result.unsaturatedFat = scaleVal(ingredient.unsaturatedFat);
+  if (ingredient.monounsaturatedFat != null) result.monounsaturatedFat = scaleVal(ingredient.monounsaturatedFat);
+  if (ingredient.polyunsaturatedFat != null) result.polyunsaturatedFat = scaleVal(ingredient.polyunsaturatedFat);
+  if (ingredient.transFat != null) result.transFat = scaleVal(ingredient.transFat);
+  if (ingredient.fiber != null) result.fiber = scaleVal(ingredient.fiber);
+  if (ingredient.sugar != null) result.sugar = scaleVal(ingredient.sugar);
+
+  if (ingredient.micronutrients != null) {
+    result.micronutrients = ingredient.micronutrients.map((m) => ({
+      name: m.name,
+      unit: m.unit,
+      amount: m.amount != null ? scaleVal(m.amount) : undefined,
+      percentDailyValue: m.percentDailyValue != null ? scaleVal(m.percentDailyValue) : undefined,
+    }));
+  }
+
+  return result;
 }
