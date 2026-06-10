@@ -77,12 +77,6 @@ If nothing obvious appears after a short scan, say so and continue. Two rules go
 
 2. **Defer design decisions to planning** — Implementation details like schemas, migration strategies, endpoint structure, or deployment topology belong in planning, not here — unless the brainstorm is itself about a technical or architectural decision, in which case those details are the subject of the brainstorm and should be explored.
 
-**Slack context** (opt-in, Standard and Deep only) — never auto-dispatch. Route by condition:
-
-- **Tools available + user asked**: Dispatch `ce-slack-researcher` with a brief summary of the brainstorm topic alongside Phase 1.1 work. Incorporate findings into constraint and context awareness.
-- **Tools available + user didn't ask**: Note in output: "Slack tools detected. Ask me to search Slack for organizational context at any point, or include it in your next prompt."
-- **No tools + user asked**: Note in output: "Slack context was requested but no Slack tools are available. Install and authenticate the Slack plugin to enable organizational context search."
-
 #### 1.2 Product Pressure Test
 
 Before generating approaches, scan the user's opening for rigor gaps. Match depth to scope.
@@ -196,7 +190,8 @@ When a doc is warranted, compose it using:
 
 **Write tight.** A section being material is not license to pad it. Hold every kept section to the prose-economy discipline in `references/brainstorm-sections.md`: one idea per sentence, a requirement is intent plus at most one qualifier, defer forks to Outstanding Questions rather than specifying both arms, resolve superseded text in place rather than stacking strata. Before declaring the doc written, run the named test there — could a reader find a contradiction in each section in one pass?
 
-Write to `docs/brainstorms/YYYY-MM-DD-<topic>-requirements.<md|html>` — extension follows `OUTPUT_FORMAT`. Confirm with the absolute path so the reference is clickable.
+Write to Github Issue in LeanLog's Github repo. Add the proper labels as well.
+
 
 #### Vocabulary Capture — after the requirements doc (only if CONCEPTS.md already exists)
 

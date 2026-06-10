@@ -1,5 +1,11 @@
 ---
-description: 🗺️ Develop a detailed multi step action plan.
+description: |
+    🗺️ Develop a detailed multi step action plan.
+    Use this skill whenever a user says things like:
+    - "plan this feature...."
+    - "I want to work on...."
+    - "lets work on <github issue URL>"
+argument-hint: "[Github issue URL] [task]"
 ---
 
 
@@ -7,7 +13,7 @@ description: 🗺️ Develop a detailed multi step action plan.
 
 Your task is to formulate an in depth and detailed implementation plan that will later be followed closely to build a feature.
 
-You are *NOT* to write any code until the plan has been approved by me.
+You are *NOT* to write any code. You will output the plan to the Github Issue as a comment.
 
 Below is the work we want to create an implementation plan for:
 
@@ -55,8 +61,11 @@ $ARGUMENTS
 
 
 5. Iterate on the plan with me until I approve.
-    - Until I say "I approve, implement the plan", you are to be in an "iteration" mode.
+    - Until I say "I approve", you are to be in an "iteration" mode.
 
+6. Approval
+    - when the plan is approved, write it back to the Github issue as a comment labelled IMPLEMENTATION PLAN
+    - you are officially out of plan mode
 
 Construct this plan for me, follow my output format closely. Present it to me for my approval.
 
