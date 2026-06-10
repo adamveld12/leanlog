@@ -556,7 +556,7 @@ function MealEdit() {
   const [draft, setDraft] = useState<IngredientDraft>(emptyDraft);
   const [draftSource, setDraftSource] = useState<'manual' | 'scanned'>('manual');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [entryTab, setEntryTab] = useState<'manual' | 'scan' | 'database'>('manual');
+  const [entryTab, setEntryTab] = useState<'manual' | 'scan' | 'database'>('database');
   const [scanForm, setScanForm] = useState<LabelScanValue>({
     name: '',
     mode: 'weight',
@@ -608,6 +608,12 @@ function MealEdit() {
       .then(({ total }) => setDbTotal(total))
       .catch(() => {});
   }, [entryTab, dbTotal, searchNutritionDatabase]);
+
+  // Track whenever the database tab is active (initial view and later switches)
+  useEffect(() => {
+    if (entryTab !== 'database') return;
+    track('meal.ingredient.database.viewed', {});
+  }, [entryTab, track]);
 
   useEffect(() => {
     return () => {
@@ -770,7 +776,6 @@ function MealEdit() {
     setDraftSource('scanned');
     setScanResult(null);
     setScanForm({ name: '', mode: 'weight', amount: null });
-    setEntryTab('manual');
   };
 
   return (
@@ -942,18 +947,17 @@ function MealEdit() {
           <div className={recipes.stack.lg}>
             <Tabs
               tabs={[
-                { key: 'manual', label: 'Manual Entry', panelId: 'ingredient-manual-panel' },
-                { key: 'scan', label: 'Label Scan', panelId: 'ingredient-scan-panel' },
                 {
                   key: 'database',
                   label: 'Nutrition Database',
                   panelId: 'ingredient-database-panel',
                 },
+                { key: 'scan', label: 'Label Scan', panelId: 'ingredient-scan-panel' },
+                { key: 'manual', label: 'Manual Entry', panelId: 'ingredient-manual-panel' },
               ]}
               active={entryTab}
               onChange={(key) => {
                 const next = key as 'manual' | 'scan' | 'database';
-                if (next === 'database') track('meal.ingredient.database.viewed', {});
                 setEntryTab(next);
               }}
               label="Ingredient entry method"
@@ -986,14 +990,34 @@ function MealEdit() {
                 />
               ) : null}
               {entryTab === 'scan' ? (
-                <LabelScanCard
-                  value={scanForm}
-                  loading={scanLoading}
-                  error={scanError || cameraError}
-                  onChange={setScanForm}
-                  onScan={openCamera}
-                  normalizeNameOnBlur={normalizeIngredientName}
-                />
+                <div className={recipes.stack.sm}>
+                  <LabelScanCard
+                    value={scanForm}
+                    loading={scanLoading}
+                    error={scanError || cameraError}
+                    onChange={setScanForm}
+                    onScan={openCamera}
+                    normalizeNameOnBlur={normalizeIngredientName}
+                  />
+                  {draftSource === 'scanned' ? (
+                    <IngredientEntryCard
+                      value={draft}
+                      saved={saved.ingredientForm}
+                      submitLabel={editingId ? 'Update' : 'Add'}
+                      onChange={(next) => {
+                        markDirty('ingredientForm');
+                        setDraft(next);
+                      }}
+                      onSubmit={saveIngredient}
+                      onCancel={() => {
+                        setDraft(emptyDraft);
+                        setEditingId(null);
+                        setDraftSource('manual');
+                      }}
+                      normalizeNameOnBlur={normalizeIngredientName}
+                    />
+                  ) : null}
+                </div>
               ) : null}
               {entryTab === 'database' ? (
                 <div className={recipes.stack.sm}>

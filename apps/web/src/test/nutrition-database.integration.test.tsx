@@ -1,13 +1,30 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createContext, useContext, useState, type PropsWithChildren } from 'react';
 import App from '../App';
+import { api } from '../api';
 import { todayIso } from '../lib';
 import type { DailyMealLog, Ingredient, UserProfile } from '@leanlog/data-access';
+import type { ScanResolution } from '@leanlog/data-access';
 
 vi.mock('react-chartjs-2', () => ({ Line: () => null }));
+
+// jsdom does not implement HTMLDialogElement.showModal / close; polyfill them so
+// Modal components can open/close without throwing.
+beforeAll(() => {
+  if (!HTMLDialogElement.prototype.showModal) {
+    HTMLDialogElement.prototype.showModal = function () {
+      this.open = true;
+    };
+  }
+  if (!HTMLDialogElement.prototype.close) {
+    HTMLDialogElement.prototype.close = function () {
+      this.open = false;
+    };
+  }
+});
 
 const now = new Date().toISOString();
 const fakeDbTotal = 42;
@@ -578,10 +595,103 @@ describe('editing a meal ingredient', () => {
   });
 });
 
+describe('tab order and default', () => {
+  it('defaults to the nutrition database tab in fastest-first order', async () => {
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()]);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('tab').length).toBeGreaterThan(0);
+    });
+
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.map((t) => t.textContent)).toEqual([
+      'Nutrition Database',
+      'Label Scan',
+      'Manual Entry',
+    ]);
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByPlaceholderText('e.g. Chicken breast')).toBeInTheDocument();
+  });
+});
+
+describe('scan apply in-place', () => {
+  it('applying a scan shows the entry card below the scan card without switching tabs', async () => {
+    const mockScanResult: ScanResolution = {
+      canApply: true,
+      proposed: {
+        name: 'GRANOLA',
+        weight: 120,
+        fat: 6,
+        saturatedFat: 1,
+        carbs: 80,
+        fiber: 8,
+        protein: 12,
+        calories: 446,
+      },
+      databaseCandidate: null,
+      databaseBlockReason: 'Serving size unreadable.',
+      notes: [],
+      warning: undefined,
+    };
+
+    const apiMock = api as unknown as { scanNutrition: ReturnType<typeof vi.fn> };
+    apiMock.scanNutrition.mockResolvedValue(mockScanResult);
+
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()]);
+
+    // Navigate to Label Scan tab
+    await userEvent.click(await screen.findByRole('tab', { name: 'Label Scan' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Scan Label' })).toBeInTheDocument();
+    });
+
+    // Trigger file scan via the hidden FileInput
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).not.toBeNull();
+
+    const testFile = new File(['nutritionlabel'], 'label.jpg', { type: 'image/jpeg' });
+    fireEvent.change(fileInput, { target: { files: [testFile] } });
+
+    // Wait for ScanReviewModal to appear with Apply button
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    // Still on the Label Scan tab after applying
+    const scanTab = screen.getByRole('tab', { name: 'Label Scan' });
+    expect(scanTab).toHaveAttribute('aria-selected', 'true');
+
+    // Scan Label button still visible
+    expect(screen.getByRole('button', { name: 'Scan Label' })).toBeInTheDocument();
+
+    // Ingredient entry card now visible with the proposed weight
+    await waitFor(() => {
+      expect(screen.getByLabelText('Weight (g)')).toHaveValue('120');
+    });
+
+    // Cancel removes the ingredient entry card while staying on the scan tab
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Weight (g)')).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole('tab', { name: 'Label Scan' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+});
+
 describe('manual ingredient entry defaults', () => {
   it('starts with empty numeric fields and submits blanks as zeros', async () => {
     const onUpsertIngredient = vi.fn().mockResolvedValue(undefined);
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()], { onUpsertIngredient });
+
+    // Database tab is now the default; switch to Manual Entry first
+    await userEvent.click(await screen.findByRole('tab', { name: 'Manual Entry' }));
 
     await waitFor(() => {
       expect(screen.getByLabelText('Ingredient Name')).toBeInTheDocument();

@@ -43,6 +43,9 @@ type StoreCtx = {
   renameMeal: (...args: unknown[]) => Promise<void>;
   upsertIngredient: (...args: unknown[]) => Promise<void>;
   removeIngredient: (dayId: string, mealId: string, ingredientId: string) => Promise<void>;
+  addIngredientFromDatabase: (...args: unknown[]) => Promise<void>;
+  searchNutritionDatabase: (query: string) => Promise<{ results: unknown[]; total: number }>;
+  createNutritionDatabaseIngredient: (input: unknown) => Promise<unknown>;
   updateDayTargets: (...args: unknown[]) => Promise<void>;
   patchProfileLocal: (data: Partial<UserProfile>) => void;
   updateProfile: (...args: unknown[]) => Promise<void>;
@@ -96,6 +99,12 @@ function FakeStateProvider({
         ),
       );
     },
+    addIngredientFromDatabase: async () => {},
+    searchNutritionDatabase: async (query: string) => {
+      if (query.trim().length < 2) return { results: [], total: 0 };
+      return { results: [], total: 0 };
+    },
+    createNutritionDatabaseIngredient: async () => ({}),
     updateDayTargets: async () => {},
     patchProfileLocal: () => {},
     updateProfile: async () => {},
