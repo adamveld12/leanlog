@@ -33,6 +33,8 @@ import {
   MealEditTemplate,
   Modal,
   MonthCalendarCard,
+  NutritionDatabaseEntryCard,
+  NutritionDatabaseSearchCard,
   NumberInput,
   ProfileTemplate,
   QuickActionsCard,
@@ -41,12 +43,15 @@ import {
   SectionCard,
   SectionHeading,
   Tabs,
-  Text,
   WeeklyStatsCard,
   WeightTrendCard,
   useAnalytics,
 } from '@leanlog/ui';
-import type { LabelScanValue } from '@leanlog/ui';
+import type {
+  LabelScanValue,
+  NutritionDatabaseEntryValue,
+  NutritionDatabaseSearchResult,
+} from '@leanlog/ui';
 import { caloriesFromMode, dayTargetsFromProfile } from '@leanlog/data-access';
 import type { ScanResolution } from '@leanlog/data-access';
 import { normalizeIngredientName, prettyDate, round1, todayIso } from '../lib';
@@ -69,7 +74,6 @@ type IngredientDraft = Omit<UpsertIngredient, 'id' | 'mealId' | 'createdAt' | 'u
 const emptyDraft: IngredientDraft = {
   name: '',
   weight: 0,
-  calories: 0,
   fat: 0,
   saturatedFat: 0,
   carbs: 0,
@@ -502,8 +506,17 @@ function MealEdit() {
   const { dayId, mealId } = useParams();
   const nav = useNavigate();
   const { getToken } = useAuth();
-  const { days, ensureDayLoaded, renameMeal, removeMeal, upsertIngredient, removeIngredient } =
-    useStore();
+  const {
+    days,
+    ensureDayLoaded,
+    renameMeal,
+    removeMeal,
+    upsertIngredient,
+    removeIngredient,
+    addIngredientFromDatabase,
+    searchNutritionDatabase,
+    createNutritionDatabaseIngredient,
+  } = useStore();
   const day = days.find((d) => d.id === dayId);
   const meal = day?.meals.find((m) => m.id === mealId);
   const [mealNameDraft, setMealNameDraft] = useState<{ mealId: string | null; name: string }>({
@@ -526,6 +539,29 @@ function MealEdit() {
   const [scanResult, setScanResult] = useState<ScanResolution | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  // Database tab state
+  const [dbQuery, setDbQuery] = useState('');
+  const [dbResults, setDbResults] = useState<NutritionDatabaseSearchResult[]>([]);
+  const [dbLoading, setDbLoading] = useState(false);
+  const [dbSearched, setDbSearched] = useState(false);
+  const [dbAmounts, setDbAmounts] = useState<Record<string, number>>({});
+  const [dbAddingId, setDbAddingId] = useState<string | null>(null);
+  const [dbShowCreate, setDbShowCreate] = useState(false);
+  const [dbEntryValue, setDbEntryValue] = useState<NutritionDatabaseEntryValue>({
+    name: '',
+    servingAmount: 0,
+    fat: 0,
+    carbs: 0,
+    protein: 0,
+  });
+  const [dbCreating, setDbCreating] = useState(false);
+  const [dbError, setDbError] = useState('');
+  // "Save to database" state per ingredient row
+  const [savingToDbId, setSavingToDbId] = useState<string | null>(null);
+  const [savedToDbIds, setSavedToDbIds] = useState<Set<string>>(new Set());
+  // Scan → save to database
+  const [scanSavedToDb, setScanSavedToDb] = useState(false);
+  const dbSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const track = useAnalytics();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -678,7 +714,6 @@ function MealEdit() {
       ...prev,
       name: scanForm.name.trim() || (proposed.name ?? prev.name),
       weight: proposed.weight,
-      calories: proposed.calories,
       fat: proposed.fat,
       saturatedFat: proposed.saturatedFat,
       carbs: proposed.carbs,
@@ -760,17 +795,56 @@ function MealEdit() {
                     />
                   }
                   actions={
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void removeIngredient(day.id, meal.id, i.id);
-                        track('meal.ingredient.deleted', { ingredientId: i.id });
-                      }}
-                    >
-                      Delete ingredient
-                    </Button>
+                    <div className={cn(recipes.stack.row, 'flex-wrap gap-2')}>
+                      {savedToDbIds.has(i.id) ? (
+                        <HelperText as="span">Saved</HelperText>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="subtle"
+                          disabled={i.weight <= 0 || savingToDbId === i.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSavingToDbId(i.id);
+                            void createNutritionDatabaseIngredient({
+                              name: i.name,
+                              servingAmount: i.weight,
+                              fat: i.fat,
+                              carbs: i.carbs,
+                              protein: i.protein,
+                              saturatedFat: i.saturatedFat ?? undefined,
+                              fiber: i.fiber ?? undefined,
+                              creationSource: 'meal_ingredient',
+                            })
+                              .then(() => {
+                                setSavedToDbIds((prev) => new Set(prev).add(i.id));
+                                track('nutrition_database.ingredient.published', {
+                                  source: 'meal_ingredient',
+                                });
+                              })
+                              .catch(() => {
+                                setDbError('Failed to save ingredient to database.');
+                              })
+                              .finally(() => {
+                                setSavingToDbId(null);
+                              });
+                          }}
+                        >
+                          {savingToDbId === i.id ? 'Saving…' : 'Save to database'}
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void removeIngredient(day.id, meal.id, i.id);
+                          track('meal.ingredient.deleted', { ingredientId: i.id });
+                        }}
+                      >
+                        Delete ingredient
+                      </Button>
+                    </div>
                   }
                   onOpen={() => {
                     setEditingId(i.id);
@@ -779,7 +853,6 @@ function MealEdit() {
                     setDraft({
                       name: i.name,
                       weight: i.weight,
-                      calories: i.calories,
                       fat: i.fat,
                       saturatedFat: i.saturatedFat,
                       carbs: i.carbs,
@@ -841,14 +914,135 @@ function MealEdit() {
                 />
               ) : null}
               {entryTab === 'database' ? (
-                <SectionCard>
-                  <div className="py-6 text-center">
-                    <SectionHeading as="h4">Coming soon</SectionHeading>
-                    <Text as="p" variant="meta">
-                      Instantly look up any ingredient. Speed up your meal logging.
-                    </Text>
-                  </div>
-                </SectionCard>
+                <div className={recipes.stack.sm}>
+                  {dbError ? <HelperText as="p">{dbError}</HelperText> : null}
+                  <NutritionDatabaseSearchCard
+                    query={dbQuery}
+                    onQueryChange={(q) => {
+                      setDbQuery(q);
+                      if (dbSearchTimerRef.current) clearTimeout(dbSearchTimerRef.current);
+                      if (q.length < 2) {
+                        setDbResults([]);
+                        setDbSearched(false);
+                        return;
+                      }
+                      dbSearchTimerRef.current = setTimeout(() => {
+                        setDbLoading(true);
+                        void searchNutritionDatabase(q)
+                          .then((raw) => {
+                            const mapped: NutritionDatabaseSearchResult[] = raw.map((r) => ({
+                              id: r.id,
+                              name: r.name,
+                              servingAmount: r.servingAmount,
+                              fat: r.fat,
+                              carbs: r.carbs,
+                              protein: r.protein,
+                              fiber: r.fiber ?? null,
+                              calories: r.calories,
+                              addedByName: r.addedByName,
+                              addedAtLabel: new Date(r.createdAt).toLocaleDateString(),
+                              creationSource: r.creationSource,
+                            }));
+                            setDbResults(mapped);
+                            setDbSearched(true);
+                          })
+                          .catch(() => {
+                            setDbError('Search failed. Please try again.');
+                            setDbSearched(true);
+                          })
+                          .finally(() => setDbLoading(false));
+                      }, 300);
+                    }}
+                    results={dbResults}
+                    loading={dbLoading}
+                    searched={dbSearched}
+                    amounts={dbAmounts}
+                    onAmountChange={(id, amount) =>
+                      setDbAmounts((prev) => ({ ...prev, [id]: amount }))
+                    }
+                    onAdd={(id) => {
+                      const amount = dbAmounts[id] ?? 0;
+                      if (amount <= 0) return;
+                      setDbAddingId(id);
+                      void addIngredientFromDatabase(day.id, meal.id, {
+                        databaseIngredientId: id,
+                        measuredAmount: amount,
+                      })
+                        .then(() => {
+                          track('meal.ingredient.added', { source: 'database' });
+                          setDbAmounts((prev) => {
+                            const next = { ...prev };
+                            delete next[id];
+                            return next;
+                          });
+                        })
+                        .catch(() => {
+                          setDbError('Failed to add ingredient. Please try again.');
+                        })
+                        .finally(() => setDbAddingId(null));
+                    }}
+                    addingId={dbAddingId}
+                    onCreateNew={() => setDbShowCreate((prev) => !prev)}
+                    truncated={dbResults.length >= 25}
+                  />
+                  {dbShowCreate ? (
+                    <NutritionDatabaseEntryCard
+                      value={dbEntryValue}
+                      onChange={setDbEntryValue}
+                      submitting={dbCreating}
+                      onSubmit={() => {
+                        setDbCreating(true);
+                        void createNutritionDatabaseIngredient({
+                          ...dbEntryValue,
+                          micronutrients: dbEntryValue.micronutrients?.map((m) => ({
+                            name: m.name,
+                            amount: m.amount ?? undefined,
+                            unit: m.unit,
+                            percentDailyValue: m.percentDailyValue ?? undefined,
+                          })),
+                          creationSource: 'manual',
+                        })
+                          .then(() => {
+                            track('nutrition_database.ingredient.published', { source: 'manual' });
+                            setDbShowCreate(false);
+                            setDbEntryValue({
+                              name: '',
+                              servingAmount: 0,
+                              fat: 0,
+                              carbs: 0,
+                              protein: 0,
+                            });
+                            if (dbQuery.length >= 2) {
+                              setDbLoading(true);
+                              void searchNutritionDatabase(dbQuery)
+                                .then((raw) => {
+                                  const mapped: NutritionDatabaseSearchResult[] = raw.map((r) => ({
+                                    id: r.id,
+                                    name: r.name,
+                                    servingAmount: r.servingAmount,
+                                    fat: r.fat,
+                                    carbs: r.carbs,
+                                    protein: r.protein,
+                                    fiber: r.fiber ?? null,
+                                    calories: r.calories,
+                                    addedByName: r.addedByName,
+                                    addedAtLabel: new Date(r.createdAt).toLocaleDateString(),
+                                    creationSource: r.creationSource,
+                                  }));
+                                  setDbResults(mapped);
+                                })
+                                .catch(() => {})
+                                .finally(() => setDbLoading(false));
+                            }
+                          })
+                          .catch(() => {
+                            setDbError('Failed to publish ingredient. Please try again.');
+                          })
+                          .finally(() => setDbCreating(false));
+                      }}
+                    />
+                  ) : null}
+                </div>
               ) : null}
             </div>
           </div>
@@ -897,16 +1091,52 @@ function MealEdit() {
         </Modal>
         <ScanReviewModal
           open={!!scanResult}
-          onClose={() => setScanResult(null)}
+          onClose={() => {
+            setScanResult(null);
+            setScanSavedToDb(false);
+          }}
           onAccept={applyScan}
           onRetake={() => {
             setScanResult(null);
+            setScanSavedToDb(false);
             void openCamera();
           }}
           canAccept={scanResult?.canApply ?? false}
           blockReason={scanResult?.blockReason}
           warning={scanResult?.warning}
           notes={scanResult?.notes}
+          onSaveToDatabase={
+            scanResult && 'databaseCandidate' in scanResult
+              ? () => {
+                  const candidate = scanResult.databaseCandidate;
+                  if (!candidate) return;
+                  void createNutritionDatabaseIngredient({
+                    name: candidate.name,
+                    servingAmount: candidate.servingAmount,
+                    fat: candidate.fat,
+                    carbs: candidate.carbs,
+                    protein: candidate.protein,
+                    saturatedFat: candidate.saturatedFat ?? undefined,
+                    fiber: candidate.fiber ?? undefined,
+                    sugar: candidate.sugar ?? undefined,
+                    creationSource: 'scan',
+                  })
+                    .then(() => {
+                      track('nutrition_database.ingredient.published', { source: 'scan' });
+                      setScanSavedToDb(true);
+                    })
+                    .catch(() => {});
+                }
+              : undefined
+          }
+          canSaveToDatabase={
+            scanResult && 'databaseCandidate' in scanResult
+              ? scanResult.databaseCandidate !== null && !scanSavedToDb
+              : undefined
+          }
+          saveToDatabaseBlockReason={
+            scanResult?.databaseBlockReason ?? (scanSavedToDb ? 'Saved to database.' : undefined)
+          }
           fields={
             scanResult
               ? [
@@ -918,7 +1148,7 @@ function MealEdit() {
                   },
                   {
                     label: 'Calories',
-                    current: draft.calories,
+                    current: '(calculated)',
                     proposed: scanResult.proposed.calories,
                   },
                   {
