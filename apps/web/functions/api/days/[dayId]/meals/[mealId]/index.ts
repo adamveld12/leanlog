@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { Env } from '../../../../_env';
 
 const RenameMealSchema = z.object({
-  name: z.string().min(1),
+  name: z.string(),
 });
 
 export const onRequestPatch: PagesFunction<Env> = async (context) => {

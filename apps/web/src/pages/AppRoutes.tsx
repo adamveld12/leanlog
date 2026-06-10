@@ -256,7 +256,7 @@ function DayList() {
   async function handleAction() {
     if (!profile || pendingNavRef.current) return;
     if (today) {
-      const meal = await addMeal(today.id, `Meal ${today.meals.length + 1}`);
+      const meal = await addMeal(today.id, '');
       if (meal) nav(`/track/day/${today.id}/meal/${meal.id}`);
       return;
     }
@@ -454,7 +454,7 @@ function DayDetail() {
         const mTotals = mealTotals(m);
         return {
           id: m.id,
-          title: m.name || 'UNTITLED MEAL',
+          title: m.name || 'Meal',
           meta: (
             <MacroSummaryLine
               calories={mTotals.calories}
@@ -517,7 +517,7 @@ function DayDetail() {
           <Button
             className="w-full"
             onClick={async () => {
-              const meal = await addMeal(day.id, `MEAL ${day.meals.length + 1}`);
+              const meal = await addMeal(day.id, '');
               if (meal) nav(`/track/day/${day.id}/meal/${meal.id}`);
             }}
           >
@@ -792,9 +792,9 @@ function MealEdit() {
         }}
         mealSection={
           <SectionCard title="Meal name" saved={saved.mealName}>
-            <HelperText as="p">Name is required before leaving this page.</HelperText>
             <Input
               value={mealName}
+              placeholder="Meal Name"
               onChange={(e) => {
                 setMealName(e.target.value);
                 markDirty('mealName');

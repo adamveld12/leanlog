@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { Env } from '../../../_env';
 
 const CreateMealSchema = z.object({
-  name: z.string().min(1),
+  name: z.string(),
 });
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {

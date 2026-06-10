@@ -53,7 +53,11 @@ const FakeStoreCtx = createContext<StoreCtx | null>(null);
 function FakeStateProvider({
   children,
   initialDays,
-}: PropsWithChildren<{ initialDays: DailyMealLog[] }>) {
+  onAddMeal,
+}: PropsWithChildren<{
+  initialDays: DailyMealLog[];
+  onAddMeal?: (dayId: string, name: string) => void;
+}>) {
   const [days, setDays] = useState<DailyMealLog[]>(initialDays);
 
   const store: StoreCtx = {
@@ -69,7 +73,10 @@ function FakeStateProvider({
     removeDay: async (id: string) => {
       setDays((prev) => prev.filter((d) => d.id !== id));
     },
-    addMeal: async () => null,
+    addMeal: async (...args: unknown[]) => {
+      onAddMeal?.(args[0] as string, args[1] as string);
+      return null;
+    },
     removeMeal: async () => {},
     renameMeal: async () => {},
     upsertIngredient: async () => {},
@@ -111,9 +118,13 @@ function LocationProbe() {
   return <div data-testid="location-probe">{location.pathname}</div>;
 }
 
-function renderApp(route: string, initialDays: DailyMealLog[]) {
+function renderApp(
+  route: string,
+  initialDays: DailyMealLog[],
+  onAddMeal?: (dayId: string, name: string) => void,
+) {
   return render(
-    <FakeStateProvider initialDays={initialDays}>
+    <FakeStateProvider initialDays={initialDays} onAddMeal={onAddMeal}>
       <MemoryRouter initialEntries={[route]}>
         <App />
         <LocationProbe />
@@ -259,5 +270,53 @@ describe('list section behaviors', () => {
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Delete ingredient' })[0]);
     expect(screen.queryByRole('link', { name: /CHICKEN/i })).not.toBeInTheDocument();
+  });
+
+  it('adds meals unnamed and shows the Meal fallback for empty names', async () => {
+    const onAddMeal = vi.fn();
+    const initialDays = [
+      makeDayWithMeals({
+        meals: [
+          {
+            id: 'm1',
+            dailyMealLogId: 'd1',
+            name: '',
+            createdAt: now,
+            updatedAt: now,
+            ingredients: [],
+          },
+        ],
+      }),
+    ];
+
+    renderApp('/track/day/d1', initialDays, onAddMeal);
+
+    // Unnamed meal row falls back to "Meal"
+    expect(screen.getByText('Meal')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add meal' }));
+    expect(onAddMeal).toHaveBeenCalledWith('d1', '');
+  });
+
+  it('meal name input starts empty with a Meal Name placeholder', async () => {
+    const initialDays = [
+      makeDayWithMeals({
+        meals: [
+          {
+            id: 'm1',
+            dailyMealLogId: 'd1',
+            name: '',
+            createdAt: now,
+            updatedAt: now,
+            ingredients: [],
+          },
+        ],
+      }),
+    ];
+
+    renderApp('/track/day/d1/meal/m1', initialDays);
+
+    const nameInput = screen.getByPlaceholderText('Meal Name');
+    expect(nameInput).toHaveValue('');
   });
 });
