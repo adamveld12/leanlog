@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { BodyInfoCard, CalorieTargetCard, MacroTargetsCard } from './ProfileSectionCards';
 
 function BodyInfoDemo() {
-  const [weight, setWeight] = useState(180);
-  const [height, setHeight] = useState(70);
+  const [weight, setWeight] = useState<number | null>(180);
+  const [height, setHeight] = useState<number | null>(70);
   return (
     <BodyInfoCard
       saved
@@ -38,9 +38,9 @@ function CalorieTargetDemo() {
 
 function MacroTargetsDemo() {
   const [mode, setMode] = useState<'percentage' | 'custom'>('percentage');
-  const [fats, setFats] = useState(30);
-  const [carbs, setCarbs] = useState(40);
-  const [protein, setProtein] = useState(30);
+  const [fats, setFats] = useState<number | null>(30);
+  const [carbs, setCarbs] = useState<number | null>(40);
+  const [protein, setProtein] = useState<number | null>(30);
   return (
     <MacroTargetsCard
       saved

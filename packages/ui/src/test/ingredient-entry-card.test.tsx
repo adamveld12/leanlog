@@ -176,6 +176,40 @@ describe('IngredientEntryCard', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it('starts with empty numeric fields when values are null', () => {
+    render(
+      <IngredientEntryCard
+        value={{
+          name: '',
+          weight: null,
+          fat: null,
+          saturatedFat: null,
+          carbs: null,
+          fiber: null,
+          protein: null,
+        }}
+        onChange={() => {}}
+        onSubmit={() => {}}
+        submitLabel="Add"
+      />,
+    );
+
+    expect(screen.getByLabelText('Weight (g)')).toHaveValue('');
+    expect(screen.getByLabelText('Fat')).toHaveValue('');
+    expect(screen.getByLabelText('Protein')).toHaveValue('');
+    expect(screen.getByText(/Calculated calories: 0 kcal/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add' })).toBeEnabled();
+  });
+
+  it('leaves a cleared field empty instead of writing 0', async () => {
+    render(<Harness onSubmit={() => {}} />);
+
+    const weight = screen.getByLabelText('Weight (g)');
+    await userEvent.clear(weight);
+    await userEvent.tab();
+    expect(weight).toHaveValue('');
+  });
+
   it('does not render a Cancel button without onCancel', () => {
     const onSubmit = vi.fn();
     render(<Harness onSubmit={onSubmit} />);

@@ -9,10 +9,10 @@ import {
 
 const emptyValue: NutritionDatabaseEntryValue = {
   name: '',
-  servingAmount: 0,
-  fat: 0,
-  carbs: 0,
-  protein: 0,
+  servingAmount: null,
+  fat: null,
+  carbs: null,
+  protein: null,
   fiber: null,
   sugar: null,
   saturatedFat: null,
@@ -128,5 +128,27 @@ describe('NutritionDatabaseEntryCard', () => {
     expect(alert).toBeInTheDocument();
     expect(alert.textContent).toMatch(/Name/);
     expect(alert.textContent).toMatch(/Serving amount/);
+  });
+
+  it('starts with empty required inputs and lists null macros as required', () => {
+    render(<Harness initial={emptyValue} />);
+    expect(screen.getByLabelText('Serving amount (g/ml)')).toHaveValue('');
+    expect(screen.getByLabelText('Fat (g)')).toHaveValue('');
+    expect(screen.getByLabelText('Carbs (g)')).toHaveValue('');
+    expect(screen.getByLabelText('Protein (g)')).toHaveValue('');
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).toMatch(/Fat/);
+    expect(alert.textContent).toMatch(/Carbs/);
+    expect(alert.textContent).toMatch(/Protein/);
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+  });
+
+  it('Publish is disabled when a required macro is cleared', async () => {
+    render(<Harness initial={filledValue} />);
+    const fat = screen.getByLabelText('Fat (g)');
+    await userEvent.clear(fat);
+    await userEvent.tab();
+    expect(fat).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
   });
 });

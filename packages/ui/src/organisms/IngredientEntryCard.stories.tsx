@@ -27,6 +27,20 @@ type Story = StoryObj<typeof IngredientEntryCard>;
 
 export const Add: Story = {};
 
+export const Empty: Story = {
+  args: {
+    value: {
+      name: '',
+      weight: null,
+      fat: null,
+      saturatedFat: null,
+      carbs: null,
+      fiber: null,
+      protein: null,
+    },
+  },
+};
+
 export const Update: Story = {
   args: { submitLabel: 'Update' },
 };

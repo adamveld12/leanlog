@@ -30,10 +30,10 @@ export type NutritionDatabaseMicronutrientValue = {
 
 export type NutritionDatabaseEntryValue = {
   name: string;
-  servingAmount: number;
-  fat: number;
-  carbs: number;
-  protein: number;
+  servingAmount: number | null;
+  fat: number | null;
+  carbs: number | null;
+  protein: number | null;
   saturatedFat?: number | null;
   unsaturatedFat?: number | null;
   monounsaturatedFat?: number | null;
@@ -53,22 +53,27 @@ type NutritionDatabaseEntryCardProps = {
 
 const clamp999 = (n: number) => Math.max(0, Math.min(999, n));
 const round1 = (n: number) => Math.round(n * 10) / 10;
-const sanitize = (n: number) => round1(clamp999(n));
+const sanitize = (n: number | null) => (n == null ? null : round1(clamp999(n)));
 
 function isValid(value: NutritionDatabaseEntryValue): boolean {
   return (
     value.name.trim().length > 0 &&
+    value.servingAmount != null &&
     value.servingAmount > 0 &&
-    value.fat >= 0 &&
-    value.carbs >= 0 &&
-    value.protein >= 0
+    value.fat != null &&
+    value.carbs != null &&
+    value.protein != null
   );
 }
 
 function missingFields(value: NutritionDatabaseEntryValue): string[] {
   const missing: string[] = [];
   if (!value.name.trim()) missing.push('Name');
-  if (!(value.servingAmount > 0)) missing.push('Serving amount (must be > 0)');
+  if (value.servingAmount == null || !(value.servingAmount > 0))
+    missing.push('Serving amount (must be > 0)');
+  if (value.fat == null) missing.push('Fat');
+  if (value.carbs == null) missing.push('Carbs');
+  if (value.protein == null) missing.push('Protein');
   return missing;
 }
 
@@ -80,7 +85,7 @@ export function NutritionDatabaseEntryCard({
 }: NutritionDatabaseEntryCardProps) {
   const setNum = (
     key: keyof Omit<NutritionDatabaseEntryValue, 'name' | 'micronutrients'>,
-    n: number,
+    n: number | null,
   ) => onChange({ ...value, [key]: sanitize(n) });
 
   const roundField = (key: keyof Omit<NutritionDatabaseEntryValue, 'name' | 'micronutrients'>) => {
@@ -88,11 +93,16 @@ export function NutritionDatabaseEntryCard({
     if (typeof v === 'number') onChange({ ...value, [key]: sanitize(v) });
   };
 
-  const fiberInvalid = (value.fiber ?? 0) > value.carbs;
+  const fiberInvalid = (value.fiber ?? 0) > (value.carbs ?? 0);
   const missing = missingFields(value);
   const valid = isValid(value) && !fiberInvalid;
 
-  const calculatedCalories = caloriesFromMacros(value.fat, value.carbs, value.protein, value.fiber);
+  const calculatedCalories = caloriesFromMacros(
+    value.fat ?? 0,
+    value.carbs ?? 0,
+    value.protein ?? 0,
+    value.fiber,
+  );
 
   // Micronutrient helpers
   const micronutrients = value.micronutrients ?? [];
@@ -131,7 +141,7 @@ export function NutritionDatabaseEntryCard({
 
         <NumberInput
           label="Serving amount (g/ml)"
-          value={value.servingAmount || null}
+          value={value.servingAmount}
           onChange={(n) => setNum('servingAmount', n)}
           onBlur={() => roundField('servingAmount')}
         />
@@ -228,7 +238,8 @@ export function NutritionDatabaseEntryCard({
                     value={micro.percentDailyValue ?? null}
                     onChange={(n) =>
                       updateMicro(idx, {
-                        percentDailyValue: Math.max(0, Math.min(999, Math.round(n * 10) / 10)),
+                        percentDailyValue:
+                          n == null ? null : Math.max(0, Math.min(999, Math.round(n * 10) / 10)),
                       })
                     }
                     placeholder="0–999"

@@ -56,7 +56,7 @@ function Harness({
       results={results}
       searched={true}
       amounts={amounts}
-      onAmountChange={(id, amount) => setAmounts((prev) => ({ ...prev, [id]: amount }))}
+      onAmountChange={(id, amount) => setAmounts((prev) => ({ ...prev, [id]: amount ?? 0 }))}
       onAdd={onAdd}
       onCreateNew={onCreateNew}
       totalCount={totalCount}

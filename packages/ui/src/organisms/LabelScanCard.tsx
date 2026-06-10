@@ -17,7 +17,7 @@ export type LabelScanValue = {
   name: string;
   mode: ScanMode;
   /** Weight (g/ml) in 'weight' mode, a serving count in 'servings' mode, unused in 'package'. */
-  amount: number;
+  amount: number | null;
 };
 
 type LabelScanCardProps = {
@@ -29,7 +29,7 @@ type LabelScanCardProps = {
   normalizeNameOnBlur?: (value: string) => string;
 };
 
-const clamp = (n: number) => Math.max(0, Math.min(9999, n));
+const clamp = (n: number | null) => (n == null ? null : Math.max(0, Math.min(9999, n)));
 
 export function LabelScanCard({
   value,

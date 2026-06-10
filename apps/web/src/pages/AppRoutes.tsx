@@ -73,16 +73,21 @@ import type {
   NutritionDatabaseIngredientSearchResult,
 } from '../types';
 
-type IngredientDraft = Omit<UpsertIngredient, 'id' | 'mealId' | 'createdAt' | 'updatedAt'>;
+type DraftNumericKey = 'weight' | 'fat' | 'saturatedFat' | 'carbs' | 'fiber' | 'protein';
+
+type IngredientDraft = Omit<
+  UpsertIngredient,
+  'id' | 'mealId' | 'createdAt' | 'updatedAt' | DraftNumericKey
+> & { [K in DraftNumericKey]: number | null };
 
 const emptyDraft: IngredientDraft = {
   name: '',
-  weight: 0,
-  fat: 0,
-  saturatedFat: 0,
-  carbs: 0,
-  fiber: 0,
-  protein: 0,
+  weight: null,
+  fat: null,
+  saturatedFat: null,
+  carbs: null,
+  fiber: null,
+  protein: null,
 };
 
 function mapDbSearchResults(
@@ -483,7 +488,7 @@ function DayDetail() {
               <NumberInput
                 label="Meal count target"
                 value={draftMealCountTarget}
-                onChange={(n) => setDraftMealCountTarget(Math.max(0, n))}
+                onChange={(n) => setDraftMealCountTarget(Math.max(0, n ?? 0))}
                 onBlur={() => setDraftMealCountTarget((n) => round1(Math.max(0, n)))}
               />
               <Button
@@ -554,7 +559,7 @@ function MealEdit() {
   const [scanForm, setScanForm] = useState<LabelScanValue>({
     name: '',
     mode: 'weight',
-    amount: 0,
+    amount: null,
   });
   const [scanLoading, setScanLoading] = useState(false);
   const [scanError, setScanError] = useState('');
@@ -572,10 +577,10 @@ function MealEdit() {
   const [dbShowCreate, setDbShowCreate] = useState(false);
   const [dbEntryValue, setDbEntryValue] = useState<NutritionDatabaseEntryValue>({
     name: '',
-    servingAmount: 0,
-    fat: 0,
-    carbs: 0,
-    protein: 0,
+    servingAmount: null,
+    fat: null,
+    carbs: null,
+    protein: null,
   });
   const [dbCreating, setDbCreating] = useState(false);
   const [dbError, setDbError] = useState('');
@@ -673,10 +678,17 @@ function MealEdit() {
   const saveIngredient = () => {
     const id = editingId ?? uuidv7();
     const next: UpsertIngredient = {
+      ...draft,
       id,
       mealId: meal.id,
-      ...draft,
       name: normalizeIngredientName(draft.name),
+      // Blank numeric fields submit as 0; the strict schema requires numbers.
+      weight: draft.weight ?? 0,
+      fat: draft.fat ?? 0,
+      saturatedFat: draft.saturatedFat ?? 0,
+      carbs: draft.carbs ?? 0,
+      fiber: draft.fiber ?? 0,
+      protein: draft.protein ?? 0,
     };
     void upsertIngredient(day.id, meal.id, next);
     track('meal.ingredient.added', { source: draftSource });
@@ -716,8 +728,11 @@ function MealEdit() {
       const isPackage = scanForm.mode === 'package';
       formData.append('mode', isServings ? 'servings' : 'weight');
       formData.append('entirePackage', String(isPackage));
-      formData.append('weightGrams', scanForm.mode === 'weight' ? String(scanForm.amount) : '');
-      formData.append('servings', isServings ? String(scanForm.amount) : '');
+      formData.append(
+        'weightGrams',
+        scanForm.mode === 'weight' ? String(scanForm.amount ?? '') : '',
+      );
+      formData.append('servings', isServings ? String(scanForm.amount ?? '') : '');
       formData.append('name', scanForm.name);
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
@@ -753,7 +768,7 @@ function MealEdit() {
     }));
     setDraftSource('scanned');
     setScanResult(null);
-    setScanForm({ name: '', mode: 'weight', amount: 0 });
+    setScanForm({ name: '', mode: 'weight', amount: null });
     setEntryTab('manual');
   };
 
@@ -1016,7 +1031,7 @@ function MealEdit() {
                     searched={dbSearched}
                     amounts={dbAmounts}
                     onAmountChange={(id, amount) =>
-                      setDbAmounts((prev) => ({ ...prev, [id]: amount }))
+                      setDbAmounts((prev) => ({ ...prev, [id]: amount ?? 0 }))
                     }
                     onAdd={(id) => {
                       const amount = dbAmounts[id] ?? 0;
@@ -1050,9 +1065,22 @@ function MealEdit() {
                       onChange={setDbEntryValue}
                       submitting={dbCreating}
                       onSubmit={() => {
+                        // The card disables Publish until these are filled; this
+                        // guard narrows the nullable draft for the strict schema.
+                        if (
+                          dbEntryValue.servingAmount == null ||
+                          dbEntryValue.fat == null ||
+                          dbEntryValue.carbs == null ||
+                          dbEntryValue.protein == null
+                        )
+                          return;
                         setDbCreating(true);
                         void createNutritionDatabaseIngredient({
                           ...dbEntryValue,
+                          servingAmount: dbEntryValue.servingAmount,
+                          fat: dbEntryValue.fat,
+                          carbs: dbEntryValue.carbs,
+                          protein: dbEntryValue.protein,
                           micronutrients: dbEntryValue.micronutrients?.map((m) => ({
                             name: m.name,
                             amount: m.amount ?? undefined,
@@ -1066,10 +1094,10 @@ function MealEdit() {
                             setDbShowCreate(false);
                             setDbEntryValue({
                               name: '',
-                              servingAmount: 0,
-                              fat: 0,
-                              carbs: 0,
-                              protein: 0,
+                              servingAmount: null,
+                              fat: null,
+                              carbs: null,
+                              protein: null,
                             });
                             setDbTotal((t) => (t == null ? t : t + 1));
                             if (dbQuery.length >= 2) {
@@ -1200,7 +1228,7 @@ function MealEdit() {
                   },
                   {
                     label: 'Weight',
-                    current: draft.weight,
+                    current: draft.weight ?? '—',
                     proposed: scanResult.proposed.weight,
                     unit: 'g',
                   },
@@ -1211,31 +1239,31 @@ function MealEdit() {
                   },
                   {
                     label: 'Fat',
-                    current: draft.fat,
+                    current: draft.fat ?? '—',
                     proposed: scanResult.proposed.fat,
                     unit: 'g',
                   },
                   {
                     label: 'Saturated fat',
-                    current: draft.saturatedFat,
+                    current: draft.saturatedFat ?? '—',
                     proposed: scanResult.proposed.saturatedFat,
                     unit: 'g',
                   },
                   {
                     label: 'Carbs',
-                    current: draft.carbs,
+                    current: draft.carbs ?? '—',
                     proposed: scanResult.proposed.carbs,
                     unit: 'g',
                   },
                   {
                     label: 'Fiber',
-                    current: draft.fiber,
+                    current: draft.fiber ?? '—',
                     proposed: scanResult.proposed.fiber,
                     unit: 'g',
                   },
                   {
                     label: 'Protein',
-                    current: draft.protein,
+                    current: draft.protein ?? '—',
                     proposed: scanResult.proposed.protein,
                     unit: 'g',
                   },
@@ -1340,8 +1368,8 @@ function ProfilePage() {
         weightLbs={profile.weightLbs}
         heightInches={profile.heightInches}
         weightError={weightError}
-        onWeightChange={(n) => patchProfileLocal({ weightLbs: Math.max(0, Math.floor(n)) })}
-        onHeightChange={(n) => patchProfileLocal({ heightInches: Math.max(0, Math.floor(n)) })}
+        onWeightChange={(n) => patchProfileLocal({ weightLbs: Math.max(0, Math.floor(n ?? 0)) })}
+        onHeightChange={(n) => patchProfileLocal({ heightInches: Math.max(0, Math.floor(n ?? 0)) })}
         onWeightBlur={() => save({ weightLbs: profile.weightLbs }, 'bodyInfo')}
         onHeightBlur={() => save({ heightInches: profile.heightInches }, 'bodyInfo')}
       />
@@ -1389,9 +1417,11 @@ function ProfilePage() {
         proteinHint={macro.proteinHint}
         error={macro.error}
         onModeChange={(mode) => save({ macroMode: mode }, 'macroTargets')}
-        onFatsChange={(n) => patchProfileLocal({ macroFats: Math.max(0, Math.floor(n)) })}
-        onCarbsChange={(n) => patchProfileLocal({ macroCarbs: Math.max(0, Math.floor(n)) })}
-        onProteinChange={(n) => patchProfileLocal({ macroProtein: Math.max(0, Math.floor(n)) })}
+        onFatsChange={(n) => patchProfileLocal({ macroFats: Math.max(0, Math.floor(n ?? 0)) })}
+        onCarbsChange={(n) => patchProfileLocal({ macroCarbs: Math.max(0, Math.floor(n ?? 0)) })}
+        onProteinChange={(n) =>
+          patchProfileLocal({ macroProtein: Math.max(0, Math.floor(n ?? 0)) })
+        }
         onBlur={() =>
           save(
             {

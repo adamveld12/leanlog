@@ -32,7 +32,7 @@ export type NutritionDatabaseSearchCardProps = {
   loading?: boolean;
   searched?: boolean;
   amounts: Record<string, number>;
-  onAmountChange: (id: string, amount: number) => void;
+  onAmountChange: (id: string, amount: number | null) => void;
   onAdd: (id: string) => void;
   addingId?: string | null;
   onCreateNew?: () => void;

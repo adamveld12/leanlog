@@ -577,3 +577,42 @@ describe('editing a meal ingredient', () => {
     expect(onUpsertIngredient).not.toHaveBeenCalled();
   });
 });
+
+describe('manual ingredient entry defaults', () => {
+  it('starts with empty numeric fields and submits blanks as zeros', async () => {
+    const onUpsertIngredient = vi.fn().mockResolvedValue(undefined);
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()], { onUpsertIngredient });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Ingredient Name')).toBeInTheDocument();
+    });
+
+    // All numeric fields start empty — no 0 to backspace over
+    expect(screen.getByLabelText('Weight (g)')).toHaveValue('');
+    expect(screen.getByLabelText('Fat')).toHaveValue('');
+    expect(screen.getByLabelText('Carbs')).toHaveValue('');
+    expect(screen.getByLabelText('Fiber')).toHaveValue('');
+    expect(screen.getByLabelText('Protein')).toHaveValue('');
+
+    await userEvent.type(screen.getByLabelText('Ingredient Name'), 'BANANA');
+    await userEvent.type(screen.getByLabelText('Weight (g)'), '118');
+    await userEvent.type(screen.getByLabelText('Carbs'), '27');
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+
+    await waitFor(() => {
+      expect(onUpsertIngredient).toHaveBeenCalledWith(
+        'd1',
+        'm1',
+        expect.objectContaining({
+          name: 'BANANA',
+          weight: 118,
+          carbs: 27,
+          fat: 0,
+          saturatedFat: 0,
+          fiber: 0,
+          protein: 0,
+        }),
+      );
+    });
+  });
+});

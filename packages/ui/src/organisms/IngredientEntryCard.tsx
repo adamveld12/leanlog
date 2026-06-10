@@ -12,12 +12,12 @@ import { recipes } from '../styles/recipes';
 
 export type IngredientEntryValue = {
   name: string;
-  weight: number;
-  fat: number;
-  saturatedFat: number;
-  carbs: number;
-  fiber: number;
-  protein: number;
+  weight: number | null;
+  fat: number | null;
+  saturatedFat: number | null;
+  carbs: number | null;
+  fiber: number | null;
+  protein: number | null;
 };
 
 type IngredientEntryCardProps = {
@@ -33,7 +33,7 @@ type IngredientEntryCardProps = {
 
 const clamp999 = (n: number) => Math.max(0, Math.min(999, n));
 const round1 = (n: number) => Math.round(n * 10) / 10;
-const sanitize = (n: number) => round1(clamp999(n));
+const sanitize = (n: number | null) => (n == null ? null : round1(clamp999(n)));
 
 function caloriesFromMacros(fat: number, carbs: number, protein: number, fiber: number): number {
   const netCarbs = Math.max(0, carbs - fiber);
@@ -49,14 +49,19 @@ export function IngredientEntryCard({
   onCancel,
   normalizeNameOnBlur,
 }: IngredientEntryCardProps) {
-  const setNum = (key: keyof Omit<IngredientEntryValue, 'name'>, next: number) =>
+  const setNum = (key: keyof Omit<IngredientEntryValue, 'name'>, next: number | null) =>
     onChange({ ...value, [key]: sanitize(next) });
 
   const roundField = (key: keyof Omit<IngredientEntryValue, 'name'>) =>
     onChange({ ...value, [key]: sanitize(value[key]) });
 
-  const fiberInvalid = value.fiber > value.carbs;
-  const calculatedCalories = caloriesFromMacros(value.fat, value.carbs, value.protein, value.fiber);
+  const fiberInvalid = (value.fiber ?? 0) > (value.carbs ?? 0);
+  const calculatedCalories = caloriesFromMacros(
+    value.fat ?? 0,
+    value.carbs ?? 0,
+    value.protein ?? 0,
+    value.fiber ?? 0,
+  );
 
   return (
     <AnalyticsScope properties={{ organism: 'IngredientEntryCard' }}>

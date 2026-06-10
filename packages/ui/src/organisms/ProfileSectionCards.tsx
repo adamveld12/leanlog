@@ -9,11 +9,11 @@ import { recipes } from '../styles/recipes';
 
 type BodyInfoCardProps = {
   saved?: boolean;
-  weightLbs: number;
-  heightInches: number;
+  weightLbs: number | null;
+  heightInches: number | null;
   weightError: string;
-  onWeightChange: (n: number) => void;
-  onHeightChange: (n: number) => void;
+  onWeightChange: (n: number | null) => void;
+  onHeightChange: (n: number | null) => void;
   onWeightBlur: () => void;
   onHeightBlur: () => void;
 };
@@ -90,17 +90,17 @@ type MacroMode = 'percentage' | 'custom';
 type MacroTargetsCardProps = {
   saved?: boolean;
   mode: MacroMode;
-  fats: number;
-  carbs: number;
-  protein: number;
+  fats: number | null;
+  carbs: number | null;
+  protein: number | null;
   fatsHint: string;
   carbsHint: string;
   proteinHint: string;
   error: string;
   onModeChange: (mode: MacroMode) => void;
-  onFatsChange: (n: number) => void;
-  onCarbsChange: (n: number) => void;
-  onProteinChange: (n: number) => void;
+  onFatsChange: (n: number | null) => void;
+  onCarbsChange: (n: number | null) => void;
+  onProteinChange: (n: number | null) => void;
   onBlur: () => void;
 };
 
