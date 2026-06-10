@@ -559,7 +559,8 @@ function MealEdit() {
   // "Save to database" state per ingredient row
   const [savingToDbId, setSavingToDbId] = useState<string | null>(null);
   // Scan → save to database
-  const [scanSavedToDb, setScanSavedToDb] = useState(false);
+  // Database entry id created from the current scan, used to link applied ingredients
+  const [scanSavedDbId, setScanSavedDbId] = useState<string | null>(null);
   const dbSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const track = useAnalytics();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -679,6 +680,7 @@ function MealEdit() {
   const onScanFile = async (file: File) => {
     setScanError('');
     setCameraError('');
+    setScanSavedDbId(null);
     setScanLoading(true);
     try {
       const formData = new FormData();
@@ -718,9 +720,13 @@ function MealEdit() {
       carbs: proposed.carbs,
       fiber: proposed.fiber,
       protein: proposed.protein,
+      // If this scan was saved to the database, the applied ingredient is born linked
+      // so it cannot be saved to the database again.
+      sourceDatabaseIngredientId: scanSavedDbId ?? null,
     }));
     setDraftSource('scanned');
     setScanResult(null);
+    setScanSavedDbId(null);
     setScanForm({ name: '', mode: 'weight', amount: 0 });
     setEntryTab('manual');
   };
@@ -874,6 +880,14 @@ function MealEdit() {
                       carbs: i.carbs,
                       fiber: i.fiber,
                       protein: i.protein,
+                      // Preserve snapshot extras so editing doesn't wipe them on upsert
+                      unsaturatedFat: i.unsaturatedFat ?? null,
+                      monounsaturatedFat: i.monounsaturatedFat ?? null,
+                      polyunsaturatedFat: i.polyunsaturatedFat ?? null,
+                      transFat: i.transFat ?? null,
+                      sugar: i.sugar ?? null,
+                      micronutrients: i.micronutrients ?? null,
+                      sourceDatabaseIngredientId: i.sourceDatabaseIngredientId ?? null,
                     });
                   }}
                 />
@@ -1109,12 +1123,12 @@ function MealEdit() {
           open={!!scanResult}
           onClose={() => {
             setScanResult(null);
-            setScanSavedToDb(false);
+            setScanSavedDbId(null);
           }}
           onAccept={applyScan}
           onRetake={() => {
             setScanResult(null);
-            setScanSavedToDb(false);
+            setScanSavedDbId(null);
             void openCamera();
           }}
           canAccept={scanResult?.canApply ?? false}
@@ -1137,9 +1151,9 @@ function MealEdit() {
                     sugar: candidate.sugar ?? undefined,
                     creationSource: 'scan',
                   })
-                    .then(() => {
+                    .then((created) => {
                       track('nutrition_database.ingredient.published', { source: 'scan' });
-                      setScanSavedToDb(true);
+                      setScanSavedDbId(created.id);
                     })
                     .catch(() => {});
                 }
@@ -1147,11 +1161,11 @@ function MealEdit() {
           }
           canSaveToDatabase={
             scanResult && 'databaseCandidate' in scanResult
-              ? scanResult.databaseCandidate !== null && !scanSavedToDb
+              ? scanResult.databaseCandidate !== null && !scanSavedDbId
               : undefined
           }
           saveToDatabaseBlockReason={
-            scanResult?.databaseBlockReason ?? (scanSavedToDb ? 'Saved to database.' : undefined)
+            scanResult?.databaseBlockReason ?? (scanSavedDbId ? 'Saved to database.' : undefined)
           }
           fields={
             scanResult
