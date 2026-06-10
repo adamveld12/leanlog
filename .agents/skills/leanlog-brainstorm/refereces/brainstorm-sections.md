@@ -183,6 +183,10 @@ worse than omitting it.
   "Outside this product's identity" (positioning decision). Otherwise, a
   single list is fine.
 
+- **BDD Specification** - include Gherkin syntax BDD specs that define the behavior
+    and assertions for how the feature should work. These should be exhaustive, detailed
+    and should include both positive and negative examples. Additionally include edge and corner cases.
+
 - **Dependencies / Assumptions** — include when material upstream
   dependencies exist or when load-bearing assumptions need to be surfaced.
 
