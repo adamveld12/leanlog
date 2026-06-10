@@ -1,6 +1,7 @@
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
+import { HelperText } from '../atoms/HelperText';
 import { Input } from '../atoms/Input';
 import { NumberInput } from '../atoms/NumberInput';
 import { SectionHeading } from '../atoms/SectionHeading';
@@ -12,7 +13,6 @@ import { recipes } from '../styles/recipes';
 export type IngredientEntryValue = {
   name: string;
   weight: number;
-  calories: number;
   fat: number;
   saturatedFat: number;
   carbs: number;
@@ -33,6 +33,11 @@ const clamp999 = (n: number) => Math.max(0, Math.min(999, n));
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const sanitize = (n: number) => round1(clamp999(n));
 
+function caloriesFromMacros(fat: number, carbs: number, protein: number, fiber: number): number {
+  const netCarbs = Math.max(0, carbs - fiber);
+  return Math.round((fat * 9 + protein * 4 + netCarbs * 4) * 10) / 10;
+}
+
 export function IngredientEntryCard({
   value,
   saved,
@@ -48,6 +53,7 @@ export function IngredientEntryCard({
     onChange({ ...value, [key]: sanitize(value[key]) });
 
   const fiberInvalid = value.fiber > value.carbs;
+  const calculatedCalories = caloriesFromMacros(value.fat, value.carbs, value.protein, value.fiber);
 
   return (
     <AnalyticsScope properties={{ organism: 'IngredientEntryCard' }}>
@@ -68,20 +74,12 @@ export function IngredientEntryCard({
           />
         </Field>
 
-        <div className={recipes.grid.two}>
-          <NumberInput
-            label="Weight (g)"
-            value={value.weight}
-            onChange={(n) => setNum('weight', n)}
-            onBlur={() => roundField('weight')}
-          />
-          <NumberInput
-            label="Calories"
-            value={value.calories}
-            onChange={(n) => setNum('calories', n)}
-            onBlur={() => roundField('calories')}
-          />
-        </div>
+        <NumberInput
+          label="Weight (g)"
+          value={value.weight}
+          onChange={(n) => setNum('weight', n)}
+          onBlur={() => roundField('weight')}
+        />
 
         <div className={recipes.grid.two}>
           <NumberInput
@@ -121,6 +119,8 @@ export function IngredientEntryCard({
           onChange={(n) => setNum('protein', n)}
           onBlur={() => roundField('protein')}
         />
+
+        <HelperText as="p">Calculated calories: {calculatedCalories} kcal</HelperText>
       </SectionCard>
     </AnalyticsScope>
   );

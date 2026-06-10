@@ -23,6 +23,9 @@ export type ScanReviewModalProps = {
   notes?: string[];
   fields: ScanField[];
   acceptLabel?: string;
+  onSaveToDatabase?: () => void;
+  canSaveToDatabase?: boolean;
+  saveToDatabaseBlockReason?: string;
 };
 
 export function ScanReviewModal({
@@ -36,6 +39,9 @@ export function ScanReviewModal({
   notes,
   fields,
   acceptLabel = 'Apply',
+  onSaveToDatabase,
+  canSaveToDatabase,
+  saveToDatabaseBlockReason,
 }: ScanReviewModalProps) {
   return (
     <AnalyticsScope properties={{ organism: 'ScanReviewModal' }}>
@@ -55,10 +61,24 @@ export function ScanReviewModal({
 
         {!canAccept && blockReason ? <WarningText>{blockReason}</WarningText> : null}
 
+        {onSaveToDatabase && !canSaveToDatabase && saveToDatabaseBlockReason ? (
+          <WarningText>{saveToDatabaseBlockReason}</WarningText>
+        ) : null}
+
         <div className={recipes.stack.actions}>
           {onRetake ? (
             <Button variant="ghost" size="sm" onClick={onRetake}>
               Retake photo
+            </Button>
+          ) : null}
+          {onSaveToDatabase ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onSaveToDatabase}
+              disabled={canSaveToDatabase === false}
+            >
+              Save to database
             </Button>
           ) : null}
           <Button variant="secondary" size="sm" onClick={onClose}>

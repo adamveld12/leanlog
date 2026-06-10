@@ -4,7 +4,6 @@ import { IngredientEntryCard } from './IngredientEntryCard';
 const base = {
   name: 'CHICKEN',
   weight: 120,
-  calories: 220,
   fat: 6,
   saturatedFat: 1.5,
   carbs: 0,
