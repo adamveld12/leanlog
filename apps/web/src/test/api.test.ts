@@ -77,7 +77,10 @@ describe('api.ingredients.addFromDatabase', () => {
     const [url, opts] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('/api/days/day-1/meals/meal-1/ingredients/from-database');
     expect((opts as Record<string, unknown>).method).toBe('POST');
-    const body = JSON.parse((opts as Record<string, unknown>).body as string) as Record<string, unknown>;
+    const body = JSON.parse((opts as Record<string, unknown>).body as string) as Record<
+      string,
+      unknown
+    >;
     expect(body.databaseIngredientId).toBe('db-1');
     expect(body.measuredAmount).toBe(150);
     expect(result).toEqual(ingredient);

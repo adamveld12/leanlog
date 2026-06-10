@@ -11,7 +11,12 @@ import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
 // Inline formula: fat*9 + protein*4 + max(0, carbs - fiber)*4
-function caloriesFromMacros(fat: number, carbs: number, protein: number, fiber?: number | null): number {
+function caloriesFromMacros(
+  fat: number,
+  carbs: number,
+  protein: number,
+  fiber?: number | null,
+): number {
   const netCarbs = Math.max(0, carbs - (fiber ?? 0));
   return Math.round((fat * 9 + protein * 4 + netCarbs * 4) * 10) / 10;
 }
@@ -73,8 +78,10 @@ export function NutritionDatabaseEntryCard({
   onSubmit,
   submitting,
 }: NutritionDatabaseEntryCardProps) {
-  const setNum = (key: keyof Omit<NutritionDatabaseEntryValue, 'name' | 'micronutrients'>, n: number) =>
-    onChange({ ...value, [key]: sanitize(n) });
+  const setNum = (
+    key: keyof Omit<NutritionDatabaseEntryValue, 'name' | 'micronutrients'>,
+    n: number,
+  ) => onChange({ ...value, [key]: sanitize(n) });
 
   const roundField = (key: keyof Omit<NutritionDatabaseEntryValue, 'name' | 'micronutrients'>) => {
     const v = value[key];
@@ -90,16 +97,12 @@ export function NutritionDatabaseEntryCard({
   // Micronutrient helpers
   const micronutrients = value.micronutrients ?? [];
 
-  const updateMicro = (
-    idx: number,
-    patch: Partial<NutritionDatabaseMicronutrientValue>,
-  ) => {
+  const updateMicro = (idx: number, patch: Partial<NutritionDatabaseMicronutrientValue>) => {
     const next = micronutrients.map((m, i) => (i === idx ? { ...m, ...patch } : m));
     onChange({ ...value, micronutrients: next });
   };
 
-  const addMicro = () =>
-    onChange({ ...value, micronutrients: [...micronutrients, { name: '' }] });
+  const addMicro = () => onChange({ ...value, micronutrients: [...micronutrients, { name: '' }] });
 
   const removeMicro = (idx: number) =>
     onChange({ ...value, micronutrients: micronutrients.filter((_, i) => i !== idx) });
@@ -109,19 +112,13 @@ export function NutritionDatabaseEntryCard({
       <SectionCard>
         <div className={cn(recipes.stack.row, recipes.stack.between)}>
           <SectionHeading noMargin>Publish Ingredient</SectionHeading>
-          <Button
-            size="sm"
-            onClick={onSubmit}
-            disabled={!valid || submitting}
-          >
+          <Button size="sm" onClick={onSubmit} disabled={!valid || submitting}>
             {submitting ? 'Publishing…' : 'Publish'}
           </Button>
         </div>
 
         {missing.length > 0 ? (
-          <WarningText role="alert">
-            Required: {missing.join(', ')}
-          </WarningText>
+          <WarningText role="alert">Required: {missing.join(', ')}</WarningText>
         ) : null}
 
         <Field label="Name">
@@ -231,7 +228,9 @@ export function NutritionDatabaseEntryCard({
                     label="% DV"
                     value={micro.percentDailyValue ?? null}
                     onChange={(n) =>
-                      updateMicro(idx, { percentDailyValue: Math.max(0, Math.min(999, Math.round(n * 10) / 10)) })
+                      updateMicro(idx, {
+                        percentDailyValue: Math.max(0, Math.min(999, Math.round(n * 10) / 10)),
+                      })
                     }
                     placeholder="0–999"
                   />

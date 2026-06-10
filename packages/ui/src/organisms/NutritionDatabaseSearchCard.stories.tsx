@@ -70,10 +70,7 @@ export const NoResults: Story = {
 
 export const Duplicates: Story = {
   args: {
-    results: [
-      { ...baseResults[0] },
-      { ...baseResults[0] },
-    ],
+    results: [{ ...baseResults[0] }, { ...baseResults[0] }],
     amounts: { 'ing-1': 150 },
   },
 };

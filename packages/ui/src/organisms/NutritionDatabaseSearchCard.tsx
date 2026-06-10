@@ -125,7 +125,9 @@ export function NutritionDatabaseSearchCard({
         )}
 
         {truncated ? (
-          <HelperText as="p">Showing first 25 results. Refine your search to narrow results.</HelperText>
+          <HelperText as="p">
+            Showing first 25 results. Refine your search to narrow results.
+          </HelperText>
         ) : null}
 
         {onCreateNew ? (

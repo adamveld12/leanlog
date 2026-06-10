@@ -102,11 +102,9 @@ describe('api.nutritionDatabase mock (state-level contract)', () => {
     });
 
     expect(result).toEqual(newIngredient);
-    expect(api.ingredients.addFromDatabase).toHaveBeenCalledWith(
-      'test-token',
-      'day-1',
-      'meal-1',
-      { databaseIngredientId: 'db-1', measuredAmount: 150 },
-    );
+    expect(api.ingredients.addFromDatabase).toHaveBeenCalledWith('test-token', 'day-1', 'meal-1', {
+      databaseIngredientId: 'db-1',
+      measuredAmount: 150,
+    });
   });
 });

@@ -1,8 +1,5 @@
 import { createNutritionDatabaseRepository } from '@leanlog/data-d1';
-import {
-  CreateNutritionDatabaseIngredientSchema,
-  caloriesFromMacros,
-} from '@leanlog/data-access';
+import { CreateNutritionDatabaseIngredientSchema, caloriesFromMacros } from '@leanlog/data-access';
 import type { Env } from '../_env';
 import { getUserDisplayNames } from '../_clerk';
 
@@ -22,7 +19,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const results = rows.map((r) => ({
     ...r,
     addedByName: names.get(r.addedByUserId) ?? 'LeanLog user',
-    calories: caloriesFromMacros({ fat: r.fat, carbs: r.carbs, protein: r.protein, fiber: r.fiber }),
+    calories: caloriesFromMacros({
+      fat: r.fat,
+      carbs: r.carbs,
+      protein: r.protein,
+      fiber: r.fiber,
+    }),
   }));
 
   return Response.json({ results });

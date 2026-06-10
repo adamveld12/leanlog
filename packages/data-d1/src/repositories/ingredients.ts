@@ -2,9 +2,16 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { ingredients, meals, dailyMealLogs } from '../schema';
 import { caloriesFromMacros } from '@leanlog/data-access';
-import type { IngredientRepository, Ingredient, UpsertIngredient, Micronutrient } from '@leanlog/data-access';
+import type {
+  IngredientRepository,
+  Ingredient,
+  UpsertIngredient,
+  Micronutrient,
+} from '@leanlog/data-access';
 
-function serializeMicronutrients(micronutrients: Micronutrient[] | null | undefined): string | null {
+function serializeMicronutrients(
+  micronutrients: Micronutrient[] | null | undefined,
+): string | null {
   if (micronutrients == null) return null;
   return JSON.stringify(micronutrients);
 }

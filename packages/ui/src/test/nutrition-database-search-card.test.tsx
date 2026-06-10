@@ -182,6 +182,8 @@ describe('NutritionDatabaseSearchCard', () => {
 
   it('does not render onCreateNew button when not provided', () => {
     render(<Harness results={[]} />);
-    expect(screen.queryByRole('button', { name: 'Add database ingredient' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Add database ingredient' }),
+    ).not.toBeInTheDocument();
   });
 });

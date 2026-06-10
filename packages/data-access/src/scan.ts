@@ -99,14 +99,16 @@ function buildDatabaseCandidate(
   // Determine serving amount
   let servingAmount: number;
   if (label.basis === 'per_serving') {
-    const serving = label.servingSizeGrams && label.servingSizeGrams > 0 ? label.servingSizeGrams : null;
+    const serving =
+      label.servingSizeGrams && label.servingSizeGrams > 0 ? label.servingSizeGrams : null;
     if (!serving) {
       return { candidate: null, blockReason: 'Serving size is required' };
     }
     servingAmount = serving;
   } else {
     // per_100g: prefer actual serving size when available, fall back to 100
-    const serving = label.servingSizeGrams && label.servingSizeGrams > 0 ? label.servingSizeGrams : null;
+    const serving =
+      label.servingSizeGrams && label.servingSizeGrams > 0 ? label.servingSizeGrams : null;
     servingAmount = serving ?? 100;
   }
 

@@ -9,7 +9,9 @@ import type {
   Micronutrient,
 } from '@leanlog/data-access';
 
-function serializeMicronutrients(micronutrients: Micronutrient[] | null | undefined): string | null {
+function serializeMicronutrients(
+  micronutrients: Micronutrient[] | null | undefined,
+): string | null {
   if (micronutrients == null) return null;
   return JSON.stringify(micronutrients);
 }
@@ -19,7 +21,9 @@ function deserializeMicronutrients(json: string | null): Micronutrient[] | null 
   return JSON.parse(json) as Micronutrient[];
 }
 
-function rowToDomain(row: typeof nutritionDatabaseIngredients.$inferSelect): NutritionDatabaseIngredient {
+function rowToDomain(
+  row: typeof nutritionDatabaseIngredients.$inferSelect,
+): NutritionDatabaseIngredient {
   return {
     id: row.id,
     name: row.name,
@@ -47,7 +51,10 @@ export function createNutritionDatabaseRepository(db: D1Database): NutritionData
   const now = () => new Date().toISOString();
 
   return {
-    async create(userId: string, data: CreateNutritionDatabaseIngredient): Promise<NutritionDatabaseIngredient> {
+    async create(
+      userId: string,
+      data: CreateNutritionDatabaseIngredient,
+    ): Promise<NutritionDatabaseIngredient> {
       const id = uuidv7();
       const ts = now();
       await d.insert(nutritionDatabaseIngredients).values({

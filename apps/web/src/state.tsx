@@ -49,9 +49,7 @@ type Store = {
     mealId: string,
     input: AddIngredientFromDatabase,
   ): Promise<void>;
-  searchNutritionDatabase(
-    query: string,
-  ): Promise<NutritionDatabaseIngredientSearchResult[]>;
+  searchNutritionDatabase(query: string): Promise<NutritionDatabaseIngredientSearchResult[]>;
   createNutritionDatabaseIngredient(
     input: CreateNutritionDatabaseIngredient,
   ): Promise<NutritionDatabaseIngredient>;

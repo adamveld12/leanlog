@@ -97,7 +97,12 @@ export type ScaledNutritionSnapshot = {
   transFat?: number;
   fiber?: number;
   sugar?: number;
-  micronutrients?: Array<{ name: string; amount?: number; unit?: string; percentDailyValue?: number }>;
+  micronutrients?: Array<{
+    name: string;
+    amount?: number;
+    unit?: string;
+    percentDailyValue?: number;
+  }>;
   sourceDatabaseIngredientId: string;
 };
 
@@ -118,9 +123,12 @@ export function scaleNutritionDatabaseIngredient(
   };
 
   if (ingredient.saturatedFat != null) result.saturatedFat = scaleVal(ingredient.saturatedFat);
-  if (ingredient.unsaturatedFat != null) result.unsaturatedFat = scaleVal(ingredient.unsaturatedFat);
-  if (ingredient.monounsaturatedFat != null) result.monounsaturatedFat = scaleVal(ingredient.monounsaturatedFat);
-  if (ingredient.polyunsaturatedFat != null) result.polyunsaturatedFat = scaleVal(ingredient.polyunsaturatedFat);
+  if (ingredient.unsaturatedFat != null)
+    result.unsaturatedFat = scaleVal(ingredient.unsaturatedFat);
+  if (ingredient.monounsaturatedFat != null)
+    result.monounsaturatedFat = scaleVal(ingredient.monounsaturatedFat);
+  if (ingredient.polyunsaturatedFat != null)
+    result.polyunsaturatedFat = scaleVal(ingredient.polyunsaturatedFat);
   if (ingredient.transFat != null) result.transFat = scaleVal(ingredient.transFat);
   if (ingredient.fiber != null) result.fiber = scaleVal(ingredient.fiber);
   if (ingredient.sugar != null) result.sugar = scaleVal(ingredient.sugar);

@@ -37,7 +37,10 @@ export interface ProfileRepository {
 }
 
 export interface NutritionDatabaseRepository {
-  create(userId: string, data: CreateNutritionDatabaseIngredient): Promise<NutritionDatabaseIngredient>;
+  create(
+    userId: string,
+    data: CreateNutritionDatabaseIngredient,
+  ): Promise<NutritionDatabaseIngredient>;
   search(query: string, limit?: number): Promise<NutritionDatabaseIngredient[]>;
   getById(id: string): Promise<NutritionDatabaseIngredient | null>;
 }

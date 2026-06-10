@@ -189,7 +189,11 @@ describe('resolveScan — databaseCandidate', () => {
   });
 
   it('per-100g scan without serving size yields candidate with servingAmount 100 and unscaled macros', () => {
-    const labelNoServing: ScanLabel = { ...per100gLabel, servingSizeGrams: null, inferredName: 'Rice' };
+    const labelNoServing: ScanLabel = {
+      ...per100gLabel,
+      servingSizeGrams: null,
+      inferredName: 'Rice',
+    };
     const r = resolveScan(labelNoServing, req({ mode: 'weight', weight: 100, name: '' }));
     expect(r.databaseCandidate).not.toBeNull();
     const c = r.databaseCandidate as DatabaseCandidate;

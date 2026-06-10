@@ -93,10 +93,7 @@
       "indexes": {
         "daily_meal_logs_user_date_idx": {
           "name": "daily_meal_logs_user_date_idx",
-          "columns": [
-            "user_id",
-            "date"
-          ],
+          "columns": ["user_id", "date"],
           "isUnique": true
         }
       },
@@ -105,12 +102,8 @@
           "name": "daily_meal_logs_user_id_user_profiles_clerk_user_id_fk",
           "tableFrom": "daily_meal_logs",
           "tableTo": "user_profiles",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "clerk_user_id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["clerk_user_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -269,12 +262,8 @@
           "name": "ingredients_meal_id_meals_id_fk",
           "tableFrom": "ingredients",
           "tableTo": "meals",
-          "columnsFrom": [
-            "meal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meal_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -328,12 +317,8 @@
           "name": "meals_daily_meal_log_id_daily_meal_logs_id_fk",
           "tableFrom": "meals",
           "tableTo": "daily_meal_logs",
-          "columnsFrom": [
-            "daily_meal_log_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["daily_meal_log_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -475,9 +460,7 @@
       "indexes": {
         "nutrition_database_ingredients_name_idx": {
           "name": "nutrition_database_ingredients_name_idx",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": false
         }
       },
@@ -598,9 +581,7 @@
       "indexes": {
         "user_profiles_clerk_user_id_unique": {
           "name": "user_profiles_clerk_user_id_unique",
-          "columns": [
-            "clerk_user_id"
-          ],
+          "columns": ["clerk_user_id"],
           "isUnique": true
         }
       },

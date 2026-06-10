@@ -248,10 +248,11 @@ export const api = {
       mealId: string,
       data: AddIngredientFromDatabase,
     ) =>
-      apiFetch<Ingredient>(
-        `/api/days/${dayId}/meals/${mealId}/ingredients/from-database`,
-        { token, method: 'POST', body: JSON.stringify(data) },
-      ),
+      apiFetch<Ingredient>(`/api/days/${dayId}/meals/${mealId}/ingredients/from-database`, {
+        token,
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
   profile: {
     get: (token: string) => apiFetch<UserProfile>('/api/profile', { token, method: 'GET' }),

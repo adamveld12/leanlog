@@ -47,13 +47,7 @@ function Harness({
   onSubmit?: () => void;
 }) {
   const [value, setValue] = useState(initial);
-  return (
-    <NutritionDatabaseEntryCard
-      value={value}
-      onChange={setValue}
-      onSubmit={onSubmit}
-    />
-  );
+  return <NutritionDatabaseEntryCard value={value} onChange={setValue} onSubmit={onSubmit} />;
 }
 
 afterEach(cleanup);
@@ -68,11 +62,7 @@ describe('NutritionDatabaseEntryCard', () => {
     // fat=3.6, carbs=0, protein=31, fiber=null
     // calories = 3.6*9 + 31*4 + max(0, 0-0)*4 = 32.4 + 124 + 0 = 156.4
     render(
-      <NutritionDatabaseEntryCard
-        value={filledValue}
-        onChange={() => {}}
-        onSubmit={() => {}}
-      />,
+      <NutritionDatabaseEntryCard value={filledValue} onChange={() => {}} onSubmit={() => {}} />,
     );
     expect(screen.getByText(/Calculated calories: 156.4 kcal/)).toBeInTheDocument();
   });
@@ -119,7 +109,11 @@ describe('NutritionDatabaseEntryCard', () => {
   });
 
   it('accepts %DV values over 100 (e.g. 120)', async () => {
-    render(<Harness initial={{ ...filledValue, micronutrients: [{ name: 'Vitamin C', percentDailyValue: 0 }] }} />);
+    render(
+      <Harness
+        initial={{ ...filledValue, micronutrients: [{ name: 'Vitamin C', percentDailyValue: 0 }] }}
+      />,
+    );
     const dvInput = screen.getByLabelText('% DV');
     await userEvent.clear(dvInput);
     await userEvent.type(dvInput, '120');
