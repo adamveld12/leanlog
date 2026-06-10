@@ -50,7 +50,7 @@ export function createIngredientRepository(db: D1Database): IngredientRepository
         .from(meals)
         .innerJoin(dailyMealLogs, eq(meals.dailyMealLogId, dailyMealLogs.id))
         .where(eq(meals.id, mealId));
-      if (!ownerRows[0] || ownerRows[0].userId !== userId) return null as unknown as Ingredient;
+      if (!ownerRows[0] || ownerRows[0].userId !== userId) return null;
 
       const ts = now();
       const calories = caloriesFromMacros({

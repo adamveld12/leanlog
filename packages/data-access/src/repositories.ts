@@ -27,7 +27,7 @@ export interface MealRepository {
 }
 
 export interface IngredientRepository {
-  upsert(userId: string, mealId: string, data: UpsertIngredient): Promise<Ingredient>;
+  upsert(userId: string, mealId: string, data: UpsertIngredient): Promise<Ingredient | null>;
   delete(userId: string, ingredientId: string): Promise<void>;
 }
 
