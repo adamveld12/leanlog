@@ -23,8 +23,6 @@ Your task is to understand the implementation & requirements and then write code
 2. Ensure you cover all cases
 
 
-
-
 ## Execution plan
 
 
@@ -49,6 +47,7 @@ Your task is to understand the implementation & requirements and then write code
 3. Setup the local checkout
     - if there are unchanged files ask the user what they want you to do
     - fetch latest main
+    - Open a worktree in `.worktrees` - name it. Name it appropriately for the feature
     - checkout a branch named appropriately for the feature. This is **REQUIRED**, so we have a clean place to work.
 
 4. Build, check and iterate

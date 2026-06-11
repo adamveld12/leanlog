@@ -11,3 +11,4 @@ storybook-static
 .dev.vars.*
 !.dev.vars.example
 .wrangler/
+.worktrees/
