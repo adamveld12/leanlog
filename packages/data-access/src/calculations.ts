@@ -69,24 +69,36 @@ export function weightLossCertainty(coveragePct: number): number {
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
-export function caloriesFromMacros({
-  fat,
-  carbs,
-  protein,
-  fiber,
-}: {
+export type CalorieEstimateInput = {
   fat: number;
   carbs: number;
   protein: number;
-  fiber?: number | null;
-}): number {
-  const netCarbs = Math.max(0, carbs - (fiber ?? 0));
-  return round1(fat * 9 + protein * 4 + netCarbs * 4);
+  fiber?: number | null; // 2 kcal/g
+  sugarAlcohol?: number | null; // 2.4 kcal/g
+  allulose?: number | null; // 0.4 kcal/g
+  alcohol?: number | null; // 7 kcal/g, separate from carbs
+};
+
+export function estimateCalories(i: CalorieEstimateInput): number {
+  const fiberC = Math.min(Math.max(0, i.fiber ?? 0), i.carbs);
+  const saC = Math.min(Math.max(0, i.sugarAlcohol ?? 0), i.carbs - fiberC);
+  const alluC = Math.min(Math.max(0, i.allulose ?? 0), i.carbs - fiberC - saC);
+  const digestible = i.carbs - fiberC - saC - alluC;
+  return round1(
+    i.fat * 9 +
+      i.protein * 4 +
+      digestible * 4 +
+      fiberC * 2 +
+      saC * 2.4 +
+      alluC * 0.4 +
+      Math.max(0, i.alcohol ?? 0) * 7,
+  );
 }
 
 export type ScaledNutritionSnapshot = {
   name: string;
   weight: number;
+  calories: number;
   fat: number;
   carbs: number;
   protein: number;
@@ -97,6 +109,9 @@ export type ScaledNutritionSnapshot = {
   transFat?: number;
   fiber?: number;
   sugar?: number;
+  sugarAlcohol?: number;
+  allulose?: number;
+  alcohol?: number;
   micronutrients?: Array<{
     name: string;
     amount?: number;
@@ -116,6 +131,7 @@ export function scaleNutritionDatabaseIngredient(
   const result: ScaledNutritionSnapshot = {
     name: ingredient.name,
     weight: measuredAmount,
+    calories: scaleVal(ingredient.calories),
     fat: scaleVal(ingredient.fat),
     carbs: scaleVal(ingredient.carbs),
     protein: scaleVal(ingredient.protein),
@@ -132,6 +148,9 @@ export function scaleNutritionDatabaseIngredient(
   if (ingredient.transFat != null) result.transFat = scaleVal(ingredient.transFat);
   if (ingredient.fiber != null) result.fiber = scaleVal(ingredient.fiber);
   if (ingredient.sugar != null) result.sugar = scaleVal(ingredient.sugar);
+  if (ingredient.sugarAlcohol != null) result.sugarAlcohol = scaleVal(ingredient.sugarAlcohol);
+  if (ingredient.allulose != null) result.allulose = scaleVal(ingredient.allulose);
+  if (ingredient.alcohol != null) result.alcohol = scaleVal(ingredient.alcohol);
 
   if (ingredient.micronutrients != null) {
     result.micronutrients = ingredient.micronutrients.map((m) => ({

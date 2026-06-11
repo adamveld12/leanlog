@@ -7,7 +7,7 @@ import {
   trackingCoverage,
   estimatedWeightLost,
   weightLossCertainty,
-  caloriesFromMacros,
+  estimateCalories,
   scaleNutritionDatabaseIngredient,
 } from './calculations';
 import type { UserProfile, NutritionDatabaseIngredient } from './models';
@@ -188,39 +188,46 @@ describe('weightLossCertainty', () => {
   });
 });
 
-describe('caloriesFromMacros', () => {
-  it('computes calories from fat/protein/carbs/fiber: fat10 protein20 carbs30 fiber5 → 310', () => {
-    // fat 10*9=90, protein 20*4=80, net carbs (30-5)*4=100, total=270... wait:
-    // fat10*9=90 + protein20*4=80 + (carbs30-fiber5)*4=(25)*4=100 => 270
-    // But task says 310 — re-read: fat10+protein20+carbs30, fiber5
-    // fat=10*9=90, protein=20*4=80, netCarbs=(30-5)=25*4=100 => 270
-    // Recalculating per spec: fat10/protein20/carbs30/fiber5 → 310
-    // fat10*9=90, protein20*4=80, carbs30*4=120, minus fiber5*4=20 => 90+80+120-20=270
-    // Hmm, still 270. Let's trust spec says 310 and check with fiber NOT subtracted from carbs:
-    // Actually spec says: fat*9 + protein*4 + Math.max(0, carbs - fiber)*4
-    // fat10*9=90, protein20*4=80, (30-5)*4=100 => 270. So 310 might be a spec typo.
-    // We'll verify with the actual formula (task instruction takes precedence over claimed output).
-    expect(caloriesFromMacros({ fat: 10, carbs: 30, protein: 20, fiber: 5 })).toBe(270);
+describe('estimateCalories', () => {
+  it('AE1: fiber deduction — fat0 protein0 carbs20 fiber5 -> 70', () => {
+    // digestible = 20-5 = 15, fiber = 5*2=10, total = 15*4 + 10 = 60+10 = 70
+    expect(estimateCalories({ fat: 0, carbs: 20, protein: 0, fiber: 5 })).toBe(70);
   });
 
-  it('omitting fiber: fat10 protein20 carbs30 → 290', () => {
-    // fat10*9=90, protein20*4=80, carbs30*4=120 => 290
-    expect(caloriesFromMacros({ fat: 10, carbs: 30, protein: 20 })).toBe(290);
+  it('AE2: fat+protein+fiber+SA — fat9 protein10 carbs20 fiber8 SA4 -> 178.6', () => {
+    // fat:9*9=81, protein:10*4=40, digestible:(20-8-4=8)*4=32, fiber:8*2=16, SA:4*2.4=9.6
+    // total = 81+40+32+16+9.6 = 178.6
+    expect(estimateCalories({ fat: 9, protein: 10, carbs: 20, fiber: 8, sugarAlcohol: 4 })).toBe(
+      178.6,
+    );
   });
 
-  it('fiber null behaves same as fiber omitted', () => {
-    expect(caloriesFromMacros({ fat: 10, carbs: 30, protein: 20, fiber: null })).toBe(290);
+  it('missing contributors default to 0 — fat10 carbs30 protein20 -> 290', () => {
+    // fat10*9=90, protein20*4=80, digestible30*4=120 => 290
+    expect(estimateCalories({ fat: 10, carbs: 30, protein: 20 })).toBe(290);
   });
 
-  it('fiber exceeds carbs → net carbs clamps at 0', () => {
-    // fat0 protein0 carbs5 fiber10 → net carbs = max(0, 5-10)=0, total=0
-    expect(caloriesFromMacros({ fat: 0, carbs: 5, protein: 0, fiber: 10 })).toBe(0);
+  it('over-clamp: fiber and SA exceed carbs — clamp to available carbs', () => {
+    // fiber clamped to 20 (carbs), SA clamped to 0 (20-20=0 remaining), digestible=0
+    // total = 20*2 = 40
+    expect(estimateCalories({ fat: 0, carbs: 20, protein: 0, fiber: 25, sugarAlcohol: 10 })).toBe(
+      40,
+    );
   });
 
-  it('rounds to 1 decimal', () => {
-    // fat=1.1, protein=1.1, carbs=1.1, no fiber
+  it('allulose factor — fat0 carbs10 protein0 allulose10 -> 4', () => {
+    // allulose clamped to 10, digestible=0; total = 10*0.4 = 4
+    expect(estimateCalories({ fat: 0, carbs: 10, protein: 0, allulose: 10 })).toBe(4);
+  });
+
+  it('alcohol only — fat0 carbs0 protein0 alcohol10 -> 70', () => {
+    // 10*7 = 70
+    expect(estimateCalories({ fat: 0, carbs: 0, protein: 0, alcohol: 10 })).toBe(70);
+  });
+
+  it('rounds to 1 decimal — fat1.1 carbs1.1 protein1.1 -> 18.7', () => {
     // 1.1*9=9.9 + 1.1*4=4.4 + 1.1*4=4.4 = 18.7
-    expect(caloriesFromMacros({ fat: 1.1, carbs: 1.1, protein: 1.1 })).toBe(18.7);
+    expect(estimateCalories({ fat: 1.1, carbs: 1.1, protein: 1.1 })).toBe(18.7);
   });
 });
 
@@ -233,6 +240,7 @@ const baseDbIngredient: NutritionDatabaseIngredient = {
   fat: 3.6,
   carbs: 0,
   protein: 31,
+  calories: 156.4,
   saturatedFat: 1,
   unsaturatedFat: null,
   monounsaturatedFat: null,
@@ -240,6 +248,9 @@ const baseDbIngredient: NutritionDatabaseIngredient = {
   transFat: null,
   fiber: 0,
   sugar: null,
+  sugarAlcohol: null,
+  allulose: null,
+  alcohol: null,
   micronutrients: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
@@ -248,6 +259,7 @@ const baseDbIngredient: NutritionDatabaseIngredient = {
 describe('scaleNutritionDatabaseIngredient', () => {
   it('doubles all fields when measured amount is 2x serving', () => {
     const result = scaleNutritionDatabaseIngredient(baseDbIngredient, 340);
+    expect(result.calories).toBe(312.8);
     expect(result.fat).toBe(7.2);
     expect(result.carbs).toBe(0);
     expect(result.protein).toBe(62);
@@ -261,6 +273,22 @@ describe('scaleNutritionDatabaseIngredient', () => {
     expect(result.monounsaturatedFat).toBeUndefined();
     expect(result.transFat).toBeUndefined();
     expect(result.sugar).toBeUndefined();
+    expect(result.sugarAlcohol).toBeUndefined();
+    expect(result.allulose).toBeUndefined();
+    expect(result.alcohol).toBeUndefined();
+  });
+
+  it('scales sugarAlcohol, allulose, and alcohol when present', () => {
+    const ingredient: NutritionDatabaseIngredient = {
+      ...baseDbIngredient,
+      sugarAlcohol: 4,
+      allulose: 2,
+      alcohol: 1,
+    };
+    const result = scaleNutritionDatabaseIngredient(ingredient, 340);
+    expect(result.sugarAlcohol).toBe(8);
+    expect(result.allulose).toBe(4);
+    expect(result.alcohol).toBe(2);
   });
 
   it('scales micronutrient amounts and percentDailyValue', () => {

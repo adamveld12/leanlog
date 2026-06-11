@@ -165,6 +165,7 @@ describe('resolveScan — databaseCandidate', () => {
     const c = r.databaseCandidate as DatabaseCandidate;
     expect(c.name).toBe('Granola');
     expect(c.servingAmount).toBe(30);
+    expect(c.calories).toBe(120);
     expect(c.fat).toBe(6);
     expect(c.carbs).toBe(14);
     expect(c.protein).toBe(3);
@@ -177,12 +178,13 @@ describe('resolveScan — databaseCandidate', () => {
   });
 
   it('per-100g scan with known serving size yields candidate with that serving amount', () => {
-    // per100gLabel has servingSizeGrams 50, nutrients per 100g: fat 10, carbs 20, protein 8
-    // expected at 50g: fat = 5, carbs = 10, protein = 4
+    // per100gLabel has servingSizeGrams 50, nutrients per 100g: fat 10, carbs 20, protein 8, calories 200
+    // expected at 50g: fat=5, carbs=10, protein=4, calories=100
     const r = resolveScan(per100gLabel, req({ mode: 'weight', weight: 100, name: 'Oats' }));
     expect(r.databaseCandidate).not.toBeNull();
     const c = r.databaseCandidate as DatabaseCandidate;
     expect(c.servingAmount).toBe(50);
+    expect(c.calories).toBe(100);
     expect(c.fat).toBe(5);
     expect(c.carbs).toBe(10);
     expect(c.protein).toBe(4);
@@ -198,9 +200,22 @@ describe('resolveScan — databaseCandidate', () => {
     expect(r.databaseCandidate).not.toBeNull();
     const c = r.databaseCandidate as DatabaseCandidate;
     expect(c.servingAmount).toBe(100);
+    expect(c.calories).toBe(200);
     expect(c.fat).toBe(10);
     expect(c.carbs).toBe(20);
     expect(c.protein).toBe(8);
+  });
+
+  it('zero printed calories falls back to estimateCalories', () => {
+    const labelZeroCal: ScanLabel = {
+      ...perServingLabel,
+      nutrients: { ...perServingLabel.nutrients, calories: 0 },
+    };
+    const r = resolveScan(labelZeroCal, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    expect(r.databaseCandidate).not.toBeNull();
+    const c = r.databaseCandidate as DatabaseCandidate;
+    // fat6*9=54 + protein3*4=12 + digestible(14-2=12)*4=48 + fiber2*2=4 = 118
+    expect(c.calories).toBe(118);
   });
 
   it('missing protein → no candidate + databaseBlockReason mentions protein, apply still possible', () => {
@@ -254,5 +269,45 @@ describe('resolveScan — databaseCandidate', () => {
     const r = resolveScan(labelWithSugar, req({ mode: 'weight', weight: 30, name: 'Granola' }));
     const c = r.databaseCandidate as DatabaseCandidate;
     expect(c.sugar).toBe(5);
+  });
+
+  it('candidate includes sugarAlcohol and allulose when present (per-serving)', () => {
+    const labelWithSA: ScanLabel = {
+      ...perServingLabel,
+      nutrients: { ...perServingLabel.nutrients, sugarAlcohol: 3, allulose: 1 },
+    };
+    const r = resolveScan(labelWithSA, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.sugarAlcohol).toBe(3);
+    expect(c.allulose).toBe(1);
+  });
+
+  it('scales sugarAlcohol and allulose by serving factor for per-100g labels', () => {
+    // per100gLabel servingSizeGrams=50, so factor=0.5
+    const labelWithSA: ScanLabel = {
+      ...per100gLabel,
+      nutrients: { ...per100gLabel.nutrients, sugarAlcohol: 6, allulose: 4 },
+    };
+    const r = resolveScan(labelWithSA, req({ mode: 'weight', weight: 100, name: 'Oats' }));
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.sugarAlcohol).toBe(3); // 6 * 0.5
+    expect(c.allulose).toBe(2); // 4 * 0.5
+  });
+
+  it('proposed includes sugarAlcohol and allulose when label provides them', () => {
+    const labelWithSA: ScanLabel = {
+      ...perServingLabel,
+      nutrients: { ...perServingLabel.nutrients, sugarAlcohol: 3, allulose: 1 },
+    };
+    const r = resolveScan(labelWithSA, req({ mode: 'weight', weight: 60, name: 'Granola' }));
+    // factor = 60/30 = 2
+    expect(r.proposed.sugarAlcohol).toBe(6);
+    expect(r.proposed.allulose).toBe(2);
+  });
+
+  it('proposed sugarAlcohol and allulose are undefined when not in label', () => {
+    const r = resolveScan(perServingLabel, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    expect(r.proposed.sugarAlcohol).toBeUndefined();
+    expect(r.proposed.allulose).toBeUndefined();
   });
 });

@@ -10,17 +10,6 @@ import { SectionCard } from '../molecules/SectionCard';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
-// Inline formula: fat*9 + protein*4 + max(0, carbs - fiber)*4
-function caloriesFromMacros(
-  fat: number,
-  carbs: number,
-  protein: number,
-  fiber?: number | null,
-): number {
-  const netCarbs = Math.max(0, carbs - (fiber ?? 0));
-  return Math.round((fat * 9 + protein * 4 + netCarbs * 4) * 10) / 10;
-}
-
 export type NutritionDatabaseMicronutrientValue = {
   name: string;
   percentDailyValue?: number | null;
@@ -31,6 +20,7 @@ export type NutritionDatabaseMicronutrientValue = {
 export type NutritionDatabaseEntryValue = {
   name: string;
   servingAmount: number | null;
+  calories: number | null;
   fat: number | null;
   carbs: number | null;
   protein: number | null;
@@ -41,25 +31,32 @@ export type NutritionDatabaseEntryValue = {
   transFat?: number | null;
   fiber?: number | null;
   sugar?: number | null;
+  sugarAlcohol?: number | null;
+  allulose?: number | null;
+  alcohol?: number | null;
   micronutrients?: NutritionDatabaseMicronutrientValue[];
 };
 
 type NutritionDatabaseEntryCardProps = {
   value: NutritionDatabaseEntryValue;
+  estimatedCalories: number;
   onChange: (next: NutritionDatabaseEntryValue) => void;
   onSubmit: () => void;
   submitting?: boolean;
 };
 
 const clamp999 = (n: number) => Math.max(0, Math.min(999, n));
+const clamp9999 = (n: number) => Math.max(0, Math.min(9999, n));
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const sanitize = (n: number | null) => (n == null ? null : round1(clamp999(n)));
+const sanitizeCalories = (n: number | null) => (n == null ? null : round1(clamp9999(n)));
 
 function isValid(value: NutritionDatabaseEntryValue): boolean {
   return (
     value.name.trim().length > 0 &&
     value.servingAmount != null &&
     value.servingAmount > 0 &&
+    value.calories != null &&
     value.fat != null &&
     value.carbs != null &&
     value.protein != null
@@ -71,6 +68,7 @@ function missingFields(value: NutritionDatabaseEntryValue): string[] {
   if (!value.name.trim()) missing.push('Name');
   if (value.servingAmount == null || !(value.servingAmount > 0))
     missing.push('Serving amount (must be > 0)');
+  if (value.calories == null) missing.push('Calories');
   if (value.fat == null) missing.push('Fat');
   if (value.carbs == null) missing.push('Carbs');
   if (value.protein == null) missing.push('Protein');
@@ -79,16 +77,19 @@ function missingFields(value: NutritionDatabaseEntryValue): string[] {
 
 export function NutritionDatabaseEntryCard({
   value,
+  estimatedCalories,
   onChange,
   onSubmit,
   submitting,
 }: NutritionDatabaseEntryCardProps) {
   const setNum = (
-    key: keyof Omit<NutritionDatabaseEntryValue, 'name' | 'micronutrients'>,
+    key: Exclude<keyof NutritionDatabaseEntryValue, 'name' | 'calories' | 'micronutrients'>,
     n: number | null,
   ) => onChange({ ...value, [key]: sanitize(n) });
 
-  const roundField = (key: keyof Omit<NutritionDatabaseEntryValue, 'name' | 'micronutrients'>) => {
+  const roundField = (
+    key: Exclude<keyof NutritionDatabaseEntryValue, 'name' | 'calories' | 'micronutrients'>,
+  ) => {
     const v = value[key];
     if (typeof v === 'number') onChange({ ...value, [key]: sanitize(v) });
   };
@@ -97,12 +98,10 @@ export function NutritionDatabaseEntryCard({
   const missing = missingFields(value);
   const valid = isValid(value) && !fiberInvalid;
 
-  const calculatedCalories = caloriesFromMacros(
-    value.fat ?? 0,
-    value.carbs ?? 0,
-    value.protein ?? 0,
-    value.fiber,
-  );
+  const calorieDisplay =
+    value.calories != null && Math.round(value.calories) !== Math.round(estimatedCalories)
+      ? `Calories: ${Math.round(value.calories)} kcal · Estimated: ${Math.round(estimatedCalories)} kcal`
+      : `Estimated calories: ${Math.round(estimatedCalories)} kcal`;
 
   // Micronutrient helpers
   const micronutrients = value.micronutrients ?? [];
@@ -137,13 +136,20 @@ export function NutritionDatabaseEntryCard({
             onChange={(e) => onChange({ ...value, name: e.target.value })}
           />
         </Field>
-        <HelperText as="p">Calculated calories: {calculatedCalories} kcal</HelperText>
+        <HelperText as="p">{calorieDisplay}</HelperText>
 
         <NumberInput
           label="Serving amount (g/ml)"
           value={value.servingAmount}
           onChange={(n) => setNum('servingAmount', n)}
           onBlur={() => roundField('servingAmount')}
+        />
+
+        <NumberInput
+          label="Calories (kcal)"
+          value={value.calories}
+          onChange={(n) => onChange({ ...value, calories: sanitizeCalories(n) })}
+          onBlur={() => onChange({ ...value, calories: sanitizeCalories(value.calories) })}
         />
 
         <div className={recipes.grid.two}>
@@ -209,6 +215,21 @@ export function NutritionDatabaseEntryCard({
             label="Sugar (g)"
             value={value.sugar ?? null}
             onChange={(n) => onChange({ ...value, sugar: sanitize(n) })}
+          />
+          <NumberInput
+            label="Sugar alcohol (g)"
+            value={value.sugarAlcohol ?? null}
+            onChange={(n) => onChange({ ...value, sugarAlcohol: sanitize(n) })}
+          />
+          <NumberInput
+            label="Allulose (g)"
+            value={value.allulose ?? null}
+            onChange={(n) => onChange({ ...value, allulose: sanitize(n) })}
+          />
+          <NumberInput
+            label="Alcohol (g)"
+            value={value.alcohol ?? null}
+            onChange={(n) => onChange({ ...value, alcohol: sanitize(n) })}
           />
         </div>
 

@@ -13,15 +13,20 @@ import { recipes } from '../styles/recipes';
 export type IngredientEntryValue = {
   name: string;
   weight: number | null;
+  calories: number | null;
   fat: number | null;
   saturatedFat: number | null;
   carbs: number | null;
   fiber: number | null;
   protein: number | null;
+  sugarAlcohol: number | null;
+  allulose: number | null;
+  alcohol: number | null;
 };
 
 type IngredientEntryCardProps = {
   value: IngredientEntryValue;
+  estimatedCalories: number;
   saved?: boolean;
   submitLabel: 'Add' | 'Update';
   onChange: (next: IngredientEntryValue) => void;
@@ -32,16 +37,14 @@ type IngredientEntryCardProps = {
 };
 
 const clamp999 = (n: number) => Math.max(0, Math.min(999, n));
+const clamp9999 = (n: number) => Math.max(0, Math.min(9999, n));
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const sanitize = (n: number | null) => (n == null ? null : round1(clamp999(n)));
-
-function caloriesFromMacros(fat: number, carbs: number, protein: number, fiber: number): number {
-  const netCarbs = Math.max(0, carbs - fiber);
-  return Math.round((fat * 9 + protein * 4 + netCarbs * 4) * 10) / 10;
-}
+const sanitizeCalories = (n: number | null) => (n == null ? null : round1(clamp9999(n)));
 
 export function IngredientEntryCard({
   value,
+  estimatedCalories,
   saved,
   submitLabel,
   onChange,
@@ -49,19 +52,20 @@ export function IngredientEntryCard({
   onCancel,
   normalizeNameOnBlur,
 }: IngredientEntryCardProps) {
-  const setNum = (key: keyof Omit<IngredientEntryValue, 'name'>, next: number | null) =>
-    onChange({ ...value, [key]: sanitize(next) });
+  const setNum = (
+    key: Exclude<keyof IngredientEntryValue, 'name' | 'calories'>,
+    next: number | null,
+  ) => onChange({ ...value, [key]: sanitize(next) });
 
-  const roundField = (key: keyof Omit<IngredientEntryValue, 'name'>) =>
+  const roundField = (key: Exclude<keyof IngredientEntryValue, 'name' | 'calories'>) =>
     onChange({ ...value, [key]: sanitize(value[key]) });
 
   const fiberInvalid = (value.fiber ?? 0) > (value.carbs ?? 0);
-  const calculatedCalories = caloriesFromMacros(
-    value.fat ?? 0,
-    value.carbs ?? 0,
-    value.protein ?? 0,
-    value.fiber ?? 0,
-  );
+
+  const calorieDisplay =
+    value.calories != null && Math.round(value.calories) !== Math.round(estimatedCalories)
+      ? `Calories: ${Math.round(value.calories)} kcal · Estimated: ${Math.round(estimatedCalories)} kcal`
+      : `Estimated calories: ${Math.round(estimatedCalories)} kcal`;
 
   return (
     <AnalyticsScope properties={{ organism: 'IngredientEntryCard' }}>
@@ -88,7 +92,14 @@ export function IngredientEntryCard({
             onNormalized={(name) => onChange({ ...value, name })}
           />
         </Field>
-        <HelperText as="p">Calculated calories: {calculatedCalories} kcal</HelperText>
+        <HelperText as="p">{calorieDisplay}</HelperText>
+
+        <NumberInput
+          label="Calories (kcal)"
+          value={value.calories}
+          onChange={(n) => onChange({ ...value, calories: sanitizeCalories(n) })}
+          onBlur={() => onChange({ ...value, calories: sanitizeCalories(value.calories) })}
+        />
 
         <NumberInput
           label="Weight (g)"
@@ -135,6 +146,30 @@ export function IngredientEntryCard({
           onChange={(n) => setNum('protein', n)}
           onBlur={() => roundField('protein')}
         />
+
+        <SectionHeading as="h4" noMargin>
+          Optional
+        </SectionHeading>
+        <div className={recipes.grid.two}>
+          <NumberInput
+            label="Sugar alcohol (g)"
+            value={value.sugarAlcohol}
+            onChange={(n) => setNum('sugarAlcohol', n)}
+            onBlur={() => roundField('sugarAlcohol')}
+          />
+          <NumberInput
+            label="Allulose (g)"
+            value={value.allulose}
+            onChange={(n) => setNum('allulose', n)}
+            onBlur={() => roundField('allulose')}
+          />
+          <NumberInput
+            label="Alcohol (g)"
+            value={value.alcohol}
+            onChange={(n) => setNum('alcohol', n)}
+            onBlur={() => roundField('alcohol')}
+          />
+        </div>
       </SectionCard>
     </AnalyticsScope>
   );

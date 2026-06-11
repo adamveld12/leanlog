@@ -148,6 +148,7 @@ const validCreateDbIngredient = {
   fat: 2.5,
   carbs: 27,
   protein: 5,
+  calories: 148,
 };
 
 describe('CreateNutritionDatabaseIngredientSchema', () => {
@@ -235,17 +236,25 @@ describe('CreateNutritionDatabaseIngredientSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('REJECTS payload containing calories (strict mode)', () => {
+  it('accepts payload containing calories (now a required stored field)', () => {
     const result = CreateNutritionDatabaseIngredientSchema.safeParse({
       ...validCreateDbIngredient,
       calories: 200,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects payload missing calories', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      calories: undefined,
     });
     expect(result.success).toBe(false);
   });
 });
 
 describe('UpsertIngredientSchema', () => {
-  it('rejects a payload containing calories', () => {
+  it('accepts a payload containing calories (explicit override)', () => {
     const result = UpsertIngredientSchema.safeParse({
       id: 'some-id',
       mealId: 'meal-id',
@@ -258,7 +267,7 @@ describe('UpsertIngredientSchema', () => {
       protein: 0,
       calories: 95,
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it('accepts valid ingredient without calories', () => {

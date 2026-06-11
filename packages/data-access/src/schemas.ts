@@ -31,6 +31,10 @@ export const NutritionDatabaseIngredientSchema = z.object({
   transFat: z.number().min(0).nullable().optional(),
   fiber: z.number().min(0).nullable().optional(),
   sugar: z.number().min(0).nullable().optional(),
+  calories: z.number().min(0),
+  sugarAlcohol: z.number().min(0).nullable().optional(),
+  allulose: z.number().min(0).nullable().optional(),
+  alcohol: z.number().min(0).nullable().optional(),
   micronutrients: z.array(MicronutrientSchema).nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -50,13 +54,10 @@ export const AddIngredientFromDatabaseSchema = z
   })
   .strict();
 
-// NutritionDatabaseIngredientSearchResult is expressed as a type (not a schema)
-// because calories is derived — we don't store it, we compute it.
 export type NutritionDatabaseIngredientSearchResult = z.infer<
   typeof NutritionDatabaseIngredientSchema
 > & {
   addedByName: string;
-  calories: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -106,6 +107,11 @@ export const IngredientSchema = z.object({
   polyunsaturatedFat: z.number().min(0).nullable().optional(),
   transFat: z.number().min(0).nullable().optional(),
   sugar: z.number().min(0).nullable().optional(),
+  sugarAlcohol: z.number().min(0).nullable().optional(),
+  allulose: z.number().min(0).nullable().optional(),
+  alcohol: z.number().min(0).nullable().optional(),
+  calorieSource: z.enum(['explicit', 'estimated']),
+  estimatedCalories: z.number().min(0),
   micronutrients: z.array(MicronutrientSchema).nullable().optional(),
   sourceDatabaseIngredientId: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
@@ -169,7 +175,13 @@ export const UpsertIngredientSchema = IngredientSchema.omit({
   createdAt: true,
   updatedAt: true,
   calories: true,
-}).strict();
+  calorieSource: true,
+  estimatedCalories: true,
+})
+  .extend({
+    calories: z.number().min(0).max(9999).nullable().optional(),
+  })
+  .strict();
 export const DayTargetsSchema = z.object({
   targetCalories: z.number().min(0).optional(),
   targetFat: z.number().min(0).optional(),

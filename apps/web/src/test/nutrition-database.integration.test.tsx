@@ -11,6 +11,35 @@ import type { ScanResolution } from '@leanlog/data-access';
 
 vi.mock('react-chartjs-2', () => ({ Line: () => null }));
 
+function makeIngredient(
+  overrides: Partial<Ingredient> &
+    Pick<
+      Ingredient,
+      | 'id'
+      | 'mealId'
+      | 'name'
+      | 'weight'
+      | 'calories'
+      | 'fat'
+      | 'saturatedFat'
+      | 'carbs'
+      | 'fiber'
+      | 'protein'
+    >,
+): Ingredient {
+  const now = new Date().toISOString();
+  return {
+    estimatedCalories: overrides.calories ?? 0,
+    calorieSource: 'estimated' as const,
+    sugarAlcohol: null,
+    allulose: null,
+    alcohol: null,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
 // jsdom does not implement HTMLDialogElement.showModal / close; polyfill them so
 // Modal components can open/close without throwing.
 beforeAll(() => {
@@ -141,7 +170,7 @@ function FakeStateProvider({
         await onAddIngredientFromDatabase(dayId, mealId, input);
       }
       // Append a stub ingredient to the meal
-      const newIngredient: Ingredient = {
+      const newIngredient: Ingredient = makeIngredient({
         id: `db-ingredient-${input.databaseIngredientId}`,
         mealId,
         name: 'DB INGREDIENT',
@@ -152,9 +181,7 @@ function FakeStateProvider({
         carbs: 20,
         fiber: 2,
         protein: 10,
-        createdAt: now,
-        updatedAt: now,
-      };
+      });
       setDays((prev) =>
         prev.map((d) =>
           d.id === dayId
@@ -410,6 +437,12 @@ describe('nutrition database tab', () => {
     await userEvent.clear(servingInput);
     await userEvent.type(servingInput, '100');
 
+    // Fill calories (now required)
+    const caloriesInput = screen.getByLabelText('Calories (kcal)');
+    await userEvent.clear(caloriesInput);
+    await userEvent.type(caloriesInput, '172');
+    await userEvent.tab();
+
     // Fill fat
     const fatInput = screen.getByLabelText('Fat (g)');
     await userEvent.clear(fatInput);
@@ -449,7 +482,7 @@ describe('save ingredient to database from meal row', () => {
     const onCreateIngredient = vi.fn().mockResolvedValue({ id: 'new1' });
     const onUpsertIngredient = vi.fn().mockResolvedValue(undefined);
 
-    const ingredient: Ingredient = {
+    const ingredient: Ingredient = makeIngredient({
       id: 'i1',
       mealId: 'm1',
       name: 'EGG',
@@ -460,9 +493,7 @@ describe('save ingredient to database from meal row', () => {
       carbs: 0.6,
       fiber: 0,
       protein: 6,
-      createdAt: now,
-      updatedAt: now,
-    };
+    });
 
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])], {
       onCreateIngredient,
@@ -506,7 +537,7 @@ describe('save ingredient to database from meal row', () => {
   });
 
   it('disables Save to database button when weight is 0', async () => {
-    const ingredient: Ingredient = {
+    const ingredient: Ingredient = makeIngredient({
       id: 'i2',
       mealId: 'm1',
       name: 'ZERO WEIGHT',
@@ -517,9 +548,7 @@ describe('save ingredient to database from meal row', () => {
       carbs: 0,
       fiber: 0,
       protein: 0,
-      createdAt: now,
-      updatedAt: now,
-    };
+    });
 
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])]);
 
@@ -532,7 +561,7 @@ describe('save ingredient to database from meal row', () => {
   });
 
   it('hides Save to database for ingredients added from the nutrition database', async () => {
-    const ingredient: Ingredient = {
+    const ingredient: Ingredient = makeIngredient({
       id: 'i3',
       mealId: 'm1',
       name: 'FROM DB',
@@ -544,9 +573,7 @@ describe('save ingredient to database from meal row', () => {
       fiber: 0,
       protein: 62,
       sourceDatabaseIngredientId: 'db1',
-      createdAt: now,
-      updatedAt: now,
-    };
+    });
 
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])]);
 
@@ -562,7 +589,7 @@ describe('save ingredient to database from meal row', () => {
 describe('editing a meal ingredient', () => {
   it('cancel exits edit mode without saving changes', async () => {
     const onUpsertIngredient = vi.fn().mockResolvedValue(undefined);
-    const ingredient: Ingredient = {
+    const ingredient: Ingredient = makeIngredient({
       id: 'i4',
       mealId: 'm1',
       name: 'OATS',
@@ -573,9 +600,7 @@ describe('editing a meal ingredient', () => {
       carbs: 54,
       fiber: 8,
       protein: 10,
-      createdAt: now,
-      updatedAt: now,
-    };
+    });
 
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])], { onUpsertIngredient });
 
