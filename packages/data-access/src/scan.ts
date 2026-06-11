@@ -3,6 +3,8 @@
 // user asked for (a weight, a number of servings, or the entire package), resolve the
 // final ingredient weight, scale the macros, and decide whether the result is applicable.
 
+import { estimateCalories } from './calculations';
+
 export type ScanBasis = 'per_serving' | 'per_100g' | 'unknown';
 
 export type ScanNutrients = {
@@ -14,6 +16,10 @@ export type ScanNutrients = {
   protein: number;
   /** Optional sugar extracted from the label. */
   sugar?: number;
+  /** Optional sugar alcohol extracted from the label. */
+  sugarAlcohol?: number;
+  /** Optional allulose extracted from the label. */
+  allulose?: number;
 };
 
 export type ScanLabel = {
@@ -43,19 +49,18 @@ export type ScanRequest = {
 
 export type ScanProposed = ScanNutrients & { name?: string; weight: number };
 
-/**
- * Per-serving nutrition facts suitable for saving to the nutrition database.
- * Calories are intentionally excluded — derive them downstream via caloriesFromMacros().
- */
 export type DatabaseCandidate = {
   name: string;
   servingAmount: number;
+  calories: number;
   fat: number;
   carbs: number;
   protein: number;
   saturatedFat?: number;
   fiber?: number;
   sugar?: number;
+  sugarAlcohol?: number;
+  allulose?: number;
 };
 
 export type ScanResolution = {
@@ -130,20 +135,32 @@ function buildDatabaseCandidate(
   let saturatedFat = label.nutrients.saturatedFat;
   let fiber = label.nutrients.fiber;
   let sugar = label.nutrients.sugar;
+  let sugarAlcohol = label.nutrients.sugarAlcohol;
+  let allulose = label.nutrients.allulose;
+  let printedCalories = label.nutrients.calories;
 
   if (label.basis === 'per_100g' && servingAmount !== 100) {
     const factor = servingAmount / 100;
     fat = round1(fat * factor);
     carbs = round1(carbs * factor);
     protein = round1(protein * factor);
+    printedCalories = round1(printedCalories * factor);
     if (saturatedFat != null) saturatedFat = round1(saturatedFat * factor);
     if (fiber != null) fiber = round1(fiber * factor);
     if (sugar != null) sugar = round1(sugar * factor);
+    if (sugarAlcohol != null) sugarAlcohol = round1(sugarAlcohol * factor);
+    if (allulose != null) allulose = round1(allulose * factor);
   }
+
+  const calories =
+    printedCalories > 0
+      ? printedCalories
+      : estimateCalories({ fat, carbs, protein, fiber, sugarAlcohol, allulose });
 
   const candidate: DatabaseCandidate = {
     name,
     servingAmount,
+    calories,
     fat,
     carbs,
     protein,
@@ -152,6 +169,8 @@ function buildDatabaseCandidate(
   if (saturatedFat != null) candidate.saturatedFat = saturatedFat;
   if (fiber != null) candidate.fiber = fiber;
   if (sugar != null) candidate.sugar = sugar;
+  if (sugarAlcohol != null) candidate.sugarAlcohol = sugarAlcohol;
+  if (allulose != null) candidate.allulose = allulose;
 
   return { candidate };
 }
@@ -262,6 +281,13 @@ export function resolveScan(label: ScanLabel, request: ScanRequest): ScanResolut
       carbs: safe(label.nutrients.carbs * factor),
       fiber: safe(label.nutrients.fiber * factor),
       protein: safe(label.nutrients.protein * factor),
+      sugar: label.nutrients.sugar != null ? safe(label.nutrients.sugar * factor) : undefined,
+      sugarAlcohol:
+        label.nutrients.sugarAlcohol != null
+          ? safe(label.nutrients.sugarAlcohol * factor)
+          : undefined,
+      allulose:
+        label.nutrients.allulose != null ? safe(label.nutrients.allulose * factor) : undefined,
     },
     canApply,
     blockReason: canApply ? undefined : blockReason,
