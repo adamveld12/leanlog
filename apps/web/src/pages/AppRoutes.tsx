@@ -778,11 +778,14 @@ function MealEdit() {
       ...prev,
       name: proposed.name ?? prev.name,
       weight: proposed.weight,
+      calories: proposed.calories > 0 ? proposed.calories : null,
       fat: proposed.fat,
       saturatedFat: proposed.saturatedFat,
       carbs: proposed.carbs,
       fiber: proposed.fiber,
       protein: proposed.protein,
+      sugarAlcohol: proposed.sugarAlcohol ?? null,
+      allulose: proposed.allulose ?? null,
       // When the scan was also saved to the database, the applied ingredient is
       // born linked so it cannot be saved to the database again.
       sourceDatabaseIngredientId: sourceDbId ?? null,
@@ -879,6 +882,10 @@ function MealEdit() {
                               calories: i.calories,
                               saturatedFat: i.saturatedFat ?? undefined,
                               fiber: i.fiber ?? undefined,
+                              sugar: i.sugar ?? undefined,
+                              sugarAlcohol: i.sugarAlcohol ?? undefined,
+                              allulose: i.allulose ?? undefined,
+                              alcohol: i.alcohol ?? undefined,
                               creationSource: 'meal_ingredient',
                             })
                               .then((created) => {
@@ -893,11 +900,15 @@ function MealEdit() {
                                   mealId: i.mealId,
                                   name: i.name,
                                   weight: i.weight,
+                                  calories: i.calorieSource === 'explicit' ? i.calories : null,
                                   fat: i.fat,
                                   saturatedFat: i.saturatedFat,
                                   carbs: i.carbs,
                                   fiber: i.fiber,
                                   protein: i.protein,
+                                  sugarAlcohol: i.sugarAlcohol ?? null,
+                                  allulose: i.allulose ?? null,
+                                  alcohol: i.alcohol ?? null,
                                   unsaturatedFat: i.unsaturatedFat ?? null,
                                   monounsaturatedFat: i.monounsaturatedFat ?? null,
                                   polyunsaturatedFat: i.polyunsaturatedFat ?? null,
@@ -938,7 +949,7 @@ function MealEdit() {
                     setDraft({
                       name: i.name,
                       weight: i.weight,
-                      calories: i.calories,
+                      calories: i.calorieSource === 'explicit' ? i.calories : null,
                       fat: i.fat,
                       saturatedFat: i.saturatedFat,
                       carbs: i.carbs,
@@ -1269,15 +1280,12 @@ function MealEdit() {
                     fat: candidate.fat,
                     carbs: candidate.carbs,
                     protein: candidate.protein,
-                    calories: estimateCalories({
-                      fat: candidate.fat,
-                      carbs: candidate.carbs,
-                      protein: candidate.protein,
-                      fiber: candidate.fiber ?? null,
-                    }),
+                    calories: candidate.calories,
                     saturatedFat: candidate.saturatedFat ?? undefined,
                     fiber: candidate.fiber ?? undefined,
                     sugar: candidate.sugar ?? undefined,
+                    sugarAlcohol: candidate.sugarAlcohol ?? undefined,
+                    allulose: candidate.allulose ?? undefined,
                     creationSource: 'scan',
                   })
                     .then((created) => {
@@ -1315,7 +1323,7 @@ function MealEdit() {
                   },
                   {
                     label: 'Calories',
-                    current: '(calculated)',
+                    current: draft.calories != null ? draft.calories : '(will estimate)',
                     proposed: scanResult.proposed.calories,
                   },
                   {
