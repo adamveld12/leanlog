@@ -4,14 +4,36 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { IngredientEntryCard, type IngredientEntryValue } from '../organisms/IngredientEntryCard';
 
+/** Mirrors the estimateCalories formula from @leanlog/data-access */
+function estimateCalories(v: {
+  fat: number | null;
+  carbs: number | null;
+  protein: number | null;
+  fiber: number | null;
+  sugarAlcohol?: number | null;
+  allulose?: number | null;
+  alcohol?: number | null;
+}): number {
+  const fat = v.fat ?? 0;
+  const carbs = v.carbs ?? 0;
+  const fiber = Math.min(v.fiber ?? 0, carbs);
+  const protein = v.protein ?? 0;
+  const netCarbs = carbs - fiber;
+  return Math.round((fat * 9 + protein * 4 + netCarbs * 4 + fiber * 2) * 10) / 10;
+}
+
 const base: IngredientEntryValue = {
   name: 'CHICKEN',
   weight: 120,
+  calories: null,
   fat: 6,
   saturatedFat: 1.5,
   carbs: 0,
   fiber: 0,
   protein: 42,
+  sugarAlcohol: null,
+  allulose: null,
+  alcohol: null,
 };
 
 function Harness({
@@ -22,9 +44,19 @@ function Harness({
   submitLabel?: 'Add' | 'Update';
 }) {
   const [value, setValue] = useState(base);
+  const estimated = estimateCalories({
+    fat: value.fat,
+    carbs: value.carbs,
+    protein: value.protein,
+    fiber: value.fiber,
+    sugarAlcohol: value.sugarAlcohol,
+    allulose: value.allulose,
+    alcohol: value.alcohol,
+  });
   return (
     <IngredientEntryCard
       value={value}
+      estimatedCalories={estimated}
       onChange={setValue}
       onSubmit={onSubmit}
       submitLabel={submitLabel}
@@ -39,6 +71,7 @@ describe('IngredientEntryCard', () => {
     const { rerender } = render(
       <IngredientEntryCard
         value={base}
+        estimatedCalories={222}
         onChange={() => {}}
         onSubmit={() => {}}
         submitLabel="Add"
@@ -58,6 +91,7 @@ describe('IngredientEntryCard', () => {
     rerender(
       <IngredientEntryCard
         value={base}
+        estimatedCalories={222}
         onChange={() => {}}
         onSubmit={() => {}}
         submitLabel="Update"
@@ -70,6 +104,7 @@ describe('IngredientEntryCard', () => {
     render(
       <IngredientEntryCard
         value={base}
+        estimatedCalories={222}
         onChange={() => {}}
         onSubmit={() => {}}
         submitLabel="Add"
@@ -78,18 +113,19 @@ describe('IngredientEntryCard', () => {
     expect(screen.queryByLabelText('Calories')).not.toBeInTheDocument();
   });
 
-  it('renders calculated calories text', () => {
+  it('renders estimated calories text', () => {
     // base: fat=6, carbs=0, fiber=0, protein=42
-    // calories = 6*9 + 42*4 + max(0, 0-0)*4 = 54 + 168 + 0 = 222
+    // estimatedCalories = 6*9 + 42*4 + max(0, 0-0)*4 = 54 + 168 + 0 = 222
     render(
       <IngredientEntryCard
         value={base}
+        estimatedCalories={222}
         onChange={() => {}}
         onSubmit={() => {}}
         submitLabel="Add"
       />,
     );
-    expect(screen.getByText(/Calculated calories: 222 kcal/)).toBeInTheDocument();
+    expect(screen.getByText(/Estimated calories: 222 kcal/)).toBeInTheDocument();
   });
 
   it('recalculates calories when macros change (fiber reduces net carbs)', async () => {
@@ -106,8 +142,8 @@ describe('IngredientEntryCard', () => {
     await userEvent.tab();
 
     // fat=6, carbs=20, fiber=5, protein=42
-    // netCarbs = 20 - 5 = 15, calories = 6*9 + 42*4 + 15*4 = 54 + 168 + 60 = 282
-    expect(screen.getByText(/Calculated calories: 282 kcal/)).toBeInTheDocument();
+    // netCarbs = 20 - 5 = 15, estimatedCalories = 6*9 + 42*4 + 15*4 + 5*2 = 54 + 168 + 60 + 10 = 292
+    expect(screen.getByText(/Estimated calories: 292 kcal/)).toBeInTheDocument();
   });
 
   it('enforces limits, rounds to 1 decimal, and validates fiber <= carbs', async () => {
@@ -164,6 +200,7 @@ describe('IngredientEntryCard', () => {
     render(
       <IngredientEntryCard
         value={base}
+        estimatedCalories={222}
         onChange={() => {}}
         onSubmit={onSubmit}
         onCancel={onCancel}
@@ -182,12 +219,17 @@ describe('IngredientEntryCard', () => {
         value={{
           name: '',
           weight: null,
+          calories: null,
           fat: null,
           saturatedFat: null,
           carbs: null,
           fiber: null,
           protein: null,
+          sugarAlcohol: null,
+          allulose: null,
+          alcohol: null,
         }}
+        estimatedCalories={0}
         onChange={() => {}}
         onSubmit={() => {}}
         submitLabel="Add"
@@ -197,7 +239,7 @@ describe('IngredientEntryCard', () => {
     expect(screen.getByLabelText('Weight (g)')).toHaveValue('');
     expect(screen.getByLabelText('Fat')).toHaveValue('');
     expect(screen.getByLabelText('Protein')).toHaveValue('');
-    expect(screen.getByText(/Calculated calories: 0 kcal/)).toBeInTheDocument();
+    expect(screen.getByText(/Estimated calories: 0 kcal/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add' })).toBeEnabled();
   });
 

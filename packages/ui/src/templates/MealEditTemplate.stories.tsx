@@ -17,6 +17,9 @@ const value = {
   carbs: 0,
   fiber: 0,
   protein: 42,
+  sugarAlcohol: null,
+  allulose: null,
+  alcohol: null,
 };
 
 const heading = {
@@ -52,6 +55,7 @@ const meta: Meta<typeof MealEditTemplate> = {
     ingredientSection: (
       <IngredientEntryCard
         value={value}
+        estimatedCalories={220}
         submitLabel="Add"
         onChange={() => undefined}
         onSubmit={() => undefined}

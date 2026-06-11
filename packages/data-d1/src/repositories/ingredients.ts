@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { ingredients, meals, dailyMealLogs } from '../schema';
-import { caloriesFromMacros } from '@leanlog/data-access';
+import { estimateCalories } from '@leanlog/data-access';
 import type {
   IngredientRepository,
   Ingredient,
@@ -38,6 +38,11 @@ function rowToDomain(row: typeof ingredients.$inferSelect): Ingredient {
     polyunsaturatedFat: row.polyunsaturatedFat ?? null,
     transFat: row.transFat ?? null,
     sugar: row.sugar ?? null,
+    sugarAlcohol: row.sugarAlcohol ?? null,
+    allulose: row.allulose ?? null,
+    alcohol: row.alcohol ?? null,
+    calorieSource: row.calorieSource,
+    estimatedCalories: row.estimatedCalories,
     micronutrients: deserializeMicronutrients(row.micronutrientsJson),
     sourceDatabaseIngredientId: row.sourceDatabaseIngredientId ?? null,
     createdAt: row.createdAt,
@@ -60,12 +65,18 @@ export function createIngredientRepository(db: D1Database): IngredientRepository
       if (!ownerRows[0] || ownerRows[0].userId !== userId) return null;
 
       const ts = now();
-      const calories = caloriesFromMacros({
+      const estimated = estimateCalories({
         fat: data.fat,
         carbs: data.carbs,
         protein: data.protein,
         fiber: data.fiber,
+        sugarAlcohol: data.sugarAlcohol,
+        allulose: data.allulose,
+        alcohol: data.alcohol,
       });
+      const explicit = data.calories ?? null;
+      const calories = explicit ?? estimated;
+      const calorieSource = explicit != null ? ('explicit' as const) : ('estimated' as const);
 
       await d
         .insert(ingredients)
@@ -75,6 +86,8 @@ export function createIngredientRepository(db: D1Database): IngredientRepository
           name: data.name,
           weight: data.weight,
           calories,
+          estimatedCalories: estimated,
+          calorieSource,
           fat: data.fat,
           saturatedFat: data.saturatedFat,
           carbs: data.carbs,
@@ -85,6 +98,9 @@ export function createIngredientRepository(db: D1Database): IngredientRepository
           polyunsaturatedFat: data.polyunsaturatedFat ?? null,
           transFat: data.transFat ?? null,
           sugar: data.sugar ?? null,
+          sugarAlcohol: data.sugarAlcohol ?? null,
+          allulose: data.allulose ?? null,
+          alcohol: data.alcohol ?? null,
           micronutrientsJson: serializeMicronutrients(data.micronutrients ?? null),
           sourceDatabaseIngredientId: data.sourceDatabaseIngredientId ?? null,
           createdAt: ts,
@@ -96,6 +112,8 @@ export function createIngredientRepository(db: D1Database): IngredientRepository
             name: data.name,
             weight: data.weight,
             calories,
+            estimatedCalories: estimated,
+            calorieSource,
             fat: data.fat,
             saturatedFat: data.saturatedFat,
             carbs: data.carbs,
@@ -106,6 +124,9 @@ export function createIngredientRepository(db: D1Database): IngredientRepository
             polyunsaturatedFat: data.polyunsaturatedFat ?? null,
             transFat: data.transFat ?? null,
             sugar: data.sugar ?? null,
+            sugarAlcohol: data.sugarAlcohol ?? null,
+            allulose: data.allulose ?? null,
+            alcohol: data.alcohol ?? null,
             micronutrientsJson: serializeMicronutrients(data.micronutrients ?? null),
             sourceDatabaseIngredientId: data.sourceDatabaseIngredientId ?? null,
             updatedAt: ts,

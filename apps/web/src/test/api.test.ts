@@ -49,6 +49,7 @@ describe('api.nutritionDatabase', () => {
       fat: 7,
       carbs: 66,
       protein: 17,
+      calories: 397,
     };
     const result = await api.nutritionDatabase.create('tok', data);
 

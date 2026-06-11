@@ -10,6 +10,7 @@ import {
 const emptyValue: NutritionDatabaseEntryValue = {
   name: '',
   servingAmount: null,
+  calories: null,
   fat: null,
   carbs: null,
   protein: null,
@@ -26,6 +27,7 @@ const emptyValue: NutritionDatabaseEntryValue = {
 const filledValue: NutritionDatabaseEntryValue = {
   name: 'CHICKEN BREAST',
   servingAmount: 100,
+  calories: 156,
   fat: 3.6,
   carbs: 0,
   protein: 31,
@@ -42,12 +44,21 @@ const filledValue: NutritionDatabaseEntryValue = {
 function Harness({
   initial = emptyValue,
   onSubmit = () => {},
+  estimatedCalories = 0,
 }: {
   initial?: NutritionDatabaseEntryValue;
   onSubmit?: () => void;
+  estimatedCalories?: number;
 }) {
   const [value, setValue] = useState(initial);
-  return <NutritionDatabaseEntryCard value={value} onChange={setValue} onSubmit={onSubmit} />;
+  return (
+    <NutritionDatabaseEntryCard
+      value={value}
+      estimatedCalories={estimatedCalories}
+      onChange={setValue}
+      onSubmit={onSubmit}
+    />
+  );
 }
 
 afterEach(cleanup);
@@ -58,26 +69,32 @@ describe('NutritionDatabaseEntryCard', () => {
     expect(screen.queryByLabelText('Calories')).not.toBeInTheDocument();
   });
 
-  it('renders calculated calories text for basic macros without fiber', () => {
+  it('renders estimated calories text for basic macros without fiber', () => {
     // fat=3.6, carbs=0, protein=31, fiber=null
-    // calories = 3.6*9 + 31*4 + max(0, 0-0)*4 = 32.4 + 124 + 0 = 156.4
-    render(
-      <NutritionDatabaseEntryCard value={filledValue} onChange={() => {}} onSubmit={() => {}} />,
-    );
-    expect(screen.getByText(/Calculated calories: 156.4 kcal/)).toBeInTheDocument();
-  });
-
-  it('fiber reduces net carbs in calorie calculation', () => {
-    // fat=0, carbs=20, protein=0, fiber=5
-    // netCarbs = 20-5=15, calories = 0 + 0 + 15*4 = 60
+    // estimatedCalories = 3.6*9 + 31*4 + max(0, 0-0)*4 = 32.4 + 124 + 0 = 156.4
     render(
       <NutritionDatabaseEntryCard
-        value={{ ...emptyValue, carbs: 20, fiber: 5 }}
+        value={filledValue}
+        estimatedCalories={156.4}
         onChange={() => {}}
         onSubmit={() => {}}
       />,
     );
-    expect(screen.getByText(/Calculated calories: 60 kcal/)).toBeInTheDocument();
+    expect(screen.getByText(/Estimated calories: 156 kcal/)).toBeInTheDocument();
+  });
+
+  it('fiber reduces net carbs in calorie calculation', () => {
+    // fat=0, carbs=20, protein=0, fiber=5
+    // netCarbs = 15, estimatedCalories = 0 + 0 + 15*4 + 5*2 = 60 + 10 = 70
+    render(
+      <NutritionDatabaseEntryCard
+        value={{ ...emptyValue, carbs: 20, fiber: 5 }}
+        estimatedCalories={70}
+        onChange={() => {}}
+        onSubmit={() => {}}
+      />,
+    );
+    expect(screen.getByText(/Estimated calories: 70 kcal/)).toBeInTheDocument();
   });
 
   it('Publish button is disabled when name is missing', () => {

@@ -53,7 +53,7 @@ import type {
   NutritionDatabaseEntryValue,
   NutritionDatabaseSearchResult,
 } from '@leanlog/ui';
-import { caloriesFromMode, dayTargetsFromProfile } from '@leanlog/data-access';
+import { caloriesFromMode, dayTargetsFromProfile, estimateCalories } from '@leanlog/data-access';
 import type { ScanResolution } from '@leanlog/data-access';
 import { normalizeIngredientName, prettyDate, round1, todayIso } from '../lib';
 import {
@@ -74,7 +74,17 @@ import type {
   NutritionDatabaseIngredientSearchResult,
 } from '../types';
 
-type DraftNumericKey = 'weight' | 'fat' | 'saturatedFat' | 'carbs' | 'fiber' | 'protein';
+type DraftNumericKey =
+  | 'weight'
+  | 'fat'
+  | 'saturatedFat'
+  | 'carbs'
+  | 'fiber'
+  | 'protein'
+  | 'calories'
+  | 'sugarAlcohol'
+  | 'allulose'
+  | 'alcohol';
 
 type IngredientDraft = Omit<
   UpsertIngredient,
@@ -84,11 +94,15 @@ type IngredientDraft = Omit<
 const emptyDraft: IngredientDraft = {
   name: '',
   weight: null,
+  calories: null,
   fat: null,
   saturatedFat: null,
   carbs: null,
   fiber: null,
   protein: null,
+  sugarAlcohol: null,
+  allulose: null,
+  alcohol: null,
 };
 
 function mapDbSearchResults(
@@ -578,6 +592,7 @@ function MealEdit() {
   const [dbEntryValue, setDbEntryValue] = useState<NutritionDatabaseEntryValue>({
     name: '',
     servingAmount: null,
+    calories: null,
     fat: null,
     carbs: null,
     protein: null,
@@ -861,6 +876,7 @@ function MealEdit() {
                               fat: i.fat,
                               carbs: i.carbs,
                               protein: i.protein,
+                              calories: i.calories,
                               saturatedFat: i.saturatedFat ?? undefined,
                               fiber: i.fiber ?? undefined,
                               creationSource: 'meal_ingredient',
@@ -922,11 +938,15 @@ function MealEdit() {
                     setDraft({
                       name: i.name,
                       weight: i.weight,
+                      calories: i.calories,
                       fat: i.fat,
                       saturatedFat: i.saturatedFat,
                       carbs: i.carbs,
                       fiber: i.fiber,
                       protein: i.protein,
+                      sugarAlcohol: i.sugarAlcohol ?? null,
+                      allulose: i.allulose ?? null,
+                      alcohol: i.alcohol ?? null,
                       // Preserve snapshot extras so editing doesn't wipe them on upsert
                       unsaturatedFat: i.unsaturatedFat ?? null,
                       monounsaturatedFat: i.monounsaturatedFat ?? null,
@@ -969,6 +989,15 @@ function MealEdit() {
               {entryTab === 'manual' ? (
                 <IngredientEntryCard
                   value={draft}
+                  estimatedCalories={estimateCalories({
+                    fat: draft.fat ?? 0,
+                    carbs: draft.carbs ?? 0,
+                    protein: draft.protein ?? 0,
+                    fiber: draft.fiber,
+                    sugarAlcohol: draft.sugarAlcohol,
+                    allulose: draft.allulose,
+                    alcohol: draft.alcohol,
+                  })}
                   saved={saved.ingredientForm}
                   submitLabel={editingId ? 'Update' : 'Add'}
                   onChange={(next) => {
@@ -1000,6 +1029,15 @@ function MealEdit() {
                   {draftSource === 'scanned' ? (
                     <IngredientEntryCard
                       value={draft}
+                      estimatedCalories={estimateCalories({
+                        fat: draft.fat ?? 0,
+                        carbs: draft.carbs ?? 0,
+                        protein: draft.protein ?? 0,
+                        fiber: draft.fiber,
+                        sugarAlcohol: draft.sugarAlcohol,
+                        allulose: draft.allulose,
+                        alcohol: draft.alcohol,
+                      })}
                       saved={saved.ingredientForm}
                       submitLabel={editingId ? 'Update' : 'Add'}
                       onChange={(next) => {
@@ -1081,6 +1119,15 @@ function MealEdit() {
                   {dbShowCreate ? (
                     <NutritionDatabaseEntryCard
                       value={dbEntryValue}
+                      estimatedCalories={estimateCalories({
+                        fat: dbEntryValue.fat ?? 0,
+                        carbs: dbEntryValue.carbs ?? 0,
+                        protein: dbEntryValue.protein ?? 0,
+                        fiber: dbEntryValue.fiber ?? null,
+                        sugarAlcohol: dbEntryValue.sugarAlcohol ?? null,
+                        allulose: dbEntryValue.allulose ?? null,
+                        alcohol: dbEntryValue.alcohol ?? null,
+                      })}
                       onChange={setDbEntryValue}
                       submitting={dbCreating}
                       onSubmit={() => {
@@ -1093,6 +1140,17 @@ function MealEdit() {
                           dbEntryValue.protein == null
                         )
                           return;
+                        const resolvedCalories =
+                          dbEntryValue.calories ??
+                          estimateCalories({
+                            fat: dbEntryValue.fat,
+                            carbs: dbEntryValue.carbs,
+                            protein: dbEntryValue.protein,
+                            fiber: dbEntryValue.fiber ?? null,
+                            sugarAlcohol: dbEntryValue.sugarAlcohol ?? null,
+                            allulose: dbEntryValue.allulose ?? null,
+                            alcohol: dbEntryValue.alcohol ?? null,
+                          });
                         setDbCreating(true);
                         void createNutritionDatabaseIngredient({
                           ...dbEntryValue,
@@ -1100,6 +1158,7 @@ function MealEdit() {
                           fat: dbEntryValue.fat,
                           carbs: dbEntryValue.carbs,
                           protein: dbEntryValue.protein,
+                          calories: resolvedCalories,
                           micronutrients: dbEntryValue.micronutrients?.map((m) => ({
                             name: m.name,
                             amount: m.amount ?? undefined,
@@ -1114,6 +1173,7 @@ function MealEdit() {
                             setDbEntryValue({
                               name: '',
                               servingAmount: null,
+                              calories: null,
                               fat: null,
                               carbs: null,
                               protein: null,
@@ -1209,6 +1269,12 @@ function MealEdit() {
                     fat: candidate.fat,
                     carbs: candidate.carbs,
                     protein: candidate.protein,
+                    calories: estimateCalories({
+                      fat: candidate.fat,
+                      carbs: candidate.carbs,
+                      protein: candidate.protein,
+                      fiber: candidate.fiber ?? null,
+                    }),
                     saturatedFat: candidate.saturatedFat ?? undefined,
                     fiber: candidate.fiber ?? undefined,
                     sugar: candidate.sugar ?? undefined,

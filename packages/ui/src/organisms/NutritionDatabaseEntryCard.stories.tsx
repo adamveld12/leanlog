@@ -4,6 +4,7 @@ import { NutritionDatabaseEntryCard } from './NutritionDatabaseEntryCard';
 const base = {
   name: '',
   servingAmount: 0,
+  calories: null,
   fat: 0,
   carbs: 0,
   protein: 0,
@@ -20,6 +21,7 @@ const base = {
 const filled = {
   name: 'CHICKEN BREAST',
   servingAmount: 100,
+  calories: null,
   fat: 3.6,
   carbs: 0,
   protein: 31,
@@ -38,6 +40,7 @@ const meta: Meta<typeof NutritionDatabaseEntryCard> = {
   component: NutritionDatabaseEntryCard,
   args: {
     value: base,
+    estimatedCalories: 0,
     onChange: () => {},
     onSubmit: () => {},
     submitting: false,
