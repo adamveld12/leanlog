@@ -36,7 +36,7 @@ type StoreCtx = {
   ensureDayLoaded: (
     dayId: string,
   ) => Promise<{ status: 'found'; day: DailyMealLog } | { status: 'not_found' }>;
-  addDay: (...args: unknown[]) => Promise<void>;
+  addDay: (...args: unknown[]) => Promise<DailyMealLog>;
   removeDay: (id: string) => Promise<void>;
   addMeal: (...args: unknown[]) => Promise<null>;
   removeMeal: (...args: unknown[]) => Promise<void>;
@@ -72,7 +72,7 @@ function FakeStateProvider({
       const day = days.find((d) => d.id === dayId);
       return day ? { status: 'found', day } : { status: 'not_found' };
     },
-    addDay: async () => {},
+    addDay: async () => makeDayWithMeals(),
     removeDay: async (id: string) => {
       setDays((prev) => prev.filter((d) => d.id !== id));
     },

@@ -37,7 +37,7 @@ type Store = {
   addDay(
     date: string,
     opts: Omit<CreateDailyMealLog, 'date'> & { mealCountTarget: number },
-  ): Promise<void>;
+  ): Promise<DailyMealLog>;
   removeDay(dayId: string): Promise<void>;
   addMeal(dayId: string, name: string): Promise<Meal | null>;
   removeMeal(dayId: string, mealId: string): Promise<void>;
@@ -152,6 +152,7 @@ export function StateProvider({ children }: PropsWithChildren) {
         }),
       );
       setDays((prev) => [day, ...prev]);
+      return day;
     },
 
     async removeDay(dayId) {
