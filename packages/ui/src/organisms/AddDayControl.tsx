@@ -6,6 +6,8 @@ import { IntegerInput } from '../atoms/IntegerInput';
 import { DateSelect3 } from '../molecules/DateSelect3';
 import { SectionCard } from '../molecules/SectionCard';
 
+export const DEFAULT_MEAL_COUNT_TARGET = 4;
+
 export type AddDayValue = {
   month: number;
   day: number;
@@ -33,7 +35,7 @@ export function AddDayControl({
   month,
   day,
   year,
-  totalMeals = 4,
+  totalMeals = DEFAULT_MEAL_COUNT_TARGET,
   hideTotalMealsInput = false,
   title = 'Add day',
   note = 'Choose month, day, and year to create a new log day.',
