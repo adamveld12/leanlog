@@ -3,6 +3,7 @@ import './index.css';
 export * from './analytics';
 export { cn } from './styles/cn';
 export { recipes } from './styles/recipes';
+export * from './styles/targetProgress';
 export * from './atoms/Button';
 export * from './atoms/Checkbox';
 export * from './atoms/Input';

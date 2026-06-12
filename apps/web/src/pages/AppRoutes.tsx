@@ -308,6 +308,7 @@ function DayList() {
                   carbsTarget: today.targetCarbs,
                   fat: todayTotalsData.fat,
                   fatTarget: today.targetFat,
+                  fiber: todayTotalsData.fiber,
                 }
               : undefined
           }
@@ -322,6 +323,7 @@ function DayList() {
                   carbsTarget: weeklyStats.targetCarbs,
                   fat: weeklyStats.totalFat,
                   fatTarget: weeklyStats.targetFat,
+                  fiber: weeklyStats.totalFiber,
                 }
               : undefined
           }

@@ -100,6 +100,8 @@ export type PeriodStats = {
   targetCarbs: number;
   totalFat: number;
   targetFat: number;
+  totalFiber: number;
+  totalNetCarbs: number;
 };
 
 export function aggregateStats(days: DailyMealLog[], maintenanceCalories: number): PeriodStats {
@@ -111,6 +113,7 @@ export function aggregateStats(days: DailyMealLog[], maintenanceCalories: number
   let targetCarbs = 0;
   let totalFat = 0;
   let targetFat = 0;
+  let totalFiber = 0;
   let mealsTracked = 0;
   let mealsExpected = 0;
 
@@ -124,13 +127,16 @@ export function aggregateStats(days: DailyMealLog[], maintenanceCalories: number
     targetCarbs += day.targetCarbs;
     totalFat += totals.fat;
     targetFat += day.targetFat;
+    totalFiber += totals.fiber;
     mealsTracked += day.meals.length;
     mealsExpected += day.mealCountTarget;
   }
 
+  const totalNetCarbs = Math.max(0, totalCarbs - totalFiber);
+
   const calAcc = macroAccuracy(totalCalories, targetCalories);
   const protAcc = macroAccuracy(totalProtein, targetProtein);
-  const carbAcc = macroAccuracy(totalCarbs, targetCarbs);
+  const carbAcc = macroAccuracy(totalNetCarbs, targetCarbs);
   const fatAcc = macroAccuracy(totalFat, targetFat);
   const overall = days.length > 0 ? Math.round((calAcc + protAcc + carbAcc + fatAcc) / 4) : 0;
   const coverage = trackingCoverage(mealsTracked, mealsExpected);
@@ -151,5 +157,7 @@ export function aggregateStats(days: DailyMealLog[], maintenanceCalories: number
     targetCarbs,
     totalFat,
     targetFat,
+    totalFiber,
+    totalNetCarbs,
   };
 }

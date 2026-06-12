@@ -225,6 +225,83 @@ describe('aggregateStats', () => {
     expect(result.coverage).toBe(0);
     expect(result.estimatedWeightLost).toBe(0);
   });
+
+  it('computes totalFiber and totalNetCarbs', () => {
+    const meal = {
+      id: 'm',
+      dailyMealLogId: 'd',
+      name: 'X',
+      createdAt: now,
+      updatedAt: now,
+      ingredients: [
+        {
+          id: '1',
+          mealId: 'm',
+          name: 'A',
+          weight: 100,
+          calories: 500,
+          estimatedCalories: 500,
+          calorieSource: 'estimated' as const,
+          fat: 20,
+          saturatedFat: 5,
+          carbs: 50,
+          fiber: 5,
+          protein: 30,
+          sugarAlcohol: null,
+          allulose: null,
+          alcohol: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+    };
+    const day = makeDay({
+      id: 'd1',
+      targetCalories: 2000,
+      targetFat: 60,
+      targetCarbs: 250,
+      targetProtein: 150,
+      mealCountTarget: 3,
+      meals: [meal, meal],
+    });
+    const result = aggregateStats([day, day], 2700);
+    expect(result.totalFiber).toBe(20); // 5 * 4 meals
+    expect(result.totalNetCarbs).toBe(180); // (50-5)*4
+  });
+
+  it('clamps totalNetCarbs to 0 when fiber exceeds carbs', () => {
+    const highFiberMeal = {
+      id: 'm',
+      dailyMealLogId: 'd',
+      name: 'X',
+      createdAt: now,
+      updatedAt: now,
+      ingredients: [
+        {
+          id: '1',
+          mealId: 'm',
+          name: 'A',
+          weight: 100,
+          calories: 200,
+          estimatedCalories: 200,
+          calorieSource: 'estimated' as const,
+          fat: 5,
+          saturatedFat: 0,
+          carbs: 5,
+          fiber: 10,
+          protein: 10,
+          sugarAlcohol: null,
+          allulose: null,
+          alcohol: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+    };
+    const day = makeDay({ meals: [highFiberMeal] });
+    const result = aggregateStats([day], 2700);
+    expect(result.totalNetCarbs).toBe(0);
+  });
 });
 
 describe('selectWeightEntries', () => {

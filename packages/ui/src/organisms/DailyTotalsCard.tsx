@@ -9,6 +9,7 @@ import { calorieColor } from '../molecules/MacroSummaryLine';
 import { SectionCard } from '../molecules/SectionCard';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
+import { targetProgressColor } from '../styles/targetProgress';
 
 export type DailyTotalsCardProps = {
   calories: number;
@@ -63,18 +64,55 @@ export function DailyTotalsCard({
           color={calorieStyle?.color as string}
         />
 
-        <div className={cn(recipes.stack.row, 'flex-wrap')}>
-          <HelperText as="p">
-            FAT {fat} / {macroTargets.fat}g
-          </HelperText>
-          <HelperText as="span">·</HelperText>
-          <HelperText as="p">
-            PROTEIN {protein} / {macroTargets.protein}g
-          </HelperText>
-          <HelperText as="span">·</HelperText>
-          <HelperText as="p">
-            CARBS {netCarbs} net / {carbs} / {macroTargets.carbs}g
-          </HelperText>
+        <div className={cn(recipes.stack.xs)}>
+          <div className={cn(recipes.stack.row, recipes.stack.between)}>
+            <HelperText as="span">Protein</HelperText>
+            <HelperText as="span">
+              {protein} / {macroTargets.protein}
+              <UnitText>g</UnitText>
+            </HelperText>
+          </div>
+          <ProgressBar
+            value={protein}
+            max={macroTargets.protein || 1}
+            color={targetProgressColor(protein, macroTargets.protein)}
+            aria-label="Protein progress"
+            aria-valuetext={`${protein} of ${macroTargets.protein}g`}
+          />
+        </div>
+
+        <div className={cn(recipes.stack.xs)}>
+          <div className={cn(recipes.stack.row, recipes.stack.between)}>
+            <HelperText as="span">Net Carbs</HelperText>
+            <HelperText as="span">
+              {netCarbs} net / {carbs} total / {macroTargets.carbs}
+              <UnitText>g</UnitText>
+            </HelperText>
+          </div>
+          <ProgressBar
+            value={netCarbs}
+            max={macroTargets.carbs || 1}
+            color={targetProgressColor(netCarbs, macroTargets.carbs)}
+            aria-label="Net carbs progress"
+            aria-valuetext={`${netCarbs} net of ${macroTargets.carbs}g`}
+          />
+        </div>
+
+        <div className={cn(recipes.stack.xs)}>
+          <div className={cn(recipes.stack.row, recipes.stack.between)}>
+            <HelperText as="span">Fat</HelperText>
+            <HelperText as="span">
+              {fat} / {macroTargets.fat}
+              <UnitText>g</UnitText>
+            </HelperText>
+          </div>
+          <ProgressBar
+            value={fat}
+            max={macroTargets.fat || 1}
+            color={targetProgressColor(fat, macroTargets.fat)}
+            aria-label="Fat progress"
+            aria-valuetext={`${fat} of ${macroTargets.fat}g`}
+          />
         </div>
       </SectionCard>
     </AnalyticsScope>
