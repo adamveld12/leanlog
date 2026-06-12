@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -80,10 +80,15 @@ type StoreCtx = {
 
 const FakeStoreCtx = createContext<StoreCtx | null>(null);
 
-const addDaySpy = vi.fn<(date: string, opts: AddDayOpts) => void>();
+const addDaySpy = vi.fn<(date: string, opts: AddDayOpts) => Promise<DailyMealLog>>();
+const addMealSpy = vi.fn<(...args: unknown[]) => Promise<null>>(async () => null);
 
-function FakeStateProvider({ children }: PropsWithChildren) {
-  const [days, setDays] = useState<DailyMealLog[]>([]);
+function FakeStateProvider({
+  children,
+  initialDays = [],
+  addDayDelay,
+}: PropsWithChildren<{ initialDays?: DailyMealLog[]; addDayDelay?: Promise<void> }>) {
+  const [days, setDays] = useState<DailyMealLog[]>(initialDays);
 
   const store: StoreCtx = {
     days,
@@ -96,12 +101,13 @@ function FakeStateProvider({ children }: PropsWithChildren) {
     },
     addDay: async (date, opts) => {
       addDaySpy(date, opts);
+      if (addDayDelay) await addDayDelay;
       const day = makeDay({ date, mealCountTarget: opts.mealCountTarget });
       setDays((prev) => [day, ...prev]);
       return day;
     },
     removeDay: async () => {},
-    addMeal: async () => null,
+    addMeal: addMealSpy,
     removeMeal: async () => {},
     renameMeal: async () => {},
     upsertIngredient: async () => {},
@@ -131,9 +137,9 @@ function LocationProbe() {
   return <div data-testid="location-probe">{location.pathname}</div>;
 }
 
-function renderApp() {
+function renderApp(initialDays?: DailyMealLog[], addDayDelay?: Promise<void>) {
   return render(
-    <FakeStateProvider>
+    <FakeStateProvider initialDays={initialDays} addDayDelay={addDayDelay}>
       <MemoryRouter initialEntries={['/track']}>
         <App />
         <LocationProbe />
@@ -146,6 +152,7 @@ describe('Start Today', () => {
   afterEach(() => {
     cleanup();
     addDaySpy.mockClear();
+    addMealSpy.mockClear();
   });
 
   it('creates today with the Add Day default meal count target', async () => {
@@ -167,5 +174,33 @@ describe('Start Today', () => {
     await waitFor(() => {
       expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/new-day');
     });
+  });
+
+  it('adds a meal instead of a day when today already exists', async () => {
+    renderApp([makeDay({ id: 'existing-today' })]);
+
+    await userEvent.click(screen.getByRole('button', { name: /Add Meal/i }));
+
+    expect(addDaySpy).not.toHaveBeenCalled();
+    expect(addMealSpy).toHaveBeenCalledTimes(1);
+    expect(addMealSpy).toHaveBeenCalledWith('existing-today', '');
+  });
+
+  it('ignores rapid double-clicks while day creation is in flight', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    renderApp(undefined, gate);
+
+    const button = screen.getByRole('button', { name: /Start Today/i });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    release();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/new-day');
+    });
+    expect(addDaySpy).toHaveBeenCalledTimes(1);
   });
 });

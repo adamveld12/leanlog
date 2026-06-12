@@ -374,9 +374,9 @@ function DayList() {
           const toIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           if (!profile) return;
           const targets = dayTargetsFromProfile(profile);
-          void addDay(toIso, { ...targets, mealCountTarget: totalMeals }).then((created) =>
-            nav(`/track/day/${created.id}`),
-          );
+          addDay(toIso, { ...targets, mealCountTarget: totalMeals })
+            .then((created) => nav(`/track/day/${created.id}`))
+            .catch(() => {});
         },
       }}
     />
