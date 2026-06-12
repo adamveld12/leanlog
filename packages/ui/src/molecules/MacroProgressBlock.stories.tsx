@@ -20,6 +20,7 @@ export const Today: Story = {
     carbsTarget: 236,
     fat: 48,
     fatTarget: 75,
+    fiber: 12,
   },
 };
 
@@ -34,6 +35,7 @@ export const ThisWeek: Story = {
     carbsTarget: 1652,
     fat: 290,
     fatTarget: 490,
+    fiber: 84,
     detail: '3 days tracked',
   },
 };
@@ -49,6 +51,7 @@ export const OnTarget: Story = {
     carbsTarget: 236,
     fat: 73,
     fatTarget: 75,
+    fiber: 25,
   },
 };
 
@@ -63,5 +66,6 @@ export const OverTarget: Story = {
     carbsTarget: 236,
     fat: 95,
     fatTarget: 75,
+    fiber: 25,
   },
 };

@@ -22,6 +22,7 @@ export const ActiveUser: Story = {
       carbsTarget: 236,
       fat: 48,
       fatTarget: 75,
+      fiber: 12,
     },
     week: {
       calories: 8200,
@@ -32,6 +33,7 @@ export const ActiveUser: Story = {
       carbsTarget: 1652,
       fat: 290,
       fatTarget: 490,
+      fiber: 84,
     },
     weekDayCount: 3,
     onAction: () => {},
@@ -51,6 +53,7 @@ export const NoTodayEntry: Story = {
       carbsTarget: 1180,
       fat: 195,
       fatTarget: 375,
+      fiber: 56,
     },
     weekDayCount: 2,
     onAction: () => {},
