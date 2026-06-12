@@ -16,6 +16,7 @@ import {
   CalorieTargetCard,
   cn,
   DailyTotalsCard,
+  DEFAULT_MEAL_COUNT_TARGET,
   DayDetailTemplate,
   ErrorTemplate,
   DayListTemplate,
@@ -259,27 +260,26 @@ function DayList() {
   const selectDay = useCallback((dayId: string) => nav(`/track/day/${dayId}`), [nav]);
 
   const hasDays = days.length > 0;
-  const pendingNavRef = useRef(false);
-
-  useEffect(() => {
-    if (pendingNavRef.current && today) {
-      pendingNavRef.current = false;
-      nav(`/track/day/${today.id}`);
-    }
-  }, [today, nav]);
+  const creatingRef = useRef(false);
 
   async function handleAction() {
-    if (!profile || pendingNavRef.current) return;
+    if (!profile || creatingRef.current) return;
     if (today) {
       const meal = await addMeal(today.id, '');
       if (meal) nav(`/track/day/${today.id}/meal/${meal.id}`);
       return;
     }
-    const targets = dayTargetsFromProfile(profile);
-    pendingNavRef.current = true;
-    addDay(todayIso(), { ...targets, mealCountTarget: 3 }).catch(() => {
-      pendingNavRef.current = false;
-    });
+    creatingRef.current = true;
+    try {
+      const targets = dayTargetsFromProfile(profile);
+      const day = await addDay(todayIso(), {
+        ...targets,
+        mealCountTarget: DEFAULT_MEAL_COUNT_TARGET,
+      });
+      nav(`/track/day/${day.id}`);
+    } finally {
+      creatingRef.current = false;
+    }
   }
 
   if (loading) return <PageLoadingState label="Loading your days…" />;
@@ -376,7 +376,9 @@ function DayList() {
           const toIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           if (!profile) return;
           const targets = dayTargetsFromProfile(profile);
-          void addDay(toIso, { ...targets, mealCountTarget: totalMeals });
+          addDay(toIso, { ...targets, mealCountTarget: totalMeals })
+            .then((created) => nav(`/track/day/${created.id}`))
+            .catch(() => {});
         },
       }}
     />
