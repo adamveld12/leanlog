@@ -5,10 +5,11 @@ import {
   uuidv7,
 } from '@leanlog/data-access';
 import type { Env } from '../../../../../_env';
+import { pastDayGuard } from '../../../../../_dayGuard';
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const userId = (context.data as Record<string, string>).userId;
-  const { mealId } = context.params as { mealId: string };
+  const { dayId, mealId } = context.params as { dayId: string; mealId: string };
 
   let body: unknown;
   try {
@@ -21,6 +22,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   if (!parsed.success) {
     return new Response(JSON.stringify(parsed.error.flatten()), { status: 400 });
   }
+  // Ingredient edits on past days are blocked (R22).
+  const blocked = await pastDayGuard(context.env, userId, dayId, context.request);
+  if (blocked) return blocked;
 
   const { databaseIngredientId, measuredAmount } = parsed.data;
 

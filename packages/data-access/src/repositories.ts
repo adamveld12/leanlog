@@ -40,6 +40,15 @@ export class TemplateMealNotDeletableError extends Error {
   }
 }
 
+// Thrown by MealRepository.setLogged when logging a meal that has no
+// ingredients — an empty meal must not count as tracked (R29).
+export class EmptyMealNotLoggableError extends Error {
+  constructor(mealId: string) {
+    super(`Meal ${mealId} has no ingredients and cannot be logged`);
+    this.name = 'EmptyMealNotLoggableError';
+  }
+}
+
 export interface MealTemplateRepository {
   // Seeds the default templates exactly once per user (R2/R10); a no-op after
   // the first seed, even when the user has since deleted every template (R5).

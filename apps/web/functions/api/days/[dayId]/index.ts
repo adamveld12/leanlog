@@ -1,6 +1,7 @@
 import { createDayRepository, createProfileRepository } from '@leanlog/data-d1';
 import { DayTargetsSchema } from '@leanlog/data-access';
 import type { Env } from '../../_env';
+import { pastDayGuard } from '../../_dayGuard';
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const userId = (context.data as Record<string, string>).userId;
@@ -24,6 +25,9 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
   if (!parsed.success) {
     return new Response(JSON.stringify(parsed.error.flatten()), { status: 400 });
   }
+  // Past days are read-only (R21/R22).
+  const blocked = await pastDayGuard(context.env, userId, dayId, context.request);
+  if (blocked) return blocked;
   const repo = createDayRepository(context.env.DB);
   const updated = await repo.updateTargets(userId, dayId, parsed.data);
   if (!updated) return new Response('Not found', { status: 404 });

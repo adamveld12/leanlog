@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { meals, dailyMealLogs, ingredients } from '../schema';
-import { TemplateMealNotDeletableError } from '@leanlog/data-access';
+import { TemplateMealNotDeletableError, EmptyMealNotLoggableError } from '@leanlog/data-access';
 import type { MealRepository, Meal } from '@leanlog/data-access';
 
 export function createMealRepository(db: D1Database): MealRepository {
@@ -68,8 +68,14 @@ export function createMealRepository(db: D1Database): MealRepository {
       if (!owner || owner.userId !== userId) {
         throw new Error(`Meal ${mealId} not found or access denied`);
       }
+      const meal = await load(mealId);
+      // An empty meal cannot be logged — it would count as tracked while
+      // contributing no nutrition (R29).
+      if (logged && meal.ingredients.length === 0) {
+        throw new EmptyMealNotLoggableError(mealId);
+      }
       await d.update(meals).set({ logged, updatedAt: ts }).where(eq(meals.id, mealId));
-      return load(mealId);
+      return { ...meal, logged, updatedAt: ts };
     },
 
     async delete(userId, mealId) {
