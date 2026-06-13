@@ -59,4 +59,6 @@ export * from './templates/LandingTemplate';
 export * from './templates/DayListTemplate';
 export * from './templates/DayDetailTemplate';
 export * from './templates/MealEditTemplate';
+export * from './templates/MealTemplatesTemplate';
+export * from './templates/MealTemplateEditTemplate';
 export * from './templates/ProfileTemplate';

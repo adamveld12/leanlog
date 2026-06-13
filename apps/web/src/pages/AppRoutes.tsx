@@ -11,7 +11,6 @@ import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-rou
 import { uuidv7 } from '@leanlog/data-access';
 import {
   AnalyticsScope,
-  AppShell,
   BodyInfoCard,
   Button,
   CalorieTargetCard,
@@ -29,8 +28,9 @@ import {
   MacroSummaryLine,
   MacroTargetsCard,
   MealEditTemplate,
+  MealTemplatesTemplate,
+  MealTemplateEditTemplate,
   MonthCalendarCard,
-  PageNavHeading,
   ProfileTemplate,
   QuickActionsCard,
   recipes,
@@ -953,57 +953,61 @@ function MealTemplates() {
 
   return (
     <AnalyticsScope properties={{ page: 'MealTemplates' }}>
-      <AppShell>
-        <PageNavHeading
-          title="Meal templates"
-          backHref="/track"
-          profileHref="/track/profile"
-          renderNavLink={renderRouterNavLink}
-          rightContent={<HeaderAuthControl />}
-        />
-        <SectionCard title="Your templates">
-          <HelperText as="p">
-            New days copy these meals in order. Changes apply only to days created afterward.
-          </HelperText>
-          {templates.length ? (
-            <ReorderableList
-              items={templates.map((t) => ({
-                id: t.id,
-                title: t.name,
-                meta: (
-                  <HelperText>
-                    {t.ingredients.length
-                      ? `${t.ingredients.length} default ${
-                          t.ingredients.length === 1 ? 'ingredient' : 'ingredients'
-                        }`
-                      : 'No defaults'}
-                  </HelperText>
-                ),
-                onOpen: () => nav(`/track/templates/${t.id}`),
-              }))}
-              onReorder={(ids) => void reorderTemplates(ids)}
-            />
-          ) : (
+      <MealTemplatesTemplate
+        heading={{
+          title: 'Meal templates',
+          backHref: '/track',
+          profileHref: '/track/profile',
+          renderNavLink: renderRouterNavLink,
+          rightContent: <HeaderAuthControl />,
+        }}
+        listSection={
+          <SectionCard title="Your templates">
             <HelperText as="p">
-              No templates yet. New days will start empty so you can add meals manually.
+              New days copy these meals in order. Changes apply only to days created afterward.
             </HelperText>
-          )}
-        </SectionCard>
-        <SectionCard title="Add template">
-          <Input
-            value={newName}
-            placeholder="e.g. Pre-workout"
-            onChange={(e) => {
-              setNewName(e.target.value);
-              setAddError('');
-            }}
-          />
-          {addError ? <WarningText role="alert">{addError}</WarningText> : null}
-          <Button className="w-full" disabled={!newName.trim()} onClick={onAdd}>
-            Add template
-          </Button>
-        </SectionCard>
-      </AppShell>
+            {templates.length ? (
+              <ReorderableList
+                items={templates.map((t) => ({
+                  id: t.id,
+                  title: t.name,
+                  meta: (
+                    <HelperText>
+                      {t.ingredients.length
+                        ? `${t.ingredients.length} default ${
+                            t.ingredients.length === 1 ? 'ingredient' : 'ingredients'
+                          }`
+                        : 'No defaults'}
+                    </HelperText>
+                  ),
+                  onOpen: () => nav(`/track/templates/${t.id}`),
+                }))}
+                onReorder={(ids) => void reorderTemplates(ids)}
+              />
+            ) : (
+              <HelperText as="p">
+                No templates yet. New days will start empty so you can add meals manually.
+              </HelperText>
+            )}
+          </SectionCard>
+        }
+        addSection={
+          <SectionCard title="Add template">
+            <Input
+              value={newName}
+              placeholder="e.g. Pre-workout"
+              onChange={(e) => {
+                setNewName(e.target.value);
+                setAddError('');
+              }}
+            />
+            {addError ? <WarningText role="alert">{addError}</WarningText> : null}
+            <Button className="w-full" disabled={!newName.trim()} onClick={onAdd}>
+              Add template
+            </Button>
+          </SectionCard>
+        }
+      />
     </AnalyticsScope>
   );
 }
@@ -1052,69 +1056,75 @@ function MealTemplateEdit() {
 
   return (
     <AnalyticsScope properties={{ page: 'MealTemplateEdit', templateId: template.id }}>
-      <AppShell>
-        <PageNavHeading
-          title={template.name || 'Template'}
-          backHref="/track/templates"
-          profileHref="/track/profile"
-          renderNavLink={renderRouterNavLink}
-          rightContent={<HeaderAuthControl />}
-        />
-        <SectionCard title="Template name">
-          <Input
-            value={nameDraft}
-            placeholder="Template name"
-            onChange={(e) => {
-              setNameDraft(e.target.value);
-              setNameError('');
-            }}
-            normalizeOnBlur={(v) => v.trim()}
-            onNormalized={saveName}
-          />
-          {nameError ? <WarningText role="alert">{nameError}</WarningText> : null}
-        </SectionCard>
-        <SectionCard title="Default ingredients">
-          <HelperText as="p">
-            Optional. These are copied into each new day&rsquo;s meal. Tap a row to edit.
-          </HelperText>
-          <IngredientEntry
-            ingredients={template.ingredients}
-            analyticsContext="template"
-            showDatabaseCreate={false}
-            onSubmit={(draft, editingId) => {
-              const next = {
-                ...draft,
-                id: editingId ?? uuidv7(),
-                templateId: template.id,
-                name: normalizeIngredientName(draft.name),
-                weight: draft.weight ?? 0,
-                fat: draft.fat ?? 0,
-                saturatedFat: draft.saturatedFat ?? 0,
-                carbs: draft.carbs ?? 0,
-                fiber: draft.fiber ?? 0,
-                protein: draft.protein ?? 0,
-              };
-              void upsertTemplateIngredient(template.id, next);
-            }}
-            onDelete={(id) => void removeTemplateIngredient(template.id, id)}
-            onAddFromDatabase={(dbId, amount) =>
-              addTemplateIngredientFromDatabase(template.id, {
-                databaseIngredientId: dbId,
-                measuredAmount: amount,
-              })
-            }
-          />
-        </SectionCard>
-        <SectionCard title="Danger zone">
-          <Button
-            variant="danger"
-            className="w-full"
-            onClick={() => void removeTemplate(template.id).then(() => nav('/track/templates'))}
-          >
-            Delete template
-          </Button>
-        </SectionCard>
-      </AppShell>
+      <MealTemplateEditTemplate
+        heading={{
+          title: template.name || 'Template',
+          backHref: '/track/templates',
+          profileHref: '/track/profile',
+          renderNavLink: renderRouterNavLink,
+          rightContent: <HeaderAuthControl />,
+        }}
+        nameSection={
+          <SectionCard title="Template name">
+            <Input
+              value={nameDraft}
+              placeholder="Template name"
+              onChange={(e) => {
+                setNameDraft(e.target.value);
+                setNameError('');
+              }}
+              normalizeOnBlur={(v) => v.trim()}
+              onNormalized={saveName}
+            />
+            {nameError ? <WarningText role="alert">{nameError}</WarningText> : null}
+          </SectionCard>
+        }
+        ingredientsSection={
+          <SectionCard title="Default ingredients">
+            <HelperText as="p">
+              Optional. These are copied into each new day&rsquo;s meal. Tap a row to edit.
+            </HelperText>
+            <IngredientEntry
+              ingredients={template.ingredients}
+              analyticsContext="template"
+              showDatabaseCreate={false}
+              onSubmit={(draft, editingId) => {
+                const next = {
+                  ...draft,
+                  id: editingId ?? uuidv7(),
+                  templateId: template.id,
+                  name: normalizeIngredientName(draft.name),
+                  weight: draft.weight ?? 0,
+                  fat: draft.fat ?? 0,
+                  saturatedFat: draft.saturatedFat ?? 0,
+                  carbs: draft.carbs ?? 0,
+                  fiber: draft.fiber ?? 0,
+                  protein: draft.protein ?? 0,
+                };
+                void upsertTemplateIngredient(template.id, next);
+              }}
+              onDelete={(id) => void removeTemplateIngredient(template.id, id)}
+              onAddFromDatabase={(dbId, amount) =>
+                addTemplateIngredientFromDatabase(template.id, {
+                  databaseIngredientId: dbId,
+                  measuredAmount: amount,
+                })
+              }
+            />
+          </SectionCard>
+        }
+        dangerZone={
+          <SectionCard title="Danger zone">
+            <Button
+              variant="danger"
+              className="w-full"
+              onClick={() => void removeTemplate(template.id).then(() => nav('/track/templates'))}
+            >
+              Delete template
+            </Button>
+          </SectionCard>
+        }
+      />
     </AnalyticsScope>
   );
 }
