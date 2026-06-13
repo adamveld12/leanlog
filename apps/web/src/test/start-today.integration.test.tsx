@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createContext, useContext, useState, type PropsWithChildren } from 'react';
 import App from '../App';
 import { todayIso } from '../lib';
-import { DEFAULT_MEAL_COUNT_TARGET } from '@leanlog/ui';
 import type { DailyMealLog, UserProfile } from '@leanlog/data-access';
 
 vi.mock('react-chartjs-2', () => ({ Line: () => null }));
@@ -38,7 +37,7 @@ function makeDay(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
     targetFat: 75,
     targetCarbs: 236,
     targetProtein: 270,
-    mealCountTarget: DEFAULT_MEAL_COUNT_TARGET,
+    mealCountTarget: 0,
     weightLbs: null,
     meals: [],
     createdAt: now,
@@ -52,7 +51,6 @@ type AddDayOpts = {
   targetFat: number;
   targetCarbs: number;
   targetProtein: number;
-  mealCountTarget: number;
 };
 
 type StoreCtx = {
@@ -102,7 +100,7 @@ function FakeStateProvider({
     addDay: async (date, opts) => {
       addDaySpy(date, opts);
       if (addDayDelay) await addDayDelay;
-      const day = makeDay({ date, mealCountTarget: opts.mealCountTarget });
+      const day = makeDay({ date });
       setDays((prev) => [day, ...prev]);
       return day;
     },
@@ -148,42 +146,45 @@ function renderApp(initialDays?: DailyMealLog[], addDayDelay?: Promise<void>) {
   );
 }
 
-describe('Start Today', () => {
+describe('Log a meal quick action', () => {
   afterEach(() => {
     cleanup();
     addDaySpy.mockClear();
     addMealSpy.mockClear();
   });
 
-  it('creates today with the Add Day default meal count target', async () => {
+  it('creates today using the profile-derived targets when no day exists', async () => {
     renderApp();
 
-    await userEvent.click(screen.getByRole('button', { name: /Start Today/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Log a meal/i }));
 
     expect(addDaySpy).toHaveBeenCalledTimes(1);
     const [date, opts] = addDaySpy.mock.calls[0];
     expect(date).toBe(todayIso());
-    expect(opts.mealCountTarget).toBe(DEFAULT_MEAL_COUNT_TARGET);
+    // Meal structure now comes from templates server-side, not a client target.
+    expect(opts).not.toHaveProperty('mealCountTarget');
   });
 
-  it('navigates straight to the new day page', async () => {
+  it('navigates to the new day page after creating today', async () => {
     renderApp();
 
-    await userEvent.click(screen.getByRole('button', { name: /Start Today/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Log a meal/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/new-day');
     });
   });
 
-  it('adds a meal instead of a day when today already exists', async () => {
+  it("opens today's existing day without creating a day or meal", async () => {
     renderApp([makeDay({ id: 'existing-today' })]);
 
-    await userEvent.click(screen.getByRole('button', { name: /Add Meal/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Log a meal/i }));
 
     expect(addDaySpy).not.toHaveBeenCalled();
-    expect(addMealSpy).toHaveBeenCalledTimes(1);
-    expect(addMealSpy).toHaveBeenCalledWith('existing-today', '');
+    expect(addMealSpy).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/existing-today');
+    });
   });
 
   it('ignores rapid double-clicks while day creation is in flight', async () => {
@@ -193,7 +194,7 @@ describe('Start Today', () => {
     });
     renderApp(undefined, gate);
 
-    const button = screen.getByRole('button', { name: /Start Today/i });
+    const button = screen.getByRole('button', { name: /Log a meal/i });
     fireEvent.click(button);
     fireEvent.click(button);
     release();

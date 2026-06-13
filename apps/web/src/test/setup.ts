@@ -64,7 +64,18 @@ vi.mock('../api', () => ({
     meals: {
       create: vi.fn(),
       rename: vi.fn(),
+      setLogged: vi.fn(),
       delete: vi.fn(),
+    },
+    mealTemplates: {
+      list: vi.fn(() => Promise.resolve({ templates: [] })),
+      create: vi.fn(),
+      rename: vi.fn(),
+      delete: vi.fn(),
+      reorder: vi.fn(() => Promise.resolve({ templates: [] })),
+      upsertIngredient: vi.fn(),
+      deleteIngredient: vi.fn(),
+      addIngredientFromDatabase: vi.fn(),
     },
     ingredients: {
       upsert: vi.fn(),

@@ -16,47 +16,36 @@ import {
   CalorieTargetCard,
   cn,
   DailyTotalsCard,
-  DEFAULT_MEAL_COUNT_TARGET,
   DayDetailTemplate,
   ErrorTemplate,
   DayListTemplate,
   DayWeightCard,
-  FileInput,
   HelperText,
-  IngredientEntryCard,
   Input,
-  LabelScanCard,
   LandingTemplate,
   ListRow,
   LoadingState,
   MacroSummaryLine,
   MacroTargetsCard,
   MealEditTemplate,
-  Modal,
+  MealTemplatesTemplate,
+  MealTemplateEditTemplate,
   MonthCalendarCard,
-  NutritionDatabaseEntryCard,
-  NutritionDatabaseSearchCard,
-  NumberInput,
   ProfileTemplate,
   QuickActionsCard,
   recipes,
-  ScanReviewModal,
+  ReorderableList,
   SectionCard,
-  SectionHeading,
-  Tabs,
+  Text,
   WarningText,
   WeeklyStatsCard,
   WeightTrendCard,
   useAnalytics,
 } from '@leanlog/ui';
-import type {
-  LabelScanValue,
-  NutritionDatabaseEntryValue,
-  NutritionDatabaseSearchResult,
-} from '@leanlog/ui';
-import { caloriesFromMode, dayTargetsFromProfile, estimateCalories } from '@leanlog/data-access';
-import type { ScanResolution } from '@leanlog/data-access';
-import { normalizeIngredientName, prettyDate, round1, todayIso } from '../lib';
+import { caloriesFromMode, dayTargetsFromProfile, dayMealStructure } from '@leanlog/data-access';
+import { isPastIso, normalizeIngredientName, prettyDate, todayIso } from '../lib';
+import { IngredientEntry } from '../components/IngredientEntry';
+import type { EntryIngredient } from '../components/IngredientEntry';
 import {
   dayTotals,
   mealTotals,
@@ -69,60 +58,7 @@ import {
 } from '../selectors';
 import { useStore } from '../state';
 import { api } from '../api';
-import type {
-  UpsertIngredient,
-  SaveSections,
-  NutritionDatabaseIngredientSearchResult,
-} from '../types';
-
-type DraftNumericKey =
-  | 'weight'
-  | 'fat'
-  | 'saturatedFat'
-  | 'carbs'
-  | 'fiber'
-  | 'protein'
-  | 'calories'
-  | 'sugarAlcohol'
-  | 'allulose'
-  | 'alcohol';
-
-type IngredientDraft = Omit<
-  UpsertIngredient,
-  'id' | 'mealId' | 'createdAt' | 'updatedAt' | DraftNumericKey
-> & { [K in DraftNumericKey]: number | null };
-
-const emptyDraft: IngredientDraft = {
-  name: '',
-  weight: null,
-  calories: null,
-  fat: null,
-  saturatedFat: null,
-  carbs: null,
-  fiber: null,
-  protein: null,
-  sugarAlcohol: null,
-  allulose: null,
-  alcohol: null,
-};
-
-function mapDbSearchResults(
-  raw: NutritionDatabaseIngredientSearchResult[],
-): NutritionDatabaseSearchResult[] {
-  return raw.map((r) => ({
-    id: r.id,
-    name: r.name,
-    servingAmount: r.servingAmount,
-    fat: r.fat,
-    carbs: r.carbs,
-    protein: r.protein,
-    fiber: r.fiber ?? null,
-    calories: r.calories,
-    addedByName: r.addedByName,
-    addedAtLabel: new Date(r.createdAt).toLocaleDateString(),
-    creationSource: r.creationSource,
-  }));
-}
+import type { UpsertIngredient, SaveSections } from '../types';
 
 function useSavedSections() {
   const [saved, setSaved] = useState<SaveSections>({});
@@ -236,7 +172,7 @@ function LandingPage() {
 
 function DayList() {
   const nav = useNavigate();
-  const { days, profile, loading, error, addDay, addMeal } = useStore();
+  const { days, profile, loading, error, addDay } = useStore();
 
   const maintenance = useMemo(
     () => (profile ? (caloriesFromMode(profile.weightLbs, 'maintenance') ?? 0) : 0),
@@ -262,24 +198,31 @@ function DayList() {
   const hasDays = days.length > 0;
   const creatingRef = useRef(false);
 
+  // Create a day for the given ISO date (copying templates) and open it. Shared
+  // by the "Log a meal" quick action and the calendar's tap-to-create.
+  const createAndOpenDay = useCallback(
+    async (iso: string) => {
+      if (!profile || creatingRef.current) return;
+      creatingRef.current = true;
+      try {
+        const targets = dayTargetsFromProfile(profile);
+        const day = await addDay(iso, targets);
+        nav(`/track/day/${day.id}`);
+      } finally {
+        creatingRef.current = false;
+      }
+    },
+    [profile, addDay, nav],
+  );
+
   async function handleAction() {
-    if (!profile || creatingRef.current) return;
+    if (!profile) return;
+    // Log a meal: open today's day (creating it from templates if it's missing).
     if (today) {
-      const meal = await addMeal(today.id, '');
-      if (meal) nav(`/track/day/${today.id}/meal/${meal.id}`);
+      nav(`/track/day/${today.id}`);
       return;
     }
-    creatingRef.current = true;
-    try {
-      const targets = dayTargetsFromProfile(profile);
-      const day = await addDay(todayIso(), {
-        ...targets,
-        mealCountTarget: DEFAULT_MEAL_COUNT_TARGET,
-      });
-      nav(`/track/day/${day.id}`);
-    } finally {
-      creatingRef.current = false;
-    }
+    await createAndOpenDay(todayIso());
   }
 
   if (loading) return <PageLoadingState label="Loading your days…" />;
@@ -368,19 +311,21 @@ function DayList() {
         <MonthCalendarCard
           trackedDates={dateMap}
           onSelectDay={selectDay}
+          onCreateDay={(iso) => void createAndOpenDay(iso)}
           emptyHint={!hasDays ? 'Start logging to fill in your calendar!' : undefined}
         />
       }
-      addDay={{
-        onDayAdded: ({ month, day, year, totalMeals }) => {
-          const toIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          if (!profile) return;
-          const targets = dayTargetsFromProfile(profile);
-          addDay(toIso, { ...targets, mealCountTarget: totalMeals })
-            .then((created) => nav(`/track/day/${created.id}`))
-            .catch(() => {});
-        },
-      }}
+      templatesLink={
+        <SectionCard title="Meal templates">
+          <HelperText as="p">
+            Set up the meals each new day starts with. Changes apply only to days you create
+            afterward.
+          </HelperText>
+          <Button variant="secondary" className="w-full" onClick={() => nav('/track/templates')}>
+            Edit meal templates
+          </Button>
+        </SectionCard>
+      }
     />
   );
 }
@@ -388,12 +333,17 @@ function DayList() {
 function DayDetail() {
   const { dayId } = useParams();
   const nav = useNavigate();
-  const { days, profile, ensureDayLoaded, addMeal, removeMeal, updateDayTargets, updateDayWeight } =
-    useStore();
+  const {
+    days,
+    profile,
+    ensureDayLoaded,
+    addMeal,
+    removeMeal,
+    logMeal,
+    updateDayTargets,
+    updateDayWeight,
+  } = useStore();
   const { saved, markDirty, markSaved } = useSavedSections();
-  const [isEditingMealTarget, setIsEditingMealTarget] = useState(false);
-  const [draftMealCountTarget, setDraftMealCountTarget] = useState(0);
-  const [confirmMealTargetUpdate, setConfirmMealTargetUpdate] = useState(false);
   const [savingWeight, setSavingWeight] = useState(false);
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
     dayId: dayId ?? '',
@@ -426,6 +376,11 @@ function DayDetail() {
   if (routeStatus === 'error') return <RouteErrorState message={routeLoad.error} />;
   if (!day) return <RouteLoadingState title="Loading day…" />;
   const totals = dayTotals(day);
+  const structure = dayMealStructure(day);
+  // A day is template-backed when it has copied meals; only such days have a
+  // fixed structure and per-meal logging. Ad-hoc days keep freeform meals.
+  const isTemplateBacked = structure.kind === 'template';
+  const isPast = isPastIso(day.date);
 
   return (
     <DayDetailTemplate
@@ -437,19 +392,21 @@ function DayDetail() {
         rightContent: <HeaderAuthControl />,
       }}
       weightSection={
-        <DayWeightCard
-          key={day.id}
-          saved={saved.dayWeight}
-          saving={savingWeight}
-          weightLbs={day.weightLbs}
-          onSave={(next) => {
-            markDirty('dayWeight');
-            setSavingWeight(true);
-            void updateDayWeight(day.id, next)
-              .then(() => markSaved('dayWeight'))
-              .finally(() => setSavingWeight(false));
-          }}
-        />
+        isPast ? undefined : (
+          <DayWeightCard
+            key={day.id}
+            saved={saved.dayWeight}
+            saving={savingWeight}
+            weightLbs={day.weightLbs}
+            onSave={(next) => {
+              markDirty('dayWeight');
+              setSavingWeight(true);
+              void updateDayWeight(day.id, next)
+                .then(() => markSaved('dayWeight'))
+                .finally(() => setSavingWeight(false));
+            }}
+          />
+        )
       }
       totalsSection={
         <DailyTotalsCard
@@ -460,17 +417,23 @@ function DayDetail() {
           carbs={totals.carbs}
           fiber={totals.fiber}
           macroTargets={{ fat: day.targetFat, carbs: day.targetCarbs, protein: day.targetProtein }}
-          onUpdateTargets={() => {
-            if (!profile) return;
-            const nextTargets = dayTargetsFromProfile(profile);
-            void updateDayTargets(day.id, nextTargets);
-          }}
+          onUpdateTargets={
+            isPast
+              ? undefined
+              : () => {
+                  if (!profile) return;
+                  const nextTargets = dayTargetsFromProfile(profile);
+                  void updateDayTargets(day.id, nextTargets);
+                }
+          }
         />
       }
-      mealsTitle={`Meals ${day.meals.length} / ${day.mealCountTarget}`}
-      mealsEmptyText="No meals yet. Add one below."
+      mealsTitle={`Meals ${structure.mealsTracked} / ${structure.mealsExpected}`}
+      mealsEmptyText={isPast ? 'No meals were logged this day.' : 'No meals yet. Add one below.'}
       mealsItems={day.meals.map((m) => {
         const mTotals = mealTotals(m);
+        const isTemplateMeal = m.origin === 'template';
+        const canLog = isTemplateMeal && !m.logged && m.ingredients.length > 0 && !isPast;
         return {
           id: m.id,
           title: m.name || 'Meal',
@@ -482,67 +445,45 @@ function DayDetail() {
               fat={mTotals.fat}
             />
           ),
+          // Logged copied meals show a confirmation; unlogged ones read "Not logged".
+          rightMetric: isTemplateMeal ? (
+            <HelperText>{m.logged ? '✓ Logged' : 'Not logged'}</HelperText>
+          ) : undefined,
+          actions: canLog ? (
+            <Button
+              size="sm"
+              className="min-w-[72px] shrink-0 px-3"
+              onClick={(e) => {
+                e.stopPropagation();
+                void logMeal(day.id, m.id);
+              }}
+            >
+              Log
+            </Button>
+          ) : undefined,
           onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
-          onDelete: () => void removeMeal(day.id, m.id),
+          // Copied template meals cannot be deleted (R19); ad-hoc meals can,
+          // unless the day is in the past (R22).
+          onDelete: isTemplateMeal || isPast ? undefined : () => void removeMeal(day.id, m.id),
           deleteLabel: 'Delete meal',
         };
       })}
       mealsControls={
-        <div className={cn(recipes.stack.sm, 'mb-5')}>
-          <Button
-            className="w-full"
-            variant="secondary"
-            onClick={() => {
-              if (isEditingMealTarget) {
-                setDraftMealCountTarget(day.mealCountTarget);
-                setConfirmMealTargetUpdate(false);
-              }
-              setIsEditingMealTarget((v) => !v);
-            }}
-          >
-            ✎ Edit meal target
-          </Button>
-          {isEditingMealTarget ? (
-            <div className={recipes.stack.row}>
-              <NumberInput
-                label="Meal count target"
-                value={draftMealCountTarget}
-                onChange={(n) => setDraftMealCountTarget(Math.max(0, n ?? 0))}
-                onBlur={() => setDraftMealCountTarget((n) => round1(Math.max(0, n)))}
-              />
-              <Button
-                variant={confirmMealTargetUpdate ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => {
-                  const next = !confirmMealTargetUpdate;
-                  setConfirmMealTargetUpdate(next);
-                  if (next) {
-                    void updateDayTargets(day.id, {
-                      targetCalories: day.targetCalories,
-                      targetFat: day.targetFat,
-                      targetCarbs: day.targetCarbs,
-                      targetProtein: day.targetProtein,
-                      mealCountTarget: draftMealCountTarget,
-                    });
-                    setIsEditingMealTarget(false);
-                    setConfirmMealTargetUpdate(false);
-                  }
-                }}
-              >
-                {confirmMealTargetUpdate ? 'Confirmed' : '☐ Confirm'}
-              </Button>
-            </div>
-          ) : null}
-          <Button
-            className="w-full"
-            onClick={async () => {
-              const meal = await addMeal(day.id, '');
-              if (meal) nav(`/track/day/${day.id}/meal/${meal.id}`);
-            }}
-          >
-            Add meal
-          </Button>
-        </div>
+        // Ad-hoc meals can only be added to zero-template days, and never to a
+        // past day (R34/R36/R22).
+        isTemplateBacked || isPast ? undefined : (
+          <div className={cn(recipes.stack.sm, 'mb-5')}>
+            <Button
+              className="w-full"
+              onClick={async () => {
+                const meal = await addMeal(day.id, '');
+                if (meal) nav(`/track/day/${day.id}/meal/${meal.id}`);
+              }}
+            >
+              Add meal
+            </Button>
+          </div>
+        )
       }
     />
   );
@@ -551,7 +492,6 @@ function DayDetail() {
 function MealEdit() {
   const { dayId, mealId } = useParams();
   const nav = useNavigate();
-  const { getToken } = useAuth();
   const {
     days,
     ensureDayLoaded,
@@ -560,7 +500,6 @@ function MealEdit() {
     upsertIngredient,
     removeIngredient,
     addIngredientFromDatabase,
-    searchNutritionDatabase,
     createNutritionDatabaseIngredient,
   } = useStore();
   const day = days.find((d) => d.id === dayId);
@@ -571,45 +510,10 @@ function MealEdit() {
   });
   const mealName = mealNameDraft.mealId === meal?.id ? mealNameDraft.name : (meal?.name ?? '');
   const setMealName = (name: string) => setMealNameDraft({ mealId: meal?.id ?? null, name });
-  const [draft, setDraft] = useState<IngredientDraft>(emptyDraft);
-  const [draftSource, setDraftSource] = useState<'manual' | 'scanned'>('manual');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [entryTab, setEntryTab] = useState<'manual' | 'scan' | 'database'>('database');
-  const [scanForm, setScanForm] = useState<LabelScanValue>({
-    mode: 'weight',
-    amount: null,
-  });
-  const [scanLoading, setScanLoading] = useState(false);
-  const [scanError, setScanError] = useState('');
-  const [scanResult, setScanResult] = useState<ScanResolution | null>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [cameraError, setCameraError] = useState('');
-  // Database tab state
-  const [dbQuery, setDbQuery] = useState('');
-  const [dbResults, setDbResults] = useState<NutritionDatabaseSearchResult[]>([]);
-  const [dbLoading, setDbLoading] = useState(false);
-  const [dbSearched, setDbSearched] = useState(false);
-  const [dbTotal, setDbTotal] = useState<number | null>(null);
-  const [dbAmounts, setDbAmounts] = useState<Record<string, number>>({});
-  const [dbAddingId, setDbAddingId] = useState<string | null>(null);
-  const [dbShowCreate, setDbShowCreate] = useState(false);
-  const [dbEntryValue, setDbEntryValue] = useState<NutritionDatabaseEntryValue>({
-    name: '',
-    servingAmount: null,
-    calories: null,
-    fat: null,
-    carbs: null,
-    protein: null,
-  });
-  const [dbCreating, setDbCreating] = useState(false);
-  const [dbError, setDbError] = useState('');
   // "Save to database" state per ingredient row
   const [savingToDbId, setSavingToDbId] = useState<string | null>(null);
-  const dbSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [saveToDbError, setSaveToDbError] = useState('');
   const track = useAnalytics();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const { saved, markDirty, markSaved } = useSavedSections();
 
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
@@ -618,26 +522,6 @@ function MealEdit() {
     error: '',
   });
   const routeStatus = routeLoad.dayId === dayId ? routeLoad.status : 'loading';
-
-  // Seed the database ingredient count when the database tab first opens
-  useEffect(() => {
-    if (entryTab !== 'database' || dbTotal !== null) return;
-    void searchNutritionDatabase('')
-      .then(({ total }) => setDbTotal(total))
-      .catch(() => {});
-  }, [entryTab, dbTotal, searchNutritionDatabase]);
-
-  // Track whenever the database tab is active (initial view and later switches)
-  useEffect(() => {
-    if (entryTab !== 'database') return;
-    track('meal.ingredient.database.viewed', {});
-  }, [entryTab, track]);
-
-  useEffect(() => {
-    return () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
-  }, []);
 
   useEffect(() => {
     if (!dayId || day) return;
@@ -658,145 +542,119 @@ function MealEdit() {
     };
   }, [dayId, day, ensureDayLoaded]);
 
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-  };
-
-  const openCamera = async () => {
-    setCameraError('');
-    if (!navigator.mediaDevices?.getUserMedia) {
-      fileInputRef.current?.click();
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-      });
-      streamRef.current = stream;
-      setCameraOpen(true);
-    } catch {
-      setCameraError('Camera unavailable. Falling back to file picker.');
-      fileInputRef.current?.click();
-    }
-  };
-
-  useEffect(() => {
-    if (!cameraOpen || !videoRef.current || !streamRef.current) return;
-    const video = videoRef.current;
-    video.srcObject = streamRef.current;
-    const onLoadedMetadata = () => {
-      void video.play();
-    };
-    video.addEventListener('loadedmetadata', onLoadedMetadata);
-    return () => {
-      video.removeEventListener('loadedmetadata', onLoadedMetadata);
-      video.srcObject = null;
-    };
-  }, [cameraOpen]);
-
   if (!dayId || routeStatus === 'not_found') return <Navigate to="/track" replace />;
   if (routeStatus === 'error') return <RouteErrorState message={routeLoad.error} />;
   if (!day) return <RouteLoadingState title="Loading meal…" />;
   if (!meal) return <Navigate to={`/track/day/${day.id}`} replace />;
 
-  const saveIngredient = () => {
-    const id = editingId ?? uuidv7();
-    const next: UpsertIngredient = {
-      ...draft,
-      id,
-      mealId: meal.id,
-      name: normalizeIngredientName(draft.name),
-      // Blank numeric fields submit as 0; the strict schema requires numbers.
-      weight: draft.weight ?? 0,
-      fat: draft.fat ?? 0,
-      saturatedFat: draft.saturatedFat ?? 0,
-      carbs: draft.carbs ?? 0,
-      fiber: draft.fiber ?? 0,
-      protein: draft.protein ?? 0,
-    };
-    void upsertIngredient(day.id, meal.id, next);
-    track('meal.ingredient.added', { source: draftSource });
-    markSaved('ingredientForm');
-    setDraft(emptyDraft);
-    setDraftSource('manual');
-    setEditingId(null);
-  };
+  // Past days are fully read-only: show the meal and its ingredients with no
+  // editing, logging, or deletion affordances (R22).
+  if (isPastIso(day.date)) {
+    const readOnlyTotals = mealTotals(meal);
+    return (
+      <MealEditTemplate
+        heading={{
+          title: meal.name || 'Meal',
+          subtitle: (
+            <MacroSummaryLine
+              calories={readOnlyTotals.calories}
+              protein={readOnlyTotals.protein}
+              carbs={readOnlyTotals.carbs}
+              fat={readOnlyTotals.fat}
+            />
+          ),
+          backHref: `/track/day/${day.id}`,
+          profileHref: '/track/profile',
+          renderNavLink: renderRouterNavLink,
+          rightContent: <HeaderAuthControl />,
+        }}
+        mealSection={
+          <SectionCard title="Meal name">
+            <Text as="p" className="font-medium">
+              {meal.name || 'Meal'}
+            </Text>
+            <HelperText as="p">This day is in the past and is read-only.</HelperText>
+          </SectionCard>
+        }
+        ingredientSection={
+          <SectionCard title="Ingredients">
+            {meal.ingredients.length ? null : <HelperText as="p">No items</HelperText>}
+            <div className={recipes.stack.sm}>
+              {meal.ingredients.map((i) => (
+                <ListRow
+                  key={i.id}
+                  title={i.name}
+                  meta={
+                    <MacroSummaryLine
+                      calories={i.calories}
+                      protein={i.protein}
+                      carbs={i.carbs}
+                      fat={i.fat}
+                    />
+                  }
+                />
+              ))}
+            </div>
+          </SectionCard>
+        }
+      />
+    );
+  }
+
   const totals = mealTotals(meal);
 
-  const capturePhoto = async () => {
-    if (!videoRef.current) return;
-    const video = videoRef.current;
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/jpeg', 0.92),
-    );
-    if (!blob) return;
-    stopCamera();
-    setCameraOpen(false);
-    await onScanFile(new File([blob], 'nutrition.jpg', { type: 'image/jpeg' }));
-  };
-
-  const onScanFile = async (file: File) => {
-    setScanError('');
-    setCameraError('');
-    setScanLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('photo', file);
-      const isServings = scanForm.mode === 'servings';
-      const isPackage = scanForm.mode === 'package';
-      formData.append('mode', isServings ? 'servings' : 'weight');
-      formData.append('entirePackage', String(isPackage));
-      formData.append(
-        'weightGrams',
-        scanForm.mode === 'weight' ? String(scanForm.amount ?? '') : '',
-      );
-      formData.append('servings', isServings ? String(scanForm.amount ?? '') : '');
-      formData.append('name', '');
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      const result = await api.scanNutrition(token, formData);
-      track('meal.ingredient.scanned', {});
-      setScanResult(result);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Scan failed';
-      track('meal.ingredient.scanned.error', { error: message });
-      setScanError(message);
-    } finally {
-      setScanLoading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const applyScan = (sourceDbId?: string | null) => {
-    if (!scanResult || !scanResult.canApply) return;
-    const { proposed } = scanResult;
-    markDirty('ingredientForm');
-    setDraft((prev) => ({
-      ...prev,
-      name: proposed.name ?? prev.name,
-      weight: proposed.weight,
-      calories: proposed.calories > 0 ? proposed.calories : null,
-      fat: proposed.fat,
-      saturatedFat: proposed.saturatedFat,
-      carbs: proposed.carbs,
-      fiber: proposed.fiber,
-      protein: proposed.protein,
-      sugarAlcohol: proposed.sugarAlcohol ?? null,
-      allulose: proposed.allulose ?? null,
-      // When the scan was also saved to the database, the applied ingredient is
-      // born linked so it cannot be saved to the database again.
-      sourceDatabaseIngredientId: sourceDbId ?? null,
-    }));
-    setDraftSource('scanned');
-    setScanResult(null);
-    setScanForm({ mode: 'weight', amount: null });
+  const saveToDatabase = (i: EntryIngredient) => {
+    setSavingToDbId(i.id);
+    void createNutritionDatabaseIngredient({
+      name: i.name,
+      servingAmount: i.weight,
+      fat: i.fat,
+      carbs: i.carbs,
+      protein: i.protein,
+      calories: i.calories,
+      saturatedFat: i.saturatedFat ?? undefined,
+      fiber: i.fiber ?? undefined,
+      sugar: i.sugar ?? undefined,
+      sugarAlcohol: i.sugarAlcohol ?? undefined,
+      allulose: i.allulose ?? undefined,
+      alcohol: i.alcohol ?? undefined,
+      creationSource: 'meal_ingredient',
+    })
+      .then((created) => {
+        track('nutrition_database.ingredient.published', {
+          source: 'meal_ingredient',
+        });
+        // Link the meal ingredient to its new database entry so it
+        // can't be saved (and duplicated) again.
+        return upsertIngredient(day.id, meal.id, {
+          id: i.id,
+          mealId: meal.id,
+          name: i.name,
+          weight: i.weight,
+          calories: i.calorieSource === 'explicit' ? i.calories : null,
+          fat: i.fat,
+          saturatedFat: i.saturatedFat,
+          carbs: i.carbs,
+          fiber: i.fiber,
+          protein: i.protein,
+          sugarAlcohol: i.sugarAlcohol ?? null,
+          allulose: i.allulose ?? null,
+          alcohol: i.alcohol ?? null,
+          unsaturatedFat: i.unsaturatedFat ?? null,
+          monounsaturatedFat: i.monounsaturatedFat ?? null,
+          polyunsaturatedFat: i.polyunsaturatedFat ?? null,
+          transFat: i.transFat ?? null,
+          sugar: i.sugar ?? null,
+          micronutrients: i.micronutrients ?? null,
+          sourceDatabaseIngredientId: created.id,
+        });
+      })
+      .catch(() => {
+        setSaveToDbError('Failed to save ingredient to database.');
+      })
+      .finally(() => {
+        setSavingToDbId(null);
+      });
   };
 
   return (
@@ -849,522 +707,43 @@ function MealEdit() {
                 Delete meal and all ingredients
               </Button>
             </div>
-            <div className={cn(recipes.stack.sm, 'mt-3')}>
-              <SectionHeading as="h4" noMargin>
-                Ingredients
-              </SectionHeading>
-              <HelperText as="p">Tap an ingredient row to edit values.</HelperText>
-              {meal.ingredients.length ? null : <HelperText as="p">No items</HelperText>}
-              {meal.ingredients.map((i) => (
-                <ListRow
-                  key={i.id}
-                  title={i.name}
-                  meta={
-                    <MacroSummaryLine
-                      calories={i.calories}
-                      protein={i.protein}
-                      carbs={i.carbs}
-                      fat={i.fat}
-                    />
-                  }
-                  actions={
-                    <div className={cn(recipes.stack.row, 'flex-wrap')}>
-                      {i.sourceDatabaseIngredientId ? null : (
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          disabled={i.weight <= 0 || savingToDbId === i.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSavingToDbId(i.id);
-                            void createNutritionDatabaseIngredient({
-                              name: i.name,
-                              servingAmount: i.weight,
-                              fat: i.fat,
-                              carbs: i.carbs,
-                              protein: i.protein,
-                              calories: i.calories,
-                              saturatedFat: i.saturatedFat ?? undefined,
-                              fiber: i.fiber ?? undefined,
-                              sugar: i.sugar ?? undefined,
-                              sugarAlcohol: i.sugarAlcohol ?? undefined,
-                              allulose: i.allulose ?? undefined,
-                              alcohol: i.alcohol ?? undefined,
-                              creationSource: 'meal_ingredient',
-                            })
-                              .then((created) => {
-                                track('nutrition_database.ingredient.published', {
-                                  source: 'meal_ingredient',
-                                });
-                                setDbTotal((t) => (t == null ? t : t + 1));
-                                // Link the meal ingredient to its new database entry so it
-                                // can't be saved (and duplicated) again.
-                                return upsertIngredient(day.id, meal.id, {
-                                  id: i.id,
-                                  mealId: i.mealId,
-                                  name: i.name,
-                                  weight: i.weight,
-                                  calories: i.calorieSource === 'explicit' ? i.calories : null,
-                                  fat: i.fat,
-                                  saturatedFat: i.saturatedFat,
-                                  carbs: i.carbs,
-                                  fiber: i.fiber,
-                                  protein: i.protein,
-                                  sugarAlcohol: i.sugarAlcohol ?? null,
-                                  allulose: i.allulose ?? null,
-                                  alcohol: i.alcohol ?? null,
-                                  unsaturatedFat: i.unsaturatedFat ?? null,
-                                  monounsaturatedFat: i.monounsaturatedFat ?? null,
-                                  polyunsaturatedFat: i.polyunsaturatedFat ?? null,
-                                  transFat: i.transFat ?? null,
-                                  sugar: i.sugar ?? null,
-                                  micronutrients: i.micronutrients ?? null,
-                                  sourceDatabaseIngredientId: created.id,
-                                });
-                              })
-                              .catch(() => {
-                                setDbError('Failed to save ingredient to database.');
-                              })
-                              .finally(() => {
-                                setSavingToDbId(null);
-                              });
-                          }}
-                        >
-                          {savingToDbId === i.id ? 'Saving…' : 'Save to database'}
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void removeIngredient(day.id, meal.id, i.id);
-                          track('meal.ingredient.deleted', { ingredientId: i.id });
-                        }}
-                      >
-                        Delete ingredient
-                      </Button>
-                    </div>
-                  }
-                  onOpen={() => {
-                    setEditingId(i.id);
-                    setDraftSource('manual');
-                    setEntryTab('manual');
-                    setDraft({
-                      name: i.name,
-                      weight: i.weight,
-                      calories: i.calorieSource === 'explicit' ? i.calories : null,
-                      fat: i.fat,
-                      saturatedFat: i.saturatedFat,
-                      carbs: i.carbs,
-                      fiber: i.fiber,
-                      protein: i.protein,
-                      sugarAlcohol: i.sugarAlcohol ?? null,
-                      allulose: i.allulose ?? null,
-                      alcohol: i.alcohol ?? null,
-                      // Preserve snapshot extras so editing doesn't wipe them on upsert
-                      unsaturatedFat: i.unsaturatedFat ?? null,
-                      monounsaturatedFat: i.monounsaturatedFat ?? null,
-                      polyunsaturatedFat: i.polyunsaturatedFat ?? null,
-                      transFat: i.transFat ?? null,
-                      sugar: i.sugar ?? null,
-                      micronutrients: i.micronutrients ?? null,
-                      sourceDatabaseIngredientId: i.sourceDatabaseIngredientId ?? null,
-                    });
-                  }}
-                />
-              ))}
-            </div>
+            {saveToDbError ? <WarningText role="alert">{saveToDbError}</WarningText> : null}
           </SectionCard>
         }
         ingredientSection={
-          <div className={recipes.stack.lg}>
-            <Tabs
-              tabs={[
-                {
-                  key: 'database',
-                  label: 'Nutrition Database',
-                  panelId: 'ingredient-database-panel',
-                },
-                { key: 'scan', label: 'Label Scan', panelId: 'ingredient-scan-panel' },
-                { key: 'manual', label: 'Manual Entry', panelId: 'ingredient-manual-panel' },
-              ]}
-              active={entryTab}
-              onChange={(key) => {
-                const next = key as 'manual' | 'scan' | 'database';
-                setEntryTab(next);
-              }}
-              label="Ingredient entry method"
-            />
-            <div
-              role="tabpanel"
-              id={`ingredient-${entryTab}-panel`}
-              aria-labelledby={`ingredient-${entryTab}-panel-tab`}
-            >
-              {entryTab === 'manual' ? (
-                <IngredientEntryCard
-                  value={draft}
-                  estimatedCalories={estimateCalories({
-                    fat: draft.fat ?? 0,
-                    carbs: draft.carbs ?? 0,
-                    protein: draft.protein ?? 0,
-                    fiber: draft.fiber,
-                    sugarAlcohol: draft.sugarAlcohol,
-                    allulose: draft.allulose,
-                    alcohol: draft.alcohol,
-                  })}
-                  saved={saved.ingredientForm}
-                  submitLabel={editingId ? 'Update' : 'Add'}
-                  onChange={(next) => {
-                    markDirty('ingredientForm');
-                    setDraft(next);
-                  }}
-                  onSubmit={saveIngredient}
-                  onCancel={
-                    editingId
-                      ? () => {
-                          setDraft(emptyDraft);
-                          setEditingId(null);
-                          setDraftSource('manual');
-                        }
-                      : undefined
-                  }
-                  normalizeNameOnBlur={normalizeIngredientName}
-                />
-              ) : null}
-              {entryTab === 'scan' ? (
-                <div className={recipes.stack.sm}>
-                  <LabelScanCard
-                    value={scanForm}
-                    loading={scanLoading}
-                    error={scanError || cameraError}
-                    onChange={setScanForm}
-                    onScan={openCamera}
-                  />
-                  {draftSource === 'scanned' ? (
-                    <IngredientEntryCard
-                      value={draft}
-                      estimatedCalories={estimateCalories({
-                        fat: draft.fat ?? 0,
-                        carbs: draft.carbs ?? 0,
-                        protein: draft.protein ?? 0,
-                        fiber: draft.fiber,
-                        sugarAlcohol: draft.sugarAlcohol,
-                        allulose: draft.allulose,
-                        alcohol: draft.alcohol,
-                      })}
-                      saved={saved.ingredientForm}
-                      submitLabel={editingId ? 'Update' : 'Add'}
-                      onChange={(next) => {
-                        markDirty('ingredientForm');
-                        setDraft(next);
-                      }}
-                      onSubmit={saveIngredient}
-                      onCancel={() => {
-                        setDraft(emptyDraft);
-                        setEditingId(null);
-                        setDraftSource('manual');
-                      }}
-                      normalizeNameOnBlur={normalizeIngredientName}
-                    />
-                  ) : null}
-                </div>
-              ) : null}
-              {entryTab === 'database' ? (
-                <div className={recipes.stack.sm}>
-                  {dbError ? <WarningText role="alert">{dbError}</WarningText> : null}
-                  <NutritionDatabaseSearchCard
-                    query={dbQuery}
-                    onQueryChange={(q) => {
-                      setDbQuery(q);
-                      if (dbSearchTimerRef.current) clearTimeout(dbSearchTimerRef.current);
-                      if (q.length < 2) {
-                        setDbResults([]);
-                        setDbSearched(false);
-                        return;
-                      }
-                      dbSearchTimerRef.current = setTimeout(() => {
-                        setDbLoading(true);
-                        void searchNutritionDatabase(q)
-                          .then(({ results, total }) => {
-                            setDbResults(mapDbSearchResults(results));
-                            setDbTotal(total);
-                            setDbSearched(true);
-                          })
-                          .catch(() => {
-                            setDbError('Search failed. Please try again.');
-                            setDbSearched(true);
-                          })
-                          .finally(() => setDbLoading(false));
-                      }, 300);
-                    }}
-                    results={dbResults}
-                    loading={dbLoading}
-                    searched={dbSearched}
-                    amounts={dbAmounts}
-                    onAmountChange={(id, amount) =>
-                      setDbAmounts((prev) => ({ ...prev, [id]: amount ?? 0 }))
-                    }
-                    onAdd={(id) => {
-                      const amount = dbAmounts[id] ?? 0;
-                      if (amount <= 0) return;
-                      setDbAddingId(id);
-                      void addIngredientFromDatabase(day.id, meal.id, {
-                        databaseIngredientId: id,
-                        measuredAmount: amount,
-                      })
-                        .then(() => {
-                          track('meal.ingredient.added', { source: 'database' });
-                          setDbAmounts((prev) => {
-                            const next = { ...prev };
-                            delete next[id];
-                            return next;
-                          });
-                        })
-                        .catch(() => {
-                          setDbError('Failed to add ingredient. Please try again.');
-                        })
-                        .finally(() => setDbAddingId(null));
-                    }}
-                    addingId={dbAddingId}
-                    onCreateNew={() => setDbShowCreate((prev) => !prev)}
-                    truncated={dbResults.length >= 25}
-                    totalCount={dbTotal ?? undefined}
-                  />
-                  {dbShowCreate ? (
-                    <NutritionDatabaseEntryCard
-                      value={dbEntryValue}
-                      estimatedCalories={estimateCalories({
-                        fat: dbEntryValue.fat ?? 0,
-                        carbs: dbEntryValue.carbs ?? 0,
-                        protein: dbEntryValue.protein ?? 0,
-                        fiber: dbEntryValue.fiber ?? null,
-                        sugarAlcohol: dbEntryValue.sugarAlcohol ?? null,
-                        allulose: dbEntryValue.allulose ?? null,
-                        alcohol: dbEntryValue.alcohol ?? null,
-                      })}
-                      onChange={setDbEntryValue}
-                      submitting={dbCreating}
-                      onSubmit={() => {
-                        // The card disables Publish until these are filled; this
-                        // guard narrows the nullable draft for the strict schema.
-                        if (
-                          dbEntryValue.servingAmount == null ||
-                          dbEntryValue.fat == null ||
-                          dbEntryValue.carbs == null ||
-                          dbEntryValue.protein == null
-                        )
-                          return;
-                        const resolvedCalories =
-                          dbEntryValue.calories ??
-                          estimateCalories({
-                            fat: dbEntryValue.fat,
-                            carbs: dbEntryValue.carbs,
-                            protein: dbEntryValue.protein,
-                            fiber: dbEntryValue.fiber ?? null,
-                            sugarAlcohol: dbEntryValue.sugarAlcohol ?? null,
-                            allulose: dbEntryValue.allulose ?? null,
-                            alcohol: dbEntryValue.alcohol ?? null,
-                          });
-                        setDbCreating(true);
-                        void createNutritionDatabaseIngredient({
-                          ...dbEntryValue,
-                          servingAmount: dbEntryValue.servingAmount,
-                          fat: dbEntryValue.fat,
-                          carbs: dbEntryValue.carbs,
-                          protein: dbEntryValue.protein,
-                          calories: resolvedCalories,
-                          micronutrients: dbEntryValue.micronutrients?.map((m) => ({
-                            name: m.name,
-                            amount: m.amount ?? undefined,
-                            unit: m.unit,
-                            percentDailyValue: m.percentDailyValue ?? undefined,
-                          })),
-                          creationSource: 'manual',
-                        })
-                          .then(() => {
-                            track('nutrition_database.ingredient.published', { source: 'manual' });
-                            setDbShowCreate(false);
-                            setDbEntryValue({
-                              name: '',
-                              servingAmount: null,
-                              calories: null,
-                              fat: null,
-                              carbs: null,
-                              protein: null,
-                            });
-                            setDbTotal((t) => (t == null ? t : t + 1));
-                            if (dbQuery.length >= 2) {
-                              setDbLoading(true);
-                              void searchNutritionDatabase(dbQuery)
-                                .then(({ results, total }) => {
-                                  setDbResults(mapDbSearchResults(results));
-                                  setDbTotal(total);
-                                })
-                                .catch(() => {})
-                                .finally(() => setDbLoading(false));
-                            }
-                          })
-                          .catch(() => {
-                            setDbError('Failed to publish ingredient. Please try again.');
-                          })
-                          .finally(() => setDbCreating(false));
-                      }}
-                    />
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          </div>
+          <IngredientEntry
+            ingredients={meal.ingredients}
+            analyticsContext="meal"
+            showDatabaseCreate
+            savingToDbId={savingToDbId}
+            onSubmit={(draft, editingId) => {
+              const id = editingId ?? uuidv7();
+              const next: UpsertIngredient = {
+                ...draft,
+                id,
+                mealId: meal.id,
+                name: normalizeIngredientName(draft.name),
+                // Blank numeric fields submit as 0; the strict schema requires numbers.
+                weight: draft.weight ?? 0,
+                fat: draft.fat ?? 0,
+                saturatedFat: draft.saturatedFat ?? 0,
+                carbs: draft.carbs ?? 0,
+                fiber: draft.fiber ?? 0,
+                protein: draft.protein ?? 0,
+              };
+              void upsertIngredient(day.id, meal.id, next);
+            }}
+            onDelete={(id) => void removeIngredient(day.id, meal.id, id)}
+            onAddFromDatabase={(dbId, amount) =>
+              addIngredientFromDatabase(day.id, meal.id, {
+                databaseIngredientId: dbId,
+                measuredAmount: amount,
+              })
+            }
+            onSaveToDatabase={saveToDatabase}
+          />
         }
-      >
-        <FileInput
-          ref={fileInputRef}
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void onScanFile(file);
-          }}
-        />
-        <Modal
-          open={cameraOpen}
-          title="Take nutrition photo"
-          onClose={() => {
-            stopCamera();
-            setCameraOpen(false);
-          }}
-        >
-          <div className={recipes.stack.sm}>
-            <video
-              ref={videoRef}
-              aria-label="Nutrition label viewfinder"
-              className={cn(recipes.radius.control, 'w-full border border-[var(--ll-line)]')}
-              autoPlay
-              playsInline
-              muted
-            />
-            <div className={cn(recipes.stack.row, recipes.stack.between)}>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  stopCamera();
-                  setCameraOpen(false);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={() => void capturePhoto()}>Capture</Button>
-            </div>
-          </div>
-        </Modal>
-        <ScanReviewModal
-          open={!!scanResult}
-          onClose={() => {
-            setScanResult(null);
-          }}
-          onAccept={() => applyScan()}
-          onRetake={() => {
-            setScanResult(null);
-            void openCamera();
-          }}
-          canAccept={scanResult?.canApply ?? false}
-          blockReason={scanResult?.blockReason}
-          warning={scanResult?.warning}
-          notes={scanResult?.notes}
-          onSaveToDatabase={
-            scanResult && 'databaseCandidate' in scanResult && scanResult.proposed.name
-              ? () => {
-                  const candidate = scanResult.databaseCandidate;
-                  if (!candidate) return;
-                  void createNutritionDatabaseIngredient({
-                    name: candidate.name,
-                    servingAmount: candidate.servingAmount,
-                    fat: candidate.fat,
-                    carbs: candidate.carbs,
-                    protein: candidate.protein,
-                    calories: candidate.calories,
-                    saturatedFat: candidate.saturatedFat ?? undefined,
-                    fiber: candidate.fiber ?? undefined,
-                    sugar: candidate.sugar ?? undefined,
-                    sugarAlcohol: candidate.sugarAlcohol ?? undefined,
-                    allulose: candidate.allulose ?? undefined,
-                    creationSource: 'scan',
-                  })
-                    .then((created) => {
-                      track('nutrition_database.ingredient.published', { source: 'scan' });
-                      setDbTotal((t) => (t == null ? t : t + 1));
-                      applyScan(created.id);
-                    })
-                    .catch(() => {
-                      setDbError('Failed to save ingredient to database.');
-                    });
-                }
-              : undefined
-          }
-          canSaveToDatabase={
-            scanResult && 'databaseCandidate' in scanResult
-              ? scanResult.databaseCandidate !== null && scanResult.canApply
-              : undefined
-          }
-          saveToDatabaseBlockReason={scanResult?.databaseBlockReason}
-          fields={
-            scanResult
-              ? [
-                  {
-                    label: 'Name',
-                    current: draft.name || '—',
-                    proposed: scanResult.proposed.name
-                      ? `${scanResult.proposed.name} (detected)`
-                      : '—',
-                  },
-                  {
-                    label: 'Weight',
-                    current: draft.weight ?? '—',
-                    proposed: scanResult.proposed.weight,
-                    unit: 'g',
-                  },
-                  {
-                    label: 'Calories',
-                    current: draft.calories != null ? draft.calories : '(will estimate)',
-                    proposed: scanResult.proposed.calories,
-                  },
-                  {
-                    label: 'Fat',
-                    current: draft.fat ?? '—',
-                    proposed: scanResult.proposed.fat,
-                    unit: 'g',
-                  },
-                  {
-                    label: 'Saturated fat',
-                    current: draft.saturatedFat ?? '—',
-                    proposed: scanResult.proposed.saturatedFat,
-                    unit: 'g',
-                  },
-                  {
-                    label: 'Carbs',
-                    current: draft.carbs ?? '—',
-                    proposed: scanResult.proposed.carbs,
-                    unit: 'g',
-                  },
-                  {
-                    label: 'Fiber',
-                    current: draft.fiber ?? '—',
-                    proposed: scanResult.proposed.fiber,
-                    unit: 'g',
-                  },
-                  {
-                    label: 'Protein',
-                    current: draft.protein ?? '—',
-                    proposed: scanResult.proposed.protein,
-                    unit: 'g',
-                  },
-                ]
-              : []
-          }
-        />
-      </MealEditTemplate>
+      />
     </AnalyticsScope>
   );
 }
@@ -1552,6 +931,205 @@ function ProfilePage() {
   );
 }
 
+function MealTemplates() {
+  const nav = useNavigate();
+  const { templates, loading, addTemplate, reorderTemplates } = useStore();
+  const [newName, setNewName] = useState('');
+  const [addError, setAddError] = useState('');
+
+  if (loading) return <PageLoadingState label="Loading templates…" />;
+
+  const onAdd = () => {
+    const name = newName.trim();
+    if (!name) return;
+    addTemplate(name)
+      .then(() => {
+        setNewName('');
+        setAddError('');
+      })
+      .catch((e: unknown) =>
+        setAddError(e instanceof Error ? e.message : 'Could not add template'),
+      );
+  };
+
+  return (
+    <AnalyticsScope properties={{ page: 'MealTemplates' }}>
+      <MealTemplatesTemplate
+        heading={{
+          title: 'Meal templates',
+          backHref: '/track',
+          profileHref: '/track/profile',
+          renderNavLink: renderRouterNavLink,
+          rightContent: <HeaderAuthControl />,
+        }}
+        listSection={
+          <SectionCard title="Your templates">
+            <HelperText as="p">
+              New days copy these meals in order. Changes apply only to days created afterward.
+            </HelperText>
+            {templates.length ? (
+              <ReorderableList
+                items={templates.map((t) => ({
+                  id: t.id,
+                  title: t.name,
+                  meta: (
+                    <HelperText>
+                      {t.ingredients.length
+                        ? `${t.ingredients.length} default ${
+                            t.ingredients.length === 1 ? 'ingredient' : 'ingredients'
+                          }`
+                        : 'No defaults'}
+                    </HelperText>
+                  ),
+                  onOpen: () => nav(`/track/templates/${t.id}`),
+                }))}
+                onReorder={(ids) => void reorderTemplates(ids)}
+              />
+            ) : (
+              <HelperText as="p">
+                No templates yet. New days will start empty so you can add meals manually.
+              </HelperText>
+            )}
+          </SectionCard>
+        }
+        addSection={
+          <SectionCard title="Add template">
+            <Input
+              value={newName}
+              placeholder="e.g. Pre-workout"
+              onChange={(e) => {
+                setNewName(e.target.value);
+                setAddError('');
+              }}
+            />
+            {addError ? <WarningText role="alert">{addError}</WarningText> : null}
+            <Button className="w-full" disabled={!newName.trim()} onClick={onAdd}>
+              Add template
+            </Button>
+          </SectionCard>
+        }
+      />
+    </AnalyticsScope>
+  );
+}
+
+function MealTemplateEdit() {
+  const { templateId } = useParams();
+  const nav = useNavigate();
+  const {
+    templates,
+    renameTemplate,
+    removeTemplate,
+    upsertTemplateIngredient,
+    removeTemplateIngredient,
+    addTemplateIngredientFromDatabase,
+    loading,
+  } = useStore();
+  const template = templates.find((t) => t.id === templateId);
+  const [nameDraft, setNameDraft] = useState(template?.name ?? '');
+  const [syncedId, setSyncedId] = useState(template?.id);
+  const [nameError, setNameError] = useState('');
+
+  // Sync the name field once the template loads (or when switching templates).
+  if (template && syncedId !== template.id) {
+    setSyncedId(template.id);
+    setNameDraft(template.name);
+  }
+
+  // Wait for the initial load before deciding the template is missing; a deep
+  // link lands here before templates have streamed in.
+  if (!template && loading) return <RouteLoadingState title="Loading template…" />;
+  if (!templateId || !template) return <Navigate to="/track/templates" replace />;
+
+  const saveName = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === template.name) {
+      setNameDraft(template.name);
+      return;
+    }
+    void renameTemplate(template.id, trimmed)
+      .then(() => setNameError(''))
+      .catch((e: unknown) => {
+        setNameError(e instanceof Error ? e.message : 'Could not rename template');
+        setNameDraft(template.name);
+      });
+  };
+
+  return (
+    <AnalyticsScope properties={{ page: 'MealTemplateEdit', templateId: template.id }}>
+      <MealTemplateEditTemplate
+        heading={{
+          title: template.name || 'Template',
+          backHref: '/track/templates',
+          profileHref: '/track/profile',
+          renderNavLink: renderRouterNavLink,
+          rightContent: <HeaderAuthControl />,
+        }}
+        nameSection={
+          <SectionCard title="Template name">
+            <Input
+              value={nameDraft}
+              placeholder="Template name"
+              onChange={(e) => {
+                setNameDraft(e.target.value);
+                setNameError('');
+              }}
+              normalizeOnBlur={(v) => v.trim()}
+              onNormalized={saveName}
+            />
+            {nameError ? <WarningText role="alert">{nameError}</WarningText> : null}
+          </SectionCard>
+        }
+        ingredientsSection={
+          <SectionCard title="Default ingredients">
+            <HelperText as="p">
+              Optional. These are copied into each new day&rsquo;s meal. Tap a row to edit.
+            </HelperText>
+            <IngredientEntry
+              ingredients={template.ingredients}
+              analyticsContext="template"
+              showDatabaseCreate={false}
+              onSubmit={(draft, editingId) => {
+                const next = {
+                  ...draft,
+                  id: editingId ?? uuidv7(),
+                  templateId: template.id,
+                  name: normalizeIngredientName(draft.name),
+                  weight: draft.weight ?? 0,
+                  fat: draft.fat ?? 0,
+                  saturatedFat: draft.saturatedFat ?? 0,
+                  carbs: draft.carbs ?? 0,
+                  fiber: draft.fiber ?? 0,
+                  protein: draft.protein ?? 0,
+                };
+                void upsertTemplateIngredient(template.id, next);
+              }}
+              onDelete={(id) => void removeTemplateIngredient(template.id, id)}
+              onAddFromDatabase={(dbId, amount) =>
+                addTemplateIngredientFromDatabase(template.id, {
+                  databaseIngredientId: dbId,
+                  measuredAmount: amount,
+                })
+              }
+            />
+          </SectionCard>
+        }
+        dangerZone={
+          <SectionCard title="Danger zone">
+            <Button
+              variant="danger"
+              className="w-full"
+              onClick={() => void removeTemplate(template.id).then(() => nav('/track/templates'))}
+            >
+              Delete template
+            </Button>
+          </SectionCard>
+        }
+      />
+    </AnalyticsScope>
+  );
+}
+
 export default function App() {
   return (
     <Routes>
@@ -1577,6 +1155,22 @@ export default function App() {
         element={
           <RequireSignedIn>
             <MealEdit />
+          </RequireSignedIn>
+        }
+      />
+      <Route
+        path="/track/templates"
+        element={
+          <RequireSignedIn>
+            <MealTemplates />
+          </RequireSignedIn>
+        }
+      />
+      <Route
+        path="/track/templates/:templateId"
+        element={
+          <RequireSignedIn>
+            <MealTemplateEdit />
           </RequireSignedIn>
         }
       />

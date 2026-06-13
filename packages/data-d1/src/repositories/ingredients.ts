@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { ingredients, meals, dailyMealLogs } from '../schema';
 import { estimateCalories } from '@leanlog/data-access';
@@ -58,7 +58,7 @@ export function createIngredientRepository(db: D1Database): IngredientRepository
     async upsert(userId, mealId, data: UpsertIngredient) {
       // Verify ownership: the target meal must belong to the user
       const ownerRows = await d
-        .select({ mealId: meals.id, userId: dailyMealLogs.userId })
+        .select({ mealId: meals.id, userId: dailyMealLogs.userId, origin: meals.origin })
         .from(meals)
         .innerJoin(dailyMealLogs, eq(meals.dailyMealLogId, dailyMealLogs.id))
         .where(eq(meals.id, mealId));
@@ -133,6 +133,12 @@ export function createIngredientRepository(db: D1Database): IngredientRepository
           },
         });
 
+      // Adding or editing an ingredient confirms a copied meal as logged (R30).
+      // Ad-hoc meals have no logged state, so leave them untouched.
+      if (ownerRows[0].origin === 'template') {
+        await d.update(meals).set({ logged: true, updatedAt: ts }).where(eq(meals.id, mealId));
+      }
+
       const rows = await d.select().from(ingredients).where(eq(ingredients.id, data.id));
       return rowToDomain(rows[0]!);
     },
@@ -140,13 +146,32 @@ export function createIngredientRepository(db: D1Database): IngredientRepository
     async delete(userId, ingredientId) {
       // Verify ownership via join chain
       const rows = await d
-        .select({ ingredientId: ingredients.id, userId: dailyMealLogs.userId })
+        .select({
+          ingredientId: ingredients.id,
+          userId: dailyMealLogs.userId,
+          mealId: meals.id,
+          origin: meals.origin,
+        })
         .from(ingredients)
         .innerJoin(meals, eq(ingredients.mealId, meals.id))
         .innerJoin(dailyMealLogs, eq(meals.dailyMealLogId, dailyMealLogs.id))
         .where(eq(ingredients.id, ingredientId));
       if (!rows[0] || rows[0].userId !== userId) return;
       await d.delete(ingredients).where(eq(ingredients.id, ingredientId));
+
+      // Deleting the last ingredient returns a copied meal to unlogged (R31).
+      if (rows[0].origin === 'template') {
+        const remaining = await d
+          .select({ n: count() })
+          .from(ingredients)
+          .where(eq(ingredients.mealId, rows[0].mealId));
+        if ((remaining[0]?.n ?? 0) === 0) {
+          await d
+            .update(meals)
+            .set({ logged: false, updatedAt: new Date().toISOString() })
+            .where(eq(meals.id, rows[0].mealId));
+        }
+      }
     },
   };
 }

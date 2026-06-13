@@ -1,4 +1,38 @@
-import type { UserProfile, NutritionDatabaseIngredient } from './models';
+import type { UserProfile, NutritionDatabaseIngredient, Meal, DailyMealLog } from './models';
+
+// Default meal templates seeded for a brand-new user (issue #41).
+export const DEFAULT_MEAL_TEMPLATE_NAMES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const;
+
+// A meal's calories/macros count toward day totals only when it is a logged
+// template meal, or an ad-hoc meal (which has no logged state and counts
+// directly). See R23/R25/R35.
+export function contributesNutrition(meal: Meal): boolean {
+  return meal.origin !== 'template' || meal.logged;
+}
+
+// Coverage is derived from each day's own copied/ad-hoc meal structure rather
+// than the user's current template list (R40). Template-backed days expect their
+// copied meal count and track logged copies (R37/R38); zero-template ad-hoc days
+// treat every ad-hoc meal as both expected and tracked (R39); pre-feature days
+// fall back to their stored mealCountTarget so history is not rewritten (R15).
+export function dayMealStructure(day: DailyMealLog): {
+  kind: 'template' | 'adhoc' | 'legacy';
+  mealsExpected: number;
+  mealsTracked: number;
+} {
+  const copied = day.meals.filter((m) => m.origin === 'template');
+  if (copied.length > 0) {
+    return {
+      kind: 'template',
+      mealsExpected: copied.length,
+      mealsTracked: copied.filter((m) => m.logged).length,
+    };
+  }
+  if (day.mealCountTarget > 0) {
+    return { kind: 'legacy', mealsExpected: day.mealCountTarget, mealsTracked: day.meals.length };
+  }
+  return { kind: 'adhoc', mealsExpected: day.meals.length, mealsTracked: day.meals.length };
+}
 
 export function caloriesFromMode(
   weightLbs: number,

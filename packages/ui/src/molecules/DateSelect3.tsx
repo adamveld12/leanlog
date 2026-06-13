@@ -8,7 +8,9 @@ type DateSelect3Props = {
 };
 
 export function DateSelect3({ month, day, year, onChange }: DateSelect3Props) {
-  const years = Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - i);
+  // Offer a few future years so users can pre-log upcoming days, plus history.
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 22 }, (_, i) => currentYear + 2 - i);
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
   return (

@@ -170,6 +170,8 @@ describe('list section behaviors', () => {
           {
             id: 'm1',
             dailyMealLogId: 'd1',
+            origin: 'adhoc' as const,
+            logged: false,
             name: 'BREAKFAST',
             createdAt: now,
             updatedAt: now,
@@ -206,7 +208,7 @@ describe('list section behaviors', () => {
 
     const todayDate = new Date();
     const dayNum = todayDate.getDate();
-    const tracked = screen.getByRole('button', { name: `${dayNum}, tracked` });
+    const tracked = screen.getByRole('button', { name: `${dayNum}, today, tracked` });
     expect(tracked).not.toBeDisabled();
     await userEvent.click(tracked);
 
@@ -222,6 +224,8 @@ describe('list section behaviors', () => {
           {
             id: 'm1',
             dailyMealLogId: 'd1',
+            origin: 'adhoc' as const,
+            logged: false,
             name: 'LUNCH',
             createdAt: now,
             updatedAt: now,
@@ -246,6 +250,8 @@ describe('list section behaviors', () => {
           {
             id: 'm1',
             dailyMealLogId: 'd1',
+            origin: 'adhoc' as const,
+            logged: false,
             name: 'LUNCH',
             createdAt: now,
             updatedAt: now,
@@ -299,6 +305,8 @@ describe('list section behaviors', () => {
           {
             id: 'm1',
             dailyMealLogId: 'd1',
+            origin: 'adhoc' as const,
+            logged: false,
             name: '',
             createdAt: now,
             updatedAt: now,
@@ -324,6 +332,8 @@ describe('list section behaviors', () => {
           {
             id: 'm1',
             dailyMealLogId: 'd1',
+            origin: 'adhoc' as const,
+            logged: false,
             name: '',
             createdAt: now,
             updatedAt: now,

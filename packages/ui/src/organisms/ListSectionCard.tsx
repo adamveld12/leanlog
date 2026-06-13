@@ -11,6 +11,8 @@ export type ListSectionItem = {
   title: string;
   meta?: ReactNode;
   rightMetric?: ReactNode;
+  /** Extra action(s) rendered before any delete button (e.g. a Log button). */
+  actions?: ReactNode;
   onOpen?: () => void;
   onDelete?: () => void;
   deleteLabel?: string;
@@ -42,7 +44,7 @@ export function ListSectionCard({
         {childrenTop ? children : null}
         <div className={recipes.stack.sm}>
           {items.map((item) => {
-            const actions = item.onDelete ? (
+            const deleteButton = item.onDelete ? (
               <Button
                 size="sm"
                 variant="danger"
@@ -55,6 +57,13 @@ export function ListSectionCard({
                 {item.deleteLabel ?? 'Delete'}
               </Button>
             ) : null;
+            const actions =
+              item.actions || deleteButton ? (
+                <>
+                  {item.actions}
+                  {deleteButton}
+                </>
+              ) : null;
             const row = (
               <ListRow
                 title={item.title}

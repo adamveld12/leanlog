@@ -20,6 +20,8 @@ import type {
   NutritionDatabaseIngredientSearchResult,
   CreateNutritionDatabaseIngredient,
   AddIngredientFromDatabase,
+  MealTemplate,
+  UpsertTemplateIngredient,
 } from '@leanlog/data-access';
 import { api, ApiError } from './api';
 
@@ -30,20 +32,32 @@ export type EnsureDayResult =
 
 type Store = {
   days: DailyMealLog[];
+  templates: MealTemplate[];
   profile: UserProfile | null;
   loading: boolean;
   error: string | null;
   ensureDayLoaded(dayId: string): Promise<EnsureDayResult>;
   addDay(
     date: string,
-    opts: Omit<CreateDailyMealLog, 'date'> & { mealCountTarget: number },
+    opts: Omit<CreateDailyMealLog, 'date' | 'mealCountTarget'>,
   ): Promise<DailyMealLog>;
   removeDay(dayId: string): Promise<void>;
   addMeal(dayId: string, name: string): Promise<Meal | null>;
   removeMeal(dayId: string, mealId: string): Promise<void>;
   renameMeal(dayId: string, mealId: string, name: string): Promise<void>;
+  logMeal(dayId: string, mealId: string): Promise<void>;
   upsertIngredient(dayId: string, mealId: string, ingredient: UpsertIngredient): Promise<void>;
   removeIngredient(dayId: string, mealId: string, ingredientId: string): Promise<void>;
+  addTemplate(name: string): Promise<MealTemplate>;
+  renameTemplate(templateId: string, name: string): Promise<void>;
+  removeTemplate(templateId: string): Promise<void>;
+  reorderTemplates(orderedIds: string[]): Promise<void>;
+  upsertTemplateIngredient(templateId: string, ingredient: UpsertTemplateIngredient): Promise<void>;
+  removeTemplateIngredient(templateId: string, ingredientId: string): Promise<void>;
+  addTemplateIngredientFromDatabase(
+    templateId: string,
+    input: AddIngredientFromDatabase,
+  ): Promise<void>;
   addIngredientFromDatabase(
     dayId: string,
     mealId: string,
@@ -66,6 +80,7 @@ const Ctx = createContext<Store | null>(null);
 export function StateProvider({ children }: PropsWithChildren) {
   const { getToken, isSignedIn } = useAuth();
   const [days, setDays] = useState<DailyMealLog[]>([]);
+  const [templates, setTemplates] = useState<MealTemplate[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,13 +100,18 @@ export function StateProvider({ children }: PropsWithChildren) {
       try {
         const token = await getToken();
         if (!token || cancelled) return;
-        const [{ days: d }, p] = await Promise.all([api.days.list(token), api.profile.get(token)]);
+        const [{ days: d }, p, { templates: t }] = await Promise.all([
+          api.days.list(token),
+          api.profile.get(token),
+          api.mealTemplates.list(token),
+        ]);
         if (!cancelled) {
           setDays((prev) => {
             const loadedIds = new Set(d.map((day) => day.id));
             return [...d, ...prev.filter((day) => !loadedIds.has(day.id))];
           });
           setProfile(p);
+          setTemplates(t);
         }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load data');
@@ -135,12 +155,15 @@ export function StateProvider({ children }: PropsWithChildren) {
 
   const store: Store = {
     days,
+    templates,
     profile,
     loading,
     error,
     ensureDayLoaded,
 
-    async addDay(date, { targetCalories, targetFat, targetCarbs, targetProtein, mealCountTarget }) {
+    async addDay(date, { targetCalories, targetFat, targetCarbs, targetProtein }) {
+      // mealCountTarget is derived server-side from the copied templates, so the
+      // client no longer supplies it (issue #41).
       const day = await withToken((t) =>
         api.days.create(t, {
           date,
@@ -148,7 +171,7 @@ export function StateProvider({ children }: PropsWithChildren) {
           targetFat,
           targetCarbs,
           targetProtein,
-          mealCountTarget,
+          mealCountTarget: 0,
         }),
       );
       setDays((prev) => [day, ...prev]);
@@ -191,6 +214,17 @@ export function StateProvider({ children }: PropsWithChildren) {
       );
     },
 
+    async logMeal(dayId, mealId) {
+      const updated = await withToken((t) => api.meals.setLogged(t, dayId, mealId, true));
+      setDays((prev) =>
+        prev.map((d) =>
+          d.id === dayId
+            ? { ...d, meals: d.meals.map((m) => (m.id === mealId ? { ...m, ...updated } : m)) }
+            : d,
+        ),
+      );
+    },
+
     async upsertIngredient(dayId, mealId, ingredient) {
       const updated = await withToken((t) => api.ingredients.upsert(t, dayId, mealId, ingredient));
       setDays((prev) =>
@@ -202,6 +236,8 @@ export function StateProvider({ children }: PropsWithChildren) {
                   m.id === mealId
                     ? {
                         ...m,
+                        // Editing an ingredient auto-logs a copied meal (R30).
+                        logged: m.origin === 'template' ? true : m.logged,
                         ingredients: m.ingredients.some((i) => i.id === ingredient.id)
                           ? m.ingredients.map((i) => (i.id === ingredient.id ? updated : i))
                           : [...m.ingredients, updated],
@@ -221,11 +257,17 @@ export function StateProvider({ children }: PropsWithChildren) {
           d.id === dayId
             ? {
                 ...d,
-                meals: d.meals.map((m) =>
-                  m.id === mealId
-                    ? { ...m, ingredients: m.ingredients.filter((i) => i.id !== ingredientId) }
-                    : m,
-                ),
+                meals: d.meals.map((m) => {
+                  if (m.id !== mealId) return m;
+                  const ingredients = m.ingredients.filter((i) => i.id !== ingredientId);
+                  return {
+                    ...m,
+                    // Removing the last ingredient returns a copied meal to
+                    // unlogged (R31).
+                    logged: m.origin === 'template' && ingredients.length === 0 ? false : m.logged,
+                    ingredients,
+                  };
+                }),
               }
             : d,
         ),
@@ -245,6 +287,9 @@ export function StateProvider({ children }: PropsWithChildren) {
                   m.id === mealId
                     ? {
                         ...m,
+                        // Adding an ingredient (incl. from the database) auto-logs
+                        // a copied meal, mirroring the server (R30).
+                        logged: m.origin === 'template' ? true : m.logged,
                         ingredients: m.ingredients.some((i) => i.id === ingredient.id)
                           ? m.ingredients.map((i) => (i.id === ingredient.id ? ingredient : i))
                           : [...m.ingredients, ingredient],
@@ -277,6 +322,84 @@ export function StateProvider({ children }: PropsWithChildren) {
       // day. Refetch profile to reflect (or skip) that change rather than guessing locally.
       const refreshed = await withToken((t) => api.profile.get(t));
       setProfile(refreshed);
+    },
+
+    async addTemplate(name) {
+      const template = await withToken((t) => api.mealTemplates.create(t, { name }));
+      setTemplates((prev) => [...prev, template]);
+      return template;
+    },
+
+    async renameTemplate(templateId, name) {
+      const updated = await withToken((t) => api.mealTemplates.rename(t, templateId, name));
+      setTemplates((prev) => prev.map((tpl) => (tpl.id === templateId ? updated : tpl)));
+    },
+
+    async removeTemplate(templateId) {
+      await withToken((t) => api.mealTemplates.delete(t, templateId));
+      setTemplates((prev) => prev.filter((tpl) => tpl.id !== templateId));
+    },
+
+    async reorderTemplates(orderedIds) {
+      // Optimistically reorder locally, then reconcile with the server result.
+      setTemplates((prev) => {
+        const byId = new Map(prev.map((tpl) => [tpl.id, tpl]));
+        const reordered = orderedIds
+          .map((id) => byId.get(id))
+          .filter((tpl): tpl is MealTemplate => tpl != null);
+        return reordered.length === prev.length ? reordered : prev;
+      });
+      const { templates: updated } = await withToken((t) =>
+        api.mealTemplates.reorder(t, orderedIds),
+      );
+      setTemplates(updated);
+    },
+
+    async upsertTemplateIngredient(templateId, ingredient) {
+      const updated = await withToken((t) =>
+        api.mealTemplates.upsertIngredient(t, templateId, ingredient),
+      );
+      setTemplates((prev) =>
+        prev.map((tpl) =>
+          tpl.id === templateId
+            ? {
+                ...tpl,
+                ingredients: tpl.ingredients.some((i) => i.id === ingredient.id)
+                  ? tpl.ingredients.map((i) => (i.id === ingredient.id ? updated : i))
+                  : [...tpl.ingredients, updated],
+              }
+            : tpl,
+        ),
+      );
+    },
+
+    async removeTemplateIngredient(templateId, ingredientId) {
+      await withToken((t) => api.mealTemplates.deleteIngredient(t, templateId, ingredientId));
+      setTemplates((prev) =>
+        prev.map((tpl) =>
+          tpl.id === templateId
+            ? { ...tpl, ingredients: tpl.ingredients.filter((i) => i.id !== ingredientId) }
+            : tpl,
+        ),
+      );
+    },
+
+    async addTemplateIngredientFromDatabase(templateId, input) {
+      const created = await withToken((t) =>
+        api.mealTemplates.addIngredientFromDatabase(t, templateId, input),
+      );
+      setTemplates((prev) =>
+        prev.map((tpl) =>
+          tpl.id === templateId
+            ? {
+                ...tpl,
+                ingredients: tpl.ingredients.some((i) => i.id === created.id)
+                  ? tpl.ingredients.map((i) => (i.id === created.id ? created : i))
+                  : [...tpl.ingredients, created],
+              }
+            : tpl,
+        ),
+      );
     },
 
     patchProfileLocal(data) {

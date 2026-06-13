@@ -19,6 +19,10 @@ export const userProfiles = sqliteTable('user_profiles', {
   macroProtein: integer('macro_protein').notNull().default(40),
   goalWeightLbs: real('goal_weight_lbs'),
   goalBodyFatPct: real('goal_body_fat_pct'),
+  // Set once the user's default meal templates have been seeded. Distinguishes
+  // "never seeded" (seed Breakfast/Lunch/Dinner/Snack) from "deliberately empty"
+  // (user deleted all templates) so we never re-seed. See issue #41.
+  mealTemplatesSeededAt: text('meal_templates_seeded_at'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
@@ -49,6 +53,13 @@ export const meals = sqliteTable('meals', {
     .notNull()
     .references(() => dailyMealLogs.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
+  // Meals copied from a template are fixed in structure and gated by `logged`;
+  // ad-hoc meals are freeform. Existing rows default to 'adhoc'/false so
+  // pre-feature days behave exactly as before. See issue #41.
+  origin: text('origin', { enum: ['template', 'adhoc'] })
+    .notNull()
+    .default('adhoc'),
+  logged: integer('logged', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
@@ -67,6 +78,56 @@ export const ingredients = sqliteTable('ingredients', {
   fiber: real('fiber').notNull().default(0),
   protein: real('protein').notNull().default(0),
   // Extended optional fields
+  unsaturatedFat: real('unsaturated_fat'),
+  monounsaturatedFat: real('monounsaturated_fat'),
+  polyunsaturatedFat: real('polyunsaturated_fat'),
+  transFat: real('trans_fat'),
+  sugar: real('sugar'),
+  sugarAlcohol: real('sugar_alcohol'),
+  allulose: real('allulose'),
+  alcohol: real('alcohol'),
+  calorieSource: text('calorie_source', { enum: ['explicit', 'estimated'] })
+    .notNull()
+    .default('estimated'),
+  estimatedCalories: real('estimated_calories').notNull().default(0),
+  micronutrientsJson: text('micronutrients_json'),
+  sourceDatabaseIngredientId: text('source_database_ingredient_id'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+// User-level meal templates copied into each new day (issue #41).
+export const mealTemplates = sqliteTable(
+  'meal_templates',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => userProfiles.clerkUserId),
+    name: text('name').notNull(),
+    position: integer('position').notNull().default(0),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => [index('meal_templates_user_idx').on(table.userId)],
+);
+
+// Default ingredients on a meal template. Mirrors `ingredients` minus mealId,
+// keyed to a template instead. Copied (as a snapshot) into a meal's ingredients
+// when a day is created.
+export const mealTemplateIngredients = sqliteTable('meal_template_ingredients', {
+  id: text('id').primaryKey(),
+  templateId: text('template_id')
+    .notNull()
+    .references(() => mealTemplates.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  weight: real('weight').notNull().default(0),
+  calories: real('calories').notNull().default(0),
+  fat: real('fat').notNull().default(0),
+  saturatedFat: real('saturated_fat').notNull().default(0),
+  carbs: real('carbs').notNull().default(0),
+  fiber: real('fiber').notNull().default(0),
+  protein: real('protein').notNull().default(0),
   unsaturatedFat: real('unsaturated_fat'),
   monounsaturatedFat: real('monounsaturated_fat'),
   polyunsaturatedFat: real('polyunsaturated_fat'),

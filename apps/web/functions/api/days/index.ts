@@ -1,6 +1,7 @@
 import { createDayRepository } from '@leanlog/data-d1';
 import { CreateDailyMealLogSchema } from '@leanlog/data-access';
 import type { Env } from '../_env';
+import { isPastDate } from '../_dayGuard';
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const userId = (context.data as Record<string, string>).userId;
@@ -20,6 +21,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const parsed = CreateDailyMealLogSchema.safeParse(body);
   if (!parsed.success) {
     return new Response(JSON.stringify(parsed.error.flatten()), { status: 400 });
+  }
+  // Days may only be created for today or a future local date (R9).
+  if (isPastDate(parsed.data.date, context.request)) {
+    return new Response('Cannot create a day in the past', { status: 409 });
   }
   const repo = createDayRepository(context.env.DB);
   try {

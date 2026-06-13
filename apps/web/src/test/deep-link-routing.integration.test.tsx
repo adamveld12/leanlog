@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
 import { api, ApiError } from '../api';
 import { StateProvider } from '../state';
+import { todayIso } from '../lib';
 import type { DailyMealLog } from '@leanlog/data-access';
 
 vi.mock('react-chartjs-2', () => ({ Line: () => null }));
@@ -41,7 +42,8 @@ function makeDay(): DailyMealLog {
   return {
     id: 'd1',
     userId: 'user_test',
-    date: '2026-05-26',
+    // Today's date keeps the meal editable (past days are read-only).
+    date: todayIso(),
     targetCalories: 2700,
     targetFat: 75,
     targetCarbs: 236,
@@ -52,6 +54,8 @@ function makeDay(): DailyMealLog {
       {
         id: 'm1',
         dailyMealLogId: 'd1',
+        origin: 'adhoc' as const,
+        logged: false,
         name: 'BREAKFAST',
         createdAt: now,
         updatedAt: now,

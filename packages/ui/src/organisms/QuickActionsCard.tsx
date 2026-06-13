@@ -26,7 +26,7 @@ export function QuickActionsCard({
     <AnalyticsScope properties={{ organism: 'QuickActionsCard' }}>
       <SectionCard title="Quick Actions">
         <Button onClick={onAction} className="w-full">
-          + {hasToday ? 'Add Meal' : 'Start Today'}
+          Log a meal
         </Button>
 
         {!hasDays ? (
