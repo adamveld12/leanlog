@@ -89,7 +89,7 @@ Button, Card, Checkbox, Field, FileInput, HelperText, Input, IntegerInput, Label
 
 ActionRow, DateSelect3, ListRow, LoadingState, MacroProgressBlock, MacroSummaryLine, Modal, RadioGroup, SectionCard, StatMetric, StickyFooter, Tabs
 
-### Organisms (17)
+### Organisms (16)
 
 AppPageHeading, AuthLanding, DailyTotalsCard, DayWeightCard, IngredientEntryCard, LabelScanCard, ListSectionCard, MonthCalendarCard, NutritionDatabaseEntryCard, NutritionDatabaseSearchCard, PageNavHeading, ProfileSectionCards, QuickActionsCard, ScanReviewModal, WeeklyStatsCard, WeightTrendCard
 
