@@ -12,7 +12,12 @@ import type {
   NutritionDatabaseIngredientSearchResult,
   CreateNutritionDatabaseIngredient,
   AddIngredientFromDatabase,
+  MealTemplate,
+  MealTemplateIngredient,
+  CreateMealTemplate,
+  UpsertTemplateIngredient,
 } from '@leanlog/data-access';
+import { todayIso } from './lib';
 
 type ApiErrorKind = 'http' | 'invalid-payload' | 'network';
 type ApiPayloadReason = 'Empty body' | 'Malformed JSON' | 'Not JSON';
@@ -89,6 +94,9 @@ function requestMethod(opts: RequestInit): string {
 function requestHeaders(token: string, fetchOpts: RequestInit): Headers {
   const headers = new Headers(fetchOpts.headers);
   headers.set('Authorization', `Bearer ${token}`);
+  // Assert the client's local calendar date so the server can enforce the
+  // today/future/past boundary in the user's timezone (issue #41).
+  headers.set('X-Leanlog-Local-Date', todayIso());
   if (typeof fetchOpts.body === 'string' && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
@@ -227,6 +235,12 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ name }),
       }),
+    setLogged: (token: string, dayId: string, mealId: string, logged: boolean) =>
+      apiFetch<Meal>(`/api/days/${dayId}/meals/${mealId}`, {
+        token,
+        method: 'PATCH',
+        body: JSON.stringify({ logged }),
+      }),
     delete: (token: string, dayId: string, mealId: string) =>
       apiFetch<void>(`/api/days/${dayId}/meals/${mealId}`, { token, method: 'DELETE' }),
   },
@@ -252,6 +266,41 @@ export const api = {
         token,
         method: 'POST',
         body: JSON.stringify(data),
+      }),
+  },
+  mealTemplates: {
+    list: (token: string) =>
+      apiFetch<{ templates: MealTemplate[] }>('/api/meal-templates', { token, method: 'GET' }),
+    create: (token: string, data: CreateMealTemplate) =>
+      apiFetch<MealTemplate>('/api/meal-templates', {
+        token,
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    rename: (token: string, templateId: string, name: string) =>
+      apiFetch<MealTemplate>(`/api/meal-templates/${templateId}`, {
+        token,
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      }),
+    delete: (token: string, templateId: string) =>
+      apiFetch<void>(`/api/meal-templates/${templateId}`, { token, method: 'DELETE' }),
+    reorder: (token: string, orderedIds: string[]) =>
+      apiFetch<{ templates: MealTemplate[] }>('/api/meal-templates/reorder', {
+        token,
+        method: 'PUT',
+        body: JSON.stringify({ orderedIds }),
+      }),
+    upsertIngredient: (token: string, templateId: string, data: UpsertTemplateIngredient) =>
+      apiFetch<MealTemplateIngredient>(`/api/meal-templates/${templateId}/ingredients`, {
+        token,
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    deleteIngredient: (token: string, templateId: string, ingredientId: string) =>
+      apiFetch<void>(`/api/meal-templates/${templateId}/ingredients/${ingredientId}`, {
+        token,
+        method: 'DELETE',
       }),
   },
   profile: {

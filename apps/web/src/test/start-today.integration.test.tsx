@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createContext, useContext, useState, type PropsWithChildren } from 'react';
 import App from '../App';
 import { todayIso } from '../lib';
-import { DEFAULT_MEAL_COUNT_TARGET } from '@leanlog/ui';
 import type { DailyMealLog, UserProfile } from '@leanlog/data-access';
 
 vi.mock('react-chartjs-2', () => ({ Line: () => null }));
@@ -38,7 +37,7 @@ function makeDay(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
     targetFat: 75,
     targetCarbs: 236,
     targetProtein: 270,
-    mealCountTarget: DEFAULT_MEAL_COUNT_TARGET,
+    mealCountTarget: 0,
     weightLbs: null,
     meals: [],
     createdAt: now,
@@ -52,7 +51,6 @@ type AddDayOpts = {
   targetFat: number;
   targetCarbs: number;
   targetProtein: number;
-  mealCountTarget: number;
 };
 
 type StoreCtx = {
@@ -102,7 +100,7 @@ function FakeStateProvider({
     addDay: async (date, opts) => {
       addDaySpy(date, opts);
       if (addDayDelay) await addDayDelay;
-      const day = makeDay({ date, mealCountTarget: opts.mealCountTarget });
+      const day = makeDay({ date });
       setDays((prev) => [day, ...prev]);
       return day;
     },
@@ -155,7 +153,7 @@ describe('Start Today', () => {
     addMealSpy.mockClear();
   });
 
-  it('creates today with the Add Day default meal count target', async () => {
+  it('creates today using the profile-derived targets', async () => {
     renderApp();
 
     await userEvent.click(screen.getByRole('button', { name: /Start Today/i }));
@@ -163,7 +161,8 @@ describe('Start Today', () => {
     expect(addDaySpy).toHaveBeenCalledTimes(1);
     const [date, opts] = addDaySpy.mock.calls[0];
     expect(date).toBe(todayIso());
-    expect(opts.mealCountTarget).toBe(DEFAULT_MEAL_COUNT_TARGET);
+    // Meal structure now comes from templates server-side, not a client target.
+    expect(opts).not.toHaveProperty('mealCountTarget');
   });
 
   it('navigates straight to the new day page', async () => {

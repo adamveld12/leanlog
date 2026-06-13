@@ -2,47 +2,47 @@ import { useState } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
-import { IntegerInput } from '../atoms/IntegerInput';
+import { WarningText } from '../atoms/WarningText';
 import { DateSelect3 } from '../molecules/DateSelect3';
 import { SectionCard } from '../molecules/SectionCard';
-
-export const DEFAULT_MEAL_COUNT_TARGET = 4;
 
 export type AddDayValue = {
   month: number;
   day: number;
   year: number;
-  totalMeals: number;
 };
-
-type DayPickerValue = Pick<AddDayValue, 'month' | 'day' | 'year'>;
 
 export type AddDayControlProps = {
   onDayAdded: (next: AddDayValue) => void;
   month?: number;
   day?: number;
   year?: number;
-  totalMeals?: number;
-  hideTotalMealsInput?: boolean;
   title?: string;
   note?: string;
   buttonLabel?: string;
   disabled?: boolean;
 };
 
+function toIso({ month, day, year }: AddDayValue): string {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function todayIso(): string {
+  const now = new Date();
+  return toIso({ month: now.getMonth() + 1, day: now.getDate(), year: now.getFullYear() });
+}
+
 export function AddDayControl({
   onDayAdded,
   month,
   day,
   year,
-  totalMeals = DEFAULT_MEAL_COUNT_TARGET,
-  hideTotalMealsInput = false,
   title = 'Add day',
-  note = 'Choose month, day, and year to create a new log day.',
+  note = 'Choose month, day, and year to create a new log day. Meals come from your templates.',
   buttonLabel = 'Add day',
   disabled = false,
 }: AddDayControlProps) {
-  const [picker, setPicker] = useState<DayPickerValue>(() => {
+  const [picker, setPicker] = useState<AddDayValue>(() => {
     const now = new Date();
     return {
       month: month ?? now.getMonth() + 1,
@@ -50,7 +50,9 @@ export function AddDayControl({
       year: year ?? now.getFullYear(),
     };
   });
-  const [totalMealsValue, setTotalMealsValue] = useState<number>(totalMeals);
+
+  // Days can only be created for today or a future local date (R9).
+  const isPast = toIso(picker) < todayIso();
 
   return (
     <AnalyticsScope properties={{ organism: 'AddDayControl' }}>
@@ -62,16 +64,8 @@ export function AddDayControl({
           year={picker.year}
           onChange={setPicker}
         />
-        {hideTotalMealsInput ? null : (
-          <div>
-            <HelperText>Total meals for the day</HelperText>
-            <IntegerInput min={0} step={1} value={totalMealsValue} onChange={setTotalMealsValue} />
-          </div>
-        )}
-        <Button
-          disabled={disabled}
-          onClick={() => onDayAdded({ ...picker, totalMeals: totalMealsValue })}
-        >
+        {isPast ? <WarningText>You can only create days for today or later.</WarningText> : null}
+        <Button disabled={disabled || isPast} onClick={() => onDayAdded(picker)}>
           {buttonLabel}
         </Button>
       </SectionCard>

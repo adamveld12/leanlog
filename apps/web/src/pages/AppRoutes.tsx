@@ -16,7 +16,6 @@ import {
   CalorieTargetCard,
   cn,
   DailyTotalsCard,
-  DEFAULT_MEAL_COUNT_TARGET,
   DayDetailTemplate,
   ErrorTemplate,
   DayListTemplate,
@@ -36,7 +35,6 @@ import {
   MonthCalendarCard,
   NutritionDatabaseEntryCard,
   NutritionDatabaseSearchCard,
-  NumberInput,
   ProfileTemplate,
   QuickActionsCard,
   recipes,
@@ -54,9 +52,14 @@ import type {
   NutritionDatabaseEntryValue,
   NutritionDatabaseSearchResult,
 } from '@leanlog/ui';
-import { caloriesFromMode, dayTargetsFromProfile, estimateCalories } from '@leanlog/data-access';
+import {
+  caloriesFromMode,
+  dayTargetsFromProfile,
+  dayMealStructure,
+  estimateCalories,
+} from '@leanlog/data-access';
 import type { ScanResolution } from '@leanlog/data-access';
-import { normalizeIngredientName, prettyDate, round1, todayIso } from '../lib';
+import { isPastIso, normalizeIngredientName, prettyDate, todayIso } from '../lib';
 import {
   dayTotals,
   mealTotals,
@@ -272,10 +275,7 @@ function DayList() {
     creatingRef.current = true;
     try {
       const targets = dayTargetsFromProfile(profile);
-      const day = await addDay(todayIso(), {
-        ...targets,
-        mealCountTarget: DEFAULT_MEAL_COUNT_TARGET,
-      });
+      const day = await addDay(todayIso(), targets);
       nav(`/track/day/${day.id}`);
     } finally {
       creatingRef.current = false;
@@ -372,11 +372,11 @@ function DayList() {
         />
       }
       addDay={{
-        onDayAdded: ({ month, day, year, totalMeals }) => {
+        onDayAdded: ({ month, day, year }) => {
           const toIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           if (!profile) return;
           const targets = dayTargetsFromProfile(profile);
-          addDay(toIso, { ...targets, mealCountTarget: totalMeals })
+          addDay(toIso, targets)
             .then((created) => nav(`/track/day/${created.id}`))
             .catch(() => {});
         },
@@ -388,12 +388,17 @@ function DayList() {
 function DayDetail() {
   const { dayId } = useParams();
   const nav = useNavigate();
-  const { days, profile, ensureDayLoaded, addMeal, removeMeal, updateDayTargets, updateDayWeight } =
-    useStore();
+  const {
+    days,
+    profile,
+    ensureDayLoaded,
+    addMeal,
+    removeMeal,
+    logMeal,
+    updateDayTargets,
+    updateDayWeight,
+  } = useStore();
   const { saved, markDirty, markSaved } = useSavedSections();
-  const [isEditingMealTarget, setIsEditingMealTarget] = useState(false);
-  const [draftMealCountTarget, setDraftMealCountTarget] = useState(0);
-  const [confirmMealTargetUpdate, setConfirmMealTargetUpdate] = useState(false);
   const [savingWeight, setSavingWeight] = useState(false);
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
     dayId: dayId ?? '',
@@ -426,6 +431,11 @@ function DayDetail() {
   if (routeStatus === 'error') return <RouteErrorState message={routeLoad.error} />;
   if (!day) return <RouteLoadingState title="Loading day…" />;
   const totals = dayTotals(day);
+  const structure = dayMealStructure(day);
+  // A day is template-backed when it has copied meals; only such days have a
+  // fixed structure and per-meal logging. Ad-hoc days keep freeform meals.
+  const isTemplateBacked = structure.kind === 'template';
+  const isPast = isPastIso(day.date);
 
   return (
     <DayDetailTemplate
@@ -437,19 +447,21 @@ function DayDetail() {
         rightContent: <HeaderAuthControl />,
       }}
       weightSection={
-        <DayWeightCard
-          key={day.id}
-          saved={saved.dayWeight}
-          saving={savingWeight}
-          weightLbs={day.weightLbs}
-          onSave={(next) => {
-            markDirty('dayWeight');
-            setSavingWeight(true);
-            void updateDayWeight(day.id, next)
-              .then(() => markSaved('dayWeight'))
-              .finally(() => setSavingWeight(false));
-          }}
-        />
+        isPast ? undefined : (
+          <DayWeightCard
+            key={day.id}
+            saved={saved.dayWeight}
+            saving={savingWeight}
+            weightLbs={day.weightLbs}
+            onSave={(next) => {
+              markDirty('dayWeight');
+              setSavingWeight(true);
+              void updateDayWeight(day.id, next)
+                .then(() => markSaved('dayWeight'))
+                .finally(() => setSavingWeight(false));
+            }}
+          />
+        )
       }
       totalsSection={
         <DailyTotalsCard
@@ -460,17 +472,23 @@ function DayDetail() {
           carbs={totals.carbs}
           fiber={totals.fiber}
           macroTargets={{ fat: day.targetFat, carbs: day.targetCarbs, protein: day.targetProtein }}
-          onUpdateTargets={() => {
-            if (!profile) return;
-            const nextTargets = dayTargetsFromProfile(profile);
-            void updateDayTargets(day.id, nextTargets);
-          }}
+          onUpdateTargets={
+            isPast
+              ? undefined
+              : () => {
+                  if (!profile) return;
+                  const nextTargets = dayTargetsFromProfile(profile);
+                  void updateDayTargets(day.id, nextTargets);
+                }
+          }
         />
       }
-      mealsTitle={`Meals ${day.meals.length} / ${day.mealCountTarget}`}
-      mealsEmptyText="No meals yet. Add one below."
+      mealsTitle={`Meals ${structure.mealsTracked} / ${structure.mealsExpected}`}
+      mealsEmptyText={isPast ? 'No meals were logged this day.' : 'No meals yet. Add one below.'}
       mealsItems={day.meals.map((m) => {
         const mTotals = mealTotals(m);
+        const isTemplateMeal = m.origin === 'template';
+        const canLog = isTemplateMeal && !m.logged && m.ingredients.length > 0 && !isPast;
         return {
           id: m.id,
           title: m.name || 'Meal',
@@ -482,67 +500,45 @@ function DayDetail() {
               fat={mTotals.fat}
             />
           ),
+          // Logged copied meals show a confirmation; unlogged ones read "Not logged".
+          rightMetric: isTemplateMeal ? (
+            <HelperText>{m.logged ? '✓ Logged' : 'Not logged'}</HelperText>
+          ) : undefined,
+          actions: canLog ? (
+            <Button
+              size="sm"
+              className="min-w-[72px] shrink-0 px-3"
+              onClick={(e) => {
+                e.stopPropagation();
+                void logMeal(day.id, m.id);
+              }}
+            >
+              Log
+            </Button>
+          ) : undefined,
           onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
-          onDelete: () => void removeMeal(day.id, m.id),
+          // Copied template meals cannot be deleted (R19); ad-hoc meals can,
+          // unless the day is in the past (R22).
+          onDelete: isTemplateMeal || isPast ? undefined : () => void removeMeal(day.id, m.id),
           deleteLabel: 'Delete meal',
         };
       })}
       mealsControls={
-        <div className={cn(recipes.stack.sm, 'mb-5')}>
-          <Button
-            className="w-full"
-            variant="secondary"
-            onClick={() => {
-              if (isEditingMealTarget) {
-                setDraftMealCountTarget(day.mealCountTarget);
-                setConfirmMealTargetUpdate(false);
-              }
-              setIsEditingMealTarget((v) => !v);
-            }}
-          >
-            ✎ Edit meal target
-          </Button>
-          {isEditingMealTarget ? (
-            <div className={recipes.stack.row}>
-              <NumberInput
-                label="Meal count target"
-                value={draftMealCountTarget}
-                onChange={(n) => setDraftMealCountTarget(Math.max(0, n ?? 0))}
-                onBlur={() => setDraftMealCountTarget((n) => round1(Math.max(0, n)))}
-              />
-              <Button
-                variant={confirmMealTargetUpdate ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => {
-                  const next = !confirmMealTargetUpdate;
-                  setConfirmMealTargetUpdate(next);
-                  if (next) {
-                    void updateDayTargets(day.id, {
-                      targetCalories: day.targetCalories,
-                      targetFat: day.targetFat,
-                      targetCarbs: day.targetCarbs,
-                      targetProtein: day.targetProtein,
-                      mealCountTarget: draftMealCountTarget,
-                    });
-                    setIsEditingMealTarget(false);
-                    setConfirmMealTargetUpdate(false);
-                  }
-                }}
-              >
-                {confirmMealTargetUpdate ? 'Confirmed' : '☐ Confirm'}
-              </Button>
-            </div>
-          ) : null}
-          <Button
-            className="w-full"
-            onClick={async () => {
-              const meal = await addMeal(day.id, '');
-              if (meal) nav(`/track/day/${day.id}/meal/${meal.id}`);
-            }}
-          >
-            Add meal
-          </Button>
-        </div>
+        // Ad-hoc meals can only be added to zero-template days, and never to a
+        // past day (R34/R36/R22).
+        isTemplateBacked || isPast ? undefined : (
+          <div className={cn(recipes.stack.sm, 'mb-5')}>
+            <Button
+              className="w-full"
+              onClick={async () => {
+                const meal = await addMeal(day.id, '');
+                if (meal) nav(`/track/day/${day.id}/meal/${meal.id}`);
+              }}
+            >
+              Add meal
+            </Button>
+          </div>
+        )
       }
     />
   );
