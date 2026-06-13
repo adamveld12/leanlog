@@ -39,7 +39,6 @@ const meta: Meta<typeof DayListTemplate> = {
         </a>
       ),
     },
-    addDay: { onDayAdded: () => undefined },
     quickActions: <QuickActionsCard hasToday={false} hasDays={false} onAction={() => {}} />,
     statistics: (
       <WeeklyStatsCard
@@ -53,6 +52,7 @@ const meta: Meta<typeof DayListTemplate> = {
       <MonthCalendarCard
         trackedDates={new Map()}
         onSelectDay={() => {}}
+        onCreateDay={() => {}}
         emptyHint="Start logging to fill in your calendar!"
       />
     ),

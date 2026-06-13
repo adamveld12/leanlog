@@ -45,3 +45,12 @@ export const ZeroDays: Story = {
     emptyHint: 'Start logging to fill in your calendar!',
   },
 };
+
+// With onCreateDay supplied, today and future days become tappable to create a
+// new day, and the calendar can page into upcoming months.
+export const CreatableDays: Story = {
+  args: {
+    trackedDates: trackedMap(now.getFullYear(), now.getMonth(), [1, 2, 3]),
+    onCreateDay: () => {},
+  },
+};

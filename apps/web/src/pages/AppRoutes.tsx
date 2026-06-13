@@ -198,22 +198,31 @@ function DayList() {
   const hasDays = days.length > 0;
   const creatingRef = useRef(false);
 
+  // Create a day for the given ISO date (copying templates) and open it. Shared
+  // by the "Log a meal" quick action and the calendar's tap-to-create.
+  const createAndOpenDay = useCallback(
+    async (iso: string) => {
+      if (!profile || creatingRef.current) return;
+      creatingRef.current = true;
+      try {
+        const targets = dayTargetsFromProfile(profile);
+        const day = await addDay(iso, targets);
+        nav(`/track/day/${day.id}`);
+      } finally {
+        creatingRef.current = false;
+      }
+    },
+    [profile, addDay, nav],
+  );
+
   async function handleAction() {
-    if (!profile || creatingRef.current) return;
-    // Log a meal: go to today's day so the user can log their template meals.
+    if (!profile) return;
+    // Log a meal: open today's day (creating it from templates if it's missing).
     if (today) {
       nav(`/track/day/${today.id}`);
       return;
     }
-    // No day for today yet — create it (copies templates), then open it.
-    creatingRef.current = true;
-    try {
-      const targets = dayTargetsFromProfile(profile);
-      const day = await addDay(todayIso(), targets);
-      nav(`/track/day/${day.id}`);
-    } finally {
-      creatingRef.current = false;
-    }
+    await createAndOpenDay(todayIso());
   }
 
   if (loading) return <PageLoadingState label="Loading your days…" />;
@@ -302,19 +311,10 @@ function DayList() {
         <MonthCalendarCard
           trackedDates={dateMap}
           onSelectDay={selectDay}
+          onCreateDay={(iso) => void createAndOpenDay(iso)}
           emptyHint={!hasDays ? 'Start logging to fill in your calendar!' : undefined}
         />
       }
-      addDay={{
-        onDayAdded: ({ month, day, year }) => {
-          const toIso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          if (!profile) return;
-          const targets = dayTargetsFromProfile(profile);
-          addDay(toIso, targets)
-            .then((created) => nav(`/track/day/${created.id}`))
-            .catch(() => {});
-        },
-      }}
       templatesLink={
         <SectionCard title="Meal templates">
           <HelperText as="p">

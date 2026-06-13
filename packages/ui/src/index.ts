@@ -36,7 +36,6 @@ export * from './molecules/MacroProgressBlock';
 export * from './molecules/StatMetric';
 export * from './molecules/StickyFooter';
 export * from './molecules/Tabs';
-export * from './organisms/AddDayControl';
 export * from './organisms/AuthLanding';
 export * from './organisms/IngredientEntryCard';
 export * from './organisms/LabelScanCard';

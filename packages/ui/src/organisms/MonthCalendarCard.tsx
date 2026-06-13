@@ -21,6 +21,9 @@ type CalendarDay = {
 export type MonthCalendarCardProps = {
   trackedDates: Map<string, string>; // ISO 'yyyy-MM-dd' -> dayId
   onSelectDay: (dayId: string) => void;
+  /** Tapping an untracked today/future day creates it. When omitted, those days
+   *  stay disabled (view-only calendar). */
+  onCreateDay?: (isoDate: string) => void;
   emptyHint?: string;
   initialMonth?: { year: number; month: number };
 };
@@ -42,6 +45,7 @@ function buildCalendarDays(
   month: number,
   now: Date,
   onSelectDay: (dayId: string) => void,
+  onCreateDay?: (isoDate: string) => void,
 ): CalendarDay[] {
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
@@ -77,15 +81,18 @@ function buildCalendarDays(
     const isToday = dateStr === todayStr;
     const isFuture = new Date(year, month, d) > now;
     const dayId = trackedDates.get(dateStr);
+    const status: CalendarDay['status'] =
+      isFuture || isToday ? (dayId ? 'tracked' : 'future') : dayId ? 'tracked' : 'missed';
 
-    cells.push({
-      date: dateStr,
-      dayOfMonth: d,
-      isToday,
-      isFuture,
-      status: isFuture || isToday ? (dayId ? 'tracked' : 'future') : dayId ? 'tracked' : 'missed',
-      onTap: dayId ? () => onSelectDay(dayId) : undefined,
-    });
+    // Tracked days open; untracked today/future days create-then-open (when a
+    // create handler is supplied); past untracked days stay inert (R9).
+    const onTap = dayId
+      ? () => onSelectDay(dayId)
+      : status === 'future' && onCreateDay
+        ? () => onCreateDay(dateStr)
+        : undefined;
+
+    cells.push({ date: dateStr, dayOfMonth: d, isToday, isFuture, status, onTap });
   }
 
   return cells;
@@ -94,6 +101,7 @@ function buildCalendarDays(
 export function MonthCalendarCard({
   trackedDates,
   onSelectDay,
+  onCreateDay,
   emptyHint,
   initialMonth,
 }: MonthCalendarCardProps) {
@@ -102,9 +110,15 @@ export function MonthCalendarCard({
     () => initialMonth ?? { year: now.getFullYear(), month: now.getMonth() },
   );
 
+  // Allow paging up to 12 months ahead so upcoming days can be pre-logged.
+  const maxMonth = useMemo(() => {
+    const ceil = new Date(now.getFullYear(), now.getMonth() + 12, 1);
+    return { year: ceil.getFullYear(), month: ceil.getMonth() };
+  }, [now]);
+
   const canGoNext =
-    viewMonth.year < now.getFullYear() ||
-    (viewMonth.year === now.getFullYear() && viewMonth.month < now.getMonth());
+    viewMonth.year < maxMonth.year ||
+    (viewMonth.year === maxMonth.year && viewMonth.month < maxMonth.month);
 
   // Lower bound: don't page back past the earliest tracked month, or at least
   // 12 months back when there's no data, so navigation can't run away forever.
@@ -124,8 +138,16 @@ export function MonthCalendarCard({
     (viewMonth.year === minMonth.year && viewMonth.month > minMonth.month);
 
   const days = useMemo(
-    () => buildCalendarDays(trackedDates, viewMonth.year, viewMonth.month, now, onSelectDay),
-    [trackedDates, viewMonth, now, onSelectDay],
+    () =>
+      buildCalendarDays(
+        trackedDates,
+        viewMonth.year,
+        viewMonth.month,
+        now,
+        onSelectDay,
+        onCreateDay,
+      ),
+    [trackedDates, viewMonth, now, onSelectDay, onCreateDay],
   );
 
   const title = formatMonthTitle(new Date(viewMonth.year, viewMonth.month, 1));
@@ -220,29 +242,34 @@ export function MonthCalendarCard({
               );
             }
 
+            const label =
+              day.status === 'tracked'
+                ? `${day.dayOfMonth}, tracked`
+                : day.status === 'missed'
+                  ? `${day.dayOfMonth}, not tracked`
+                  : day.onTap
+                    ? day.isToday
+                      ? `${day.dayOfMonth}, today, tap to log`
+                      : `${day.dayOfMonth}, tap to add a day`
+                    : day.isToday
+                      ? `${day.dayOfMonth}, today`
+                      : `${day.dayOfMonth}`;
+
             return (
               <Button
                 key={day.date}
                 type="button"
                 variant="subtle"
                 size="sm"
-                disabled={day.status !== 'tracked'}
+                disabled={!day.onTap}
                 onClick={day.onTap}
-                aria-label={
-                  day.status === 'tracked'
-                    ? `${day.dayOfMonth}, tracked`
-                    : day.status === 'missed'
-                      ? `${day.dayOfMonth}, not tracked`
-                      : day.isToday
-                        ? `${day.dayOfMonth}, today`
-                        : `${day.dayOfMonth}`
-                }
+                aria-label={label}
                 className={cn(
                   recipes.calendar.cell,
                   // Today uses the neutral strong-line ring so it stays distinct
                   // from the accent focus-visible ring (recipes.focusRing).
                   day.isToday && recipes.ring.today,
-                  day.status === 'tracked' ? 'cursor-pointer' : 'disabled:cursor-default',
+                  day.onTap ? 'cursor-pointer' : 'disabled:cursor-default',
                 )}
               >
                 {dayNumber}
@@ -250,6 +277,12 @@ export function MonthCalendarCard({
             );
           })}
         </div>
+
+        <HelperText as="p" className="text-center">
+          {onCreateDay
+            ? 'Tap a logged day to open it, or tap today or an upcoming day to start logging.'
+            : 'Tap a logged day to open it.'}
+        </HelperText>
 
         {emptyHint && (
           <HelperText as="p" className="text-center">
