@@ -1,8 +1,19 @@
 import '@testing-library/jest-dom/vitest';
 import { createElement, Fragment, type PropsWithChildren } from 'react';
-import { beforeEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import type { api as RealApi } from '../api';
+
+// Unmount the React tree after every test so renders don't leak across cases.
+afterEach(() => {
+  cleanup();
+});
 
 let signedIn = true;
+
+// Stable identity across renders. The store's load effect depends on getToken;
+// a fresh function each call would re-run it every render and hang renderHook.
+const getToken = () => Promise.resolve('test-token');
 
 vi.mock('posthog-js', () => ({
   default: {
@@ -27,7 +38,7 @@ vi.mock('@clerk/clerk-react', () => ({
   PricingTable: () => createElement('div', null, 'Pricing Table'),
   useAuth: () => ({
     isSignedIn: signedIn,
-    getToken: () => Promise.resolve('test-token'),
+    getToken,
   }),
   useUser: () => ({
     isSignedIn: signedIn,
@@ -51,6 +62,9 @@ class MockApiError extends Error {
   }
 }
 
+// `satisfies typeof RealApi` makes TypeScript fail this mock the moment a new
+// method is added to the real api but not mirrored here — instead of unrelated
+// tests blowing up at runtime with a confusing "undefined is not a function".
 vi.mock('../api', () => ({
   ApiError: MockApiError,
   api: {
@@ -107,7 +121,7 @@ vi.mock('../api', () => ({
       update: vi.fn(),
     },
     scanNutrition: vi.fn(),
-  },
+  } satisfies typeof RealApi,
 }));
 
 beforeEach(() => {

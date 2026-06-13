@@ -91,7 +91,7 @@ ActionRow, DateSelect3, ListRow, LoadingState, MacroProgressBlock, MacroSummaryL
 
 ### Organisms (17)
 
-AddDayControl, AppPageHeading, AuthLanding, DailyTotalsCard, DayWeightCard, IngredientEntryCard, LabelScanCard, ListSectionCard, MonthCalendarCard, NutritionDatabaseEntryCard, NutritionDatabaseSearchCard, PageNavHeading, ProfileSectionCards, QuickActionsCard, ScanReviewModal, WeeklyStatsCard, WeightTrendCard
+AppPageHeading, AuthLanding, DailyTotalsCard, DayWeightCard, IngredientEntryCard, LabelScanCard, ListSectionCard, MonthCalendarCard, NutritionDatabaseEntryCard, NutritionDatabaseSearchCard, PageNavHeading, ProfileSectionCards, QuickActionsCard, ScanReviewModal, WeeklyStatsCard, WeightTrendCard
 
 ### Templates (7)
 

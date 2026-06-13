@@ -40,7 +40,8 @@ Your task is to understand the implementation & requirements and then write code
 2. Determine what code modules need to be modified and how best to implement
     - Use the `skill:tdd`
         - follow tdd principles, this skill will teach you how
-        - write failing tests first, and commit these. THEN write working code that makes them pass and commit the green tests.
+        - Tests gate on **pre-push**, not pre-commit, so commit red freely — but pre-commit still runs `tsc`, so a test referencing a not-yet-created symbol won't commit until that symbol exists (stub it, or land test+impl together). See the tdd skill's "LeanLog: committing red tests".
+    - Follow the **Backend & store conventions** and **Testing conventions** in `AGENTS.md` (D1 `d.batch` atomicity, snapshot-on-copy, optimistic-update mirroring, the `satisfies typeof api` mock, the design:audit recipe rules). Two #45 bugs came from skipping these.
     - Use the `skill:typescript-pro`
     - Use the `skill:react-best-practices`
 
@@ -53,7 +54,8 @@ Your task is to understand the implementation & requirements and then write code
 4. Build, check and iterate
     - Make logical commits as you go. Commit often
     - Use conventional commits message format
-    - commit hooks will run on each commit, so running these before committing is not necessary
+    - The pre-commit hook (tsc + eslint + `design:audit` + react-lint) runs on each commit; the pre-push hook runs `pnpm test`. No need to run these manually first — but expect the push to be blocked until the suite is green.
 
 5. Open a PR
+    - After opening, offer to watch it (`subscribe_pr_activity`) to autofix CI/review feedback.
 

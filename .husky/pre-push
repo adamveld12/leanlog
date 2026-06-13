@@ -1,0 +1,3 @@
+# Tests are gated on push, not commit: this lets you commit work-in-progress
+# (incl. failing/red tests for TDD) but blocks pushing a broken test suite.
+pnpm test
