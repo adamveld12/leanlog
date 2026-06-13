@@ -6,14 +6,20 @@ import App from '../App';
 import { api } from '../api';
 import { StateProvider } from '../state';
 import { todayIso } from '../lib';
-import type { DailyMealLog, Ingredient, MealTemplate } from '@leanlog/data-access';
+import type {
+  DailyMealLog,
+  Ingredient,
+  MealTemplate,
+  MealTemplateIngredient,
+} from '@leanlog/data-access';
 
 const now = new Date().toISOString();
 
 const apiMock = api as unknown as {
   days: { list: Mock; get: Mock };
   meals: { setLogged: Mock };
-  mealTemplates: { list: Mock; reorder: Mock };
+  mealTemplates: { list: Mock; reorder: Mock; addIngredientFromDatabase: Mock };
+  nutritionDatabase: { search: Mock };
 };
 
 function template(id: string, name: string, position: number): MealTemplate {
@@ -141,5 +147,97 @@ describe('meal templates', () => {
 
     expect(await screen.findByText('Not logged')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Log' })).not.toBeInTheDocument();
+  });
+
+  it('adds an ingredient from the database via the template editor Database tab', async () => {
+    const dbResult = {
+      id: 'db1',
+      name: 'CHICKEN BREAST',
+      servingAmount: 100,
+      fat: 3,
+      carbs: 0,
+      protein: 31,
+      fiber: 0,
+      calories: 165,
+      addedByUserId: 'user_test',
+      addedByName: 'Test User',
+      creationSource: 'manual',
+      saturatedFat: null,
+      unsaturatedFat: null,
+      monounsaturatedFat: null,
+      polyunsaturatedFat: null,
+      transFat: null,
+      sugar: null,
+      micronutrients: null,
+      createdAt: new Date('2025-01-15').toISOString(),
+      updatedAt: new Date('2025-01-15').toISOString(),
+    };
+    const created: MealTemplateIngredient = {
+      id: 'ti1',
+      templateId: 't1',
+      name: 'CHICKEN BREAST',
+      weight: 150,
+      calories: 248,
+      fat: 5,
+      saturatedFat: 0,
+      carbs: 0,
+      fiber: 0,
+      protein: 47,
+      unsaturatedFat: null,
+      monounsaturatedFat: null,
+      polyunsaturatedFat: null,
+      transFat: null,
+      sugar: null,
+      sugarAlcohol: null,
+      allulose: null,
+      alcohol: null,
+      calorieSource: 'explicit',
+      estimatedCalories: 248,
+      micronutrients: null,
+      sourceDatabaseIngredientId: 'db1',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    apiMock.days.list.mockResolvedValue({ days: [] });
+    apiMock.mealTemplates.list.mockResolvedValue({
+      templates: [template('t1', 'Breakfast', 0)],
+    });
+    apiMock.nutritionDatabase.search.mockResolvedValue({ results: [dbResult], total: 1 });
+    apiMock.mealTemplates.addIngredientFromDatabase.mockResolvedValue(created);
+
+    renderApp('/track/templates/t1');
+
+    await screen.findByRole('tab', { name: 'Nutrition Database' });
+    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Database' }));
+
+    // The template editor's Database tab is search-and-add only: no create form.
+    expect(
+      screen.queryByRole('button', { name: 'Add database ingredient' }),
+    ).not.toBeInTheDocument();
+
+    const searchInput = await screen.findByPlaceholderText('e.g. Chicken breast');
+    await userEvent.type(searchInput, 'ch');
+
+    await waitFor(() => expect(screen.getByText('CHICKEN BREAST')).toBeInTheDocument(), {
+      timeout: 1000,
+    });
+
+    const amountInput = screen.getByLabelText('Amount (g/ml)');
+    await userEvent.clear(amountInput);
+    await userEvent.type(amountInput, '150');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+
+    await waitFor(() =>
+      expect(apiMock.mealTemplates.addIngredientFromDatabase).toHaveBeenCalledWith(
+        'test-token',
+        't1',
+        {
+          databaseIngredientId: 'db1',
+          measuredAmount: 150,
+        },
+      ),
+    );
   });
 });

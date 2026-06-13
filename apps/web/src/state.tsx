@@ -54,6 +54,10 @@ type Store = {
   reorderTemplates(orderedIds: string[]): Promise<void>;
   upsertTemplateIngredient(templateId: string, ingredient: UpsertTemplateIngredient): Promise<void>;
   removeTemplateIngredient(templateId: string, ingredientId: string): Promise<void>;
+  addTemplateIngredientFromDatabase(
+    templateId: string,
+    input: AddIngredientFromDatabase,
+  ): Promise<void>;
   addIngredientFromDatabase(
     dayId: string,
     mealId: string,
@@ -375,6 +379,24 @@ export function StateProvider({ children }: PropsWithChildren) {
         prev.map((tpl) =>
           tpl.id === templateId
             ? { ...tpl, ingredients: tpl.ingredients.filter((i) => i.id !== ingredientId) }
+            : tpl,
+        ),
+      );
+    },
+
+    async addTemplateIngredientFromDatabase(templateId, input) {
+      const created = await withToken((t) =>
+        api.mealTemplates.addIngredientFromDatabase(t, templateId, input),
+      );
+      setTemplates((prev) =>
+        prev.map((tpl) =>
+          tpl.id === templateId
+            ? {
+                ...tpl,
+                ingredients: tpl.ingredients.some((i) => i.id === created.id)
+                  ? tpl.ingredients.map((i) => (i.id === created.id ? created : i))
+                  : [...tpl.ingredients, created],
+              }
             : tpl,
         ),
       );

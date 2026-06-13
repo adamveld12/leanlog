@@ -302,6 +302,19 @@ export const api = {
         token,
         method: 'DELETE',
       }),
+    addIngredientFromDatabase: (
+      token: string,
+      templateId: string,
+      data: AddIngredientFromDatabase,
+    ) =>
+      apiFetch<MealTemplateIngredient>(
+        `/api/meal-templates/${templateId}/ingredients/from-database`,
+        {
+          token,
+          method: 'POST',
+          body: JSON.stringify(data),
+        },
+      ),
   },
   profile: {
     get: (token: string) => apiFetch<UserProfile>('/api/profile', { token, method: 'GET' }),

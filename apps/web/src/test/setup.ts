@@ -75,6 +75,7 @@ vi.mock('../api', () => ({
       reorder: vi.fn(() => Promise.resolve({ templates: [] })),
       upsertIngredient: vi.fn(),
       deleteIngredient: vi.fn(),
+      addIngredientFromDatabase: vi.fn(),
     },
     ingredients: {
       upsert: vi.fn(),
