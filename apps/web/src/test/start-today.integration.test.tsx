@@ -146,17 +146,17 @@ function renderApp(initialDays?: DailyMealLog[], addDayDelay?: Promise<void>) {
   );
 }
 
-describe('Start Today', () => {
+describe('Log a meal quick action', () => {
   afterEach(() => {
     cleanup();
     addDaySpy.mockClear();
     addMealSpy.mockClear();
   });
 
-  it('creates today using the profile-derived targets', async () => {
+  it('creates today using the profile-derived targets when no day exists', async () => {
     renderApp();
 
-    await userEvent.click(screen.getByRole('button', { name: /Start Today/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Log a meal/i }));
 
     expect(addDaySpy).toHaveBeenCalledTimes(1);
     const [date, opts] = addDaySpy.mock.calls[0];
@@ -165,24 +165,26 @@ describe('Start Today', () => {
     expect(opts).not.toHaveProperty('mealCountTarget');
   });
 
-  it('navigates straight to the new day page', async () => {
+  it('navigates to the new day page after creating today', async () => {
     renderApp();
 
-    await userEvent.click(screen.getByRole('button', { name: /Start Today/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Log a meal/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/new-day');
     });
   });
 
-  it('adds a meal instead of a day when today already exists', async () => {
+  it("opens today's existing day without creating a day or meal", async () => {
     renderApp([makeDay({ id: 'existing-today' })]);
 
-    await userEvent.click(screen.getByRole('button', { name: /Add Meal/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Log a meal/i }));
 
     expect(addDaySpy).not.toHaveBeenCalled();
-    expect(addMealSpy).toHaveBeenCalledTimes(1);
-    expect(addMealSpy).toHaveBeenCalledWith('existing-today', '');
+    expect(addMealSpy).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/existing-today');
+    });
   });
 
   it('ignores rapid double-clicks while day creation is in flight', async () => {
@@ -192,7 +194,7 @@ describe('Start Today', () => {
     });
     renderApp(undefined, gate);
 
-    const button = screen.getByRole('button', { name: /Start Today/i });
+    const button = screen.getByRole('button', { name: /Log a meal/i });
     fireEvent.click(button);
     fireEvent.click(button);
     release();

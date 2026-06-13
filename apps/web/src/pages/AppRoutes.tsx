@@ -172,7 +172,7 @@ function LandingPage() {
 
 function DayList() {
   const nav = useNavigate();
-  const { days, profile, loading, error, addDay, addMeal } = useStore();
+  const { days, profile, loading, error, addDay } = useStore();
 
   const maintenance = useMemo(
     () => (profile ? (caloriesFromMode(profile.weightLbs, 'maintenance') ?? 0) : 0),
@@ -200,11 +200,12 @@ function DayList() {
 
   async function handleAction() {
     if (!profile || creatingRef.current) return;
+    // Log a meal: go to today's day so the user can log their template meals.
     if (today) {
-      const meal = await addMeal(today.id, '');
-      if (meal) nav(`/track/day/${today.id}/meal/${meal.id}`);
+      nav(`/track/day/${today.id}`);
       return;
     }
+    // No day for today yet — create it (copies templates), then open it.
     creatingRef.current = true;
     try {
       const targets = dayTargetsFromProfile(profile);
