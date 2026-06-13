@@ -27,6 +27,7 @@ export * from './molecules/ActionRow';
 export * from './molecules/DateSelect3';
 export * from './molecules/ListRow';
 export * from './molecules/LoadingState';
+export * from './molecules/ReorderableList';
 export * from './molecules/MacroSummaryLine';
 export * from './molecules/Modal';
 export * from './molecules/RadioGroup';

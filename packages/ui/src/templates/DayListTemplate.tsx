@@ -10,6 +10,8 @@ export type DayListTemplateProps = {
   weightTrend?: ReactNode;
   calendar: ReactNode;
   addDay: ComponentProps<typeof AddDayControl>;
+  /** Optional entry point to the meal template editor (issue #41). */
+  templatesLink?: ReactNode;
   footer?: ReactNode;
 };
 
@@ -20,6 +22,7 @@ export function DayListTemplate({
   weightTrend,
   calendar,
   addDay,
+  templatesLink,
   footer,
 }: DayListTemplateProps) {
   return (
@@ -30,6 +33,7 @@ export function DayListTemplate({
       {weightTrend}
       {calendar}
       <AddDayControl {...addDay} />
+      {templatesLink}
       {footer}
     </AppShell>
   );
