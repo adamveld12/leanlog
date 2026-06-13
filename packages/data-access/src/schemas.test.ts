@@ -285,3 +285,118 @@ describe('UpsertIngredientSchema', () => {
     expect(result.success).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Meal templates (issue #41)
+// ---------------------------------------------------------------------------
+
+import {
+  MealSchema,
+  MealTemplateSchema,
+  CreateMealTemplateSchema,
+  RenameMealTemplateSchema,
+  ReorderMealTemplatesSchema,
+  UpsertTemplateIngredientSchema,
+} from './schemas';
+
+describe('MealSchema origin/logged', () => {
+  it('defaults origin to adhoc and logged to false when omitted', () => {
+    const result = MealSchema.safeParse({
+      id: 'm1',
+      dailyMealLogId: 'd1',
+      name: 'Breakfast',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    });
+    expect(result.success).toBe(true);
+    expect(result.data!.origin).toBe('adhoc');
+    expect(result.data!.logged).toBe(false);
+  });
+
+  it('accepts template origin with logged true', () => {
+    const result = MealSchema.safeParse({
+      id: 'm1',
+      dailyMealLogId: 'd1',
+      name: 'Breakfast',
+      origin: 'template',
+      logged: true,
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    });
+    expect(result.success).toBe(true);
+    expect(result.data!.origin).toBe('template');
+  });
+});
+
+describe('MealTemplateSchema', () => {
+  const base = {
+    id: 't1',
+    userId: 'u1',
+    name: 'Breakfast',
+    position: 0,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  };
+
+  it('accepts a valid template with no ingredients', () => {
+    const result = MealTemplateSchema.safeParse(base);
+    expect(result.success).toBe(true);
+    expect(result.data!.ingredients).toEqual([]);
+  });
+
+  it('rejects a blank name', () => {
+    expect(MealTemplateSchema.safeParse({ ...base, name: '' }).success).toBe(false);
+  });
+});
+
+describe('CreateMealTemplateSchema', () => {
+  it('accepts a non-blank name', () => {
+    expect(CreateMealTemplateSchema.safeParse({ name: 'Lunch' }).success).toBe(true);
+  });
+  it('rejects a blank name', () => {
+    expect(CreateMealTemplateSchema.safeParse({ name: '' }).success).toBe(false);
+  });
+});
+
+describe('RenameMealTemplateSchema', () => {
+  it('rejects a blank name', () => {
+    expect(RenameMealTemplateSchema.safeParse({ name: '' }).success).toBe(false);
+  });
+});
+
+describe('ReorderMealTemplatesSchema', () => {
+  it('accepts an ordered id list', () => {
+    expect(ReorderMealTemplatesSchema.safeParse({ orderedIds: ['a', 'b', 'c'] }).success).toBe(
+      true,
+    );
+  });
+  it('accepts an empty list', () => {
+    expect(ReorderMealTemplatesSchema.safeParse({ orderedIds: [] }).success).toBe(true);
+  });
+});
+
+describe('UpsertTemplateIngredientSchema', () => {
+  const valid = {
+    id: 'i1',
+    templateId: 't1',
+    name: 'Eggs',
+    weight: 100,
+    fat: 10,
+    saturatedFat: 3,
+    carbs: 1,
+    fiber: 0,
+    protein: 12,
+  };
+
+  it('accepts a valid template ingredient (calories optional/nullable)', () => {
+    expect(UpsertTemplateIngredientSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('rejects invalid nutrition (negative protein)', () => {
+    expect(UpsertTemplateIngredientSchema.safeParse({ ...valid, protein: -5 }).success).toBe(false);
+  });
+
+  it('rejects a blank name (same validity as meal ingredients)', () => {
+    expect(UpsertTemplateIngredientSchema.safeParse({ ...valid, name: '' }).success).toBe(false);
+  });
+});

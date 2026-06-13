@@ -267,6 +267,8 @@ function makeDayWithMeal(ingredients: Ingredient[] = []): DailyMealLog {
       {
         id: 'm1',
         dailyMealLogId: 'd1',
+        origin: 'adhoc' as const,
+        logged: false,
         name: 'LUNCH',
         createdAt: now,
         updatedAt: now,

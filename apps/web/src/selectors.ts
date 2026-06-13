@@ -4,6 +4,8 @@ import {
   trackingCoverage,
   estimatedWeightLost,
   weightLossCertainty,
+  contributesNutrition,
+  dayMealStructure,
 } from '@leanlog/data-access';
 import { sum, todayIso } from './lib';
 
@@ -19,11 +21,14 @@ export function ingredientTotals(items: Ingredient[]) {
 }
 
 export function mealTotals(meal: Meal) {
-  return ingredientTotals(meal.ingredients);
+  // Unlogged copied meals contribute zero, even with default ingredients (R25).
+  return ingredientTotals(contributesNutrition(meal) ? meal.ingredients : []);
 }
 
 export function dayTotals(day: DailyMealLog) {
-  return ingredientTotals(day.meals.flatMap((m) => m.ingredients));
+  // Only meals that contribute (logged template meals, or any ad-hoc meal) count
+  // toward day totals (R23).
+  return ingredientTotals(day.meals.filter(contributesNutrition).flatMap((m) => m.ingredients));
 }
 
 function isoWeekStart(date: Date): Date {
@@ -128,8 +133,10 @@ export function aggregateStats(days: DailyMealLog[], maintenanceCalories: number
     totalFat += totals.fat;
     targetFat += day.targetFat;
     totalFiber += totals.fiber;
-    mealsTracked += day.meals.length;
-    mealsExpected += day.mealCountTarget;
+    // Coverage is derived per-day from its own copied/ad-hoc structure (R37–R40).
+    const structure = dayMealStructure(day);
+    mealsTracked += structure.mealsTracked;
+    mealsExpected += structure.mealsExpected;
   }
 
   const totalNetCarbs = Math.max(0, totalCarbs - totalFiber);

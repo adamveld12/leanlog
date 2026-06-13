@@ -36,6 +36,8 @@ describe('selectors', () => {
     const meal = {
       id: 'm',
       dailyMealLogId: 'd',
+      origin: 'adhoc' as const,
+      logged: false,
       name: 'X',
       createdAt: now,
       updatedAt: now,
@@ -163,6 +165,8 @@ describe('aggregateStats', () => {
     const meal = {
       id: 'm',
       dailyMealLogId: 'd',
+      origin: 'adhoc' as const,
+      logged: false,
       name: 'X',
       createdAt: now,
       updatedAt: now,
@@ -230,6 +234,8 @@ describe('aggregateStats', () => {
     const meal = {
       id: 'm',
       dailyMealLogId: 'd',
+      origin: 'adhoc' as const,
+      logged: false,
       name: 'X',
       createdAt: now,
       updatedAt: now,
@@ -273,6 +279,8 @@ describe('aggregateStats', () => {
     const highFiberMeal = {
       id: 'm',
       dailyMealLogId: 'd',
+      origin: 'adhoc' as const,
+      logged: false,
       name: 'X',
       createdAt: now,
       updatedAt: now,

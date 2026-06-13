@@ -319,3 +319,87 @@ describe('scaleNutritionDatabaseIngredient', () => {
     expect(result.name).toBe('Chicken Breast');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Meal template structure & nutrition contribution (issue #41)
+// ---------------------------------------------------------------------------
+
+import {
+  dayMealStructure,
+  contributesNutrition,
+  DEFAULT_MEAL_TEMPLATE_NAMES,
+} from './calculations';
+import type { Meal, DailyMealLog } from './models';
+
+function makeMeal(partial: Partial<Meal>): Meal {
+  return {
+    id: 'm',
+    dailyMealLogId: 'd',
+    name: 'Meal',
+    ingredients: [],
+    origin: 'adhoc',
+    logged: false,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+    ...partial,
+  };
+}
+
+function makeDay(meals: Meal[], mealCountTarget = 0): DailyMealLog {
+  return {
+    id: 'd',
+    userId: 'u',
+    date: '2026-06-11',
+    targetCalories: 2000,
+    targetFat: 60,
+    targetCarbs: 200,
+    targetProtein: 150,
+    mealCountTarget,
+    weightLbs: null,
+    meals,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  };
+}
+
+describe('DEFAULT_MEAL_TEMPLATE_NAMES', () => {
+  it('seeds Breakfast, Lunch, Dinner, Snack in order', () => {
+    expect(DEFAULT_MEAL_TEMPLATE_NAMES).toEqual(['Breakfast', 'Lunch', 'Dinner', 'Snack']);
+  });
+});
+
+describe('dayMealStructure', () => {
+  it('template-backed day: expected = copied count, tracked = logged copied count', () => {
+    const day = makeDay([
+      makeMeal({ origin: 'template', logged: true }),
+      makeMeal({ origin: 'template', logged: true }),
+      makeMeal({ origin: 'template', logged: true }),
+      makeMeal({ origin: 'template', logged: false }),
+    ]);
+    expect(dayMealStructure(day)).toEqual({ kind: 'template', mealsExpected: 4, mealsTracked: 3 });
+  });
+
+  it('legacy day (no template meals, mealCountTarget > 0): uses target vs meal count', () => {
+    const day = makeDay([makeMeal({ origin: 'adhoc' }), makeMeal({ origin: 'adhoc' })], 3);
+    expect(dayMealStructure(day)).toEqual({ kind: 'legacy', mealsExpected: 3, mealsTracked: 2 });
+  });
+
+  it('zero-template ad-hoc day: expected = tracked = ad-hoc meal count', () => {
+    const day = makeDay([makeMeal({ origin: 'adhoc' }), makeMeal({ origin: 'adhoc' })], 0);
+    expect(dayMealStructure(day)).toEqual({ kind: 'adhoc', mealsExpected: 2, mealsTracked: 2 });
+  });
+});
+
+describe('contributesNutrition', () => {
+  it('unlogged template meal does not contribute', () => {
+    expect(contributesNutrition(makeMeal({ origin: 'template', logged: false }))).toBe(false);
+  });
+
+  it('logged template meal contributes', () => {
+    expect(contributesNutrition(makeMeal({ origin: 'template', logged: true }))).toBe(true);
+  });
+
+  it('ad-hoc meal always contributes regardless of logged flag', () => {
+    expect(contributesNutrition(makeMeal({ origin: 'adhoc', logged: false }))).toBe(true);
+  });
+});

@@ -122,7 +122,32 @@ export const MealSchema = z.object({
   id: z.string(),
   dailyMealLogId: z.string(),
   name: z.string(),
+  // origin distinguishes meals copied from a template (fixed structure, logged
+  // gating) from freeform ad-hoc meals. logged controls whether a template meal
+  // contributes to day totals and tracking coverage. See issue #41.
+  origin: z.enum(['template', 'adhoc']).default('adhoc'),
+  logged: z.boolean().default(false),
   ingredients: z.array(IngredientSchema).default([]),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+// ---------------------------------------------------------------------------
+// Meal templates (user-level routine copied into each new day — issue #41)
+// ---------------------------------------------------------------------------
+
+// Template ingredients follow the exact same validity rules as meal ingredients
+// (R8), differing only in their parent reference (templateId instead of mealId).
+export const MealTemplateIngredientSchema = IngredientSchema.omit({ mealId: true }).extend({
+  templateId: z.string(),
+});
+
+export const MealTemplateSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  name: z.string().min(1),
+  position: z.number().int().min(0),
+  ingredients: z.array(MealTemplateIngredientSchema).default([]),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -172,6 +197,32 @@ export const CreateDailyMealLogSchema = DailyMealLogSchema.omit({
 // as undefined — prevents Zod 4 defaults from overwriting existing DB values on partial updates.
 export const UpdateProfileSchema = z.object(profileFields).partial();
 export const UpsertIngredientSchema = IngredientSchema.omit({
+  createdAt: true,
+  updatedAt: true,
+  calories: true,
+  calorieSource: true,
+  estimatedCalories: true,
+})
+  .extend({
+    calories: z.number().min(0).max(9999).nullable().optional(),
+  })
+  .strict();
+export const CreateMealTemplateSchema = z
+  .object({
+    name: z.string().min(1),
+  })
+  .strict();
+export const RenameMealTemplateSchema = z
+  .object({
+    name: z.string().min(1),
+  })
+  .strict();
+export const ReorderMealTemplatesSchema = z
+  .object({
+    orderedIds: z.array(z.string()),
+  })
+  .strict();
+export const UpsertTemplateIngredientSchema = MealTemplateIngredientSchema.omit({
   createdAt: true,
   updatedAt: true,
   calories: true,

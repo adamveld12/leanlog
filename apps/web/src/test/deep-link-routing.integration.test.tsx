@@ -52,6 +52,8 @@ function makeDay(): DailyMealLog {
       {
         id: 'm1',
         dailyMealLogId: 'd1',
+        origin: 'adhoc' as const,
+        logged: false,
         name: 'BREAKFAST',
         createdAt: now,
         updatedAt: now,

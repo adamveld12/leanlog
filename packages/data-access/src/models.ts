@@ -2,6 +2,12 @@ import type { z } from 'zod';
 import type {
   IngredientSchema,
   MealSchema,
+  MealTemplateSchema,
+  MealTemplateIngredientSchema,
+  CreateMealTemplateSchema,
+  RenameMealTemplateSchema,
+  ReorderMealTemplatesSchema,
+  UpsertTemplateIngredientSchema,
   DailyMealLogSchema,
   UserProfileSchema,
   CreateDailyMealLogSchema,
@@ -17,6 +23,12 @@ import type {
 
 export type Ingredient = z.infer<typeof IngredientSchema>;
 export type Meal = z.infer<typeof MealSchema>;
+export type MealTemplate = z.infer<typeof MealTemplateSchema>;
+export type MealTemplateIngredient = z.infer<typeof MealTemplateIngredientSchema>;
+export type CreateMealTemplate = z.infer<typeof CreateMealTemplateSchema>;
+export type RenameMealTemplate = z.infer<typeof RenameMealTemplateSchema>;
+export type ReorderMealTemplates = z.infer<typeof ReorderMealTemplatesSchema>;
+export type UpsertTemplateIngredient = z.infer<typeof UpsertTemplateIngredientSchema>;
 export type DailyMealLog = z.infer<typeof DailyMealLogSchema>;
 export type UserProfile = z.infer<typeof UserProfileSchema>;
 export type CreateDailyMealLog = z.infer<typeof CreateDailyMealLogSchema>;

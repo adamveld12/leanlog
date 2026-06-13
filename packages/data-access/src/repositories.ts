@@ -9,6 +9,10 @@ import type {
   DayTargets,
   NutritionDatabaseIngredient,
   CreateNutritionDatabaseIngredient,
+  MealTemplate,
+  MealTemplateIngredient,
+  CreateMealTemplate,
+  UpsertTemplateIngredient,
 } from './models';
 
 export interface DayRepository {
@@ -23,7 +27,43 @@ export interface DayRepository {
 export interface MealRepository {
   create(userId: string, dailyMealLogId: string, name: string): Promise<Meal>;
   rename(userId: string, mealId: string, name: string): Promise<Meal>;
+  setLogged(userId: string, mealId: string, logged: boolean): Promise<Meal>;
   delete(userId: string, mealId: string): Promise<void>;
+}
+
+// Thrown by MealRepository.delete when a caller tries to delete a meal copied
+// from a template — copied meals are fixed in structure (R19).
+export class TemplateMealNotDeletableError extends Error {
+  constructor(mealId: string) {
+    super(`Meal ${mealId} was copied from a template and cannot be deleted`);
+    this.name = 'TemplateMealNotDeletableError';
+  }
+}
+
+export interface MealTemplateRepository {
+  // Seeds the default templates exactly once per user (R2/R10); a no-op after
+  // the first seed, even when the user has since deleted every template (R5).
+  ensureSeeded(userId: string): Promise<void>;
+  listByUser(userId: string): Promise<MealTemplate[]>;
+  create(userId: string, data: CreateMealTemplate): Promise<MealTemplate>;
+  rename(userId: string, templateId: string, name: string): Promise<MealTemplate>;
+  delete(userId: string, templateId: string): Promise<void>;
+  reorder(userId: string, orderedIds: string[]): Promise<MealTemplate[]>;
+  upsertIngredient(
+    userId: string,
+    templateId: string,
+    data: UpsertTemplateIngredient,
+  ): Promise<MealTemplateIngredient | null>;
+  deleteIngredient(userId: string, ingredientId: string): Promise<void>;
+}
+
+// Thrown when a template would be saved with a name that is blank or duplicates
+// another of the user's templates (R4).
+export class DuplicateTemplateNameError extends Error {
+  constructor(name: string) {
+    super(`A meal template named "${name}" already exists`);
+    this.name = 'DuplicateTemplateNameError';
+  }
 }
 
 export interface IngredientRepository {
