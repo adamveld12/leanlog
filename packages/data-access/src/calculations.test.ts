@@ -388,6 +388,14 @@ describe('dayMealStructure', () => {
     const day = makeDay([makeMeal({ origin: 'adhoc' }), makeMeal({ origin: 'adhoc' })], 0);
     expect(dayMealStructure(day)).toEqual({ kind: 'adhoc', mealsExpected: 2, mealsTracked: 2 });
   });
+
+  it('empty zero-template day reports kind adhoc with 0 / 0', () => {
+    expect(dayMealStructure(makeDay([], 0))).toEqual({
+      kind: 'adhoc',
+      mealsExpected: 0,
+      mealsTracked: 0,
+    });
+  });
 });
 
 describe('contributesNutrition', () => {

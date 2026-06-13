@@ -1,6 +1,7 @@
 import { useState, type DragEvent, type ReactNode } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
+import { HelperText } from '../atoms/HelperText';
 import { Text } from '../atoms/Text';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
@@ -45,10 +46,11 @@ export function ReorderableList({ items, onReorder }: ReorderableListProps) {
 
   return (
     <AnalyticsScope properties={{ molecule: 'ReorderableList' }}>
-      <div className={recipes.stack.sm}>
+      <div role="list" className={recipes.stack.sm}>
         {items.map((item, index) => (
           <div
             key={item.id}
+            role="listitem"
             draggable
             onDragStart={() => setDragIndex(index)}
             onDragEnd={() => setDragIndex(null)}
@@ -75,13 +77,9 @@ export function ReorderableList({ items, onReorder }: ReorderableListProps) {
                 }
               }}
             >
-              <Text
-                as="span"
-                aria-hidden
-                className="cursor-grab select-none px-1 text-[var(--ll-muted)]"
-              >
+              <HelperText as="span" aria-hidden className="cursor-grab select-none px-1">
                 ⠿
-              </Text>
+              </HelperText>
               <div className={cn(recipes.stack.xs, 'min-w-0')}>
                 <Text as="span" className="font-medium">
                   {item.title}

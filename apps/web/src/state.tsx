@@ -283,6 +283,9 @@ export function StateProvider({ children }: PropsWithChildren) {
                   m.id === mealId
                     ? {
                         ...m,
+                        // Adding an ingredient (incl. from the database) auto-logs
+                        // a copied meal, mirroring the server (R30).
+                        logged: m.origin === 'template' ? true : m.logged,
                         ingredients: m.ingredients.some((i) => i.id === ingredient.id)
                           ? m.ingredients.map((i) => (i.id === ingredient.id ? ingredient : i))
                           : [...m.ingredients, ingredient],

@@ -45,6 +45,9 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
 export const onRequestDelete: PagesFunction<Env> = async (context) => {
   const userId = (context.data as Record<string, string>).userId;
   const { dayId } = context.params as { dayId: string };
+  // Intentionally NOT past-day guarded: deleting a whole day (e.g. one created
+  // by mistake) is allowed even for past dates. The read-only rules (R21/R22)
+  // cover editing a day's contents, not removing the day itself.
   const repo = createDayRepository(context.env.DB);
   await repo.delete(userId, dayId);
   return new Response(null, { status: 204 });

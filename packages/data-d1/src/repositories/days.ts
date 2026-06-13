@@ -125,25 +125,15 @@ export function createDayRepository(db: D1Database): DayRepository {
       await templateRepo.ensureSeeded(userId);
       const templates = await templateRepo.listByUser(userId);
 
-      await d.insert(dailyMealLogs).values({
-        id,
-        userId,
-        date: data.date,
-        targetCalories: data.targetCalories,
-        targetFat: data.targetFat,
-        targetCarbs: data.targetCarbs,
-        targetProtein: data.targetProtein,
-        // Template-backed days derive coverage from copied meals; mealCountTarget
-        // is kept coherent (copied count, or 0 for ad-hoc days) for legacy display.
-        mealCountTarget: templates.length,
-        createdAt: ts,
-        updatedAt: ts,
-      });
-
-      for (const template of templates) {
+      // Build every copied meal + ingredient insert up front so the whole day —
+      // day row, meals, and ingredients — is written atomically via d.batch().
+      // A sequential set of awaits could leave a half-built day behind if any
+      // insert failed mid-loop, and the duplicate-date guard would then block
+      // recreating it.
+      const mealStatements = templates.flatMap((template) => {
         const mealId = uuidv7();
         // Every copied meal starts unlogged, even with default ingredients (R12).
-        await d.insert(meals).values({
+        const mealInsert = d.insert(meals).values({
           id: mealId,
           dailyMealLogId: id,
           name: template.name,
@@ -152,12 +142,32 @@ export function createDayRepository(db: D1Database): DayRepository {
           createdAt: ts,
           updatedAt: ts,
         });
-        if (template.ingredients.length > 0) {
-          await d
+        if (template.ingredients.length === 0) return [mealInsert];
+        return [
+          mealInsert,
+          d
             .insert(ingredients)
-            .values(template.ingredients.map((ing) => copyTemplateIngredient(ing, mealId, ts)));
-        }
-      }
+            .values(template.ingredients.map((ing) => copyTemplateIngredient(ing, mealId, ts))),
+        ];
+      });
+
+      await d.batch([
+        d.insert(dailyMealLogs).values({
+          id,
+          userId,
+          date: data.date,
+          targetCalories: data.targetCalories,
+          targetFat: data.targetFat,
+          targetCarbs: data.targetCarbs,
+          targetProtein: data.targetProtein,
+          // Template-backed days derive coverage from copied meals; mealCountTarget
+          // is kept coherent (copied count, or 0 for ad-hoc days) for legacy display.
+          mealCountTarget: templates.length,
+          createdAt: ts,
+          updatedAt: ts,
+        }),
+        ...mealStatements,
+      ]);
 
       // Reload so the returned day reflects the copied meals and ingredients.
       const created = await this.getById(userId, id);

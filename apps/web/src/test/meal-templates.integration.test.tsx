@@ -47,7 +47,7 @@ function ingredient(id: string, mealId: string): Ingredient {
   };
 }
 
-function templateBackedDay(): DailyMealLog {
+function templateBackedDay(mealIngredients: Ingredient[] = [ingredient('i1', 'm1')]): DailyMealLog {
   return {
     id: 'd1',
     userId: 'user_test',
@@ -64,8 +64,9 @@ function templateBackedDay(): DailyMealLog {
         dailyMealLogId: 'd1',
         name: 'Breakfast',
         origin: 'template',
+        // Copied meals start unlogged even with default ingredients (R12).
         logged: false,
-        ingredients: [ingredient('i1', 'm1')],
+        ingredients: mealIngredients,
         createdAt: now,
         updatedAt: now,
       },
@@ -128,5 +129,17 @@ describe('meal templates', () => {
     await waitFor(() =>
       expect(apiMock.meals.setLogged).toHaveBeenCalledWith('test-token', 'd1', 'm1', true),
     );
+  });
+
+  it('an empty copied meal shows "Not logged" and exposes no Log action', async () => {
+    const day = templateBackedDay([]); // unlogged, zero ingredients
+    apiMock.days.list.mockResolvedValue({ days: [day] });
+    apiMock.days.get.mockResolvedValue(day);
+    apiMock.mealTemplates.list.mockResolvedValue({ templates: [] });
+
+    renderApp('/track/day/d1');
+
+    expect(await screen.findByText('Not logged')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Log' })).not.toBeInTheDocument();
   });
 });
