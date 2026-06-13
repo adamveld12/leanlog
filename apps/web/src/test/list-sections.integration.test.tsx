@@ -208,7 +208,7 @@ describe('list section behaviors', () => {
 
     const todayDate = new Date();
     const dayNum = todayDate.getDate();
-    const tracked = screen.getByRole('button', { name: `${dayNum}, tracked` });
+    const tracked = screen.getByRole('button', { name: `${dayNum}, today, tracked` });
     expect(tracked).not.toBeDisabled();
     await userEvent.click(tracked);
 

@@ -244,7 +244,9 @@ export function MonthCalendarCard({
 
             const label =
               day.status === 'tracked'
-                ? `${day.dayOfMonth}, tracked`
+                ? day.isToday
+                  ? `${day.dayOfMonth}, today, tracked`
+                  : `${day.dayOfMonth}, tracked`
                 : day.status === 'missed'
                   ? `${day.dayOfMonth}, not tracked`
                   : day.onTap

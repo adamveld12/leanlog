@@ -18,7 +18,9 @@ describe('MonthCalendarCard', () => {
       <MonthCalendarCard trackedDates={map} onSelectDay={onSelectDay} onCreateDay={() => {}} />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: `${today.getDate()}, tracked` }));
+    await userEvent.click(
+      screen.getByRole('button', { name: `${today.getDate()}, today, tracked` }),
+    );
     expect(onSelectDay).toHaveBeenCalledWith('day-1');
   });
 
