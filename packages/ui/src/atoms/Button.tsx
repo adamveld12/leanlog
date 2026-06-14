@@ -105,11 +105,13 @@ export function Button(props: ButtonProps) {
     name,
     value,
     onClick,
+    type = 'button',
     ...buttonProps
   } = props;
 
   return (
     <button
+      type={type}
       className={buttonClassName({ className, fullWidth, size, variant })}
       name={name}
       value={value}

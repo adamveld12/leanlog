@@ -1027,6 +1027,11 @@ function MealTemplateEdit() {
   } = useStore();
   const template = templates.find((t) => t.id === templateId);
   const [nameDraft, setNameDraft] = useState(template?.name ?? '');
+  // Remember the last template we synced so we re-seed the name field when it changes. This
+  // is the documented "store info from previous renders" pattern, so it must be state (an
+  // eslint react-hooks/refs gate forbids reading a ref during render). react-doctor's
+  // rerender-state-only-in-handlers is suppressed for this line in Step 6.
+  // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [syncedId, setSyncedId] = useState(template?.id);
   const [nameError, setNameError] = useState('');
 
