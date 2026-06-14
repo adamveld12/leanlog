@@ -40,6 +40,13 @@ RIGHT (vertical):
   ...
 ```
 
+## LeanLog: committing red tests
+
+This repo gates **tests on `pre-push`, not `pre-commit`**, so you can freely commit a red test mid-cycle and only need green to push. Two caveats:
+
+- **`pre-commit` still runs `tsc` across all packages.** A red test that references a not-yet-created symbol won't commit. Either add a minimal stub of the symbol first, or commit the test + its implementation together and show "red" by running `pnpm test` before the impl exists.
+- **`@leanlog/data-d1` has no unit-test harness** (lint = `tsc`). Put the risk-bearing logic (calculations, structure/coverage helpers) in `@leanlog/data-access`, where it's unit-testable, and keep repositories thin. Cover repositories via web integration tests until a D1 test pool exists.
+
 ## Workflow
 
 ### 1. Planning

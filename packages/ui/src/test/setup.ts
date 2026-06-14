@@ -1,6 +1,14 @@
 import '@testing-library/jest-dom/vitest';
 import { createElement } from 'react';
-import { vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+
+// Unmount the React tree after every test so renders don't leak across cases
+// (duplicate elements, role-query collisions). Individual files no longer need
+// their own afterEach(cleanup).
+afterEach(() => {
+  cleanup();
+});
 
 // chart.js touches getComputedStyle on the canvas's parent via a ResizeObserver tick
 // that fires after jsdom has already detached the node. Stub the React wrapper so
