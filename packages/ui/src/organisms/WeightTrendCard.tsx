@@ -1,16 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import {
-  CategoryScale,
-  Chart as ChartJS,
-  Filler,
-  Legend,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Tooltip,
-  type ChartOptions,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { SectionCard } from '../molecules/SectionCard';
 import { Tabs } from '../molecules/Tabs';
@@ -18,7 +6,10 @@ import { Text } from '../atoms/Text';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
+// chart.js + react-chartjs-2 are heavy; load them on demand in their own chunk rather than
+// the initial bundle (react-doctor: prefer-dynamic-import). A chunk-load failure surfaces to
+// the app-level AnalyticsErrorBoundary; the card keeps its fixed height so nothing shifts.
+const WeightTrendChart = lazy(() => import('./WeightTrendChart'));
 
 export type WeightEntry = { date: string; weightLbs: number };
 export type WeightTrendRange = '7d' | '30d' | '90d' | 'all';
@@ -30,7 +21,7 @@ export type WeightTrendCardProps = {
   now?: Date;
 };
 
-type Tokens = { text: string; muted: string; line: string };
+export type Tokens = { text: string; muted: string; line: string };
 
 const FALLBACK_TOKENS: Tokens = { text: '#151515', muted: '#606060', line: '#e8e8e8' };
 
@@ -68,11 +59,6 @@ export function WeightTrendCard({
     return entries.filter((e) => e.date >= cutoffIso);
   }, [entries, range, now]);
 
-  const { data, options } = useMemo(
-    () => buildChart(filtered, goalWeightLbs, tokens),
-    [filtered, goalWeightLbs, tokens],
-  );
-
   const isEmpty = filtered.length === 0;
 
   return (
@@ -90,13 +76,14 @@ export function WeightTrendCard({
           aria-labelledby={`weight-trend-${range}-panel-tab`}
           className="relative h-56 w-full"
         >
-          <div
-            className="absolute inset-0"
-            role="img"
-            aria-label={ariaLabelFor(range, filtered.length)}
-          >
-            <Line data={data} options={options} />
-          </div>
+          <Suspense fallback={null}>
+            <WeightTrendChart
+              entries={filtered}
+              goalWeightLbs={goalWeightLbs}
+              tokens={tokens}
+              ariaLabel={ariaLabelFor(range, filtered.length)}
+            />
+          </Suspense>
           {isEmpty ? (
             <div
               aria-live="polite"
@@ -116,12 +103,17 @@ export function WeightTrendCard({
 }
 
 function useThemeTokens(): Tokens {
+  // Initial value comes from the useState initializer (no extra render); the effect below only
+  // re-syncs on later theme mutations, so this isn't a "state initialized from an effect" case.
   const [tokens, setTokens] = useState<Tokens>(readTokens);
   useEffect(() => {
     if (typeof document === 'undefined') return;
     // Re-read the canvas colors whenever the theme attribute on <html> changes so the
     // chart tracks the CSS variables (chart.js writes to canvas and can't resolve var()).
+    // This observer only re-syncs on theme mutation; initial tokens come from useState above,
+    // so react-doctor's "state initialized from a mount effect" is a false positive here.
     const observer = new MutationObserver(() => setTokens(readTokens()));
+    // react-doctor-disable-next-line react-doctor/no-initialize-state
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme', 'class'],
@@ -142,124 +134,11 @@ function readTokens(): Tokens {
   };
 }
 
-function buildChart(
-  entries: WeightEntry[],
-  goal: number | null,
-  tokens: Tokens,
-): { data: Parameters<typeof Line>[0]['data']; options: ChartOptions<'line'> } {
-  const labels = entries.map((e) => e.date);
-  const values = entries.map((e) => e.weightLbs);
-  const [yMin, yMax] = domainFor(entries, goal);
-
-  const goalDataset =
-    goal != null && entries.length > 0
-      ? [
-          {
-            label: `Goal ${goal}`,
-            data: entries.map(() => goal),
-            borderColor: tokens.muted,
-            borderDash: [4, 4],
-            borderWidth: 1,
-            pointRadius: 0,
-            pointHoverRadius: 0,
-            tension: 0,
-            fill: false,
-          },
-        ]
-      : [];
-
-  const data = {
-    labels,
-    datasets: [
-      {
-        label: 'Weight',
-        data: values,
-        borderColor: tokens.text,
-        backgroundColor: tokens.text,
-        borderWidth: 2,
-        tension: 0.3,
-        pointRadius: 3,
-        pointHoverRadius: 5,
-      },
-      ...goalDataset,
-    ],
-  };
-
-  const options: ChartOptions<'line'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          title: (items) => formatTooltipDate(items[0]?.label ?? ''),
-          label: (item) => `${item.parsed.y} lbs`,
-        },
-      },
-    },
-    scales: {
-      x: {
-        type: 'category',
-        grid: { color: tokens.line, display: true, drawTicks: false },
-        ticks: {
-          color: tokens.muted,
-          font: { size: 10 },
-          maxRotation: 0,
-          autoSkipPadding: 16,
-          callback: function (_value, index) {
-            const iso = (this.getLabelForValue?.(index as number) as string) ?? labels[index] ?? '';
-            return formatTickDate(iso);
-          },
-        },
-        border: { display: false },
-      },
-      y: {
-        min: yMin,
-        max: yMax,
-        grid: { color: tokens.line },
-        ticks: { color: tokens.muted, font: { size: 10 } },
-        border: { display: false },
-      },
-    },
-  };
-
-  return { data, options };
-}
-
-function domainFor(entries: WeightEntry[], goal: number | null): [number, number] {
-  if (entries.length === 0) return [0, 1];
-  const values = entries.map((e) => e.weightLbs);
-  if (goal != null) values.push(goal);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const pad = Math.max(2, Math.round((max - min) * 0.15));
-  return [Math.floor(min - pad), Math.ceil(max + pad)];
-}
-
 function toIso(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
-}
-
-function parseIso(iso: string): Date {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function formatTickDate(iso: string): string {
-  if (!iso) return '';
-  const d = parseIso(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function formatTooltipDate(iso: string): string {
-  if (!iso) return '';
-  const d = parseIso(iso);
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function ariaLabelFor(range: WeightTrendRange, count: number): string {

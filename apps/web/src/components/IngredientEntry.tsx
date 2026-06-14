@@ -48,7 +48,7 @@ export type IngredientDraft = Omit<
   'id' | 'mealId' | 'createdAt' | 'updatedAt' | DraftNumericKey
 > & { [K in DraftNumericKey]: number | null };
 
-export const emptyDraft: IngredientDraft = {
+const emptyDraft: IngredientDraft = {
   name: '',
   weight: null,
   calories: null,
@@ -93,6 +93,8 @@ type IngredientEntryProps = {
   analyticsContext: 'meal' | 'template';
 };
 
+// Size/useState-count cleanup (split + useReducer) is deferred to #50.
+// react-doctor-disable-next-line react-doctor/no-giant-component
 export function IngredientEntry({
   ingredients,
   onSubmit,
@@ -102,6 +104,7 @@ export function IngredientEntry({
   showDatabaseCreate = false,
   savingToDbId = null,
   analyticsContext,
+  // react-doctor-disable-next-line react-doctor/prefer-useReducer
 }: IngredientEntryProps) {
   const { getToken } = useAuth();
   const { searchNutritionDatabase, createNutritionDatabaseIngredient } = useStore();
@@ -158,6 +161,10 @@ export function IngredientEntry({
     track(`${analyticsContext}.ingredient.database.viewed`, {});
   }, [entryTab, track, analyticsContext]);
 
+  // Unmount-only safety net: stop whatever camera stream is live when the component goes
+  // away. The cleanup must read the *latest* streamRef.current (the stream is assigned long
+  // after mount), so capturing it into a local would defeat the purpose.
+  // react-doctor-disable-next-line react-doctor/exhaustive-deps
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -295,6 +302,9 @@ export function IngredientEntry({
           <ListRow
             key={i.id}
             title={i.name}
+            // Slot prop: ListRow renders this node in its meta region (intentional template
+            // composition, not a new-element-every-render hazard).
+            // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
             meta={
               <MacroSummaryLine
                 calories={i.calories}

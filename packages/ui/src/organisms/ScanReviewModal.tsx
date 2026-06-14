@@ -1,7 +1,7 @@
 import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
 import { WarningText } from '../atoms/WarningText';
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Modal } from '../molecules/Modal';
 import { recipes } from '../styles/recipes';
 

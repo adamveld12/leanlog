@@ -1,6 +1,6 @@
 import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { MacroProgressBlock, type MacroProgressBlockProps } from '../molecules/MacroProgressBlock';
 import { SectionCard } from '../molecules/SectionCard';
 import { recipes } from '../styles/recipes';

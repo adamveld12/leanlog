@@ -1,5 +1,5 @@
 import { useRef, type KeyboardEvent } from 'react';
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
@@ -32,6 +32,9 @@ export function Tabs({ tabs, active, onChange, label }: TabsProps) {
 
   return (
     <AnalyticsScope properties={{ molecule: 'Tabs' }}>
+      {/* WAI-ARIA tabs pattern: the tablist is not focusable; focus lives on the tabs via a
+          roving tabIndex (set per-tab below). So the container intentionally has no tabIndex. */}
+      {/* react-doctor-disable-next-line react-doctor/interactive-supports-focus */}
       <div
         ref={listRef}
         className={cn(recipes.radius.control, 'flex border border-[var(--ll-line)] p-0.5')}

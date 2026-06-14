@@ -1,5 +1,5 @@
 import type { InputHTMLAttributes, ReactNode } from 'react';
-import { useAnalytics } from '../analytics';
+import { useAnalytics } from '../analytics/AnalyticsProvider';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 import { Text } from './Text';

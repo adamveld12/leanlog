@@ -5,7 +5,7 @@ import { UnitText } from '../atoms/UnitText';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 import { targetProgressColor } from '../styles/targetProgress';
-import { calorieColor } from './MacroSummaryLine';
+import { calorieColor } from '../styles/calorieColor';
 
 export type MacroProgressBlockProps = {
   label: string;

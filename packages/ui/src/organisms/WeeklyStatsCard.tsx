@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { WarningText } from '../atoms/WarningText';
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { SectionCard } from '../molecules/SectionCard';
 import { StatMetric } from '../molecules/StatMetric';
 import { Tabs } from '../molecules/Tabs';

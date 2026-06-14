@@ -41,7 +41,7 @@ Two git hooks run automatically — know which checks block where:
 | **pre-push**   | `pnpm test`                                                                               | **any failing test**                |
 
 - **`design:audit` is a hard gate** — it enforces atom usage, story coverage, and recipe-class duplication (see table below). Fix violations; never `--no-verify`.
-- **`react-lint` (react-doctor) is advisory and does NOT block**, but it is **not** "ignore-me" noise — its findings are tracked in **#46** and being driven down. Don't add new findings; fix ones you introduce. Once #46 is clear it becomes a blocking gate.
+- **`react-lint` (react-doctor) is a blocking gate in CI** (`pnpm react-lint:ci`, `--blocking warning`) — the #46 backlog is at zero. The pre-commit `pnpm react-lint` is still advisory (changed-files only) so you can commit WIP, but **CI fails on any new warning**, so fix findings you introduce. To accept a genuine false positive / intentional pattern, add a **file-scoped inline** `// react-doctor-disable-next-line react-doctor/<rule>` with a justification comment — never a global rule-off in config. The `IngredientEntry`/`StateProvider` split + `useReducer` work is deferred to **#50**.
 - **Tests gate on push, not commit.** Commit work-in-progress freely (including red TDD tests); the suite must be green to push.
 
 ### TDD in this monorepo

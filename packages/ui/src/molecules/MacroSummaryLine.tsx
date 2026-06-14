@@ -1,7 +1,7 @@
-import type { CSSProperties } from 'react';
 import { HelperText } from '../atoms/HelperText';
 import { Text } from '../atoms/Text';
 import { UnitText } from '../atoms/UnitText';
+import { calorieColor } from '../styles/calorieColor';
 
 export type MacroSummaryLineProps = {
   calories: number;
@@ -10,14 +10,6 @@ export type MacroSummaryLineProps = {
   fat: number;
   calorieTarget?: number;
 };
-
-export function calorieColor(calories: number, calorieTarget?: number): CSSProperties | undefined {
-  if (!calorieTarget || calorieTarget <= 0) return undefined;
-  const pctDiff = Math.abs(calories - calorieTarget) / calorieTarget;
-  const color =
-    pctDiff <= 0.05 ? 'var(--ll-saved)' : pctDiff <= 0.15 ? 'var(--ll-warn)' : 'var(--ll-danger)';
-  return { color };
-}
 
 export function MacroSummaryLine({
   calories,

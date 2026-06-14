@@ -38,6 +38,9 @@ jobs:
       - name: Design system audit
         run: pnpm design:audit
 
+      - name: React Doctor
+        run: pnpm react-lint:ci
+
       - name: Storybook build
         run: pnpm --filter @leanlog/ui build-storybook
 

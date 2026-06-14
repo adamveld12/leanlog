@@ -1,5 +1,5 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, PropsWithChildren } from 'react';
-import { useAnalytics } from '../analytics';
+import { useAnalytics } from '../analytics/AnalyticsProvider';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
@@ -84,6 +84,8 @@ export function Button(props: ButtonProps) {
             name: analyticsName ?? name,
             value: analyticsValue(value),
             variant,
+            // Best-effort analytics label only; not a render branch on children type.
+            // react-doctor-disable-next-line react-doctor/no-polymorphic-children
             text: typeof children === 'string' ? children : undefined,
           });
           onClick?.(event);
@@ -105,11 +107,13 @@ export function Button(props: ButtonProps) {
     name,
     value,
     onClick,
+    type = 'button',
     ...buttonProps
   } = props;
 
   return (
     <button
+      type={type}
       className={buttonClassName({ className, fullWidth, size, variant })}
       name={name}
       value={value}
@@ -119,6 +123,8 @@ export function Button(props: ButtonProps) {
           name: analyticsName ?? name,
           value: analyticsValue(value),
           variant,
+          // Best-effort analytics label only; not a render branch on children type.
+          // react-doctor-disable-next-line react-doctor/no-polymorphic-children
           text: typeof children === 'string' ? children : undefined,
         });
         onClick?.(event);

@@ -20,7 +20,11 @@ export function DayWeightCard({ saved, saving, weightLbs, onSave }: DayWeightCar
   // Reset the draft whenever the saved weight changes from outside (e.g. after a save
   // completes or the user navigates to a different day). Derived state during render
   // — see https://react.dev/reference/react/useState#storing-information-from-previous-renders.
+  // lastSeenWeight is the "previous prop" sentinel for that pattern, hence intentionally not
+  // rendered; draft is seeded from the prop on purpose.
+  // react-doctor-disable-next-line react-doctor/no-derived-useState, react-doctor/rerender-state-only-in-handlers
   const [lastSeenWeight, setLastSeenWeight] = useState<number | null>(weightLbs);
+  // react-doctor-disable-next-line react-doctor/no-derived-useState
   const [draft, setDraft] = useState<number | null>(weightLbs);
   if (lastSeenWeight !== weightLbs) {
     setLastSeenWeight(weightLbs);

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
@@ -44,6 +45,9 @@ type NutritionDatabaseEntryCardProps = {
   onSubmit: () => void;
   submitting?: boolean;
 };
+
+let microRowSeq = 0;
+const nextMicroRowKey = () => `micro-row-${microRowSeq++}`;
 
 const clamp999 = (n: number) => Math.max(0, Math.min(999, n));
 const clamp9999 = (n: number) => Math.max(0, Math.min(9999, n));
@@ -106,15 +110,26 @@ export function NutritionDatabaseEntryCard({
   // Micronutrient helpers
   const micronutrients = value.micronutrients ?? [];
 
+  // Stable per-row keys. Array index is unsafe for an editable list: removing a row shifts
+  // indices and remounts the wrong inputs. We mint a client id per row (seeded from the
+  // initial rows) and key on it. Rows only change through the handlers below, which keep
+  // the id list in lockstep with `value.micronutrients`.
+  const [rowKeys, setRowKeys] = useState<string[]>(() => micronutrients.map(nextMicroRowKey));
+
   const updateMicro = (idx: number, patch: Partial<NutritionDatabaseMicronutrientValue>) => {
     const next = micronutrients.map((m, i) => (i === idx ? { ...m, ...patch } : m));
     onChange({ ...value, micronutrients: next });
   };
 
-  const addMicro = () => onChange({ ...value, micronutrients: [...micronutrients, { name: '' }] });
+  const addMicro = () => {
+    setRowKeys((keys) => [...keys, nextMicroRowKey()]);
+    onChange({ ...value, micronutrients: [...micronutrients, { name: '' }] });
+  };
 
-  const removeMicro = (idx: number) =>
+  const removeMicro = (idx: number) => {
+    setRowKeys((keys) => keys.filter((_, i) => i !== idx));
     onChange({ ...value, micronutrients: micronutrients.filter((_, i) => i !== idx) });
+  };
 
   return (
     <AnalyticsScope properties={{ organism: 'NutritionDatabaseEntryCard' }}>
@@ -243,7 +258,7 @@ export function NutritionDatabaseEntryCard({
         {micronutrients.length > 0 ? (
           <div className={recipes.stack.sm}>
             {micronutrients.map((micro, idx) => (
-              <div key={idx} className={cn(recipes.stack.row, 'items-end')}>
+              <div key={rowKeys[idx]} className={cn(recipes.stack.row, 'items-end')}>
                 <div className="flex-1">
                   <Field label="Name">
                     <Input

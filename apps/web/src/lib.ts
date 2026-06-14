@@ -1,7 +1,6 @@
 import { format } from 'date-fns';
 
 export const round1 = (n: number) => Math.round(n * 10) / 10;
-export const parseNum = (v: string) => (v.trim() === '' ? 0 : Number(v));
 export const todayIso = () => format(new Date(), 'yyyy-MM-dd');
 
 // A day whose local date is before today is read-only (issue #41, R21/R22).

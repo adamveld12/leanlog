@@ -9,7 +9,7 @@ import {
 } from '@leanlog/data-access';
 import { sum, todayIso } from './lib';
 
-export function ingredientTotals(items: Ingredient[]) {
+function ingredientTotals(items: Ingredient[]) {
   return {
     calories: sum(items.map((i) => i.calories)),
     fat: sum(items.map((i) => i.fat)),
@@ -28,7 +28,12 @@ export function mealTotals(meal: Meal) {
 export function dayTotals(day: DailyMealLog) {
   // Only meals that contribute (logged template meals, or any ad-hoc meal) count
   // toward day totals (R23).
-  return ingredientTotals(day.meals.filter(contributesNutrition).flatMap((m) => m.ingredients));
+  return ingredientTotals(
+    day.meals.reduce<Ingredient[]>((acc, m) => {
+      if (contributesNutrition(m)) acc.push(...m.ingredients);
+      return acc;
+    }, []),
+  );
 }
 
 function isoWeekStart(date: Date): Date {

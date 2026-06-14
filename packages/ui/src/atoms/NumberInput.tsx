@@ -28,7 +28,7 @@ export function NumberInput({
   labelClassName = '',
   inputClassName = '',
 }: NumberInputProps) {
-  const [text, setText] = useState(display(value));
+  const [text, setText] = useState(() => display(value));
   const [editing, setEditing] = useState(false);
 
   return (

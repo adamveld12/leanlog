@@ -3,7 +3,7 @@ import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { Text } from '../atoms/Text';
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { SectionCard } from '../molecules/SectionCard';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
