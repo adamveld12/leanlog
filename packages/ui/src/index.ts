@@ -13,6 +13,8 @@ export * from './atoms/FileInput';
 export * from './atoms/HelperText';
 export * from './atoms/IntegerInput';
 export * from './atoms/Label';
+export * from './atoms/List';
+export * from './atoms/ListItem';
 export * from './atoms/NumberInput';
 export * from './atoms/PageTitle';
 export * from './atoms/Radio';

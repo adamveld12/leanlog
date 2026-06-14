@@ -2,6 +2,8 @@ import { useState, type DragEvent, type ReactNode } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
+import { List } from '../atoms/List';
+import { ListItem } from '../atoms/ListItem';
 import { Text } from '../atoms/Text';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
@@ -38,7 +40,7 @@ export function ReorderableList({ items, onReorder }: ReorderableListProps) {
     if (next !== ids) onReorder(next);
   };
 
-  const onDrop = (e: DragEvent<HTMLDivElement>, to: number) => {
+  const onDrop = (e: DragEvent<HTMLElement>, to: number) => {
     e.preventDefault();
     if (dragIndex !== null && dragIndex !== to) commit(dragIndex, to);
     setDragIndex(null);
@@ -46,37 +48,15 @@ export function ReorderableList({ items, onReorder }: ReorderableListProps) {
 
   return (
     <AnalyticsScope properties={{ molecule: 'ReorderableList' }}>
-      <div role="list" className={recipes.stack.sm}>
-        {items.map((item, index) => (
-          <div
-            key={item.id}
-            role="listitem"
-            draggable
-            onDragStart={() => setDragIndex(index)}
-            onDragEnd={() => setDragIndex(null)}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => onDrop(e, index)}
-            className={cn(
-              recipes.stack.row,
-              recipes.stack.between,
-              recipes.radius.control,
-              'min-h-[44px] px-1.5 py-0 hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]',
-              dragIndex === index && 'opacity-60',
-            )}
-          >
-            <div
-              className={cn(recipes.stack.row, 'min-w-0 flex-1', item.onOpen && 'cursor-pointer')}
-              role={item.onOpen ? 'button' : undefined}
-              tabIndex={item.onOpen ? 0 : undefined}
-              onClick={item.onOpen}
-              onKeyDown={(e) => {
-                if (!item.onOpen) return;
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  item.onOpen();
-                }
-              }}
-            >
+      <List className={recipes.stack.sm}>
+        {items.map((item, index) => {
+          const bodyClass = cn(
+            recipes.stack.row,
+            'min-w-0 flex-1',
+            item.onOpen && 'cursor-pointer',
+          );
+          const body = (
+            <>
               <HelperText as="span" aria-hidden className="cursor-grab select-none px-1">
                 ⠿
               </HelperText>
@@ -86,30 +66,70 @@ export function ReorderableList({ items, onReorder }: ReorderableListProps) {
                 </Text>
                 {item.meta}
               </div>
-            </div>
-            <div className={cn(recipes.stack.row, 'shrink-0')}>
-              <Button
-                size="sm"
-                variant="ghost"
-                aria-label="Move up"
-                disabled={index === 0}
-                onClick={() => commit(index, index - 1)}
-              >
-                ↑
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                aria-label="Move down"
-                disabled={index === items.length - 1}
-                onClick={() => commit(index, index + 1)}
-              >
-                ↓
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
+            </>
+          );
+          return (
+            <ListItem
+              key={item.id}
+              draggable
+              onDragStart={() => setDragIndex(index)}
+              onDragEnd={() => setDragIndex(null)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => onDrop(e, index)}
+              className={cn(
+                recipes.stack.row,
+                recipes.stack.between,
+                recipes.radius.control,
+                'min-h-[44px] px-1.5 py-0 hover:bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]',
+                dragIndex === index && 'opacity-60',
+              )}
+            >
+              {item.onOpen ? (
+                // Clickable row region that coexists with drag + reorder controls; a native
+                // button element would fight the draggable parent. role="button" + keyboard is
+                // the correct accessible pattern here.
+                // react-doctor-disable-next-line react-doctor/prefer-tag-over-role
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={item.onOpen}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      item.onOpen?.();
+                    }
+                  }}
+                  className={bodyClass}
+                >
+                  {body}
+                </div>
+              ) : (
+                <div className={bodyClass}>{body}</div>
+              )}
+              <div className={cn(recipes.stack.row, 'shrink-0')}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Move up"
+                  disabled={index === 0}
+                  onClick={() => commit(index, index - 1)}
+                >
+                  ↑
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Move down"
+                  disabled={index === items.length - 1}
+                  onClick={() => commit(index, index + 1)}
+                >
+                  ↓
+                </Button>
+              </div>
+            </ListItem>
+          );
+        })}
+      </List>
     </AnalyticsScope>
   );
 }
