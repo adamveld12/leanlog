@@ -48,7 +48,7 @@ export type IngredientDraft = Omit<
   'id' | 'mealId' | 'createdAt' | 'updatedAt' | DraftNumericKey
 > & { [K in DraftNumericKey]: number | null };
 
-export const emptyDraft: IngredientDraft = {
+const emptyDraft: IngredientDraft = {
   name: '',
   weight: null,
   calories: null,

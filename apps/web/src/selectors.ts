@@ -9,7 +9,7 @@ import {
 } from '@leanlog/data-access';
 import { sum, todayIso } from './lib';
 
-export function ingredientTotals(items: Ingredient[]) {
+function ingredientTotals(items: Ingredient[]) {
   return {
     calories: sum(items.map((i) => i.calories)),
     fat: sum(items.map((i) => i.fat)),
