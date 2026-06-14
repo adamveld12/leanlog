@@ -20,12 +20,18 @@ import {
   useAnalytics,
 } from '@leanlog/ui';
 import type {
+  AddFromDatabaseMode,
   LabelScanValue,
   NutritionDatabaseEntryValue,
   NutritionDatabaseSearchResult,
 } from '@leanlog/ui';
 import { estimateCalories } from '@leanlog/data-access';
-import type { Ingredient, ScanResolution, UpsertIngredient } from '@leanlog/data-access';
+import type {
+  Ingredient,
+  NutritionUnit,
+  ScanResolution,
+  UpsertIngredient,
+} from '@leanlog/data-access';
 import { normalizeIngredientName } from '../lib';
 import { useStore } from '../state';
 import { api } from '../api';
@@ -69,6 +75,8 @@ function mapDbSearchResults(
     id: r.id,
     name: r.name,
     servingAmount: r.servingAmount,
+    servingSizeUnit: r.servingSizeUnit,
+    servingsPerPackage: r.servingsPerPackage,
     fat: r.fat,
     carbs: r.carbs,
     protein: r.protein,
@@ -80,16 +88,29 @@ function mapDbSearchResults(
   }));
 }
 
+// Empty/reset state for the Nutrition Facts label capture form.
+const emptyDbEntry: NutritionDatabaseEntryValue = {
+  name: '',
+  servingAmount: null,
+  servingSizeUnit: 'gram',
+  servingSizeDisplayText: null,
+  servingsPerPackage: null,
+  calories: null,
+  fat: null,
+  carbs: null,
+  protein: null,
+};
+
 export type EntryIngredient = Omit<Ingredient, 'mealId'>;
+
+export type AddFromDatabaseInput = { mode: AddFromDatabaseMode; amount?: number };
 
 type IngredientEntryProps = {
   ingredients: EntryIngredient[];
   onSubmit: (draft: IngredientDraft, editingId: string | null) => void;
   onDelete: (ingredientId: string) => void;
-  onAddFromDatabase: (databaseIngredientId: string, measuredAmount: number) => Promise<void>;
-  onSaveToDatabase?: (ingredient: EntryIngredient) => void;
+  onAddFromDatabase: (databaseIngredientId: string, input: AddFromDatabaseInput) => Promise<void>;
   showDatabaseCreate?: boolean;
-  savingToDbId?: string | null;
   analyticsContext: 'meal' | 'template';
 };
 
@@ -100,9 +121,7 @@ export function IngredientEntry({
   onSubmit,
   onDelete,
   onAddFromDatabase,
-  onSaveToDatabase,
   showDatabaseCreate = false,
-  savingToDbId = null,
   analyticsContext,
   // react-doctor-disable-next-line react-doctor/prefer-useReducer
 }: IngredientEntryProps) {
@@ -123,6 +142,10 @@ export function IngredientEntry({
   const [scanResult, setScanResult] = useState<ScanResolution | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  // Whether the in-flight scan targets a meal ingredient (lenient) or a saved
+  // Nutrition Facts label (strict). Drives both the request flag and where the
+  // result lands.
+  const [scanTarget, setScanTarget] = useState<'meal' | 'database'>('meal');
   // Database tab state
   const [dbQuery, setDbQuery] = useState('');
   const [dbResults, setDbResults] = useState<NutritionDatabaseSearchResult[]>([]);
@@ -130,16 +153,10 @@ export function IngredientEntry({
   const [dbSearched, setDbSearched] = useState(false);
   const [dbTotal, setDbTotal] = useState<number | null>(null);
   const [dbAmounts, setDbAmounts] = useState<Record<string, number>>({});
+  const [dbModes, setDbModes] = useState<Record<string, AddFromDatabaseMode>>({});
   const [dbAddingId, setDbAddingId] = useState<string | null>(null);
   const [dbShowCreate, setDbShowCreate] = useState(false);
-  const [dbEntryValue, setDbEntryValue] = useState<NutritionDatabaseEntryValue>({
-    name: '',
-    servingAmount: null,
-    calories: null,
-    fat: null,
-    carbs: null,
-    protein: null,
-  });
+  const [dbEntryValue, setDbEntryValue] = useState<NutritionDatabaseEntryValue>(emptyDbEntry);
   const [dbCreating, setDbCreating] = useState(false);
   const [dbError, setDbError] = useState('');
   const dbSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -176,7 +193,8 @@ export function IngredientEntry({
     streamRef.current = null;
   };
 
-  const openCamera = async () => {
+  const openCamera = async (target: 'meal' | 'database' = 'meal') => {
+    setScanTarget(target);
     setCameraError('');
     if (!navigator.mediaDevices?.getUserMedia) {
       fileInputRef.current?.click();
@@ -216,7 +234,48 @@ export function IngredientEntry({
     setEditingId(null);
   };
 
+  // Map a strict database scan's candidate into the label capture form (R14/R16);
+  // when the label isn't save-ready, surface why and keep the form open to fix.
+  const stageDatabaseScan = (result: ScanResolution) => {
+    setDbShowCreate(true);
+    const candidate = result.databaseCandidate;
+    if (!candidate) {
+      setDbError(
+        result.databaseBlockReason ??
+          'Could not read a complete label. Fix the missing fields or retake the photo.',
+      );
+      track('nutrition_facts.label.scan.blocked', {
+        reason: result.databaseBlockReason ?? 'incomplete',
+      });
+      return;
+    }
+    setDbError('');
+    setDbEntryValue({
+      name: candidate.name,
+      servingAmount: candidate.servingAmount,
+      servingSizeUnit: candidate.servingSizeUnit,
+      servingSizeDisplayText: null,
+      servingsPerPackage: candidate.servingsPerPackage,
+      calories: candidate.calories,
+      fat: candidate.fat,
+      carbs: candidate.carbs,
+      protein: candidate.protein,
+      saturatedFat: candidate.saturatedFat ?? null,
+      fiber: candidate.fiber ?? null,
+      sugar: candidate.sugar ?? null,
+      addedSugars: candidate.addedSugars ?? null,
+      sugarAlcohol: candidate.sugarAlcohol ?? null,
+      allulose: candidate.allulose ?? null,
+      micronutrients: candidate.micronutrients?.map((m) => ({
+        name: m.name,
+        amount: m.amount,
+        unit: m.unit,
+      })),
+    });
+  };
+
   const onScanFile = async (file: File) => {
+    const isDatabaseScan = scanTarget === 'database';
     setScanError('');
     setCameraError('');
     setScanLoading(true);
@@ -233,15 +292,22 @@ export function IngredientEntry({
       );
       formData.append('servings', isServings ? String(scanForm.amount ?? '') : '');
       formData.append('name', '');
+      // Database-tab scans are stricter (R15).
+      formData.append('strict', String(isDatabaseScan));
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
       const result = await api.scanNutrition(token, formData);
-      track(`${analyticsContext}.ingredient.scanned`, {});
-      setScanResult(result);
+      track(`${analyticsContext}.ingredient.scanned`, { target: scanTarget });
+      if (isDatabaseScan) {
+        stageDatabaseScan(result);
+      } else {
+        setScanResult(result);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Scan failed';
       track(`${analyticsContext}.ingredient.scanned.error`, { error: message });
-      setScanError(message);
+      if (isDatabaseScan) setDbError(message);
+      else setScanError(message);
     } finally {
       setScanLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -266,7 +332,9 @@ export function IngredientEntry({
     await onScanFile(new File([blob], 'nutrition.jpg', { type: 'image/jpeg' }));
   };
 
-  const applyScan = (sourceDbId?: string | null) => {
+  // Apply a meal-scan result to the manual draft (R12 — applying never saves a
+  // label to the database; that only happens explicitly on the database tab).
+  const applyScan = () => {
     if (!scanResult || !scanResult.canApply) return;
     const { proposed } = scanResult;
     setDraft((prev) => ({
@@ -281,9 +349,7 @@ export function IngredientEntry({
       protein: proposed.protein,
       sugarAlcohol: proposed.sugarAlcohol ?? null,
       allulose: proposed.allulose ?? null,
-      // When the scan was also saved to the database, the applied ingredient is
-      // born linked so it cannot be saved to the database again.
-      sourceDatabaseIngredientId: sourceDbId ?? null,
+      sourceDatabaseIngredientId: null,
     }));
     setDraftSource('scanned');
     setScanResult(null);
@@ -315,19 +381,6 @@ export function IngredientEntry({
             }
             actions={
               <div className={cn(recipes.stack.row, 'flex-wrap')}>
-                {onSaveToDatabase && !i.sourceDatabaseIngredientId ? (
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    disabled={i.weight <= 0 || savingToDbId === i.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSaveToDatabase(i);
-                    }}
-                  >
-                    {savingToDbId === i.id ? 'Saving…' : 'Save to database'}
-                  </Button>
-                ) : null}
                 <Button
                   size="sm"
                   variant="danger"
@@ -380,7 +433,7 @@ export function IngredientEntry({
           tabs={[
             {
               key: 'database',
-              label: 'Nutrition Database',
+              label: 'Nutrition Facts Database',
               panelId: 'ingredient-database-panel',
             },
             { key: 'scan', label: 'Label Scan', panelId: 'ingredient-scan-panel' },
@@ -494,13 +547,18 @@ export function IngredientEntry({
                 onAmountChange={(id, amount) =>
                   setDbAmounts((prev) => ({ ...prev, [id]: amount ?? 0 }))
                 }
+                modes={dbModes}
+                onModeChange={(id, mode) => setDbModes((prev) => ({ ...prev, [id]: mode }))}
                 onAdd={(id) => {
+                  const mode = dbModes[id] ?? 'weight';
                   const amount = dbAmounts[id] ?? 0;
-                  if (amount <= 0) return;
+                  if (mode !== 'package' && amount <= 0) return;
+                  const input: AddFromDatabaseInput =
+                    mode === 'package' ? { mode } : { mode, amount };
                   setDbAddingId(id);
-                  void onAddFromDatabase(id, amount)
+                  void onAddFromDatabase(id, input)
                     .then(() => {
-                      track(`${analyticsContext}.ingredient.added`, { source: 'database' });
+                      track(`${analyticsContext}.ingredient.added`, { source: 'label', mode });
                       setDbAmounts((prev) => {
                         const next = { ...prev };
                         delete next[id];
@@ -519,6 +577,16 @@ export function IngredientEntry({
                 truncated={dbResults.length >= 25}
                 totalCount={dbTotal ?? undefined}
               />
+              {showDatabaseCreate ? (
+                <Button
+                  variant="subtle"
+                  size="sm"
+                  disabled={scanLoading}
+                  onClick={() => void openCamera('database')}
+                >
+                  {scanLoading && scanTarget === 'database' ? 'Scanning…' : 'Scan a label'}
+                </Button>
+              ) : null}
               {showDatabaseCreate && dbShowCreate ? (
                 <NutritionDatabaseEntryCard
                   value={dbEntryValue}
@@ -538,6 +606,7 @@ export function IngredientEntry({
                     // guard narrows the nullable draft for the strict schema.
                     if (
                       dbEntryValue.servingAmount == null ||
+                      dbEntryValue.servingsPerPackage == null ||
                       dbEntryValue.fat == null ||
                       dbEntryValue.carbs == null ||
                       dbEntryValue.protein == null
@@ -554,33 +623,40 @@ export function IngredientEntry({
                         allulose: dbEntryValue.allulose ?? null,
                         alcohol: dbEntryValue.alcohol ?? null,
                       });
+                    // The scan stages a label; a published label is always a
+                    // 'scan' or 'manual' source — never derived from a meal row.
+                    const source = scanTarget === 'database' ? 'scan' : 'manual';
                     setDbCreating(true);
                     void createNutritionDatabaseIngredient({
                       ...dbEntryValue,
                       servingAmount: dbEntryValue.servingAmount,
+                      servingSizeUnit:
+                        dbEntryValue.servingSizeUnit === 'milliliter' ? 'milliliter' : 'gram',
+                      servingSizeDisplayText: dbEntryValue.servingSizeDisplayText ?? undefined,
+                      servingsPerPackage: dbEntryValue.servingsPerPackage,
                       fat: dbEntryValue.fat,
                       carbs: dbEntryValue.carbs,
                       protein: dbEntryValue.protein,
                       calories: resolvedCalories,
-                      micronutrients: dbEntryValue.micronutrients?.map((m) => ({
-                        name: m.name,
-                        amount: m.amount ?? undefined,
-                        unit: m.unit,
-                        percentDailyValue: m.percentDailyValue ?? undefined,
-                      })),
-                      creationSource: 'manual',
+                      micronutrients: dbEntryValue.micronutrients?.reduce<
+                        { name: string; amount: number; unit: NutritionUnit }[]
+                      >((acc, m) => {
+                        if (m.name.trim().length > 0) {
+                          acc.push({
+                            name: m.name,
+                            amount: m.amount ?? 0,
+                            unit: (m.unit ?? 'milligram') as NutritionUnit,
+                          });
+                        }
+                        return acc;
+                      }, []),
+                      creationSource: source,
                     })
                       .then(() => {
-                        track('nutrition_database.ingredient.published', { source: 'manual' });
+                        track('nutrition_facts.label.published', { source });
                         setDbShowCreate(false);
-                        setDbEntryValue({
-                          name: '',
-                          servingAmount: null,
-                          calories: null,
-                          fat: null,
-                          carbs: null,
-                          protein: null,
-                        });
+                        setScanTarget('meal');
+                        setDbEntryValue(emptyDbEntry);
                         setDbTotal((t) => (t == null ? t : t + 1));
                         if (dbQuery.length >= 2) {
                           setDbLoading(true);
@@ -653,48 +729,12 @@ export function IngredientEntry({
         onAccept={() => applyScan()}
         onRetake={() => {
           setScanResult(null);
-          void openCamera();
+          void openCamera('meal');
         }}
         canAccept={scanResult?.canApply ?? false}
         blockReason={scanResult?.blockReason}
         warning={scanResult?.warning}
         notes={scanResult?.notes}
-        onSaveToDatabase={
-          scanResult && 'databaseCandidate' in scanResult && scanResult.proposed.name
-            ? () => {
-                const candidate = scanResult.databaseCandidate;
-                if (!candidate) return;
-                void createNutritionDatabaseIngredient({
-                  name: candidate.name,
-                  servingAmount: candidate.servingAmount,
-                  fat: candidate.fat,
-                  carbs: candidate.carbs,
-                  protein: candidate.protein,
-                  calories: candidate.calories,
-                  saturatedFat: candidate.saturatedFat ?? undefined,
-                  fiber: candidate.fiber ?? undefined,
-                  sugar: candidate.sugar ?? undefined,
-                  sugarAlcohol: candidate.sugarAlcohol ?? undefined,
-                  allulose: candidate.allulose ?? undefined,
-                  creationSource: 'scan',
-                })
-                  .then((created) => {
-                    track('nutrition_database.ingredient.published', { source: 'scan' });
-                    setDbTotal((t) => (t == null ? t : t + 1));
-                    applyScan(created.id);
-                  })
-                  .catch(() => {
-                    setDbError('Failed to save ingredient to database.');
-                  });
-              }
-            : undefined
-        }
-        canSaveToDatabase={
-          scanResult && 'databaseCandidate' in scanResult
-            ? scanResult.databaseCandidate !== null && scanResult.canApply
-            : undefined
-        }
-        saveToDatabaseBlockReason={scanResult?.databaseBlockReason}
         fields={
           scanResult
             ? [

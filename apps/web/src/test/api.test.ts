@@ -45,6 +45,8 @@ describe('api.nutritionDatabase', () => {
     const data = {
       name: 'Oats',
       servingAmount: 100,
+      servingSizeUnit: 'gram' as const,
+      servingsPerPackage: 12,
       creationSource: 'manual' as const,
       fat: 7,
       carbs: 66,
@@ -71,7 +73,8 @@ describe('api.ingredients.addFromDatabase', () => {
 
     const result = await api.ingredients.addFromDatabase('tok', 'day-1', 'meal-1', {
       databaseIngredientId: 'db-1',
-      measuredAmount: 150,
+      mode: 'weight',
+      amount: 150,
     });
 
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -83,7 +86,8 @@ describe('api.ingredients.addFromDatabase', () => {
       unknown
     >;
     expect(body.databaseIngredientId).toBe('db-1');
-    expect(body.measuredAmount).toBe(150);
+    expect(body.mode).toBe('weight');
+    expect(body.amount).toBe(150);
     expect(result).toEqual(ingredient);
   });
 });

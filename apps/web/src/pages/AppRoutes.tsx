@@ -40,12 +40,10 @@ import {
   WarningText,
   WeeklyStatsCard,
   WeightTrendCard,
-  useAnalytics,
 } from '@leanlog/ui';
 import { caloriesFromMode, dayTargetsFromProfile, dayMealStructure } from '@leanlog/data-access';
 import { isPastIso, normalizeIngredientName, prettyDate, todayIso } from '../lib';
 import { IngredientEntry } from '../components/IngredientEntry';
-import type { EntryIngredient } from '../components/IngredientEntry';
 import {
   dayTotals,
   mealTotals,
@@ -507,7 +505,6 @@ function MealEdit() {
     upsertIngredient,
     removeIngredient,
     addIngredientFromDatabase,
-    createNutritionDatabaseIngredient,
   } = useStore();
   const day = days.find((d) => d.id === dayId);
   const meal = day?.meals.find((m) => m.id === mealId);
@@ -517,10 +514,6 @@ function MealEdit() {
   });
   const mealName = mealNameDraft.mealId === meal?.id ? mealNameDraft.name : (meal?.name ?? '');
   const setMealName = (name: string) => setMealNameDraft({ mealId: meal?.id ?? null, name });
-  // "Save to database" state per ingredient row
-  const [savingToDbId, setSavingToDbId] = useState<string | null>(null);
-  const [saveToDbError, setSaveToDbError] = useState('');
-  const track = useAnalytics();
   const { saved, markDirty, markSaved } = useSavedSections();
 
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
@@ -611,60 +604,6 @@ function MealEdit() {
 
   const totals = mealTotals(meal);
 
-  const saveToDatabase = (i: EntryIngredient) => {
-    setSavingToDbId(i.id);
-    void createNutritionDatabaseIngredient({
-      name: i.name,
-      servingAmount: i.weight,
-      fat: i.fat,
-      carbs: i.carbs,
-      protein: i.protein,
-      calories: i.calories,
-      saturatedFat: i.saturatedFat ?? undefined,
-      fiber: i.fiber ?? undefined,
-      sugar: i.sugar ?? undefined,
-      sugarAlcohol: i.sugarAlcohol ?? undefined,
-      allulose: i.allulose ?? undefined,
-      alcohol: i.alcohol ?? undefined,
-      creationSource: 'meal_ingredient',
-    })
-      .then((created) => {
-        track('nutrition_database.ingredient.published', {
-          source: 'meal_ingredient',
-        });
-        // Link the meal ingredient to its new database entry so it
-        // can't be saved (and duplicated) again.
-        return upsertIngredient(day.id, meal.id, {
-          id: i.id,
-          mealId: meal.id,
-          name: i.name,
-          weight: i.weight,
-          calories: i.calorieSource === 'explicit' ? i.calories : null,
-          fat: i.fat,
-          saturatedFat: i.saturatedFat,
-          carbs: i.carbs,
-          fiber: i.fiber,
-          protein: i.protein,
-          sugarAlcohol: i.sugarAlcohol ?? null,
-          allulose: i.allulose ?? null,
-          alcohol: i.alcohol ?? null,
-          unsaturatedFat: i.unsaturatedFat ?? null,
-          monounsaturatedFat: i.monounsaturatedFat ?? null,
-          polyunsaturatedFat: i.polyunsaturatedFat ?? null,
-          transFat: i.transFat ?? null,
-          sugar: i.sugar ?? null,
-          micronutrients: i.micronutrients ?? null,
-          sourceDatabaseIngredientId: created.id,
-        });
-      })
-      .catch(() => {
-        setSaveToDbError('Failed to save ingredient to database.');
-      })
-      .finally(() => {
-        setSavingToDbId(null);
-      });
-  };
-
   return (
     <AnalyticsScope properties={{ dayId: day.id, mealId: meal.id }}>
       <MealEditTemplate
@@ -715,7 +654,6 @@ function MealEdit() {
                 Delete meal and all ingredients
               </Button>
             </div>
-            {saveToDbError ? <WarningText role="alert">{saveToDbError}</WarningText> : null}
           </SectionCard>
         }
         ingredientSection={
@@ -723,7 +661,6 @@ function MealEdit() {
             ingredients={meal.ingredients}
             analyticsContext="meal"
             showDatabaseCreate
-            savingToDbId={savingToDbId}
             onSubmit={(draft, editingId) => {
               const id = editingId ?? uuidv7();
               const next: UpsertIngredient = {
@@ -742,13 +679,12 @@ function MealEdit() {
               void upsertIngredient(day.id, meal.id, next);
             }}
             onDelete={(id) => void removeIngredient(day.id, meal.id, id)}
-            onAddFromDatabase={(dbId, amount) =>
+            onAddFromDatabase={(dbId, input) =>
               addIngredientFromDatabase(day.id, meal.id, {
                 databaseIngredientId: dbId,
-                measuredAmount: amount,
+                ...input,
               })
             }
-            onSaveToDatabase={saveToDatabase}
           />
         }
       />
@@ -1118,10 +1054,10 @@ function MealTemplateEdit() {
                 void upsertTemplateIngredient(template.id, next);
               }}
               onDelete={(id) => void removeTemplateIngredient(template.id, id)}
-              onAddFromDatabase={(dbId, amount) =>
+              onAddFromDatabase={(dbId, input) =>
                 addTemplateIngredientFromDatabase(template.id, {
                   databaseIngredientId: dbId,
-                  measuredAmount: amount,
+                  ...input,
                 })
               }
             />

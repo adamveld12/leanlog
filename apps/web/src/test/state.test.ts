@@ -26,6 +26,8 @@ describe('api.nutritionDatabase mock (state-level contract)', () => {
         addedByName: 'Alice',
         calories: 200,
         servingAmount: 100,
+        servingSizeUnit: 'gram' as const,
+        servingsPerPackage: 1,
         addedByUserId: 'u1',
         creationSource: 'manual' as const,
         fat: 10,
@@ -58,6 +60,8 @@ describe('api.nutritionDatabase mock (state-level contract)', () => {
       id: 'db-new',
       name: 'Oats',
       servingAmount: 100,
+      servingSizeUnit: 'gram' as const,
+      servingsPerPackage: 12,
       addedByUserId: 'u1',
       creationSource: 'manual' as const,
       fat: 7,
@@ -76,6 +80,8 @@ describe('api.nutritionDatabase mock (state-level contract)', () => {
     const input = {
       name: 'Oats',
       servingAmount: 100,
+      servingSizeUnit: 'gram' as const,
+      servingsPerPackage: 12,
       creationSource: 'manual' as const,
       fat: 7,
       carbs: 66,
@@ -113,13 +119,15 @@ describe('api.nutritionDatabase mock (state-level contract)', () => {
 
     const result = await api.ingredients.addFromDatabase('test-token', 'day-1', 'meal-1', {
       databaseIngredientId: 'db-1',
-      measuredAmount: 150,
+      mode: 'weight',
+      amount: 150,
     });
 
     expect(result).toEqual(newIngredient);
     expect(api.ingredients.addFromDatabase).toHaveBeenCalledWith('test-token', 'day-1', 'meal-1', {
       databaseIngredientId: 'db-1',
-      measuredAmount: 150,
+      mode: 'weight',
+      amount: 150,
     });
   });
 });
