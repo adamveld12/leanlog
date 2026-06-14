@@ -146,15 +146,24 @@ export const mealTemplateIngredients = sqliteTable('meal_template_ingredients', 
   updatedAt: text('updated_at').notNull(),
 });
 
+// A saved nutrition label (#44). `serving_amount` + `serving_size_unit` are the
+// metric serving size; `servings_per_package` is required for package scaling
+// and the stricter database scanner. Labels are created only via manual entry or
+// scanning on the Nutrition Facts Database tab.
 export const nutritionDatabaseIngredients = sqliteTable(
   'nutrition_database_ingredients',
   {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
     servingAmount: real('serving_amount').notNull(),
+    servingSizeUnit: text('serving_size_unit', { enum: ['gram', 'milliliter'] })
+      .notNull()
+      .default('gram'),
+    servingSizeDisplayText: text('serving_size_display_text'),
+    servingsPerPackage: real('servings_per_package').notNull().default(1),
     addedByUserId: text('added_by_user_id').notNull(),
     creationSource: text('creation_source', {
-      enum: ['manual', 'scan', 'meal_ingredient'],
+      enum: ['manual', 'scan'],
     }).notNull(),
     fat: real('fat').notNull(),
     carbs: real('carbs').notNull(),
@@ -166,6 +175,7 @@ export const nutritionDatabaseIngredients = sqliteTable(
     transFat: real('trans_fat'),
     fiber: real('fiber'),
     sugar: real('sugar'),
+    addedSugars: real('added_sugars'),
     calories: real('calories').notNull().default(0),
     sugarAlcohol: real('sugar_alcohol'),
     allulose: real('allulose'),

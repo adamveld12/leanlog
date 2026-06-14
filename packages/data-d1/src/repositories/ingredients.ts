@@ -1,7 +1,7 @@
 import { eq, count } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { ingredients, meals, dailyMealLogs } from '../schema';
-import { estimateCalories } from '@leanlog/data-access';
+import { estimateCalories, normalizeMicronutrients } from '@leanlog/data-access';
 import type {
   IngredientRepository,
   Ingredient,
@@ -16,9 +16,10 @@ function serializeMicronutrients(
   return JSON.stringify(micronutrients);
 }
 
+// Legacy rows may carry free-text units and %DV; normalize on read (#44).
 function deserializeMicronutrients(json: string | null | undefined): Micronutrient[] | null {
   if (json == null) return null;
-  return JSON.parse(json) as Micronutrient[];
+  return normalizeMicronutrients(JSON.parse(json));
 }
 
 function rowToDomain(row: typeof ingredients.$inferSelect): Ingredient {

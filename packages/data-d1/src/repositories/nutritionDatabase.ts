@@ -2,6 +2,7 @@ import { count, eq, like } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { nutritionDatabaseIngredients } from '../schema';
+import { normalizeMicronutrients } from '@leanlog/data-access';
 import type {
   NutritionDatabaseRepository,
   NutritionDatabaseIngredient,
@@ -18,7 +19,7 @@ function serializeMicronutrients(
 
 function deserializeMicronutrients(json: string | null): Micronutrient[] | null {
   if (json == null) return null;
-  return JSON.parse(json) as Micronutrient[];
+  return normalizeMicronutrients(JSON.parse(json));
 }
 
 function rowToDomain(
@@ -28,6 +29,9 @@ function rowToDomain(
     id: row.id,
     name: row.name,
     servingAmount: row.servingAmount,
+    servingSizeUnit: row.servingSizeUnit,
+    servingSizeDisplayText: row.servingSizeDisplayText ?? null,
+    servingsPerPackage: row.servingsPerPackage,
     addedByUserId: row.addedByUserId,
     creationSource: row.creationSource,
     fat: row.fat,
@@ -40,6 +44,7 @@ function rowToDomain(
     transFat: row.transFat ?? null,
     fiber: row.fiber ?? null,
     sugar: row.sugar ?? null,
+    addedSugars: row.addedSugars ?? null,
     calories: row.calories,
     sugarAlcohol: row.sugarAlcohol ?? null,
     allulose: row.allulose ?? null,
@@ -65,6 +70,9 @@ export function createNutritionDatabaseRepository(db: D1Database): NutritionData
         id,
         name: data.name,
         servingAmount: data.servingAmount,
+        servingSizeUnit: data.servingSizeUnit,
+        servingSizeDisplayText: data.servingSizeDisplayText ?? null,
+        servingsPerPackage: data.servingsPerPackage,
         addedByUserId: userId,
         creationSource: data.creationSource,
         fat: data.fat,
@@ -77,6 +85,7 @@ export function createNutritionDatabaseRepository(db: D1Database): NutritionData
         transFat: data.transFat ?? null,
         fiber: data.fiber ?? null,
         sugar: data.sugar ?? null,
+        addedSugars: data.addedSugars ?? null,
         calories: data.calories,
         sugarAlcohol: data.sugarAlcohol ?? null,
         allulose: data.allulose ?? null,
