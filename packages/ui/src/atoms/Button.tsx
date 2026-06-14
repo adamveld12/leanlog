@@ -84,6 +84,8 @@ export function Button(props: ButtonProps) {
             name: analyticsName ?? name,
             value: analyticsValue(value),
             variant,
+            // Best-effort analytics label only; not a render branch on children type.
+            // react-doctor-disable-next-line react-doctor/no-polymorphic-children
             text: typeof children === 'string' ? children : undefined,
           });
           onClick?.(event);
@@ -121,6 +123,8 @@ export function Button(props: ButtonProps) {
           name: analyticsName ?? name,
           value: analyticsValue(value),
           variant,
+          // Best-effort analytics label only; not a render branch on children type.
+          // react-doctor-disable-next-line react-doctor/no-polymorphic-children
           text: typeof children === 'string' ? children : undefined,
         });
         onClick?.(event);

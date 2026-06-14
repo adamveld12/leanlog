@@ -77,6 +77,8 @@ type Store = {
 
 const Ctx = createContext<Store | null>(null);
 
+// Size/useState-count cleanup (split + useReducer) is deferred to #50.
+// react-doctor-disable-next-line react-doctor/no-giant-component, react-doctor/prefer-useReducer
 export function StateProvider({ children }: PropsWithChildren) {
   const { getToken, isSignedIn } = useAuth();
   const [days, setDays] = useState<DailyMealLog[]>([]);

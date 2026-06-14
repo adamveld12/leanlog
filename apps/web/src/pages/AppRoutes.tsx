@@ -156,6 +156,8 @@ function LandingPage() {
         <LandingTemplate
           appName="LeanLog"
           iconSrc="/icon-192.png"
+          // Slot prop: template renders this node in a named region (intentional composition).
+          // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
           cta={
             <SignInButton mode="modal">
               <Button fullWidth className="md:w-auto">
@@ -163,6 +165,7 @@ function LandingPage() {
               </Button>
             </SignInButton>
           }
+          // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
           pricing={<PricingTable />}
         />
       </SignedOut>
@@ -274,6 +277,7 @@ function DayList() {
           onAction={() => void handleAction()}
         />
       }
+      // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
       statistics={
         <WeeklyStatsCard
           weekly={{
@@ -304,9 +308,11 @@ function DayList() {
           hasOverallData={last90Days.length > 0}
         />
       }
+      // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
       weightTrend={
         <WeightTrendCard entries={weightEntries} goalWeightLbs={profile?.goalWeightLbs ?? null} />
       }
+      // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
       calendar={
         <MonthCalendarCard
           trackedDates={dateMap}
@@ -315,6 +321,7 @@ function DayList() {
           emptyHint={!hasDays ? 'Start logging to fill in your calendar!' : undefined}
         />
       }
+      // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
       templatesLink={
         <SectionCard title="Meal templates">
           <HelperText as="p">
@@ -584,6 +591,7 @@ function MealEdit() {
                 <ListRow
                   key={i.id}
                   title={i.name}
+                  // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
                   meta={
                     <MacroSummaryLine
                       calories={i.calories}
@@ -1119,6 +1127,7 @@ function MealTemplateEdit() {
             />
           </SectionCard>
         }
+        // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
         dangerZone={
           <SectionCard title="Danger zone">
             <Button

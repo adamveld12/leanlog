@@ -103,12 +103,17 @@ export function WeightTrendCard({
 }
 
 function useThemeTokens(): Tokens {
+  // Initial value comes from the useState initializer (no extra render); the effect below only
+  // re-syncs on later theme mutations, so this isn't a "state initialized from an effect" case.
   const [tokens, setTokens] = useState<Tokens>(readTokens);
   useEffect(() => {
     if (typeof document === 'undefined') return;
     // Re-read the canvas colors whenever the theme attribute on <html> changes so the
     // chart tracks the CSS variables (chart.js writes to canvas and can't resolve var()).
+    // This observer only re-syncs on theme mutation; initial tokens come from useState above,
+    // so react-doctor's "state initialized from a mount effect" is a false positive here.
     const observer = new MutationObserver(() => setTokens(readTokens()));
+    // react-doctor-disable-next-line react-doctor/no-initialize-state
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme', 'class'],
