@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { createContext, useContext, useState, type PropsWithChildren } from 'react';
+import { createContext, use, useState, type PropsWithChildren } from 'react';
 import App from '../App';
 import { api } from '../api';
 import { todayIso } from '../lib';
@@ -217,7 +217,7 @@ function FakeStateProvider({
 vi.mock('../state', () => ({
   StateProvider: ({ children }: PropsWithChildren) => <>{children}</>,
   useStore: () => {
-    const ctx = useContext(FakeStoreCtx);
+    const ctx = use(FakeStoreCtx);
     if (!ctx) throw new Error('FakeStoreCtx not provided');
     return ctx;
   },

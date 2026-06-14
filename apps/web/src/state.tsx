@@ -1,7 +1,7 @@
 import {
   createContext,
+  use,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   useState,
@@ -416,7 +416,7 @@ export function StateProvider({ children }: PropsWithChildren) {
 }
 
 export function useStore(): Store {
-  const ctx = useContext(Ctx);
+  const ctx = use(Ctx);
   if (!ctx) throw new Error('useStore must be used within StateProvider');
   return ctx;
 }

@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, use, useMemo } from 'react';
 import type { AnalyticsProperties, AnalyticsProviderProps, TrackUiEvent } from './types';
 
 type AnalyticsContextValue = { scope: AnalyticsProperties; track: TrackUiEvent };
@@ -11,7 +11,7 @@ export function AnalyticsProvider({ track = noop, children }: AnalyticsProviderP
 }
 
 export function useAnalytics() {
-  const context = useContext(AnalyticsContext);
+  const context = use(AnalyticsContext);
   return (eventName: string, properties: AnalyticsProperties = {}) =>
     context.track(eventName, { ...context.scope, ...properties });
 }
