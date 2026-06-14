@@ -4,7 +4,7 @@ import { ProgressBar } from '../atoms/ProgressBar';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { Text } from '../atoms/Text';
 import { UnitText } from '../atoms/UnitText';
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { calorieColor } from '../molecules/MacroSummaryLine';
 import { SectionCard } from '../molecules/SectionCard';
 import { cn } from '../styles/cn';

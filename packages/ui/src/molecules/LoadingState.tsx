@@ -1,4 +1,4 @@
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { HelperText } from '../atoms/HelperText';
 import { Spinner } from '../atoms/Spinner';
 import { cn } from '../styles/cn';

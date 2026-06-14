@@ -1,5 +1,5 @@
 import { useId, useRef, useEffect, type PropsWithChildren } from 'react';
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Text } from '../atoms/Text';
 import { cn } from '../styles/cn';

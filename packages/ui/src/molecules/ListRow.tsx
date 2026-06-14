@@ -1,5 +1,5 @@
 import type { KeyboardEvent, ReactNode } from 'react';
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { HelperText } from '../atoms/HelperText';
 import { Text } from '../atoms/Text';
 import { cn } from '../styles/cn';

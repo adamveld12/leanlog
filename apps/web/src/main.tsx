@@ -3,7 +3,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import './index.css';
-import { PostHogAnalyticsProvider, AnalyticsErrorBoundary } from './analytics';
+import { PostHogAnalyticsProvider } from './analytics/PostHogAnalyticsProvider';
+import { AnalyticsErrorBoundary } from './analytics/AnalyticsErrorBoundary';
 import App from './App';
 import { StateProvider } from './state';
 

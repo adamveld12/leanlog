@@ -1,4 +1,4 @@
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { PageNavHeading, type PageNavHeadingProps } from './PageNavHeading';
 
 export type AppPageHeadingProps = Omit<PageNavHeadingProps, 'profileHref'> & {

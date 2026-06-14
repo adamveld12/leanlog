@@ -1,5 +1,5 @@
 import { useRef, type KeyboardEvent } from 'react';
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';

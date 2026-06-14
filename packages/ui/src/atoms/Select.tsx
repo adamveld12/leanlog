@@ -1,7 +1,7 @@
 import type { SelectHTMLAttributes } from 'react';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
-import { useAnalytics } from '../analytics';
+import { useAnalytics } from '../analytics/AnalyticsProvider';
 
 export function Select({
   className = '',

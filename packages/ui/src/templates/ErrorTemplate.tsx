@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Card } from '../atoms/Card';
 import { PageTitle } from '../atoms/PageTitle';

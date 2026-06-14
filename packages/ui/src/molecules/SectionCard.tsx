@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from 'react';
 import { Card } from '../atoms/Card';
 import { SectionHeading } from '../atoms/SectionHeading';
-import { AnalyticsScope } from '../analytics';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { recipes } from '../styles/recipes';
 
 type SectionCardProps = PropsWithChildren<{ title?: string; saved?: boolean }>;
