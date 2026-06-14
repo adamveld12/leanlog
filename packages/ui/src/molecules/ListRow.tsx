@@ -24,6 +24,9 @@ export function ListRow({
 }: ListRowProps) {
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!onOpen) return;
+    // Only activate when the row itself is focused — keydown from child action buttons bubbles
+    // here, and without this guard Enter/Space on a Delete/Save button would also fire onOpen.
+    if (e.target !== e.currentTarget) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onOpen();
