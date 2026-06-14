@@ -19,7 +19,18 @@ const scanSchema = z.object({
     fiber: z.number().finite().nonnegative(),
     protein: z.number().finite().nonnegative(),
     sugar: z.number().finite().nonnegative().optional(),
+    addedSugars: z.number().finite().nonnegative().optional(),
   }),
+  // Sodium, cholesterol, vitamins, minerals. %DV is intentionally not extracted (R4).
+  micronutrients: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        amount: z.number().finite().nonnegative(),
+        unit: z.enum(['gram', 'milligram', 'microgram', 'milliliter', 'international_unit']),
+      }),
+    )
+    .default([]),
   inferredName: z.string().nullable(),
   notes: z.array(z.string()).default([]),
 });
@@ -41,6 +52,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const mode: ScanMode = form.get('mode') === 'servings' ? 'servings' : 'weight';
     const entirePackage = String(form.get('entirePackage') ?? '') === 'true';
     const name = String(form.get('name') ?? '').trim();
+    // Database-tab scans set strict=true so the label candidate isn't save-ready
+    // unless calories, serving size, and servings-per-package are all present.
+    const strict = String(form.get('strict') ?? '') === 'true';
 
     if (!photo || typeof photo === 'string') {
       return new Response('Missing photo', { status: 400 });
@@ -64,7 +78,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       'basis=per_serving if values represent one serving; per_100g if values are per 100g; unknown otherwise.',
       'Extract servingSizeGrams if explicitly shown.',
       'Extract servingsPerContainer (servings per package/container) if explicitly shown, otherwise null.',
-      'Extract sugar from the label if shown; omit the field if not present.',
+      'Extract sugar (total sugars) and addedSugars from the label if shown; omit a field if not present.',
+      'Extract micronutrients such as sodium and cholesterol into the micronutrients array with a typed unit (gram, milligram, microgram, milliliter, or international_unit). Do NOT include percent daily value.',
       'If a required field is missing, return 0 and add a note.',
       'Keep numbers realistic and non-negative.',
     ].join(' ');
@@ -91,10 +106,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         nutrients: {
           ...object.nutrients,
           sugar: object.nutrients.sugar,
+          addedSugars: object.nutrients.addedSugars,
         },
+        micronutrients: object.micronutrients,
         inferredName: object.inferredName,
       },
-      { mode, weight, servings, entirePackage, name },
+      { mode, weight, servings, entirePackage, name, strict },
     );
 
     const response = {

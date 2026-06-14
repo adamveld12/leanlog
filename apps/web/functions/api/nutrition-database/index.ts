@@ -1,5 +1,8 @@
 import { createNutritionDatabaseRepository } from '@leanlog/data-d1';
-import { CreateNutritionDatabaseIngredientSchema } from '@leanlog/data-access';
+import {
+  CreateNutritionDatabaseIngredientSchema,
+  validateNutritionLabel,
+} from '@leanlog/data-access';
 import type { Env } from '../_env';
 import { getUserDisplayNames } from '../_clerk';
 
@@ -39,6 +42,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const parsed = CreateNutritionDatabaseIngredientSchema.safeParse(body);
   if (!parsed.success) {
     return new Response(JSON.stringify(parsed.error.flatten()), { status: 400 });
+  }
+
+  // Block impossible labels (sub-values exceeding their totals) before persisting (R5).
+  const contradictions = validateNutritionLabel(parsed.data);
+  if (contradictions.length > 0) {
+    return new Response(JSON.stringify({ errors: contradictions }), { status: 400 });
   }
 
   const repo = createNutritionDatabaseRepository(context.env.DB);

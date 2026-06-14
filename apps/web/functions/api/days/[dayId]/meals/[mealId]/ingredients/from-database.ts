@@ -1,8 +1,9 @@
 import { createIngredientRepository, createNutritionDatabaseRepository } from '@leanlog/data-d1';
 import {
   AddIngredientFromDatabaseSchema,
-  scaleNutritionDatabaseIngredient,
+  scaleLabelToIngredient,
   uuidv7,
+  type AddLabelToMealInput,
 } from '@leanlog/data-access';
 import type { Env } from '../../../../../_env';
 import { pastDayGuard } from '../../../../../_dayGuard';
@@ -26,7 +27,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const blocked = await pastDayGuard(context.env, userId, dayId, context.request);
   if (blocked) return blocked;
 
-  const { databaseIngredientId, measuredAmount } = parsed.data;
+  const { databaseIngredientId, mode, amount } = parsed.data;
 
   const nutritionRepo = createNutritionDatabaseRepository(context.env.DB);
   const source = await nutritionRepo.getById(databaseIngredientId);
@@ -34,7 +35,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return new Response('Ingredient not found', { status: 404 });
   }
 
-  const snapshot = scaleNutritionDatabaseIngredient(source, measuredAmount);
+  // amount is guaranteed present for weight/servings by the schema refine.
+  const scaling: AddLabelToMealInput =
+    mode === 'package' ? { mode } : { mode, amount: amount as number };
+  const snapshot = scaleLabelToIngredient(source, scaling);
 
   const ingredientRepo = createIngredientRepository(context.env.DB);
   const ingredient = await ingredientRepo.upsert(userId, mealId, {
