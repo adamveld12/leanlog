@@ -8,8 +8,7 @@ Feature: Label Scanning Remodel
     And I am on the meal edit page for a day and meal
 
   Scenario: Ingredient entry is organised into three tabs
-    Then I see the tabs "Manual Entry", "Label Scan", and "Nutrition Database"
-    And the "Manual Entry" tab is active by default
+    Then I see the tabs "Manual Entry", "Label Scan", and "Nutrition Facts Database"
     And the manual entry form no longer shows a "Scan Label" button next to the weight
 
   Scenario: Label Scan tab swaps the numeric field for servings
@@ -32,10 +31,6 @@ Feature: Label Scanning Remodel
     When I scan a label and apply the reviewed values
     Then I am returned to the "Manual Entry" tab
     And the form is pre-filled with the ingredient name and the calculated weight and macros
-
-  Scenario: Nutrition Database tab is a coming-soon placeholder
-    When I open the "Nutrition Database" tab
-    Then I see centered text "Instantly look up any ingredient. Speed up your meal logging."
 
   Scenario: A failed scan shows an error below the Scan Label button
     When a label scan fails
