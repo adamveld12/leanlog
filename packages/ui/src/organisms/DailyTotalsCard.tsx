@@ -5,7 +5,7 @@ import { SectionHeading } from '../atoms/SectionHeading';
 import { Text } from '../atoms/Text';
 import { UnitText } from '../atoms/UnitText';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
-import { calorieColor } from '../molecules/MacroSummaryLine';
+import { calorieColor } from '../styles/calorieColor';
 import { SectionCard } from '../molecules/SectionCard';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';

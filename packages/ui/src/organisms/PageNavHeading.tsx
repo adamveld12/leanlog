@@ -35,9 +35,6 @@ export function PageNavHeading({
     recipes.focusRing,
     recipes.button.subtle,
   );
-  const renderLink = ({ href, label }: { href: string; label: string }) =>
-    renderNavLink({ href, label, className: linkClassName });
-
   return (
     <AnalyticsScope properties={{ organism: 'PageNavHeading' }}>
       <div className={cn(recipes.stack.sm, 'w-full')}>
@@ -45,14 +42,19 @@ export function PageNavHeading({
           <div className={cn(recipes.stack.row, 'min-w-0')}>
             {backHref ? (
               <div className="hidden min-[512px]:inline-flex">
-                {renderLink({ href: backHref, label: backLabel })}
+                {/* renderNavLink is an intentional render prop: the consumer injects a
+                    router-aware link. Converting it to a child component would change the
+                    public template API across every page. */}
+                {/* react-doctor-disable-next-line react-doctor/no-render-in-render */}
+                {renderNavLink({ href: backHref, label: backLabel, className: linkClassName })}
               </div>
             ) : null}
             <PageTitle>{title}</PageTitle>
             {subtitle ? <div className="hidden px-4 min-[512px]:inline">{subtitle}</div> : null}
           </div>
           <div className={cn(recipes.stack.row, 'shrink-0')}>
-            {renderLink({ href: profileHref, label: profileLabel })}
+            {/* react-doctor-disable-next-line react-doctor/no-render-in-render */}
+            {renderNavLink({ href: profileHref, label: profileLabel, className: linkClassName })}
             {rightContent}
           </div>
         </div>

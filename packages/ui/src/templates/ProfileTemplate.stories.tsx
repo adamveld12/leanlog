@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { BodyInfoCard } from '../organisms/ProfileSectionCards';
+import { BodyInfoCard } from '../organisms/BodyInfoCard';
 import { ProfileTemplate } from './ProfileTemplate';
 
 const meta: Meta<typeof ProfileTemplate> = {
