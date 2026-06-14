@@ -1,26 +1,93 @@
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
+// Nutrition units (#44)
+// ---------------------------------------------------------------------------
+
+// Typed units for micronutrients. Percent Daily Value is intentionally not a
+// unit and is never persisted (R4).
+export const NutritionUnitSchema = z.enum([
+  'gram',
+  'milligram',
+  'microgram',
+  'milliliter',
+  'international_unit',
+]);
+
+// A nutrition label's metric serving size normalizes to grams or milliliters
+// for scaling (R9). Default is grams.
+export const ServingSizeUnitSchema = z.enum(['gram', 'milliliter']);
+
+// ---------------------------------------------------------------------------
 // Micronutrient
 // ---------------------------------------------------------------------------
 
+// A typed nutrient amount (R3). %DV is no longer accepted; extra keys are
+// stripped by Zod so legacy payloads carrying percentDailyValue still parse.
 export const MicronutrientSchema = z.object({
   name: z.string().min(1),
-  amount: z.number().min(0).optional(),
-  unit: z.string().optional(),
-  percentDailyValue: z.number().min(0).optional(),
+  amount: z.number().min(0),
+  unit: NutritionUnitSchema,
 });
+
+// Legacy micronutrient rows (pre-#44) stored a free-text unit and a
+// percentDailyValue. Normalize them on read so older meal-ingredient JSON still
+// deserializes into the typed shape: map known unit strings, default unknowns to
+// milligram, coerce a missing amount to 0, and drop %DV.
+const LEGACY_UNIT_MAP: Record<string, z.infer<typeof NutritionUnitSchema>> = {
+  g: 'gram',
+  gram: 'gram',
+  grams: 'gram',
+  mg: 'milligram',
+  milligram: 'milligram',
+  milligrams: 'milligram',
+  mcg: 'microgram',
+  ug: 'microgram',
+  µg: 'microgram',
+  microgram: 'microgram',
+  micrograms: 'microgram',
+  ml: 'milliliter',
+  milliliter: 'milliliter',
+  milliliters: 'milliliter',
+  iu: 'international_unit',
+  international_unit: 'international_unit',
+};
+
+export function normalizeMicronutrients(
+  value: unknown,
+): z.infer<typeof MicronutrientSchema>[] | null {
+  if (value == null || !Array.isArray(value)) return null;
+  const out: z.infer<typeof MicronutrientSchema>[] = [];
+  for (const raw of value) {
+    if (raw == null || typeof raw !== 'object') continue;
+    const r = raw as Record<string, unknown>;
+    const name = typeof r.name === 'string' ? r.name : '';
+    if (!name) continue;
+    const rawUnit = typeof r.unit === 'string' ? r.unit.trim().toLowerCase() : '';
+    const unit = LEGACY_UNIT_MAP[rawUnit] ?? 'milligram';
+    const amount = typeof r.amount === 'number' && Number.isFinite(r.amount) ? r.amount : 0;
+    out.push({ name, amount, unit });
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 // Nutrition Database Ingredient
 // ---------------------------------------------------------------------------
 
+// A saved nutrition label (#44). `servingAmount` + `servingSizeUnit` are the
+// metric serving size; `servingsPerPackage` is required so package scaling and
+// the stricter database scanner have what they need (R8/R17). `sugar` is the
+// label's total sugars; `addedSugars` is a distinct sub-value (R2).
 export const NutritionDatabaseIngredientSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
   servingAmount: z.number().gt(0),
+  servingSizeUnit: ServingSizeUnitSchema.default('gram'),
+  servingSizeDisplayText: z.string().nullable().optional(),
+  servingsPerPackage: z.number().gt(0),
   addedByUserId: z.string(),
-  creationSource: z.enum(['manual', 'scan', 'meal_ingredient']),
+  creationSource: z.enum(['manual', 'scan']),
   fat: z.number().min(0),
   carbs: z.number().min(0),
   protein: z.number().min(0),
@@ -31,6 +98,7 @@ export const NutritionDatabaseIngredientSchema = z.object({
   transFat: z.number().min(0).nullable().optional(),
   fiber: z.number().min(0).nullable().optional(),
   sugar: z.number().min(0).nullable().optional(),
+  addedSugars: z.number().min(0).nullable().optional(),
   calories: z.number().min(0),
   sugarAlcohol: z.number().min(0).nullable().optional(),
   allulose: z.number().min(0).nullable().optional(),
@@ -47,12 +115,20 @@ export const CreateNutritionDatabaseIngredientSchema = NutritionDatabaseIngredie
   updatedAt: true,
 }).strict();
 
+// How a saved label is scaled into a meal ingredient (R22): by consumed weight,
+// by a number of servings, or by the entire package. `amount` carries the
+// weight (grams/ml) or serving count; it is unused (and ignored) for 'package'.
 export const AddIngredientFromDatabaseSchema = z
   .object({
     databaseIngredientId: z.string().uuid(),
-    measuredAmount: z.number().gt(0),
+    mode: z.enum(['weight', 'servings', 'package']),
+    amount: z.number().gt(0).optional(),
   })
-  .strict();
+  .strict()
+  .refine((v) => v.mode === 'package' || (v.amount != null && v.amount > 0), {
+    message: 'amount is required for weight and servings modes',
+    path: ['amount'],
+  });
 
 export type NutritionDatabaseIngredientSearchResult = z.infer<
   typeof NutritionDatabaseIngredientSchema

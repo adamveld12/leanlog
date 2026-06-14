@@ -4,6 +4,7 @@
 // final ingredient weight, scale the macros, and decide whether the result is applicable.
 
 import { estimateCalories } from './calculations';
+import type { Micronutrient, ServingSizeUnit } from './models';
 
 export type ScanBasis = 'per_serving' | 'per_100g' | 'unknown';
 
@@ -16,6 +17,8 @@ export type ScanNutrients = {
   protein: number;
   /** Optional sugar extracted from the label. */
   sugar?: number;
+  /** Optional added sugars extracted from the label. */
+  addedSugars?: number;
   /** Optional sugar alcohol extracted from the label. */
   sugarAlcohol?: number;
   /** Optional allulose extracted from the label. */
@@ -29,6 +32,8 @@ export type ScanLabel = {
   /** Servings per container/package, or null when unreadable. */
   servingsPerContainer: number | null;
   nutrients: ScanNutrients;
+  /** Typed micronutrients (e.g. sodium, cholesterol) extracted from the label. */
+  micronutrients?: Micronutrient[];
   inferredName: string | null;
 };
 
@@ -45,13 +50,24 @@ export type ScanRequest = {
   entirePackage: boolean;
   /** Existing ingredient name from the form; controls whether an inferred name is offered. */
   name: string;
+  /**
+   * Database-tab scans are stricter than meal scans (R15): the resulting label
+   * candidate must have explicit calories and a readable servings-per-package,
+   * or it is not save-ready.
+   */
+  strict?: boolean;
 };
 
 export type ScanProposed = ScanNutrients & { name?: string; weight: number };
 
+// A staged nutrition label ready to save to the Nutrition Facts Database. Maps
+// onto CreateNutritionDatabaseIngredient — serving size + unit + servings per
+// package are part of the label (R8/R9).
 export type DatabaseCandidate = {
   name: string;
   servingAmount: number;
+  servingSizeUnit: ServingSizeUnit;
+  servingsPerPackage: number;
   calories: number;
   fat: number;
   carbs: number;
@@ -59,8 +75,10 @@ export type DatabaseCandidate = {
   saturatedFat?: number;
   fiber?: number;
   sugar?: number;
+  addedSugars?: number;
   sugarAlcohol?: number;
   allulose?: number;
+  micronutrients?: Micronutrient[];
 };
 
 export type ScanResolution = {
@@ -89,6 +107,7 @@ const safe = (n: number) => round1(Math.max(0, n));
 function buildDatabaseCandidate(
   label: ScanLabel,
   resolvedName: string,
+  strict: boolean,
 ): { candidate: DatabaseCandidate | null; blockReason?: string } {
   // unknown basis cannot produce a reliable per-serving candidate
   if (label.basis === 'unknown') {
@@ -117,6 +136,15 @@ function buildDatabaseCandidate(
     servingAmount = serving ?? 100;
   }
 
+  // A saved label requires servings per package (R8); for package scaling (R17).
+  const servingsPerPackage =
+    label.servingsPerContainer && label.servingsPerContainer > 0
+      ? label.servingsPerContainer
+      : null;
+  if (!servingsPerPackage) {
+    return { candidate: null, blockReason: 'Servings per package is required' };
+  }
+
   // Required macros
   if (label.nutrients.fat == null || label.nutrients.fat < 0) {
     return { candidate: null, blockReason: 'Fat is required' };
@@ -135,6 +163,7 @@ function buildDatabaseCandidate(
   let saturatedFat = label.nutrients.saturatedFat;
   let fiber = label.nutrients.fiber;
   let sugar = label.nutrients.sugar;
+  let addedSugars = label.nutrients.addedSugars;
   let sugarAlcohol = label.nutrients.sugarAlcohol;
   let allulose = label.nutrients.allulose;
   let printedCalories = label.nutrients.calories;
@@ -148,8 +177,14 @@ function buildDatabaseCandidate(
     if (saturatedFat != null) saturatedFat = round1(saturatedFat * factor);
     if (fiber != null) fiber = round1(fiber * factor);
     if (sugar != null) sugar = round1(sugar * factor);
+    if (addedSugars != null) addedSugars = round1(addedSugars * factor);
     if (sugarAlcohol != null) sugarAlcohol = round1(sugarAlcohol * factor);
     if (allulose != null) allulose = round1(allulose * factor);
+  }
+
+  // The stricter database scanner must not invent calories (R15).
+  if (strict && !(printedCalories > 0)) {
+    return { candidate: null, blockReason: 'Calories are required' };
   }
 
   const calories =
@@ -160,6 +195,8 @@ function buildDatabaseCandidate(
   const candidate: DatabaseCandidate = {
     name,
     servingAmount,
+    servingSizeUnit: 'gram',
+    servingsPerPackage,
     calories,
     fat,
     carbs,
@@ -169,8 +206,12 @@ function buildDatabaseCandidate(
   if (saturatedFat != null) candidate.saturatedFat = saturatedFat;
   if (fiber != null) candidate.fiber = fiber;
   if (sugar != null) candidate.sugar = sugar;
+  if (addedSugars != null) candidate.addedSugars = addedSugars;
   if (sugarAlcohol != null) candidate.sugarAlcohol = sugarAlcohol;
   if (allulose != null) candidate.allulose = allulose;
+  if (label.micronutrients && label.micronutrients.length > 0) {
+    candidate.micronutrients = label.micronutrients;
+  }
 
   return { candidate };
 }
@@ -269,7 +310,11 @@ export function resolveScan(label: ScanLabel, request: ScanRequest): ScanResolut
   // Derive the name that will be used for the database candidate:
   // prefer the user-supplied name, then the inferred name.
   const resolvedName = request.name.trim() || label.inferredName || '';
-  const { candidate, blockReason: dbBlockReason } = buildDatabaseCandidate(label, resolvedName);
+  const { candidate, blockReason: dbBlockReason } = buildDatabaseCandidate(
+    label,
+    resolvedName,
+    request.strict ?? false,
+  );
 
   const resolution: ScanResolution = {
     proposed: {
