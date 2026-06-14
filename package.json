@@ -22,7 +22,8 @@
     "dev:db:migrate": "pnpm --filter @leanlog/web dev:db:migrate",
     "dev:db:reset": "pnpm --filter @leanlog/web dev:db:reset",
     "dev:reset": "pnpm --filter @leanlog/web dev:reset",
-    "react-lint": "react-doctor --yes --verbose --diff"
+    "react-lint": "react-doctor --yes --verbose --diff",
+    "react-lint:ci": "react-doctor --yes --blocking warning"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
