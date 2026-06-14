@@ -3,6 +3,7 @@ import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
 import { Text } from '../atoms/Text';
 import { NumberInput } from '../atoms/NumberInput';
+import { Select } from '../atoms/Select';
 import { UnitText } from '../atoms/UnitText';
 import { LoadingState } from '../molecules/LoadingState';
 import { MacroSummaryLine } from '../molecules/MacroSummaryLine';
@@ -12,10 +13,16 @@ import { recipes } from '../styles/recipes';
 import { Field } from '../atoms/Field';
 import { Input } from '../atoms/Input';
 
+// How a saved label is added to a meal (R22): by consumed weight, a serving
+// count, or the entire package.
+export type AddFromDatabaseMode = 'weight' | 'servings' | 'package';
+
 export type NutritionDatabaseSearchResult = {
   id: string;
   name: string;
   servingAmount: number;
+  servingSizeUnit?: string;
+  servingsPerPackage?: number;
   fat: number;
   carbs: number;
   protein: number;
@@ -34,6 +41,9 @@ export type NutritionDatabaseSearchCardProps = {
   searched?: boolean;
   amounts: Record<string, number>;
   onAmountChange: (id: string, amount: number | null) => void;
+  /** Per-result add mode; defaults to 'weight' when unset. */
+  modes?: Record<string, AddFromDatabaseMode>;
+  onModeChange?: (id: string, mode: AddFromDatabaseMode) => void;
   onAdd: (id: string) => void;
   addingId?: string | null;
   onCreateNew?: () => void;
@@ -41,6 +51,12 @@ export type NutritionDatabaseSearchCardProps = {
   /** Total ingredients in the shared database; shown in the search label when known. */
   totalCount?: number;
 };
+
+const MODE_OPTIONS: { value: AddFromDatabaseMode; label: string }[] = [
+  { value: 'weight', label: 'Weight' },
+  { value: 'servings', label: 'Servings' },
+  { value: 'package', label: 'Entire package' },
+];
 
 export function NutritionDatabaseSearchCard({
   query,
@@ -50,6 +66,8 @@ export function NutritionDatabaseSearchCard({
   searched,
   amounts,
   onAmountChange,
+  modes,
+  onModeChange,
   onAdd,
   addingId,
   onCreateNew,
@@ -62,7 +80,7 @@ export function NutritionDatabaseSearchCard({
       : 'Search ingredients';
   return (
     <AnalyticsScope properties={{ organism: 'NutritionDatabaseSearchCard' }}>
-      <SectionCard title="Nutrition Database">
+      <SectionCard title="Nutrition Facts Database">
         <Field label={searchLabel}>
           <Input
             value={query}
@@ -80,7 +98,9 @@ export function NutritionDatabaseSearchCard({
             {results.map((result, idx) => {
               const amount = amounts[result.id] ?? 0;
               const isAdding = addingId === result.id;
-              const canAdd = amount > 0 && !isAdding;
+              const mode: AddFromDatabaseMode = modes?.[result.id] ?? 'weight';
+              const canAdd = (mode === 'package' || amount > 0) && !isAdding;
+              const amountLabel = mode === 'servings' ? '# of servings' : 'Weight (g/ml)';
               // Use idx in key to support duplicate entries
               const rowKey = `${result.id}-${idx}`;
               return (
@@ -100,7 +120,10 @@ export function NutritionDatabaseSearchCard({
                       </Text>
                       <HelperText as="span">
                         {result.servingAmount}
-                        <UnitText> g/ml</UnitText>
+                        <UnitText> {result.servingSizeUnit === 'milliliter' ? 'ml' : 'g'}</UnitText>
+                        {result.servingsPerPackage != null
+                          ? ` · ${result.servingsPerPackage}/pkg`
+                          : ''}
                         {' · '}Added by {result.addedByName} · {result.addedAtLabel}
                       </HelperText>
                       <MacroSummaryLine
@@ -112,13 +135,31 @@ export function NutritionDatabaseSearchCard({
                     </div>
                   </div>
                   <div className={cn(recipes.stack.row, 'items-end')}>
-                    <div className="flex-1">
-                      <NumberInput
-                        label="Amount (g/ml)"
-                        value={amount || null}
-                        onChange={(n) => onAmountChange(result.id, n)}
-                      />
+                    <div className="w-32 shrink-0">
+                      <Field label="Add by">
+                        <Select
+                          value={mode}
+                          onChange={(e) =>
+                            onModeChange?.(result.id, e.target.value as AddFromDatabaseMode)
+                          }
+                        >
+                          {MODE_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
                     </div>
+                    {mode !== 'package' ? (
+                      <div className="flex-1">
+                        <NumberInput
+                          label={amountLabel}
+                          value={amount || null}
+                          onChange={(n) => onAmountChange(result.id, n)}
+                        />
+                      </div>
+                    ) : null}
                     <Button
                       size="sm"
                       onClick={() => onAdd(result.id)}

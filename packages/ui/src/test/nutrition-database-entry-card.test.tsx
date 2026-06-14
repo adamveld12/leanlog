@@ -10,6 +10,7 @@ import {
 const emptyValue: NutritionDatabaseEntryValue = {
   name: '',
   servingAmount: null,
+  servingsPerPackage: null,
   calories: null,
   fat: null,
   carbs: null,
@@ -27,6 +28,7 @@ const emptyValue: NutritionDatabaseEntryValue = {
 const filledValue: NutritionDatabaseEntryValue = {
   name: 'CHICKEN BREAST',
   servingAmount: 100,
+  servingsPerPackage: 1,
   calories: 156,
   fat: 3.6,
   carbs: 0,
@@ -107,6 +109,17 @@ describe('NutritionDatabaseEntryCard', () => {
     expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
   });
 
+  it('Publish button is disabled when servings per package is missing (R8)', () => {
+    render(<Harness initial={{ ...filledValue, servingsPerPackage: null }} />);
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+  });
+
+  it('blocks save when saturated fat exceeds total fat (R5)', () => {
+    render(<Harness initial={{ ...filledValue, fat: 1, saturatedFat: 5 }} />);
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+    expect(screen.getByText(/Saturated fat cannot exceed total fat/)).toBeInTheDocument();
+  });
+
   it('Publish button is enabled when all required fields are filled', () => {
     render(<Harness initial={filledValue} />);
     expect(screen.getByRole('button', { name: 'Publish' })).not.toBeDisabled();
@@ -125,31 +138,33 @@ describe('NutritionDatabaseEntryCard', () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 
-  it('accepts %DV values over 100 (e.g. 120)', async () => {
+  it('edits a micronutrient with a typed unit and no %DV field (R3/R4)', async () => {
     render(
       <Harness
-        initial={{ ...filledValue, micronutrients: [{ name: 'Vitamin C', percentDailyValue: 0 }] }}
+        initial={{
+          ...filledValue,
+          micronutrients: [{ name: 'Sodium', amount: 60, unit: 'milligram' }],
+        }}
       />,
     );
-    const dvInput = screen.getByLabelText('% DV');
-    await userEvent.clear(dvInput);
-    await userEvent.type(dvInput, '120');
-    await userEvent.tab();
-    // Should not clamp to 100 — %DV up to 999 is allowed
-    expect(dvInput).toHaveValue('120');
+    // %DV is gone entirely
+    expect(screen.queryByLabelText('% DV')).not.toBeInTheDocument();
+    // Unit is a typed select, not a free-text input
+    const unit = screen.getByLabelText('Unit');
+    expect(unit).toHaveValue('milligram');
   });
 
   it('shows required fields warning when name and servingAmount missing', () => {
     render(<Harness initial={emptyValue} />);
-    const alert = screen.getByRole('alert');
+    const alert = screen.getAllByRole('alert')[0];
     expect(alert).toBeInTheDocument();
     expect(alert.textContent).toMatch(/Name/);
-    expect(alert.textContent).toMatch(/Serving amount/);
+    expect(alert.textContent).toMatch(/Serving size/);
   });
 
   it('starts with empty required inputs and lists null macros as required', () => {
     render(<Harness initial={emptyValue} />);
-    expect(screen.getByLabelText('Serving amount (g/ml)')).toHaveValue('');
+    expect(screen.getByLabelText('Serving size')).toHaveValue('');
     expect(screen.getByLabelText('Fat (g)')).toHaveValue('');
     expect(screen.getByLabelText('Carbs (g)')).toHaveValue('');
     expect(screen.getByLabelText('Protein (g)')).toHaveValue('');

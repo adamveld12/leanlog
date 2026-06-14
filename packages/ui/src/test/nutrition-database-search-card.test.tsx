@@ -121,7 +121,7 @@ describe('NutritionDatabaseSearchCard', () => {
 
   it('Add button enables when amount > 0', async () => {
     render(<Harness results={[result1]} />);
-    const amountInput = screen.getByLabelText('Amount (g/ml)');
+    const amountInput = screen.getByLabelText('Weight (g/ml)');
     await userEvent.clear(amountInput);
     await userEvent.type(amountInput, '150');
     const addBtn = screen.getByRole('button', { name: 'Add' });
@@ -131,11 +131,46 @@ describe('NutritionDatabaseSearchCard', () => {
   it('calls onAdd with the correct id when Add is clicked', async () => {
     const onAdd = vi.fn();
     render(<Harness results={[result1]} onAdd={onAdd} />);
-    const amountInput = screen.getByLabelText('Amount (g/ml)');
+    const amountInput = screen.getByLabelText('Weight (g/ml)');
     await userEvent.clear(amountInput);
     await userEvent.type(amountInput, '100');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
     expect(onAdd).toHaveBeenCalledWith('ing-1');
+  });
+
+  it('hides the amount input and enables Add in entire-package mode (R22)', () => {
+    render(
+      <NutritionDatabaseSearchCard
+        query="chicken"
+        onQueryChange={() => {}}
+        results={[result1]}
+        searched={true}
+        amounts={{}}
+        onAmountChange={() => {}}
+        modes={{ 'ing-1': 'package' }}
+        onModeChange={() => {}}
+        onAdd={() => {}}
+      />,
+    );
+    expect(screen.queryByLabelText('Weight (g/ml)')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add' })).not.toBeDisabled();
+  });
+
+  it('switches the amount label to servings in servings mode', () => {
+    render(
+      <NutritionDatabaseSearchCard
+        query="chicken"
+        onQueryChange={() => {}}
+        results={[result1]}
+        searched={true}
+        amounts={{}}
+        onAmountChange={() => {}}
+        modes={{ 'ing-1': 'servings' }}
+        onModeChange={() => {}}
+        onAdd={() => {}}
+      />,
+    );
+    expect(screen.getByLabelText('# of servings')).toBeInTheDocument();
   });
 
   it('disables Add while addingId matches', () => {
