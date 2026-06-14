@@ -2,7 +2,7 @@ import { count, eq, like } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { nutritionDatabaseIngredients } from '../schema';
-import { normalizeMicronutrients } from '@leanlog/data-access';
+import { parseMicronutrientsJson } from '@leanlog/data-access';
 import type {
   NutritionDatabaseRepository,
   NutritionDatabaseIngredient,
@@ -15,11 +15,6 @@ function serializeMicronutrients(
 ): string | null {
   if (micronutrients == null) return null;
   return JSON.stringify(micronutrients);
-}
-
-function deserializeMicronutrients(json: string | null): Micronutrient[] | null {
-  if (json == null) return null;
-  return normalizeMicronutrients(JSON.parse(json));
 }
 
 function rowToDomain(
@@ -49,7 +44,7 @@ function rowToDomain(
     sugarAlcohol: row.sugarAlcohol ?? null,
     allulose: row.allulose ?? null,
     alcohol: row.alcohol ?? null,
-    micronutrients: deserializeMicronutrients(row.micronutrientsJson),
+    micronutrients: parseMicronutrientsJson(row.micronutrientsJson),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

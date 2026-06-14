@@ -7,6 +7,8 @@ import {
   PROFILE_DEFAULTS,
   CreateNutritionDatabaseIngredientSchema,
   UpsertIngredientSchema,
+  normalizeMicronutrients,
+  parseMicronutrientsJson,
 } from './schemas';
 
 describe('UpdateProfileSchema', () => {
@@ -284,6 +286,43 @@ describe('CreateNutritionDatabaseIngredientSchema', () => {
       calories: undefined,
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('normalizeMicronutrients', () => {
+  it('maps legacy unit strings, drops %DV, and defaults a missing amount', () => {
+    const result = normalizeMicronutrients([
+      { name: 'Sodium', amount: 60, unit: 'mg', percentDailyValue: 3 },
+      { name: 'Vitamin D', unit: 'mcg' },
+      { name: 'Calcium', amount: 100, unit: 'unknown-unit' },
+    ]);
+    expect(result).toEqual([
+      { name: 'Sodium', amount: 60, unit: 'milligram' },
+      { name: 'Vitamin D', amount: 0, unit: 'microgram' },
+      { name: 'Calcium', amount: 100, unit: 'milligram' },
+    ]);
+  });
+
+  it('skips entries without a name and returns null for non-arrays', () => {
+    expect(normalizeMicronutrients([{ amount: 1, unit: 'mg' }])).toEqual([]);
+    expect(normalizeMicronutrients(null)).toBeNull();
+    expect(normalizeMicronutrients('nope')).toBeNull();
+  });
+});
+
+describe('parseMicronutrientsJson', () => {
+  it('returns null for malformed JSON instead of throwing', () => {
+    expect(() => parseMicronutrientsJson('{ not json')).not.toThrow();
+    expect(parseMicronutrientsJson('{ not json')).toBeNull();
+  });
+
+  it('returns null for a null column', () => {
+    expect(parseMicronutrientsJson(null)).toBeNull();
+  });
+
+  it('parses and normalizes a valid legacy JSON string', () => {
+    const json = JSON.stringify([{ name: 'Iron', amount: 8, unit: 'mg', percentDailyValue: 45 }]);
+    expect(parseMicronutrientsJson(json)).toEqual([{ name: 'Iron', amount: 8, unit: 'milligram' }]);
   });
 });
 

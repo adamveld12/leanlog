@@ -20,6 +20,8 @@ const scanSchema = z.object({
     protein: z.number().finite().nonnegative(),
     sugar: z.number().finite().nonnegative().optional(),
     addedSugars: z.number().finite().nonnegative().optional(),
+    sugarAlcohol: z.number().finite().nonnegative().optional(),
+    allulose: z.number().finite().nonnegative().optional(),
   }),
   // Sodium, cholesterol, vitamins, minerals. %DV is intentionally not extracted (R4).
   micronutrients: z
@@ -78,7 +80,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       'basis=per_serving if values represent one serving; per_100g if values are per 100g; unknown otherwise.',
       'Extract servingSizeGrams if explicitly shown.',
       'Extract servingsPerContainer (servings per package/container) if explicitly shown, otherwise null.',
-      'Extract sugar (total sugars) and addedSugars from the label if shown; omit a field if not present.',
+      'Extract sugar (total sugars), addedSugars, sugarAlcohol, and allulose from the label if shown; omit a field if not present.',
       'Extract micronutrients such as sodium and cholesterol into the micronutrients array with a typed unit (gram, milligram, microgram, milliliter, or international_unit). Do NOT include percent daily value.',
       'If a required field is missing, return 0 and add a note.',
       'Keep numbers realistic and non-negative.',

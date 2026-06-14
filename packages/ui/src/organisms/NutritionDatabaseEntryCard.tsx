@@ -93,22 +93,29 @@ function missingFields(value: NutritionDatabaseEntryValue): string[] {
 // must not exceed the total it belongs to. Unsaturated fat is never derived.
 function labelContradictions(value: NutritionDatabaseEntryValue): string[] {
   const errors: string[] = [];
-  const fat = value.fat ?? 0;
-  const carbs = value.carbs ?? 0;
   const over = (v: number | null | undefined, limit: number) => v != null && v > limit;
-  if (over(value.saturatedFat, fat)) errors.push('Saturated fat cannot exceed total fat.');
-  if (over(value.transFat, fat)) errors.push('Trans fat cannot exceed total fat.');
-  if (over(value.unsaturatedFat, fat)) errors.push('Unsaturated fat cannot exceed total fat.');
-  if (over(value.monounsaturatedFat, fat))
-    errors.push('Monounsaturated fat cannot exceed total fat.');
-  if (over(value.polyunsaturatedFat, fat))
-    errors.push('Polyunsaturated fat cannot exceed total fat.');
-  if (over(value.fiber, carbs)) errors.push('Fiber cannot exceed carbs.');
-  if (over(value.sugar, carbs)) errors.push('Total sugars cannot exceed carbs.');
-  if (over(value.sugarAlcohol, carbs)) errors.push('Sugar alcohol cannot exceed carbs.');
-  if (over(value.allulose, carbs)) errors.push('Allulose cannot exceed carbs.');
-  const sugarLimit = value.sugar != null ? value.sugar : carbs;
-  if (over(value.addedSugars, sugarLimit)) errors.push('Added sugars cannot exceed total sugars.');
+  // Only compare against a total once it's set, so a missing fat/carbs shows the
+  // "required" message alone rather than a redundant contradiction beside it.
+  if (value.fat != null) {
+    const fat = value.fat;
+    if (over(value.saturatedFat, fat)) errors.push('Saturated fat cannot exceed total fat.');
+    if (over(value.transFat, fat)) errors.push('Trans fat cannot exceed total fat.');
+    if (over(value.unsaturatedFat, fat)) errors.push('Unsaturated fat cannot exceed total fat.');
+    if (over(value.monounsaturatedFat, fat))
+      errors.push('Monounsaturated fat cannot exceed total fat.');
+    if (over(value.polyunsaturatedFat, fat))
+      errors.push('Polyunsaturated fat cannot exceed total fat.');
+  }
+  if (value.carbs != null) {
+    const carbs = value.carbs;
+    if (over(value.fiber, carbs)) errors.push('Fiber cannot exceed carbs.');
+    if (over(value.sugar, carbs)) errors.push('Total sugars cannot exceed carbs.');
+    if (over(value.sugarAlcohol, carbs)) errors.push('Sugar alcohol cannot exceed carbs.');
+    if (over(value.allulose, carbs)) errors.push('Allulose cannot exceed carbs.');
+    const sugarLimit = value.sugar != null ? value.sugar : carbs;
+    if (over(value.addedSugars, sugarLimit))
+      errors.push('Added sugars cannot exceed total sugars.');
+  }
   return errors;
 }
 

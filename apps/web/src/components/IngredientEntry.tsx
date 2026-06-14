@@ -156,6 +156,10 @@ export function IngredientEntry({
   const [dbModes, setDbModes] = useState<Record<string, AddFromDatabaseMode>>({});
   const [dbAddingId, setDbAddingId] = useState<string | null>(null);
   const [dbShowCreate, setDbShowCreate] = useState(false);
+  // Whether the open label form was populated by a scan or typed manually — used
+  // for the published label's creationSource, independent of any prior (possibly
+  // cancelled) scan attempt.
+  const [dbEntrySource, setDbEntrySource] = useState<'manual' | 'scan'>('manual');
   const [dbEntryValue, setDbEntryValue] = useState<NutritionDatabaseEntryValue>(emptyDbEntry);
   const [dbCreating, setDbCreating] = useState(false);
   const [dbError, setDbError] = useState('');
@@ -238,6 +242,7 @@ export function IngredientEntry({
   // when the label isn't save-ready, surface why and keep the form open to fix.
   const stageDatabaseScan = (result: ScanResolution) => {
     setDbShowCreate(true);
+    setDbEntrySource('scan');
     const candidate = result.databaseCandidate;
     if (!candidate) {
       setDbError(
@@ -572,7 +577,14 @@ export function IngredientEntry({
                 }}
                 addingId={dbAddingId}
                 onCreateNew={
-                  showDatabaseCreate ? () => setDbShowCreate((prev) => !prev) : undefined
+                  showDatabaseCreate
+                    ? () =>
+                        setDbShowCreate((prev) => {
+                          // Opening the form via this button is a manual entry.
+                          if (!prev) setDbEntrySource('manual');
+                          return !prev;
+                        })
+                    : undefined
                 }
                 truncated={dbResults.length >= 25}
                 totalCount={dbTotal ?? undefined}
@@ -623,9 +635,9 @@ export function IngredientEntry({
                         allulose: dbEntryValue.allulose ?? null,
                         alcohol: dbEntryValue.alcohol ?? null,
                       });
-                    // The scan stages a label; a published label is always a
-                    // 'scan' or 'manual' source — never derived from a meal row.
-                    const source = scanTarget === 'database' ? 'scan' : 'manual';
+                    // Reflects how this form was actually populated (scan vs
+                    // manual), not whether a scan was ever attempted.
+                    const source = dbEntrySource;
                     setDbCreating(true);
                     void createNutritionDatabaseIngredient({
                       ...dbEntryValue,
@@ -656,6 +668,7 @@ export function IngredientEntry({
                         track('nutrition_facts.label.published', { source });
                         setDbShowCreate(false);
                         setScanTarget('meal');
+                        setDbEntrySource('manual');
                         setDbEntryValue(emptyDbEntry);
                         setDbTotal((t) => (t == null ? t : t + 1));
                         if (dbQuery.length >= 2) {

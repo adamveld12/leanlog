@@ -71,6 +71,20 @@ export function normalizeMicronutrients(
   return out;
 }
 
+// Resilient reader for the stored micronutrients_json column: tolerates a
+// malformed JSON string (returns null rather than throwing, so one bad row
+// never crashes an ingredient/label/template read) and normalizes legacy shapes.
+export function parseMicronutrientsJson(
+  json: string | null | undefined,
+): z.infer<typeof MicronutrientSchema>[] | null {
+  if (json == null) return null;
+  try {
+    return normalizeMicronutrients(JSON.parse(json));
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Nutrition Database Ingredient
 // ---------------------------------------------------------------------------

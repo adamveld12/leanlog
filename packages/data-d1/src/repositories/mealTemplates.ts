@@ -5,7 +5,7 @@ import { mealTemplates, mealTemplateIngredients, userProfiles } from '../schema'
 import {
   estimateCalories,
   DEFAULT_MEAL_TEMPLATE_NAMES,
-  normalizeMicronutrients,
+  parseMicronutrientsJson,
 } from '@leanlog/data-access';
 import {
   DuplicateTemplateNameError,
@@ -19,11 +19,6 @@ import {
 
 function serializeMicronutrients(m: Micronutrient[] | null | undefined): string | null {
   return m == null ? null : JSON.stringify(m);
-}
-
-// Legacy rows may carry free-text units and %DV; normalize on read (#44).
-function deserializeMicronutrients(json: string | null | undefined): Micronutrient[] | null {
-  return json == null ? null : normalizeMicronutrients(JSON.parse(json));
 }
 
 function ingredientRowToDomain(
@@ -50,7 +45,7 @@ function ingredientRowToDomain(
     alcohol: row.alcohol ?? null,
     calorieSource: row.calorieSource,
     estimatedCalories: row.estimatedCalories,
-    micronutrients: deserializeMicronutrients(row.micronutrientsJson),
+    micronutrients: parseMicronutrientsJson(row.micronutrientsJson),
     sourceDatabaseIngredientId: row.sourceDatabaseIngredientId ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

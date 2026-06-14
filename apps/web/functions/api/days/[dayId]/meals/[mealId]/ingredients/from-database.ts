@@ -46,6 +46,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     mealId,
     name: snapshot.name,
     weight: snapshot.weight,
+    // Forward the label's scaled explicit calories so the ingredient keeps the
+    // printed value (calorieSource: 'explicit') instead of re-estimating.
+    calories: snapshot.calories,
     fat: snapshot.fat,
     carbs: snapshot.carbs,
     protein: snapshot.protein,
@@ -56,6 +59,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     polyunsaturatedFat: snapshot.polyunsaturatedFat,
     transFat: snapshot.transFat,
     sugar: snapshot.sugar,
+    sugarAlcohol: snapshot.sugarAlcohol,
+    allulose: snapshot.allulose,
+    alcohol: snapshot.alcohol,
     micronutrients: snapshot.micronutrients,
     sourceDatabaseIngredientId: snapshot.sourceDatabaseIngredientId,
   });
