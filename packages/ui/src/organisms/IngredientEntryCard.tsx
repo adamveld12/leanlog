@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
+import { HelperText } from '../atoms/HelperText';
 import { Input } from '../atoms/Input';
 import { NumberInput } from '../atoms/NumberInput';
 import { Select } from '../atoms/Select';
@@ -274,6 +275,9 @@ export function IngredientEntryCard({
             ))}
           </div>
         ) : null}
+        <HelperText as="p">
+          % DV uses FDA Daily Values (21 CFR 101.9, 2016 Nutrition Facts label).
+        </HelperText>
       </SectionCard>
     </AnalyticsScope>
   );
