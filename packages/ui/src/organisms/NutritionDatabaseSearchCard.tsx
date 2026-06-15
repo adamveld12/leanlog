@@ -3,6 +3,7 @@ import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
 import { Text } from '../atoms/Text';
 import { NumberInput } from '../atoms/NumberInput';
+import { Select } from '../atoms/Select';
 import { UnitText } from '../atoms/UnitText';
 import { LoadingState } from '../molecules/LoadingState';
 import { MacroSummaryLine } from '../molecules/MacroSummaryLine';
@@ -12,10 +13,16 @@ import { recipes } from '../styles/recipes';
 import { Field } from '../atoms/Field';
 import { Input } from '../atoms/Input';
 
+// How a saved label is added to a meal (R22): by consumed weight, a serving
+// count, or the entire package.
+export type AddFromDatabaseMode = 'weight' | 'servings' | 'package';
+
 export type NutritionDatabaseSearchResult = {
   id: string;
   name: string;
   servingAmount: number;
+  servingSizeUnit?: string;
+  servingsPerPackage?: number;
   fat: number;
   carbs: number;
   protein: number;
@@ -34,13 +41,27 @@ export type NutritionDatabaseSearchCardProps = {
   searched?: boolean;
   amounts: Record<string, number>;
   onAmountChange: (id: string, amount: number | null) => void;
+  /** Per-result add mode; defaults to 'weight' when unset. */
+  modes?: Record<string, AddFromDatabaseMode>;
+  onModeChange?: (id: string, mode: AddFromDatabaseMode) => void;
   onAdd: (id: string) => void;
   addingId?: string | null;
+  /** Opens the inline manual label-creation form. */
   onCreateNew?: () => void;
+  /** Starts a strict label scan that stages into the creation form. */
+  onScanLabel?: () => void;
+  /** True while a label scan is in flight (drives the scan button label). */
+  scanning?: boolean;
   truncated?: boolean;
   /** Total ingredients in the shared database; shown in the search label when known. */
   totalCount?: number;
 };
+
+const MODE_OPTIONS: { value: AddFromDatabaseMode; label: string }[] = [
+  { value: 'weight', label: 'Weight' },
+  { value: 'servings', label: 'Servings' },
+  { value: 'package', label: 'Entire package' },
+];
 
 export function NutritionDatabaseSearchCard({
   query,
@@ -50,9 +71,13 @@ export function NutritionDatabaseSearchCard({
   searched,
   amounts,
   onAmountChange,
+  modes,
+  onModeChange,
   onAdd,
   addingId,
   onCreateNew,
+  onScanLabel,
+  scanning,
   truncated,
   totalCount,
 }: NutritionDatabaseSearchCardProps) {
@@ -62,12 +87,13 @@ export function NutritionDatabaseSearchCard({
       : 'Search ingredients';
   return (
     <AnalyticsScope properties={{ organism: 'NutritionDatabaseSearchCard' }}>
-      <SectionCard title="Nutrition Database">
+      <SectionCard title="Nutrition Facts Database">
         <Field label={searchLabel}>
           <Input
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="e.g. Chicken breast"
+            disabled={scanning}
           />
         </Field>
 
@@ -80,7 +106,9 @@ export function NutritionDatabaseSearchCard({
             {results.map((result, idx) => {
               const amount = amounts[result.id] ?? 0;
               const isAdding = addingId === result.id;
-              const canAdd = amount > 0 && !isAdding;
+              const mode: AddFromDatabaseMode = modes?.[result.id] ?? 'weight';
+              const canAdd = (mode === 'package' || amount > 0) && !isAdding && !scanning;
+              const amountLabel = mode === 'servings' ? '# of servings' : 'Weight (g/ml)';
               // Use idx in key to support duplicate entries
               const rowKey = `${result.id}-${idx}`;
               return (
@@ -100,7 +128,10 @@ export function NutritionDatabaseSearchCard({
                       </Text>
                       <HelperText as="span">
                         {result.servingAmount}
-                        <UnitText> g/ml</UnitText>
+                        <UnitText> {result.servingSizeUnit === 'milliliter' ? 'ml' : 'g'}</UnitText>
+                        {result.servingsPerPackage != null
+                          ? ` · ${result.servingsPerPackage}/pkg`
+                          : ''}
                         {' · '}Added by {result.addedByName} · {result.addedAtLabel}
                       </HelperText>
                       <MacroSummaryLine
@@ -112,13 +143,33 @@ export function NutritionDatabaseSearchCard({
                     </div>
                   </div>
                   <div className={cn(recipes.stack.row, 'items-end')}>
-                    <div className="flex-1">
-                      <NumberInput
-                        label="Amount (g/ml)"
-                        value={amount || null}
-                        onChange={(n) => onAmountChange(result.id, n)}
-                      />
+                    <div className="w-32 shrink-0">
+                      <Field label="Add by">
+                        <Select
+                          value={mode}
+                          disabled={scanning}
+                          onChange={(e) =>
+                            onModeChange?.(result.id, e.target.value as AddFromDatabaseMode)
+                          }
+                        >
+                          {MODE_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
                     </div>
+                    {mode !== 'package' ? (
+                      <div className="flex-1">
+                        <NumberInput
+                          label={amountLabel}
+                          value={amount || null}
+                          onChange={(n) => onAmountChange(result.id, n)}
+                          disabled={scanning}
+                        />
+                      </div>
+                    ) : null}
                     <Button
                       size="sm"
                       onClick={() => onAdd(result.id)}
@@ -140,10 +191,19 @@ export function NutritionDatabaseSearchCard({
           </HelperText>
         ) : null}
 
-        {onCreateNew ? (
-          <Button variant="subtle" size="sm" onClick={onCreateNew}>
-            Add database ingredient
-          </Button>
+        {onCreateNew || onScanLabel ? (
+          <div className={recipes.stack.sm}>
+            {onScanLabel ? (
+              <Button variant="primary" fullWidth disabled={scanning} onClick={onScanLabel}>
+                {scanning ? 'Scanning…' : 'Scan to add'}
+              </Button>
+            ) : null}
+            {onCreateNew ? (
+              <Button variant="primary" fullWidth disabled={scanning} onClick={onCreateNew}>
+                Add an ingredient
+              </Button>
+            ) : null}
+          </div>
         ) : null}
       </SectionCard>
     </AnalyticsScope>

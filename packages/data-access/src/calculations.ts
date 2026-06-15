@@ -1,4 +1,10 @@
-import type { UserProfile, NutritionDatabaseIngredient, Meal, DailyMealLog } from './models';
+import type {
+  UserProfile,
+  NutritionDatabaseIngredient,
+  NutritionUnit,
+  Meal,
+  DailyMealLog,
+} from './models';
 
 // Default meal templates seeded for a brand-new user (issue #41).
 export const DEFAULT_MEAL_TEMPLATE_NAMES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const;
@@ -146,52 +152,76 @@ export type ScaledNutritionSnapshot = {
   sugarAlcohol?: number;
   allulose?: number;
   alcohol?: number;
-  micronutrients?: Array<{
-    name: string;
-    amount?: number;
-    unit?: string;
-    percentDailyValue?: number;
-  }>;
+  micronutrients?: Array<{ name: string; amount: number; unit: NutritionUnit }>;
   sourceDatabaseIngredientId: string;
 };
 
-export function scaleNutritionDatabaseIngredient(
-  ingredient: NutritionDatabaseIngredient,
-  measuredAmount: number,
+// How a saved nutrition label is applied to a meal (R22). Facts are stored
+// per serving, so:
+//   weight   → factor = consumed grams / serving size; consumed = amount
+//   servings → factor = serving count;                 consumed = amount × serving size
+//   package  → factor = servings per package;          consumed = serving size × servings/pkg
+export type AddLabelToMealInput =
+  | { mode: 'weight'; amount: number }
+  | { mode: 'servings'; amount: number }
+  | { mode: 'package' };
+
+function resolveLabelFactor(
+  label: NutritionDatabaseIngredient,
+  input: AddLabelToMealInput,
+): { factor: number; consumedAmount: number } {
+  switch (input.mode) {
+    case 'weight':
+      return { factor: input.amount / label.servingAmount, consumedAmount: input.amount };
+    case 'servings':
+      return { factor: input.amount, consumedAmount: input.amount * label.servingAmount };
+    case 'package':
+      return {
+        factor: label.servingsPerPackage,
+        consumedAmount: label.servingAmount * label.servingsPerPackage,
+      };
+  }
+}
+
+// Produces a consumed-nutrition snapshot that references its source label (R23)
+// and never changes when the label is later edited (R24 — callers persist this
+// value, not a live reference). Replaces the old weight-only scaler.
+export function scaleLabelToIngredient(
+  label: NutritionDatabaseIngredient,
+  input: AddLabelToMealInput,
 ): ScaledNutritionSnapshot {
-  const factor = measuredAmount / ingredient.servingAmount;
+  const { factor, consumedAmount } = resolveLabelFactor(label, input);
   const scaleVal = (v: number) => round1(v * factor);
 
   const result: ScaledNutritionSnapshot = {
-    name: ingredient.name,
-    weight: measuredAmount,
-    calories: scaleVal(ingredient.calories),
-    fat: scaleVal(ingredient.fat),
-    carbs: scaleVal(ingredient.carbs),
-    protein: scaleVal(ingredient.protein),
-    sourceDatabaseIngredientId: ingredient.id,
+    name: label.name,
+    weight: round1(consumedAmount),
+    calories: scaleVal(label.calories),
+    fat: scaleVal(label.fat),
+    carbs: scaleVal(label.carbs),
+    protein: scaleVal(label.protein),
+    sourceDatabaseIngredientId: label.id,
   };
 
-  if (ingredient.saturatedFat != null) result.saturatedFat = scaleVal(ingredient.saturatedFat);
-  if (ingredient.unsaturatedFat != null)
-    result.unsaturatedFat = scaleVal(ingredient.unsaturatedFat);
-  if (ingredient.monounsaturatedFat != null)
-    result.monounsaturatedFat = scaleVal(ingredient.monounsaturatedFat);
-  if (ingredient.polyunsaturatedFat != null)
-    result.polyunsaturatedFat = scaleVal(ingredient.polyunsaturatedFat);
-  if (ingredient.transFat != null) result.transFat = scaleVal(ingredient.transFat);
-  if (ingredient.fiber != null) result.fiber = scaleVal(ingredient.fiber);
-  if (ingredient.sugar != null) result.sugar = scaleVal(ingredient.sugar);
-  if (ingredient.sugarAlcohol != null) result.sugarAlcohol = scaleVal(ingredient.sugarAlcohol);
-  if (ingredient.allulose != null) result.allulose = scaleVal(ingredient.allulose);
-  if (ingredient.alcohol != null) result.alcohol = scaleVal(ingredient.alcohol);
+  if (label.saturatedFat != null) result.saturatedFat = scaleVal(label.saturatedFat);
+  if (label.unsaturatedFat != null) result.unsaturatedFat = scaleVal(label.unsaturatedFat);
+  if (label.monounsaturatedFat != null)
+    result.monounsaturatedFat = scaleVal(label.monounsaturatedFat);
+  if (label.polyunsaturatedFat != null)
+    result.polyunsaturatedFat = scaleVal(label.polyunsaturatedFat);
+  if (label.transFat != null) result.transFat = scaleVal(label.transFat);
+  if (label.fiber != null) result.fiber = scaleVal(label.fiber);
+  if (label.sugar != null) result.sugar = scaleVal(label.sugar);
+  if (label.sugarAlcohol != null) result.sugarAlcohol = scaleVal(label.sugarAlcohol);
+  if (label.allulose != null) result.allulose = scaleVal(label.allulose);
+  if (label.alcohol != null) result.alcohol = scaleVal(label.alcohol);
 
-  if (ingredient.micronutrients != null) {
-    result.micronutrients = ingredient.micronutrients.map((m) => ({
+  if (label.micronutrients != null) {
+    // %DV is intentionally dropped here (R4); only typed amounts scale.
+    result.micronutrients = label.micronutrients.map((m) => ({
       name: m.name,
       unit: m.unit,
-      amount: m.amount != null ? scaleVal(m.amount) : undefined,
-      percentDailyValue: m.percentDailyValue != null ? scaleVal(m.percentDailyValue) : undefined,
+      amount: scaleVal(m.amount),
     }));
   }
 

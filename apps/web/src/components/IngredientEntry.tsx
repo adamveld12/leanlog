@@ -4,18 +4,24 @@ import { DraftEntryCard } from './ingredient-entry/DraftEntryCard';
 import { ScanTab } from './ingredient-entry/ScanTab';
 import { DatabaseTab } from './ingredient-entry/DatabaseTab';
 import { entryReducer, initialEntryState, type EntryTab } from './ingredient-entry/entryReducer';
-import type { EntryIngredient, IngredientDraft } from './ingredient-entry/types';
+import type {
+  AddFromDatabaseInput,
+  EntryIngredient,
+  IngredientDraft,
+} from './ingredient-entry/types';
 
-export type { EntryIngredient, IngredientDraft } from './ingredient-entry/types';
+export type {
+  AddFromDatabaseInput,
+  EntryIngredient,
+  IngredientDraft,
+} from './ingredient-entry/types';
 
 type IngredientEntryProps = {
   ingredients: EntryIngredient[];
   onSubmit: (draft: IngredientDraft, editingId: string | null) => void;
   onDelete: (ingredientId: string) => void;
-  onAddFromDatabase: (databaseIngredientId: string, measuredAmount: number) => Promise<void>;
-  onSaveToDatabase?: (ingredient: EntryIngredient) => void;
+  onAddFromDatabase: (databaseIngredientId: string, input: AddFromDatabaseInput) => Promise<void>;
   showDatabaseCreate?: boolean;
-  savingToDbId?: string | null;
   analyticsContext: 'meal' | 'template';
 };
 
@@ -24,15 +30,12 @@ export function IngredientEntry({
   onSubmit,
   onDelete,
   onAddFromDatabase,
-  onSaveToDatabase,
   showDatabaseCreate = false,
-  savingToDbId = null,
   analyticsContext,
 }: IngredientEntryProps) {
   const track = useAnalytics();
   const [entry, dispatch] = useReducer(entryReducer, initialEntryState);
-  // dbTotal lives here so the database ingredient count survives tab switches and is bumped
-  // when a scan is saved to the database from the scan tab.
+  // dbTotal lives here so the database ingredient count survives tab switches.
   const [dbTotal, setDbTotal] = useState<number | null>(null);
 
   const saveIngredient = () => {
@@ -45,7 +48,6 @@ export function IngredientEntry({
     <>
       <IngredientList
         ingredients={ingredients}
-        savingToDbId={savingToDbId}
         onEdit={(id) => {
           const ingredient = ingredients.find((i) => i.id === id);
           if (ingredient) dispatch({ type: 'editRow', ingredient });
@@ -55,19 +57,15 @@ export function IngredientEntry({
           track(`${analyticsContext}.ingredient.deleted`, { ingredientId: id });
           if (entry.editingId === id) dispatch({ type: 'reset' });
         }}
-        onSaveToDatabase={
-          onSaveToDatabase
-            ? (id) => {
-                const ingredient = ingredients.find((i) => i.id === id);
-                if (ingredient) onSaveToDatabase(ingredient);
-              }
-            : undefined
-        }
       />
       <div className={recipes.stack.lg}>
         <Tabs
           tabs={[
-            { key: 'database', label: 'Nutrition Database', panelId: 'ingredient-database-panel' },
+            {
+              key: 'database',
+              label: 'Nutrition Facts Database',
+              panelId: 'ingredient-database-panel',
+            },
             { key: 'scan', label: 'Label Scan', panelId: 'ingredient-scan-panel' },
             { key: 'manual', label: 'Manual Entry', panelId: 'ingredient-manual-panel' },
           ]}
@@ -82,6 +80,8 @@ export function IngredientEntry({
         >
           {entry.tab === 'manual' ? (
             <DraftEntryCard
+              // Remount per edit target so the micronutrient row keys reseed.
+              key={entry.editingId ?? 'new'}
               draft={entry.draft}
               editingId={entry.editingId}
               onChange={(draft) => dispatch({ type: 'patchDraft', draft })}
@@ -99,7 +99,6 @@ export function IngredientEntry({
               onApplyScan={(patch) => dispatch({ type: 'applyScan', patch })}
               onSubmit={saveIngredient}
               onCancel={() => dispatch({ type: 'reset' })}
-              onPublishedToDatabase={() => setDbTotal((t) => (t == null ? t : t + 1))}
             />
           ) : null}
           {entry.tab === 'database' ? (

@@ -7,6 +7,8 @@ import {
   PROFILE_DEFAULTS,
   CreateNutritionDatabaseIngredientSchema,
   UpsertIngredientSchema,
+  normalizeMicronutrients,
+  parseMicronutrientsJson,
 } from './schemas';
 
 describe('UpdateProfileSchema', () => {
@@ -144,6 +146,7 @@ describe('PROFILE_DEFAULTS', () => {
 const validCreateDbIngredient = {
   name: 'Oats',
   servingAmount: 40,
+  servingsPerPackage: 12,
   creationSource: 'manual' as const,
   fat: 2.5,
   carbs: 27,
@@ -176,6 +179,20 @@ describe('CreateNutritionDatabaseIngredientSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('rejects missing servingsPerPackage (R8)', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      servingsPerPackage: undefined,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('defaults servingSizeUnit to gram when omitted', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse(validCreateDbIngredient);
+    expect(result.success).toBe(true);
+    expect(result.data!.servingSizeUnit).toBe('gram');
+  });
+
   it('rejects missing fat', () => {
     const result = CreateNutritionDatabaseIngredientSchema.safeParse({
       ...validCreateDbIngredient,
@@ -206,20 +223,39 @@ describe('CreateNutritionDatabaseIngredientSchema', () => {
     expect(result.data!.micronutrients).toBeUndefined();
   });
 
-  it('accepts percentDailyValue of 120 (over 100 allowed)', () => {
+  it('accepts a typed micronutrient amount + unit', () => {
     const result = CreateNutritionDatabaseIngredientSchema.safeParse({
       ...validCreateDbIngredient,
-      micronutrients: [{ name: 'Vitamin D', percentDailyValue: 120 }],
+      micronutrients: [{ name: 'Iron', amount: 8, unit: 'milligram' }],
     });
     expect(result.success).toBe(true);
   });
 
-  it('accepts percentDailyValue of 45', () => {
+  it('strips percentDailyValue and does not persist it (R4)', () => {
     const result = CreateNutritionDatabaseIngredientSchema.safeParse({
       ...validCreateDbIngredient,
-      micronutrients: [{ name: 'Iron', amount: 8, percentDailyValue: 45 }],
+      micronutrients: [
+        { name: 'Vitamin D', amount: 10, unit: 'microgram', percentDailyValue: 120 },
+      ],
     });
     expect(result.success).toBe(true);
+    expect(result.data!.micronutrients![0]).not.toHaveProperty('percentDailyValue');
+  });
+
+  it('rejects a micronutrient missing its unit', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      micronutrients: [{ name: 'Iron', amount: 8 }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a micronutrient with an untyped unit string', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      micronutrients: [{ name: 'Iron', amount: 8, unit: 'mg' }],
+    });
+    expect(result.success).toBe(false);
   });
 
   it('accepts all optional fat subtypes', () => {
@@ -250,6 +286,43 @@ describe('CreateNutritionDatabaseIngredientSchema', () => {
       calories: undefined,
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('normalizeMicronutrients', () => {
+  it('maps legacy unit strings, drops %DV, and defaults a missing amount', () => {
+    const result = normalizeMicronutrients([
+      { name: 'Sodium', amount: 60, unit: 'mg', percentDailyValue: 3 },
+      { name: 'Vitamin D', unit: 'mcg' },
+      { name: 'Calcium', amount: 100, unit: 'unknown-unit' },
+    ]);
+    expect(result).toEqual([
+      { name: 'Sodium', amount: 60, unit: 'milligram' },
+      { name: 'Vitamin D', amount: 0, unit: 'microgram' },
+      { name: 'Calcium', amount: 100, unit: 'milligram' },
+    ]);
+  });
+
+  it('skips entries without a name and returns null for non-arrays', () => {
+    expect(normalizeMicronutrients([{ amount: 1, unit: 'mg' }])).toEqual([]);
+    expect(normalizeMicronutrients(null)).toBeNull();
+    expect(normalizeMicronutrients('nope')).toBeNull();
+  });
+});
+
+describe('parseMicronutrientsJson', () => {
+  it('returns null for malformed JSON instead of throwing', () => {
+    expect(() => parseMicronutrientsJson('{ not json')).not.toThrow();
+    expect(parseMicronutrientsJson('{ not json')).toBeNull();
+  });
+
+  it('returns null for a null column', () => {
+    expect(parseMicronutrientsJson(null)).toBeNull();
+  });
+
+  it('parses and normalizes a valid legacy JSON string', () => {
+    const json = JSON.stringify([{ name: 'Iron', amount: 8, unit: 'mg', percentDailyValue: 45 }]);
+    expect(parseMicronutrientsJson(json)).toEqual([{ name: 'Iron', amount: 8, unit: 'milligram' }]);
   });
 });
 

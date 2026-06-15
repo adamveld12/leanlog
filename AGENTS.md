@@ -31,6 +31,10 @@ Every UI component must have a Storybook story. The audit enforces this.
 
 This applies everywhere — `apps/web/`, `packages/ui/` (outside atoms), and any new packages. The only place raw elements are allowed is inside atom component implementations in `packages/ui/src/atoms/`.
 
+### Interactive content lives inside cards
+
+Buttons, inputs, and other controls belong **inside** a `SectionCard` (or a card organism), not floated as bare siblings between cards. Specifically, a control atom must never be a direct sibling of a `*Card` inside a `role="tabpanel"` subtree — give the card a slot/prop for the action instead (e.g. the search card's `onScanLabel`/`onCreateNew`). `design:audit` blocks this for tab-panel composition.
+
 ## Commit & push gates
 
 Two git hooks run automatically — know which checks block where:

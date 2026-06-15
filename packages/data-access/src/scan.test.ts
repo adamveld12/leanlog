@@ -310,4 +310,157 @@ describe('resolveScan — databaseCandidate', () => {
     expect(r.proposed.sugarAlcohol).toBeUndefined();
     expect(r.proposed.allulose).toBeUndefined();
   });
+
+  it('candidate carries servings per package and a gram serving unit', () => {
+    const r = resolveScan(perServingLabel, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.servingsPerPackage).toBe(4);
+    expect(c.servingSizeUnit).toBe('gram');
+  });
+
+  it('no candidate when servings per package is unreadable', () => {
+    const r = resolveScan(
+      { ...perServingLabel, servingsPerContainer: null },
+      req({ mode: 'weight', weight: 30, name: 'Granola' }),
+    );
+    expect(r.databaseCandidate).toBeNull();
+    expect(r.databaseBlockReason).toMatch(/servings per package/i);
+  });
+
+  it('candidate carries extracted typed micronutrients', () => {
+    const labelWithMicros: ScanLabel = {
+      ...perServingLabel,
+      micronutrients: [{ name: 'Sodium', amount: 60, unit: 'milligram' }],
+    };
+    const r = resolveScan(labelWithMicros, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.micronutrients).toEqual([{ name: 'Sodium', amount: 60, unit: 'milligram' }]);
+  });
+
+  it('candidate carries the printed serving display text', () => {
+    const labelWithText: ScanLabel = { ...perServingLabel, servingSizeText: '1 tbsp. (7g)' };
+    const r = resolveScan(labelWithText, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    expect((r.databaseCandidate as DatabaseCandidate).servingSizeDisplayText).toBe('1 tbsp. (7g)');
+  });
+
+  it('candidate omits serving display text when not provided', () => {
+    const r = resolveScan(perServingLabel, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    expect((r.databaseCandidate as DatabaseCandidate).servingSizeDisplayText).toBeUndefined();
+  });
+
+  it('carries an explicit milliliter serving unit into the candidate', () => {
+    const mlLabel: ScanLabel = {
+      ...perServingLabel,
+      servingSizeGrams: 240,
+      servingSizeUnit: 'milliliter',
+      servingSizeText: '1 cup (240mL)',
+    };
+    const r = resolveScan(mlLabel, req({ mode: 'weight', weight: 240, name: 'Almondmilk' }));
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.servingAmount).toBe(240);
+    expect(c.servingSizeUnit).toBe('milliliter');
+  });
+
+  it('recovers serving amount + ml unit from the display text when the numeric size is missing', () => {
+    // Mirrors the almondmilk bug: model returned the text but not servingSizeGrams.
+    const mlLabel: ScanLabel = {
+      ...perServingLabel,
+      servingSizeGrams: null,
+      servingSizeUnit: null,
+      servingSizeText: '1 cup (240mL)',
+    };
+    const r = resolveScan(mlLabel, req({ mode: 'weight', weight: 240, name: 'Almondmilk' }));
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.servingAmount).toBe(240);
+    expect(c.servingSizeUnit).toBe('milliliter');
+    expect(c.servingSizeDisplayText).toBe('1 cup (240mL)');
+  });
+
+  it('recovers a gram serving from the display text', () => {
+    const gLabel: ScanLabel = {
+      ...perServingLabel,
+      servingSizeGrams: null,
+      servingSizeText: '3/4 cup (170g)',
+    };
+    const r = resolveScan(gLabel, req({ mode: 'weight', weight: 170, name: 'Yogurt' }));
+    expect(r.labelDraft!.servingAmount).toBe(170);
+    expect(r.labelDraft!.servingSizeUnit).toBe('gram');
+  });
+
+  it('still returns a labelDraft for prefilling even when the name is missing', () => {
+    const labelNoName: ScanLabel = { ...perServingLabel, inferredName: null };
+    const r = resolveScan(labelNoName, req({ mode: 'weight', weight: 30, name: '' }));
+    // Not save-ready (no name)…
+    expect(r.databaseCandidate).toBeNull();
+    expect(r.databaseBlockReason).toMatch(/name/i);
+    // …but the form can still be prefilled with everything that was read.
+    expect(r.labelDraft).not.toBeNull();
+    expect(r.labelDraft!.name).toBeNull();
+    expect(r.labelDraft!.servingAmount).toBe(30);
+    expect(r.labelDraft!.servingsPerPackage).toBe(4);
+    expect(r.labelDraft!.fat).toBe(6);
+    expect(r.labelDraft!.carbs).toBe(14);
+    expect(r.labelDraft!.protein).toBe(3);
+  });
+
+  it('labelDraft is null for an unreadable (unknown-basis) label', () => {
+    const r = resolveScan(
+      { ...perServingLabel, basis: 'unknown' },
+      req({ mode: 'weight', weight: 30, name: 'X' }),
+    );
+    expect(r.labelDraft).toBeNull();
+  });
+
+  it('labelDraft carries servings-per-package even when it blocks the candidate', () => {
+    const r = resolveScan(
+      { ...perServingLabel, servingsPerContainer: null },
+      req({ mode: 'weight', weight: 30, name: 'Granola' }),
+    );
+    expect(r.databaseCandidate).toBeNull();
+    expect(r.labelDraft).not.toBeNull();
+    expect(r.labelDraft!.servingsPerPackage).toBeNull();
+    expect(r.labelDraft!.name).toBe('Granola');
+  });
+});
+
+describe('resolveScan — strict (database tab) candidate', () => {
+  it('AE4: strict scan with zero printed calories is not save-ready', () => {
+    const labelZeroCal: ScanLabel = {
+      ...perServingLabel,
+      nutrients: { ...perServingLabel.nutrients, calories: 0 },
+    };
+    const r = resolveScan(
+      labelZeroCal,
+      req({ mode: 'weight', weight: 30, name: 'Granola', strict: true }),
+    );
+    expect(r.databaseCandidate).toBeNull();
+    expect(r.databaseBlockReason).toMatch(/calories/i);
+  });
+
+  it('strict scan still blocks on missing servings per package', () => {
+    const r = resolveScan(
+      { ...perServingLabel, servingsPerContainer: null },
+      req({ mode: 'weight', weight: 30, name: 'Granola', strict: true }),
+    );
+    expect(r.databaseCandidate).toBeNull();
+    expect(r.databaseBlockReason).toMatch(/servings per package/i);
+  });
+
+  it('non-strict scan falls back to estimated calories when printed calories are zero', () => {
+    const labelZeroCal: ScanLabel = {
+      ...perServingLabel,
+      nutrients: { ...perServingLabel.nutrients, calories: 0 },
+    };
+    const r = resolveScan(labelZeroCal, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    expect(r.databaseCandidate).not.toBeNull();
+  });
+
+  it('strict scan with all required fields produces a save-ready candidate', () => {
+    const r = resolveScan(
+      perServingLabel,
+      req({ mode: 'weight', weight: 30, name: 'Granola', strict: true }),
+    );
+    expect(r.databaseCandidate).not.toBeNull();
+    expect((r.databaseCandidate as DatabaseCandidate).servingsPerPackage).toBe(4);
+  });
 });

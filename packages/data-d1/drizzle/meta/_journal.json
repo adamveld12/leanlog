@@ -36,6 +36,13 @@
       "when": 1781319573664,
       "tag": "0004_sloppy_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1781923200000,
+      "tag": "0005_lush_nutrition_facts",
+      "breakpoints": true
     }
   ]
 }

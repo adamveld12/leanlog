@@ -15,6 +15,8 @@ import type {
   UpsertIngredientSchema,
   DayTargetsSchema,
   MicronutrientSchema,
+  NutritionUnitSchema,
+  ServingSizeUnitSchema,
   NutritionDatabaseIngredientSchema,
   CreateNutritionDatabaseIngredientSchema,
   AddIngredientFromDatabaseSchema,
@@ -36,6 +38,8 @@ export type UpdateProfile = z.infer<typeof UpdateProfileSchema>;
 export type UpsertIngredient = z.infer<typeof UpsertIngredientSchema>;
 export type DayTargets = z.infer<typeof DayTargetsSchema>;
 export type Micronutrient = z.infer<typeof MicronutrientSchema>;
+export type NutritionUnit = z.infer<typeof NutritionUnitSchema>;
+export type ServingSizeUnit = z.infer<typeof ServingSizeUnitSchema>;
 export type NutritionDatabaseIngredient = z.infer<typeof NutritionDatabaseIngredientSchema>;
 export type CreateNutritionDatabaseIngredient = z.infer<
   typeof CreateNutritionDatabaseIngredientSchema

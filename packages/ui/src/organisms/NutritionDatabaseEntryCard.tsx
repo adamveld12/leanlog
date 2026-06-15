@@ -5,15 +5,31 @@ import { Field } from '../atoms/Field';
 import { HelperText } from '../atoms/HelperText';
 import { Input } from '../atoms/Input';
 import { NumberInput } from '../atoms/NumberInput';
+import { Select } from '../atoms/Select';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { WarningText } from '../atoms/WarningText';
 import { SectionCard } from '../molecules/SectionCard';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
+// Typed nutrient units (R3); kept in sync with @leanlog/data-access
+// NutritionUnitSchema. The presentational ui package stays dependency-free, so
+// the server remains the authoritative validator via validateNutritionLabel.
+const NUTRITION_UNIT_OPTIONS = [
+  { value: 'gram', label: 'g' },
+  { value: 'milligram', label: 'mg' },
+  { value: 'microgram', label: 'mcg' },
+  { value: 'milliliter', label: 'ml' },
+  { value: 'international_unit', label: 'IU' },
+] as const;
+
+const SERVING_SIZE_UNIT_OPTIONS = [
+  { value: 'gram', label: 'g' },
+  { value: 'milliliter', label: 'ml' },
+] as const;
+
 export type NutritionDatabaseMicronutrientValue = {
   name: string;
-  percentDailyValue?: number | null;
   amount?: number | null;
   unit?: string;
 };
@@ -21,6 +37,9 @@ export type NutritionDatabaseMicronutrientValue = {
 export type NutritionDatabaseEntryValue = {
   name: string;
   servingAmount: number | null;
+  servingSizeUnit?: string;
+  servingSizeDisplayText?: string | null;
+  servingsPerPackage: number | null;
   calories: number | null;
   fat: number | null;
   carbs: number | null;
@@ -32,6 +51,7 @@ export type NutritionDatabaseEntryValue = {
   transFat?: number | null;
   fiber?: number | null;
   sugar?: number | null;
+  addedSugars?: number | null;
   sugarAlcohol?: number | null;
   allulose?: number | null;
   alcohol?: number | null;
@@ -55,28 +75,55 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 const sanitize = (n: number | null) => (n == null ? null : round1(clamp999(n)));
 const sanitizeCalories = (n: number | null) => (n == null ? null : round1(clamp9999(n)));
 
-function isValid(value: NutritionDatabaseEntryValue): boolean {
-  return (
-    value.name.trim().length > 0 &&
-    value.servingAmount != null &&
-    value.servingAmount > 0 &&
-    value.calories != null &&
-    value.fat != null &&
-    value.carbs != null &&
-    value.protein != null
-  );
-}
-
-function missingFields(value: NutritionDatabaseEntryValue): string[] {
+// `hasEstimate` is true when the macros yield an estimated calorie value. When
+// they do, an empty calories field is allowed (the estimate is applied on save);
+// otherwise calories must be entered.
+function missingFields(value: NutritionDatabaseEntryValue, hasEstimate: boolean): string[] {
   const missing: string[] = [];
   if (!value.name.trim()) missing.push('Name');
   if (value.servingAmount == null || !(value.servingAmount > 0))
-    missing.push('Serving amount (must be > 0)');
-  if (value.calories == null) missing.push('Calories');
+    missing.push('Serving size (must be > 0)');
+  if (value.servingsPerPackage == null || !(value.servingsPerPackage > 0))
+    missing.push('Servings per package (must be > 0)');
+  if (value.calories == null && !hasEstimate) missing.push('Calories');
   if (value.fat == null) missing.push('Fat');
   if (value.carbs == null) missing.push('Carbs');
   if (value.protein == null) missing.push('Protein');
   return missing;
+}
+
+// Mirrors @leanlog/data-access validateNutritionLabel (R5/R6): each sub-value
+// must not exceed the total it belongs to. Unsaturated fat is never derived.
+function labelContradictions(value: NutritionDatabaseEntryValue): string[] {
+  const errors: string[] = [];
+  const over = (v: number | null | undefined, limit: number) => v != null && v > limit;
+  // Only compare against a total once it's set, so a missing fat/carbs shows the
+  // "required" message alone rather than a redundant contradiction beside it.
+  if (value.fat != null) {
+    const fat = value.fat;
+    if (over(value.saturatedFat, fat)) errors.push('Saturated fat cannot exceed total fat.');
+    if (over(value.transFat, fat)) errors.push('Trans fat cannot exceed total fat.');
+    if (over(value.unsaturatedFat, fat)) errors.push('Unsaturated fat cannot exceed total fat.');
+    if (over(value.monounsaturatedFat, fat))
+      errors.push('Monounsaturated fat cannot exceed total fat.');
+    if (over(value.polyunsaturatedFat, fat))
+      errors.push('Polyunsaturated fat cannot exceed total fat.');
+  }
+  if (value.carbs != null) {
+    const carbs = value.carbs;
+    if (over(value.fiber, carbs)) errors.push('Fiber cannot exceed carbs.');
+    if (over(value.sugar, carbs)) errors.push('Total sugars cannot exceed carbs.');
+    if (over(value.sugarAlcohol, carbs)) errors.push('Sugar alcohol cannot exceed carbs.');
+    if (over(value.allulose, carbs)) errors.push('Allulose cannot exceed carbs.');
+    const sugarLimit = value.sugar != null ? value.sugar : carbs;
+    if (over(value.addedSugars, sugarLimit))
+      errors.push('Added sugars cannot exceed total sugars.');
+  }
+  return errors;
+}
+
+function isValid(value: NutritionDatabaseEntryValue, hasEstimate: boolean): boolean {
+  return missingFields(value, hasEstimate).length === 0 && labelContradictions(value).length === 0;
 }
 
 export function NutritionDatabaseEntryCard({
@@ -86,26 +133,48 @@ export function NutritionDatabaseEntryCard({
   onSubmit,
   submitting,
 }: NutritionDatabaseEntryCardProps) {
-  const setNum = (
-    key: Exclude<keyof NutritionDatabaseEntryValue, 'name' | 'calories' | 'micronutrients'>,
-    n: number | null,
-  ) => onChange({ ...value, [key]: sanitize(n) });
+  type NumericKey = Exclude<
+    keyof NutritionDatabaseEntryValue,
+    'name' | 'calories' | 'micronutrients' | 'servingSizeUnit' | 'servingSizeDisplayText'
+  >;
 
-  const roundField = (
-    key: Exclude<keyof NutritionDatabaseEntryValue, 'name' | 'calories' | 'micronutrients'>,
-  ) => {
+  const setNum = (key: NumericKey, n: number | null) => onChange({ ...value, [key]: sanitize(n) });
+
+  const roundField = (key: NumericKey) => {
     const v = value[key];
     if (typeof v === 'number') onChange({ ...value, [key]: sanitize(v) });
   };
 
-  const fiberInvalid = (value.fiber ?? 0) > (value.carbs ?? 0);
-  const missing = missingFields(value);
-  const valid = isValid(value) && !fiberInvalid;
+  // An estimate exists when the macros produce a non-zero calorie value.
+  const hasEstimate = estimatedCalories > 0;
+  const missing = missingFields(value, hasEstimate);
+  const contradictions = labelContradictions(value);
+  const valid = isValid(value, hasEstimate);
 
-  const calorieDisplay =
-    value.calories != null && Math.round(value.calories) !== Math.round(estimatedCalories)
-      ? `Calories: ${Math.round(value.calories)} kcal · Estimated: ${Math.round(estimatedCalories)} kcal`
-      : `Estimated calories: ${Math.round(estimatedCalories)} kcal`;
+  // Highlight missing required fields in red once the form has been started
+  // (e.g. a label scan prefilled some values but couldn't read the name). A
+  // pristine, empty manual form stays unhighlighted to avoid premature errors.
+  const danger = 'border-[var(--ll-danger)]';
+  const started =
+    value.name.trim().length > 0 ||
+    [
+      value.servingAmount,
+      value.servingsPerPackage,
+      value.calories,
+      value.fat,
+      value.carbs,
+      value.protein,
+    ].some((v) => v != null);
+  const missReq = (v: number | null | undefined) => (started && v == null ? danger : '');
+  const missPos = (v: number | null | undefined) =>
+    started && !(v != null && v > 0) ? danger : '';
+  const nameDanger = started && !value.name.trim() ? danger : '';
+  // Calories is only required (and only highlighted) when there is no estimate
+  // to fall back on; otherwise an empty field uses the estimate on save.
+  const caloriesDanger = started && value.calories == null && !hasEstimate ? danger : '';
+  const caloriesPlaceholder = hasEstimate
+    ? `Estimated calories: ${Math.round(estimatedCalories)}`
+    : 'Calories';
 
   // Micronutrient helpers
   const micronutrients = value.micronutrients ?? [];
@@ -123,7 +192,7 @@ export function NutritionDatabaseEntryCard({
 
   const addMicro = () => {
     setRowKeys((keys) => [...keys, nextMicroRowKey()]);
-    onChange({ ...value, micronutrients: [...micronutrients, { name: '' }] });
+    onChange({ ...value, micronutrients: [...micronutrients, { name: '', unit: 'milligram' }] });
   };
 
   const removeMicro = (idx: number) => {
@@ -144,27 +213,63 @@ export function NutritionDatabaseEntryCard({
         {missing.length > 0 ? (
           <WarningText role="alert">Required: {missing.join(', ')}</WarningText>
         ) : null}
+        {contradictions.length > 0 ? (
+          <WarningText role="alert">{contradictions.join(' ')}</WarningText>
+        ) : null}
 
         <Field label="Name">
           <Input
             value={value.name}
             onChange={(e) => onChange({ ...value, name: e.target.value })}
+            className={nameDanger}
           />
         </Field>
-        <HelperText as="p">{calorieDisplay}</HelperText>
+
+        <div className={recipes.grid.two}>
+          <NumberInput
+            label="Serving size"
+            value={value.servingAmount}
+            onChange={(n) => setNum('servingAmount', n)}
+            onBlur={() => roundField('servingAmount')}
+            inputClassName={missPos(value.servingAmount)}
+          />
+          <Field label="Serving unit">
+            <Select
+              value={value.servingSizeUnit ?? 'gram'}
+              onChange={(e) => onChange({ ...value, servingSizeUnit: e.target.value })}
+            >
+              {SERVING_SIZE_UNIT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+
+        <Field label="Serving display text (optional)">
+          <Input
+            value={value.servingSizeDisplayText ?? ''}
+            onChange={(e) => onChange({ ...value, servingSizeDisplayText: e.target.value || null })}
+            placeholder="e.g. 3/4 cup (170g)"
+          />
+        </Field>
 
         <NumberInput
-          label="Serving amount (g/ml)"
-          value={value.servingAmount}
-          onChange={(n) => setNum('servingAmount', n)}
-          onBlur={() => roundField('servingAmount')}
+          label="Servings per package"
+          value={value.servingsPerPackage}
+          onChange={(n) => setNum('servingsPerPackage', n)}
+          onBlur={() => roundField('servingsPerPackage')}
+          inputClassName={missPos(value.servingsPerPackage)}
         />
 
         <NumberInput
           label="Calories (kcal)"
           value={value.calories}
+          placeholder={caloriesPlaceholder}
           onChange={(n) => onChange({ ...value, calories: sanitizeCalories(n) })}
           onBlur={() => onChange({ ...value, calories: sanitizeCalories(value.calories) })}
+          inputClassName={caloriesDanger}
         />
 
         <div className={recipes.grid.two}>
@@ -173,12 +278,14 @@ export function NutritionDatabaseEntryCard({
             value={value.fat}
             onChange={(n) => setNum('fat', n)}
             onBlur={() => roundField('fat')}
+            inputClassName={missReq(value.fat)}
           />
           <NumberInput
             label="Carbs (g)"
             value={value.carbs}
             onChange={(n) => setNum('carbs', n)}
             onBlur={() => roundField('carbs')}
+            inputClassName={missReq(value.carbs)}
           />
         </div>
 
@@ -188,16 +295,18 @@ export function NutritionDatabaseEntryCard({
             value={value.protein}
             onChange={(n) => setNum('protein', n)}
             onBlur={() => roundField('protein')}
+            inputClassName={missReq(value.protein)}
           />
           <NumberInput
             label="Fiber (g)"
             value={value.fiber ?? null}
             onChange={(n) => onChange({ ...value, fiber: sanitize(n) })}
             onBlur={() => roundField('fiber')}
-            inputClassName={fiberInvalid ? 'border-[var(--ll-danger)]' : ''}
+            inputClassName={
+              (value.fiber ?? 0) > (value.carbs ?? 0) ? 'border-[var(--ll-danger)]' : ''
+            }
           />
         </div>
-        {fiberInvalid ? <WarningText role="alert">Fiber cannot exceed carbs.</WarningText> : null}
 
         <SectionHeading noMargin>Optional Details</SectionHeading>
         <div className={recipes.grid.two}>
@@ -227,9 +336,14 @@ export function NutritionDatabaseEntryCard({
             onChange={(n) => onChange({ ...value, transFat: sanitize(n) })}
           />
           <NumberInput
-            label="Sugar (g)"
+            label="Total sugars (g)"
             value={value.sugar ?? null}
             onChange={(n) => onChange({ ...value, sugar: sanitize(n) })}
+          />
+          <NumberInput
+            label="Added sugars (g)"
+            value={value.addedSugars ?? null}
+            onChange={(n) => onChange({ ...value, addedSugars: sanitize(n) })}
           />
           <NumberInput
             label="Sugar alcohol (g)"
@@ -268,19 +382,6 @@ export function NutritionDatabaseEntryCard({
                     />
                   </Field>
                 </div>
-                <div className="w-24 shrink-0">
-                  <NumberInput
-                    label="% DV"
-                    value={micro.percentDailyValue ?? null}
-                    onChange={(n) =>
-                      updateMicro(idx, {
-                        percentDailyValue:
-                          n == null ? null : Math.max(0, Math.min(999, Math.round(n * 10) / 10)),
-                      })
-                    }
-                    placeholder="0–999"
-                  />
-                </div>
                 <div className="w-20 shrink-0">
                   <NumberInput
                     label="Amount"
@@ -288,13 +389,18 @@ export function NutritionDatabaseEntryCard({
                     onChange={(n) => updateMicro(idx, { amount: n })}
                   />
                 </div>
-                <div className="w-20 shrink-0">
+                <div className="w-24 shrink-0">
                   <Field label="Unit">
-                    <Input
-                      value={micro.unit ?? ''}
+                    <Select
+                      value={micro.unit ?? 'milligram'}
                       onChange={(e) => updateMicro(idx, { unit: e.target.value })}
-                      placeholder="mg"
-                    />
+                    >
+                      {NUTRITION_UNIT_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </Select>
                   </Field>
                 </div>
                 <Button
@@ -310,6 +416,9 @@ export function NutritionDatabaseEntryCard({
             ))}
           </div>
         ) : null}
+        <HelperText as="p">
+          % DV uses FDA Daily Values (21 CFR 101.9, 2016 Nutrition Facts label).
+        </HelperText>
       </SectionCard>
     </AnalyticsScope>
   );

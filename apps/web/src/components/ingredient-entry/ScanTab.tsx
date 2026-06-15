@@ -11,7 +11,6 @@ import {
 } from '@leanlog/ui';
 import type { ScanResolution } from '@leanlog/data-access';
 import { api } from '../../api';
-import { useStore } from '../../state';
 import { DraftEntryCard } from './DraftEntryCard';
 import { initialScanState, scanReducer } from './scanReducer';
 import type { IngredientDraft } from './types';
@@ -51,7 +50,6 @@ export type ScanTabProps = {
   onApplyScan: (patch: Partial<IngredientDraft>) => void;
   onSubmit: () => void;
   onCancel: () => void;
-  onPublishedToDatabase: () => void;
 };
 
 export function ScanTab({
@@ -63,10 +61,8 @@ export function ScanTab({
   onApplyScan,
   onSubmit,
   onCancel,
-  onPublishedToDatabase,
 }: ScanTabProps) {
   const { getToken } = useAuth();
-  const { createNutritionDatabaseIngredient } = useStore();
   const track = useAnalytics();
   const [scan, dispatch] = useReducer(scanReducer, initialScanState);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -167,7 +163,9 @@ export function ScanTab({
     await onScanFile(new File([blob], 'nutrition.jpg', { type: 'image/jpeg' }));
   };
 
-  const applyScan = (sourceDbId?: string | null) => {
+  // Applying a meal scan only prefills the draft (R12 — labels are created only
+  // on the database tab, never as a side effect of applying a scan to a meal).
+  const applyScan = () => {
     if (!scan.result || !scan.result.canApply) return;
     const { proposed } = scan.result;
     onApplyScan({
@@ -181,18 +179,11 @@ export function ScanTab({
       protein: proposed.protein,
       sugarAlcohol: proposed.sugarAlcohol ?? null,
       allulose: proposed.allulose ?? null,
-      // When the scan was also saved to the database, the applied ingredient is
-      // born linked so it cannot be saved to the database again.
-      sourceDatabaseIngredientId: sourceDbId ?? null,
+      sourceDatabaseIngredientId: null,
     });
     dispatch({ type: 'clearResult' });
     dispatch({ type: 'resetForm' });
   };
-
-  const canSaveScanToDatabase =
-    scan.result && 'databaseCandidate' in scan.result
-      ? scan.result.databaseCandidate !== null && scan.result.canApply
-      : undefined;
 
   return (
     <>
@@ -245,44 +236,6 @@ export function ScanTab({
         blockReason={scan.result?.blockReason}
         warning={scan.result?.warning}
         notes={scan.result?.notes}
-        onSaveToDatabase={
-          scan.result && 'databaseCandidate' in scan.result && scan.result.proposed.name
-            ? () => {
-                const candidate =
-                  scan.result && 'databaseCandidate' in scan.result
-                    ? scan.result.databaseCandidate
-                    : null;
-                if (!candidate) return;
-                void createNutritionDatabaseIngredient({
-                  name: candidate.name,
-                  servingAmount: candidate.servingAmount,
-                  fat: candidate.fat,
-                  carbs: candidate.carbs,
-                  protein: candidate.protein,
-                  calories: candidate.calories,
-                  saturatedFat: candidate.saturatedFat ?? undefined,
-                  fiber: candidate.fiber ?? undefined,
-                  sugar: candidate.sugar ?? undefined,
-                  sugarAlcohol: candidate.sugarAlcohol ?? undefined,
-                  allulose: candidate.allulose ?? undefined,
-                  creationSource: 'scan',
-                })
-                  .then((created) => {
-                    track('nutrition_database.ingredient.published', { source: 'scan' });
-                    onPublishedToDatabase();
-                    applyScan(created.id);
-                  })
-                  .catch(() => {
-                    dispatch({
-                      type: 'scanFailed',
-                      error: 'Failed to save ingredient to database.',
-                    });
-                  });
-              }
-            : undefined
-        }
-        canSaveToDatabase={canSaveScanToDatabase}
-        saveToDatabaseBlockReason={scan.result?.databaseBlockReason}
         fields={scan.result ? buildScanFields(draft, scan.result) : []}
       />
     </>

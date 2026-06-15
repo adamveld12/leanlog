@@ -10,6 +10,7 @@ import {
 const emptyValue: NutritionDatabaseEntryValue = {
   name: '',
   servingAmount: null,
+  servingsPerPackage: null,
   calories: null,
   fat: null,
   carbs: null,
@@ -27,6 +28,7 @@ const emptyValue: NutritionDatabaseEntryValue = {
 const filledValue: NutritionDatabaseEntryValue = {
   name: 'CHICKEN BREAST',
   servingAmount: 100,
+  servingsPerPackage: 1,
   calories: 156,
   fat: 3.6,
   carbs: 0,
@@ -69,9 +71,8 @@ describe('NutritionDatabaseEntryCard', () => {
     expect(screen.queryByLabelText('Calories')).not.toBeInTheDocument();
   });
 
-  it('renders estimated calories text for basic macros without fiber', () => {
-    // fat=3.6, carbs=0, protein=31, fiber=null
-    // estimatedCalories = 3.6*9 + 31*4 + max(0, 0-0)*4 = 32.4 + 124 + 0 = 156.4
+  it('shows the estimate as the calories placeholder', () => {
+    // fat=3.6, carbs=0, protein=31 → estimate 156.4 → "Estimated calories: 156"
     render(
       <NutritionDatabaseEntryCard
         value={filledValue}
@@ -80,21 +81,28 @@ describe('NutritionDatabaseEntryCard', () => {
         onSubmit={() => {}}
       />,
     );
-    expect(screen.getByText(/Estimated calories: 156 kcal/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Calories (kcal)')).toHaveAttribute(
+      'placeholder',
+      'Estimated calories: 156',
+    );
   });
 
-  it('fiber reduces net carbs in calorie calculation', () => {
-    // fat=0, carbs=20, protein=0, fiber=5
-    // netCarbs = 15, estimatedCalories = 0 + 0 + 15*4 + 5*2 = 60 + 10 = 70
+  it('uses a plain Calories placeholder when there is no estimate', () => {
     render(
       <NutritionDatabaseEntryCard
-        value={{ ...emptyValue, carbs: 20, fiber: 5 }}
-        estimatedCalories={70}
+        value={emptyValue}
+        estimatedCalories={0}
         onChange={() => {}}
         onSubmit={() => {}}
       />,
     );
-    expect(screen.getByText(/Estimated calories: 70 kcal/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Calories (kcal)')).toHaveAttribute('placeholder', 'Calories');
+  });
+
+  it('allows publishing with empty calories when an estimate exists', () => {
+    // All required filled, calories empty, macros yield an estimate → enabled.
+    render(<Harness initial={{ ...filledValue, calories: null }} estimatedCalories={156} />);
+    expect(screen.getByRole('button', { name: 'Publish' })).not.toBeDisabled();
   });
 
   it('Publish button is disabled when name is missing', () => {
@@ -105,6 +113,31 @@ describe('NutritionDatabaseEntryCard', () => {
   it('Publish button is disabled when servingAmount is 0', () => {
     render(<Harness initial={{ ...filledValue, servingAmount: 0 }} />);
     expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+  });
+
+  it('Publish button is disabled when servings per package is missing (R8)', () => {
+    render(<Harness initial={{ ...filledValue, servingsPerPackage: null }} />);
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+  });
+
+  it('highlights a missing required field red once the form is started (scan prefill)', () => {
+    // A scan read the macros/serving but not the name → name input flags red.
+    render(<Harness initial={{ ...filledValue, name: '' }} />);
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveClass('border-[var(--ll-danger)]');
+  });
+
+  it('does not highlight required fields on a pristine empty form', () => {
+    render(<Harness initial={emptyValue} />);
+    expect(screen.getByRole('textbox', { name: 'Name' })).not.toHaveClass(
+      'border-[var(--ll-danger)]',
+    );
+    expect(screen.getByLabelText('Serving size')).not.toHaveClass('border-[var(--ll-danger)]');
+  });
+
+  it('blocks save when saturated fat exceeds total fat (R5)', () => {
+    render(<Harness initial={{ ...filledValue, fat: 1, saturatedFat: 5 }} />);
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+    expect(screen.getByText(/Saturated fat cannot exceed total fat/)).toBeInTheDocument();
   });
 
   it('Publish button is enabled when all required fields are filled', () => {
@@ -125,31 +158,33 @@ describe('NutritionDatabaseEntryCard', () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 
-  it('accepts %DV values over 100 (e.g. 120)', async () => {
+  it('edits a micronutrient with a typed unit and no %DV field (R3/R4)', async () => {
     render(
       <Harness
-        initial={{ ...filledValue, micronutrients: [{ name: 'Vitamin C', percentDailyValue: 0 }] }}
+        initial={{
+          ...filledValue,
+          micronutrients: [{ name: 'Sodium', amount: 60, unit: 'milligram' }],
+        }}
       />,
     );
-    const dvInput = screen.getByLabelText('% DV');
-    await userEvent.clear(dvInput);
-    await userEvent.type(dvInput, '120');
-    await userEvent.tab();
-    // Should not clamp to 100 — %DV up to 999 is allowed
-    expect(dvInput).toHaveValue('120');
+    // %DV is gone entirely
+    expect(screen.queryByLabelText('% DV')).not.toBeInTheDocument();
+    // Unit is a typed select, not a free-text input
+    const unit = screen.getByLabelText('Unit');
+    expect(unit).toHaveValue('milligram');
   });
 
   it('shows required fields warning when name and servingAmount missing', () => {
     render(<Harness initial={emptyValue} />);
-    const alert = screen.getByRole('alert');
+    const alert = screen.getAllByRole('alert')[0];
     expect(alert).toBeInTheDocument();
     expect(alert.textContent).toMatch(/Name/);
-    expect(alert.textContent).toMatch(/Serving amount/);
+    expect(alert.textContent).toMatch(/Serving size/);
   });
 
   it('starts with empty required inputs and lists null macros as required', () => {
     render(<Harness initial={emptyValue} />);
-    expect(screen.getByLabelText('Serving amount (g/ml)')).toHaveValue('');
+    expect(screen.getByLabelText('Serving size')).toHaveValue('');
     expect(screen.getByLabelText('Fat (g)')).toHaveValue('');
     expect(screen.getByLabelText('Carbs (g)')).toHaveValue('');
     expect(screen.getByLabelText('Protein (g)')).toHaveValue('');

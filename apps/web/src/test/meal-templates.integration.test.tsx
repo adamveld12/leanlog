@@ -208,13 +208,12 @@ describe('meal templates', () => {
 
     renderApp('/track/templates/t1');
 
-    await screen.findByRole('tab', { name: 'Nutrition Database' });
-    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Database' }));
+    await screen.findByRole('tab', { name: 'Nutrition Facts Database' });
+    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
 
-    // The template editor's Database tab is search-and-add only: no create form.
-    expect(
-      screen.queryByRole('button', { name: 'Add database ingredient' }),
-    ).not.toBeInTheDocument();
+    // The template editor's Database tab supports creating and scanning labels too.
+    expect(screen.getByRole('button', { name: 'Add an ingredient' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scan to add' })).toBeInTheDocument();
 
     const searchInput = await screen.findByPlaceholderText('e.g. Chicken breast');
     await userEvent.type(searchInput, 'ch');
@@ -223,7 +222,7 @@ describe('meal templates', () => {
       timeout: 1000,
     });
 
-    const amountInput = screen.getByLabelText('Amount (g/ml)');
+    const amountInput = screen.getByLabelText('Weight (g/ml)');
     await userEvent.clear(amountInput);
     await userEvent.type(amountInput, '150');
 
@@ -235,7 +234,8 @@ describe('meal templates', () => {
         't1',
         {
           databaseIngredientId: 'db1',
-          measuredAmount: 150,
+          mode: 'weight',
+          amount: 150,
         },
       ),
     );

@@ -4,6 +4,7 @@
 // final ingredient weight, scale the macros, and decide whether the result is applicable.
 
 import { estimateCalories } from './calculations';
+import type { Micronutrient, ServingSizeUnit } from './models';
 
 export type ScanBasis = 'per_serving' | 'per_100g' | 'unknown';
 
@@ -16,6 +17,8 @@ export type ScanNutrients = {
   protein: number;
   /** Optional sugar extracted from the label. */
   sugar?: number;
+  /** Optional added sugars extracted from the label. */
+  addedSugars?: number;
   /** Optional sugar alcohol extracted from the label. */
   sugarAlcohol?: number;
   /** Optional allulose extracted from the label. */
@@ -29,6 +32,12 @@ export type ScanLabel = {
   /** Servings per container/package, or null when unreadable. */
   servingsPerContainer: number | null;
   nutrients: ScanNutrients;
+  /** Typed micronutrients (e.g. sodium, cholesterol) extracted from the label. */
+  micronutrients?: Micronutrient[];
+  /** The printed serving description, e.g. "1 tbsp. (7g)"; null when unreadable. */
+  servingSizeText?: string | null;
+  /** Whether the metric serving size is a weight (gram) or volume (milliliter). */
+  servingSizeUnit?: ServingSizeUnit | null;
   inferredName: string | null;
 };
 
@@ -45,13 +54,25 @@ export type ScanRequest = {
   entirePackage: boolean;
   /** Existing ingredient name from the form; controls whether an inferred name is offered. */
   name: string;
+  /**
+   * Database-tab scans are stricter than meal scans (R15): the resulting label
+   * candidate must have explicit calories and a readable servings-per-package,
+   * or it is not save-ready.
+   */
+  strict?: boolean;
 };
 
 export type ScanProposed = ScanNutrients & { name?: string; weight: number };
 
+// A staged nutrition label ready to save to the Nutrition Facts Database. Maps
+// onto CreateNutritionDatabaseIngredient — serving size + unit + servings per
+// package are part of the label (R8/R9).
 export type DatabaseCandidate = {
   name: string;
   servingAmount: number;
+  servingSizeUnit: ServingSizeUnit;
+  servingSizeDisplayText?: string;
+  servingsPerPackage: number;
   calories: number;
   fat: number;
   carbs: number;
@@ -59,8 +80,32 @@ export type DatabaseCandidate = {
   saturatedFat?: number;
   fiber?: number;
   sugar?: number;
+  addedSugars?: number;
   sugarAlcohol?: number;
   allulose?: number;
+  micronutrients?: Micronutrient[];
+};
+
+// Best-effort label values for prefilling the database form, even when the scan
+// is not save-ready (e.g. the name couldn't be read). Required fields are
+// nullable so the form can highlight what's still missing for the user to fill.
+export type ScanLabelDraft = {
+  name: string | null;
+  servingAmount: number | null;
+  servingSizeUnit: ServingSizeUnit;
+  servingSizeDisplayText?: string;
+  servingsPerPackage: number | null;
+  calories: number | null;
+  fat: number | null;
+  carbs: number | null;
+  protein: number | null;
+  saturatedFat?: number;
+  fiber?: number;
+  sugar?: number;
+  addedSugars?: number;
+  sugarAlcohol?: number;
+  allulose?: number;
+  micronutrients?: Micronutrient[];
 };
 
 export type ScanResolution = {
@@ -81,65 +126,73 @@ export type ScanResolution = {
    * Only set when databaseCandidate is null.
    */
   databaseBlockReason?: string;
+  /**
+   * Best-effort label values for prefilling the database form, present whenever
+   * the label basis is readable — even when not save-ready. null only for an
+   * unreadable (unknown-basis) label.
+   */
+  labelDraft?: ScanLabelDraft | null;
 };
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const safe = (n: number) => round1(Math.max(0, n));
 
-function buildDatabaseCandidate(
+// Parse a metric serving size + unit from a printed serving description, e.g.
+// "1 cup (240mL)" → { amount: 240, unit: 'milliliter' }; "3/4 cup (170g)" →
+// { amount: 170, unit: 'gram' }. A fallback for when the model doesn't return a
+// numeric servingSizeGrams (common for volume servings).
+function parseServingFromText(
+  text: string | null | undefined,
+): { amount: number; unit: ServingSizeUnit } | null {
+  if (!text) return null;
+  const m = text.match(/(\d+(?:\.\d+)?)\s*(milliliters?|millilitres?|ml|grams?|g)\b/i);
+  if (!m) return null;
+  const amount = Number(m[1]);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return { amount, unit: m[2][0].toLowerCase() === 'm' ? 'milliliter' : 'gram' };
+}
+
+function buildLabel(
   label: ScanLabel,
   resolvedName: string,
-): { candidate: DatabaseCandidate | null; blockReason?: string } {
-  // unknown basis cannot produce a reliable per-serving candidate
+  strict: boolean,
+): { draft: ScanLabelDraft | null; candidate: DatabaseCandidate | null; blockReason?: string } {
+  // unknown basis cannot produce a reliable per-serving label
   if (label.basis === 'unknown') {
-    return { candidate: null, blockReason: undefined };
+    return { draft: null, candidate: null };
   }
 
-  // name is required
   const name = resolvedName.trim();
-  if (!name) {
-    return { candidate: null, blockReason: 'Name is required' };
-  }
+  const parsedServing = parseServingFromText(label.servingSizeText);
+  const serving =
+    label.servingSizeGrams && label.servingSizeGrams > 0
+      ? label.servingSizeGrams
+      : (parsedServing?.amount ?? null);
+  // Serving size unit: explicit from the scan, else inferred from the printed
+  // serving text, else grams.
+  const servingSizeUnit: ServingSizeUnit = label.servingSizeUnit ?? parsedServing?.unit ?? 'gram';
+  // Best-effort serving amount: per_serving uses the printed serving (may be
+  // null); per_100g prefers the printed serving, falling back to 100.
+  const servingAmount = label.basis === 'per_serving' ? serving : (serving ?? 100);
+  // A saved label requires servings per package (R8); for package scaling (R17).
+  const servingsPerPackage =
+    label.servingsPerContainer && label.servingsPerContainer > 0
+      ? label.servingsPerContainer
+      : null;
 
-  // Determine serving amount
-  let servingAmount: number;
-  if (label.basis === 'per_serving') {
-    const serving =
-      label.servingSizeGrams && label.servingSizeGrams > 0 ? label.servingSizeGrams : null;
-    if (!serving) {
-      return { candidate: null, blockReason: 'Serving size is required' };
-    }
-    servingAmount = serving;
-  } else {
-    // per_100g: prefer actual serving size when available, fall back to 100
-    const serving =
-      label.servingSizeGrams && label.servingSizeGrams > 0 ? label.servingSizeGrams : null;
-    servingAmount = serving ?? 100;
-  }
-
-  // Required macros
-  if (label.nutrients.fat == null || label.nutrients.fat < 0) {
-    return { candidate: null, blockReason: 'Fat is required' };
-  }
-  if (label.nutrients.carbs == null || label.nutrients.carbs < 0) {
-    return { candidate: null, blockReason: 'Carbs is required' };
-  }
-  if (label.nutrients.protein == null || label.nutrients.protein < 0) {
-    return { candidate: null, blockReason: 'Protein is required' };
-  }
-
-  // For per_100g labels we scale to actual serving size if different from 100
+  // For per_100g labels we scale to actual serving size when known and != 100.
   let fat = label.nutrients.fat;
   let carbs = label.nutrients.carbs;
   let protein = label.nutrients.protein;
   let saturatedFat = label.nutrients.saturatedFat;
   let fiber = label.nutrients.fiber;
   let sugar = label.nutrients.sugar;
+  let addedSugars = label.nutrients.addedSugars;
   let sugarAlcohol = label.nutrients.sugarAlcohol;
   let allulose = label.nutrients.allulose;
   let printedCalories = label.nutrients.calories;
 
-  if (label.basis === 'per_100g' && servingAmount !== 100) {
+  if (label.basis === 'per_100g' && servingAmount != null && servingAmount !== 100) {
     const factor = servingAmount / 100;
     fat = round1(fat * factor);
     carbs = round1(carbs * factor);
@@ -148,6 +201,7 @@ function buildDatabaseCandidate(
     if (saturatedFat != null) saturatedFat = round1(saturatedFat * factor);
     if (fiber != null) fiber = round1(fiber * factor);
     if (sugar != null) sugar = round1(sugar * factor);
+    if (addedSugars != null) addedSugars = round1(addedSugars * factor);
     if (sugarAlcohol != null) sugarAlcohol = round1(sugarAlcohol * factor);
     if (allulose != null) allulose = round1(allulose * factor);
   }
@@ -156,23 +210,70 @@ function buildDatabaseCandidate(
     printedCalories > 0
       ? printedCalories
       : estimateCalories({ fat, carbs, protein, fiber, sugarAlcohol, allulose });
+  const displayText =
+    label.servingSizeText && label.servingSizeText.trim()
+      ? label.servingSizeText.trim()
+      : undefined;
+  const micronutrients =
+    label.micronutrients && label.micronutrients.length > 0 ? label.micronutrients : undefined;
 
-  const candidate: DatabaseCandidate = {
-    name,
-    servingAmount,
+  // Best-effort draft for prefilling the form (always, when basis is readable).
+  const draft: ScanLabelDraft = {
+    name: name || null,
+    servingAmount: servingAmount ?? null,
+    servingSizeUnit,
+    servingsPerPackage,
     calories,
     fat,
     carbs,
     protein,
   };
+  if (displayText) draft.servingSizeDisplayText = displayText;
+  if (saturatedFat != null) draft.saturatedFat = saturatedFat;
+  if (fiber != null) draft.fiber = fiber;
+  if (sugar != null) draft.sugar = sugar;
+  if (addedSugars != null) draft.addedSugars = addedSugars;
+  if (sugarAlcohol != null) draft.sugarAlcohol = sugarAlcohol;
+  if (allulose != null) draft.allulose = allulose;
+  if (micronutrients) draft.micronutrients = micronutrients;
 
+  // Save-readiness for the strict database candidate (precedence preserved).
+  let blockReason: string | undefined;
+  if (!name) blockReason = 'Name is required';
+  else if (label.basis === 'per_serving' && !serving) blockReason = 'Serving size is required';
+  else if (!servingsPerPackage) blockReason = 'Servings per package is required';
+  else if (label.nutrients.fat == null || label.nutrients.fat < 0) blockReason = 'Fat is required';
+  else if (label.nutrients.carbs == null || label.nutrients.carbs < 0)
+    blockReason = 'Carbs is required';
+  else if (label.nutrients.protein == null || label.nutrients.protein < 0)
+    blockReason = 'Protein is required';
+  // The stricter database scanner must not invent calories (R15).
+  else if (strict && !(printedCalories > 0)) blockReason = 'Calories are required';
+
+  if (blockReason || servingAmount == null || servingsPerPackage == null) {
+    return { draft, candidate: null, blockReason };
+  }
+
+  const candidate: DatabaseCandidate = {
+    name,
+    servingAmount,
+    servingSizeUnit,
+    servingsPerPackage,
+    calories,
+    fat,
+    carbs,
+    protein,
+  };
+  if (displayText) candidate.servingSizeDisplayText = displayText;
   if (saturatedFat != null) candidate.saturatedFat = saturatedFat;
   if (fiber != null) candidate.fiber = fiber;
   if (sugar != null) candidate.sugar = sugar;
+  if (addedSugars != null) candidate.addedSugars = addedSugars;
   if (sugarAlcohol != null) candidate.sugarAlcohol = sugarAlcohol;
   if (allulose != null) candidate.allulose = allulose;
+  if (micronutrients) candidate.micronutrients = micronutrients;
 
-  return { candidate };
+  return { draft, candidate };
 }
 
 export function resolveScan(label: ScanLabel, request: ScanRequest): ScanResolution {
@@ -269,7 +370,11 @@ export function resolveScan(label: ScanLabel, request: ScanRequest): ScanResolut
   // Derive the name that will be used for the database candidate:
   // prefer the user-supplied name, then the inferred name.
   const resolvedName = request.name.trim() || label.inferredName || '';
-  const { candidate, blockReason: dbBlockReason } = buildDatabaseCandidate(label, resolvedName);
+  const {
+    draft,
+    candidate,
+    blockReason: dbBlockReason,
+  } = buildLabel(label, resolvedName, request.strict ?? false);
 
   const resolution: ScanResolution = {
     proposed: {
@@ -294,6 +399,9 @@ export function resolveScan(label: ScanLabel, request: ScanRequest): ScanResolut
     warning,
     notes,
   };
+
+  // Best-effort prefill values (null only for an unreadable label).
+  resolution.labelDraft = draft;
 
   if (label.basis === 'unknown') {
     // No candidate for unknown basis; omit databaseCandidate entirely

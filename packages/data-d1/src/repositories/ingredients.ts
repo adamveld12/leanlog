@@ -1,7 +1,7 @@
 import { eq, count } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { ingredients, meals, dailyMealLogs } from '../schema';
-import { estimateCalories } from '@leanlog/data-access';
+import { estimateCalories, parseMicronutrientsJson } from '@leanlog/data-access';
 import type {
   IngredientRepository,
   Ingredient,
@@ -14,11 +14,6 @@ function serializeMicronutrients(
 ): string | null {
   if (micronutrients == null) return null;
   return JSON.stringify(micronutrients);
-}
-
-function deserializeMicronutrients(json: string | null | undefined): Micronutrient[] | null {
-  if (json == null) return null;
-  return JSON.parse(json) as Micronutrient[];
 }
 
 function rowToDomain(row: typeof ingredients.$inferSelect): Ingredient {
@@ -43,7 +38,7 @@ function rowToDomain(row: typeof ingredients.$inferSelect): Ingredient {
     alcohol: row.alcohol ?? null,
     calorieSource: row.calorieSource,
     estimatedCalories: row.estimatedCalories,
-    micronutrients: deserializeMicronutrients(row.micronutrientsJson),
+    micronutrients: parseMicronutrientsJson(row.micronutrientsJson),
     sourceDatabaseIngredientId: row.sourceDatabaseIngredientId ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

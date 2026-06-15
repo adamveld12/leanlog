@@ -4,6 +4,8 @@ import { NutritionDatabaseEntryCard } from './NutritionDatabaseEntryCard';
 const base = {
   name: '',
   servingAmount: 0,
+  servingSizeUnit: 'gram',
+  servingsPerPackage: null,
   calories: null,
   fat: 0,
   carbs: 0,
@@ -21,6 +23,8 @@ const base = {
 const filled = {
   name: 'CHICKEN BREAST',
   servingAmount: 100,
+  servingSizeUnit: 'gram',
+  servingsPerPackage: 2,
   calories: null,
   fat: 3.6,
   carbs: 0,
@@ -90,8 +94,8 @@ export const WithMicronutrients: Story = {
     value: {
       ...filled,
       micronutrients: [
-        { name: 'Vitamin C', percentDailyValue: 120, amount: 108, unit: 'mg' },
-        { name: 'Iron', percentDailyValue: 15, amount: 2.7, unit: 'mg' },
+        { name: 'Sodium', amount: 60, unit: 'milligram' },
+        { name: 'Iron', amount: 2.7, unit: 'milligram' },
       ],
     },
   },

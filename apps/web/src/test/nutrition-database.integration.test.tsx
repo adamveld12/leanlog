@@ -93,7 +93,7 @@ type StoreCtx = {
   addIngredientFromDatabase: (
     dayId: string,
     mealId: string,
-    input: { databaseIngredientId: string; measuredAmount: number },
+    input: { databaseIngredientId: string; mode: string; amount?: number },
   ) => Promise<void>;
   searchNutritionDatabase: (query: string) => Promise<{ results: unknown[]; total: number }>;
   createNutritionDatabaseIngredient: (input: unknown) => Promise<unknown>;
@@ -117,7 +117,7 @@ function FakeStateProvider({
   onAddIngredientFromDatabase?: (
     dayId: string,
     mealId: string,
-    input: { databaseIngredientId: string; measuredAmount: number },
+    input: { databaseIngredientId: string; mode: string; amount?: number },
   ) => Promise<void>;
   onCreateIngredient?: (input: unknown) => Promise<unknown>;
   onSearch?: (query: string) => Promise<unknown[]>;
@@ -174,7 +174,7 @@ function FakeStateProvider({
         id: `db-ingredient-${input.databaseIngredientId}`,
         mealId,
         name: 'DB INGREDIENT',
-        weight: input.measuredAmount,
+        weight: input.amount ?? 0,
         calories: 200,
         fat: 5,
         saturatedFat: 1,
@@ -235,7 +235,7 @@ function renderApp(
     onAddIngredientFromDatabase?: (
       dayId: string,
       mealId: string,
-      input: { databaseIngredientId: string; measuredAmount: number },
+      input: { databaseIngredientId: string; mode: string; amount?: number },
     ) => Promise<void>;
     onCreateIngredient?: (input: unknown) => Promise<unknown>;
     onSearch?: (query: string) => Promise<unknown[]>;
@@ -313,10 +313,10 @@ describe('nutrition database tab', () => {
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()]);
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Nutrition Database' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Nutrition Facts Database' })).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Database' }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText('e.g. Chicken breast')).toBeInTheDocument();
@@ -326,7 +326,7 @@ describe('nutrition database tab', () => {
   it('shows the total ingredient count in the search label when the tab opens', async () => {
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()]);
 
-    await userEvent.click(await screen.findByRole('tab', { name: 'Nutrition Database' }));
+    await userEvent.click(await screen.findByRole('tab', { name: 'Nutrition Facts Database' }));
 
     await waitFor(() => {
       expect(
@@ -339,7 +339,7 @@ describe('nutrition database tab', () => {
     const onSearch = vi.fn().mockResolvedValue([dbResultBase]);
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()], { onSearch });
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Database' }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
 
     const searchInput = await screen.findByPlaceholderText('e.g. Chicken breast');
     await userEvent.type(searchInput, 'c');
@@ -354,7 +354,7 @@ describe('nutrition database tab', () => {
     const onSearch = vi.fn().mockResolvedValue([dbResultBase, { ...dbResultBase, id: 'db2' }]);
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()], { onSearch });
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Database' }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
 
     const searchInput = await screen.findByPlaceholderText('e.g. Chicken breast');
     await userEvent.type(searchInput, 'ch');
@@ -382,7 +382,7 @@ describe('nutrition database tab', () => {
       onSearch,
     });
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Database' }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
 
     const searchInput = await screen.findByPlaceholderText('e.g. Chicken breast');
     await userEvent.type(searchInput, 'ch');
@@ -395,7 +395,7 @@ describe('nutrition database tab', () => {
     });
 
     // Enter amount in the NumberInput for the result
-    const amountInput = screen.getByLabelText('Amount (g/ml)');
+    const amountInput = screen.getByLabelText('Weight (g/ml)');
     await userEvent.clear(amountInput);
     await userEvent.type(amountInput, '150');
 
@@ -404,7 +404,8 @@ describe('nutrition database tab', () => {
     await waitFor(() => {
       expect(onAddIngredientFromDatabase).toHaveBeenCalledWith('d1', 'm1', {
         databaseIngredientId: 'db1',
-        measuredAmount: 150,
+        mode: 'weight',
+        amount: 150,
       });
     });
 
@@ -414,17 +415,17 @@ describe('nutrition database tab', () => {
     });
   });
 
-  it('shows inline entry card when "Add database ingredient" is clicked and calls create on publish', async () => {
+  it('shows inline entry card when "Add an ingredient" is clicked and calls create on publish', async () => {
     const onCreateIngredient = vi.fn().mockResolvedValue({ id: 'new1' });
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()], { onCreateIngredient });
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Database' }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Add database ingredient' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Add an ingredient' })).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Add database ingredient' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add an ingredient' }));
 
     await waitFor(() => {
       expect(screen.getByText('Publish Ingredient')).toBeInTheDocument();
@@ -434,10 +435,15 @@ describe('nutrition database tab', () => {
     const nameInput = screen.getByRole('textbox', { name: 'Name' });
     await userEvent.type(nameInput, 'QUINOA');
 
-    // Fill serving amount
-    const servingInput = screen.getByLabelText('Serving amount (g/ml)');
+    // Fill serving size
+    const servingInput = screen.getByLabelText('Serving size');
     await userEvent.clear(servingInput);
     await userEvent.type(servingInput, '100');
+
+    // Fill servings per package (now required)
+    const servingsPerPackageInput = screen.getByLabelText('Servings per package');
+    await userEvent.clear(servingsPerPackageInput);
+    await userEvent.type(servingsPerPackageInput, '4');
 
     // Fill calories (now required)
     const caloriesInput = screen.getByLabelText('Calories (kcal)');
@@ -467,6 +473,7 @@ describe('nutrition database tab', () => {
         expect.objectContaining({
           name: 'QUINOA',
           servingAmount: 100,
+          servingsPerPackage: 4,
           creationSource: 'manual',
         }),
       );
@@ -479,112 +486,62 @@ describe('nutrition database tab', () => {
   });
 });
 
-describe('save ingredient to database from meal row', () => {
-  it('publishes the ingredient then links it to the new database entry', async () => {
-    const onCreateIngredient = vi.fn().mockResolvedValue({ id: 'new1' });
-    const onUpsertIngredient = vi.fn().mockResolvedValue(undefined);
+describe('adding a saved label to a meal by mode', () => {
+  it('adds an entire package without an amount input (R22)', async () => {
+    const onAddIngredientFromDatabase = vi.fn().mockResolvedValue(undefined);
+    const onSearch = vi.fn().mockResolvedValue([dbResultBase]);
 
-    const ingredient: Ingredient = makeIngredient({
-      id: 'i1',
-      mealId: 'm1',
-      name: 'EGG',
-      weight: 50,
-      calories: 78,
-      fat: 5,
-      saturatedFat: 1.5,
-      carbs: 0.6,
-      fiber: 0,
-      protein: 6,
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()], {
+      onAddIngredientFromDatabase,
+      onSearch,
     });
 
-    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])], {
-      onCreateIngredient,
-      onUpsertIngredient,
-    });
+    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
+    const searchInput = await screen.findByPlaceholderText('e.g. Chicken breast');
+    await userEvent.type(searchInput, 'ch');
+    await waitFor(() => expect(screen.getByText('CHICKEN BREAST')).toBeInTheDocument());
+
+    // Switch the add mode to entire package; the amount input disappears.
+    await userEvent.selectOptions(screen.getByLabelText('Add by'), 'package');
+    expect(screen.queryByLabelText('Weight (g/ml)')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() => {
-      expect(screen.getByText('EGG')).toBeInTheDocument();
-    });
-
-    const saveBtn = screen.getByRole('button', { name: 'Save to database' });
-    expect(saveBtn).not.toBeDisabled();
-    await userEvent.click(saveBtn);
-
-    await waitFor(() => {
-      expect(onCreateIngredient).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: 'EGG',
-          servingAmount: 50,
-          fat: 5,
-          carbs: 0.6,
-          protein: 6,
-          creationSource: 'meal_ingredient',
-        }),
-      );
-    });
-
-    // The ingredient is immediately linked to the new database entry...
-    await waitFor(() => {
-      expect(onUpsertIngredient).toHaveBeenCalledWith(
-        'd1',
-        'm1',
-        expect.objectContaining({ id: 'i1', sourceDatabaseIngredientId: 'new1' }),
-      );
-    });
-
-    // ...so the save action disappears and it cannot be duplicated.
-    await waitFor(() => {
-      expect(screen.queryByRole('button', { name: 'Save to database' })).not.toBeInTheDocument();
+      expect(onAddIngredientFromDatabase).toHaveBeenCalledWith('d1', 'm1', {
+        databaseIngredientId: 'db1',
+        mode: 'package',
+      });
     });
   });
 
-  it('disables Save to database button when weight is 0', async () => {
-    const ingredient: Ingredient = makeIngredient({
-      id: 'i2',
-      mealId: 'm1',
-      name: 'ZERO WEIGHT',
-      weight: 0,
-      calories: 0,
-      fat: 0,
-      saturatedFat: 0,
-      carbs: 0,
-      fiber: 0,
-      protein: 0,
+  it('adds by a number of servings (R22)', async () => {
+    const onAddIngredientFromDatabase = vi.fn().mockResolvedValue(undefined);
+    const onSearch = vi.fn().mockResolvedValue([dbResultBase]);
+
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()], {
+      onAddIngredientFromDatabase,
+      onSearch,
     });
 
-    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])]);
+    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
+    const searchInput = await screen.findByPlaceholderText('e.g. Chicken breast');
+    await userEvent.type(searchInput, 'ch');
+    await waitFor(() => expect(screen.getByText('CHICKEN BREAST')).toBeInTheDocument());
+
+    await userEvent.selectOptions(screen.getByLabelText('Add by'), 'servings');
+    const servingsInput = screen.getByLabelText('# of servings');
+    await userEvent.clear(servingsInput);
+    await userEvent.type(servingsInput, '2');
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() => {
-      expect(screen.getByText('ZERO WEIGHT')).toBeInTheDocument();
+      expect(onAddIngredientFromDatabase).toHaveBeenCalledWith('d1', 'm1', {
+        databaseIngredientId: 'db1',
+        mode: 'servings',
+        amount: 2,
+      });
     });
-
-    const saveBtn = screen.getByRole('button', { name: 'Save to database' });
-    expect(saveBtn).toBeDisabled();
-  });
-
-  it('hides Save to database for ingredients added from the nutrition database', async () => {
-    const ingredient: Ingredient = makeIngredient({
-      id: 'i3',
-      mealId: 'm1',
-      name: 'FROM DB',
-      weight: 200,
-      calories: 330,
-      fat: 6,
-      saturatedFat: 2,
-      carbs: 0,
-      fiber: 0,
-      protein: 62,
-      sourceDatabaseIngredientId: 'db1',
-    });
-
-    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal([ingredient])]);
-
-    await waitFor(() => {
-      expect(screen.getByText('FROM DB')).toBeInTheDocument();
-    });
-
-    expect(screen.queryByRole('button', { name: 'Save to database' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Delete ingredient' })).toBeInTheDocument();
   });
 });
 
@@ -632,7 +589,7 @@ describe('tab order and default', () => {
 
     const tabs = screen.getAllByRole('tab');
     expect(tabs.map((t) => t.textContent)).toEqual([
-      'Nutrition Database',
+      'Nutrition Facts Database',
       'Label Scan',
       'Manual Entry',
     ]);

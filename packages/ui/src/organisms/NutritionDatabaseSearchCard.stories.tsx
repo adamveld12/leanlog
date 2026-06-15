@@ -44,6 +44,7 @@ const meta: Meta<typeof NutritionDatabaseSearchCard> = {
     onAdd: () => {},
     addingId: null,
     onCreateNew: () => {},
+    onScanLabel: () => {},
   },
 };
 
@@ -97,6 +98,13 @@ export const Truncated: Story = {
 export const NoCreateNew: Story = {
   args: {
     onCreateNew: undefined,
+    onScanLabel: undefined,
+  },
+};
+
+export const Scanning: Story = {
+  args: {
+    scanning: true,
   },
 };
 

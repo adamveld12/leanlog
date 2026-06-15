@@ -113,9 +113,8 @@ describe('IngredientEntryCard', () => {
     expect(screen.queryByLabelText('Calories')).not.toBeInTheDocument();
   });
 
-  it('renders estimated calories text', () => {
-    // base: fat=6, carbs=0, fiber=0, protein=42
-    // estimatedCalories = 6*9 + 42*4 + max(0, 0-0)*4 = 54 + 168 + 0 = 222
+  it('shows the estimate as the calories placeholder', () => {
+    // base: fat=6, carbs=0, fiber=0, protein=42 → estimate 222
     render(
       <IngredientEntryCard
         value={base}
@@ -125,7 +124,10 @@ describe('IngredientEntryCard', () => {
         submitLabel="Add"
       />,
     );
-    expect(screen.getByText(/Estimated calories: 222 kcal/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Calories (kcal)')).toHaveAttribute(
+      'placeholder',
+      'Estimated calories: 222',
+    );
   });
 
   it('recalculates calories when macros change (fiber reduces net carbs)', async () => {
@@ -143,7 +145,10 @@ describe('IngredientEntryCard', () => {
 
     // fat=6, carbs=20, fiber=5, protein=42
     // netCarbs = 20 - 5 = 15, estimatedCalories = 6*9 + 42*4 + 15*4 + 5*2 = 54 + 168 + 60 + 10 = 292
-    expect(screen.getByText(/Estimated calories: 292 kcal/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Calories (kcal)')).toHaveAttribute(
+      'placeholder',
+      'Estimated calories: 292',
+    );
   });
 
   it('enforces limits, rounds to 1 decimal, and validates fiber <= carbs', async () => {
@@ -239,8 +244,10 @@ describe('IngredientEntryCard', () => {
     expect(screen.getByLabelText('Weight (g)')).toHaveValue('');
     expect(screen.getByLabelText('Fat')).toHaveValue('');
     expect(screen.getByLabelText('Protein')).toHaveValue('');
-    expect(screen.getByText(/Estimated calories: 0 kcal/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Add' })).toBeEnabled();
+    // No estimate (no macros) → plain placeholder and Add is blocked until
+    // calories or a macro is entered.
+    expect(screen.getByLabelText('Calories (kcal)')).toHaveAttribute('placeholder', 'Calories');
+    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
   });
 
   it('leaves a cleared field empty instead of writing 0', async () => {
@@ -256,5 +263,30 @@ describe('IngredientEntryCard', () => {
     const onSubmit = vi.fn();
     render(<Harness onSubmit={onSubmit} />);
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+  });
+
+  it('adds a micronutrient row with amount, unit, and %DV inputs', async () => {
+    render(<Harness onSubmit={() => {}} />);
+    // No rows until you add one.
+    expect(screen.queryByLabelText('% DV')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Add row' }));
+    expect(screen.getByPlaceholderText('e.g. Sodium')).toBeInTheDocument();
+    expect(screen.getByLabelText('Amount')).toBeInTheDocument();
+    expect(screen.getByLabelText('% DV')).toBeInTheDocument();
+    // Unit defaults to mg.
+    expect(screen.getByLabelText('Unit')).toHaveValue('milligram');
+  });
+
+  it('renders existing micronutrient rows from the value', () => {
+    render(
+      <IngredientEntryCard
+        value={{ ...base, micronutrients: [{ name: 'Sodium', amount: 60, unit: 'milligram' }] }}
+        estimatedCalories={222}
+        onChange={() => {}}
+        onSubmit={() => {}}
+        submitLabel="Add"
+      />,
+    );
+    expect(screen.getByDisplayValue('Sodium')).toBeInTheDocument();
   });
 });

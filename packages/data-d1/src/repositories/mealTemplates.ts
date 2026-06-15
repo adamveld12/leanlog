@@ -2,7 +2,11 @@ import { eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { mealTemplates, mealTemplateIngredients, userProfiles } from '../schema';
-import { estimateCalories, DEFAULT_MEAL_TEMPLATE_NAMES } from '@leanlog/data-access';
+import {
+  estimateCalories,
+  DEFAULT_MEAL_TEMPLATE_NAMES,
+  parseMicronutrientsJson,
+} from '@leanlog/data-access';
 import {
   DuplicateTemplateNameError,
   type MealTemplateRepository,
@@ -15,10 +19,6 @@ import {
 
 function serializeMicronutrients(m: Micronutrient[] | null | undefined): string | null {
   return m == null ? null : JSON.stringify(m);
-}
-
-function deserializeMicronutrients(json: string | null | undefined): Micronutrient[] | null {
-  return json == null ? null : (JSON.parse(json) as Micronutrient[]);
 }
 
 function ingredientRowToDomain(
@@ -45,7 +45,7 @@ function ingredientRowToDomain(
     alcohol: row.alcohol ?? null,
     calorieSource: row.calorieSource,
     estimatedCalories: row.estimatedCalories,
-    micronutrients: deserializeMicronutrients(row.micronutrientsJson),
+    micronutrients: parseMicronutrientsJson(row.micronutrientsJson),
     sourceDatabaseIngredientId: row.sourceDatabaseIngredientId ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

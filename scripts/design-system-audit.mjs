@@ -313,6 +313,89 @@ for (const dir of componentDirs) {
   }
 }
 
+// Check: tab-panel content must live in cards. Interactive content belongs
+// inside a SectionCard (or card organism), not as a bare sibling floating
+// between cards in a tab panel. We flag a control atom that is a direct sibling
+// of a *Card element inside a role="tabpanel" subtree, scoped to app
+// composition. A brace/string-aware tag scanner is used because JSX opening
+// tags contain '>' inside `{() => …}` handlers, which a flat regex mis-parses.
+function scanJsxTags(text) {
+  const out = [];
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== '<') continue;
+    let j = i + 1;
+    const closing = text[j] === '/';
+    if (closing) j++;
+    const nameStart = j;
+    while (j < text.length && /[A-Za-z0-9._]/.test(text[j])) j++;
+    const name = text.slice(nameStart, j);
+    if (!name || !/[A-Za-z]/.test(name[0])) continue; // skip fragments / '<' in text
+    let depth = 0;
+    let selfClose = false;
+    while (j < text.length) {
+      const c = text[j];
+      if (depth === 0 && c === '>') break;
+      if (depth === 0 && c === '/' && text[j + 1] === '>') {
+        selfClose = true;
+        break;
+      }
+      if (c === '{') depth++;
+      else if (c === '}') depth--;
+      else if (c === '"' || c === "'" || c === '`') {
+        j++;
+        while (j < text.length && text[j] !== c) {
+          if (text[j] === '\\') j++;
+          j++;
+        }
+      }
+      j++;
+    }
+    const tagText = text.slice(i, j + 1);
+    out.push({ closing, name, selfClose, tagText, line: text.slice(0, i).split('\n').length });
+    i = j;
+  }
+  return out;
+}
+
+const controlAtomName = /^(Button|Input|NumberInput|IntegerInput|Select|Checkbox|Radio|FileInput)$/;
+const cardName = /Card$/;
+for (const dir of ['apps/web/src/components', 'apps/web/src/pages']) {
+  for (const file of files(dir).filter(
+    (f) => f.endsWith('.tsx') && !f.endsWith('.stories.tsx') && !f.endsWith('.test.tsx'),
+  )) {
+    const text = readFileSync(file, 'utf8');
+    const stack = [];
+    for (const tag of scanJsxTags(text)) {
+      if (tag.closing) {
+        const el = stack.pop();
+        if (el && el.underTabpanel && el.cards >= 1 && el.controls.length) {
+          for (const line of el.controls) {
+            errors.push(
+              `Control atom must live inside a SectionCard, not as a bare sibling of a card ` +
+                `in a tab panel: ${file}:${line}`,
+            );
+          }
+        }
+        continue;
+      }
+      const parent = stack[stack.length - 1];
+      if (parent) {
+        if (cardName.test(tag.name)) parent.cards += 1;
+        else if (controlAtomName.test(tag.name)) parent.controls.push(tag.line);
+      }
+      if (!tag.selfClose) {
+        const isTabpanel = /role=\s*(["'`]tabpanel|\{\s*["'`]tabpanel)/.test(tag.tagText);
+        stack.push({
+          name: tag.name,
+          cards: 0,
+          controls: [],
+          underTabpanel: isTabpanel || (parent ? parent.underTabpanel : false),
+        });
+      }
+    }
+  }
+}
+
 if (errors.length) {
   console.error(errors.map((e) => `- ${e}`).join('\n'));
   process.exit(1);

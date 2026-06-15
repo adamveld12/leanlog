@@ -40,12 +40,16 @@ import {
   WarningText,
   WeeklyStatsCard,
   WeightTrendCard,
-  useAnalytics,
 } from '@leanlog/ui';
-import { caloriesFromMode, dayTargetsFromProfile, dayMealStructure } from '@leanlog/data-access';
+import {
+  caloriesFromMode,
+  dayTargetsFromProfile,
+  dayMealStructure,
+  resolveScannedMicronutrients,
+  type NutritionUnit,
+} from '@leanlog/data-access';
 import { isPastIso, normalizeIngredientName, prettyDate, todayIso } from '../lib';
 import { IngredientEntry } from '../components/IngredientEntry';
-import type { EntryIngredient } from '../components/IngredientEntry';
 import {
   dayTotals,
   mealTotals,
@@ -59,6 +63,25 @@ import {
 import { useStore } from '../state';
 import { api } from '../api';
 import type { UpsertIngredient, SaveSections } from '../types';
+
+// Resolve the manual-entry micronutrient rows (which may carry a %DV) into typed
+// amounts: a measured amount wins; otherwise the %DV is converted via the Daily
+// Value table. Empty / unknown-with-only-%DV rows are dropped.
+function resolveDraftMicronutrients(
+  micros:
+    | { name: string; amount?: number | null; unit?: string; percentDailyValue?: number | null }[]
+    | null
+    | undefined,
+) {
+  return resolveScannedMicronutrients(
+    micros?.map((m) => ({
+      name: m.name,
+      amount: m.amount ?? undefined,
+      unit: (m.unit as NutritionUnit | undefined) ?? undefined,
+      percentDailyValue: m.percentDailyValue ?? undefined,
+    })),
+  );
+}
 
 function useSavedSections() {
   const [saved, setSaved] = useState<SaveSections>({});
@@ -507,7 +530,6 @@ function MealEdit() {
     upsertIngredient,
     removeIngredient,
     addIngredientFromDatabase,
-    createNutritionDatabaseIngredient,
   } = useStore();
   const day = days.find((d) => d.id === dayId);
   const meal = day?.meals.find((m) => m.id === mealId);
@@ -517,10 +539,6 @@ function MealEdit() {
   });
   const mealName = mealNameDraft.mealId === meal?.id ? mealNameDraft.name : (meal?.name ?? '');
   const setMealName = (name: string) => setMealNameDraft({ mealId: meal?.id ?? null, name });
-  // "Save to database" state per ingredient row
-  const [savingToDbId, setSavingToDbId] = useState<string | null>(null);
-  const [saveToDbError, setSaveToDbError] = useState('');
-  const track = useAnalytics();
   const { saved, markDirty, markSaved } = useSavedSections();
 
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
@@ -611,60 +629,6 @@ function MealEdit() {
 
   const totals = mealTotals(meal);
 
-  const saveToDatabase = (i: EntryIngredient) => {
-    setSavingToDbId(i.id);
-    void createNutritionDatabaseIngredient({
-      name: i.name,
-      servingAmount: i.weight,
-      fat: i.fat,
-      carbs: i.carbs,
-      protein: i.protein,
-      calories: i.calories,
-      saturatedFat: i.saturatedFat ?? undefined,
-      fiber: i.fiber ?? undefined,
-      sugar: i.sugar ?? undefined,
-      sugarAlcohol: i.sugarAlcohol ?? undefined,
-      allulose: i.allulose ?? undefined,
-      alcohol: i.alcohol ?? undefined,
-      creationSource: 'meal_ingredient',
-    })
-      .then((created) => {
-        track('nutrition_database.ingredient.published', {
-          source: 'meal_ingredient',
-        });
-        // Link the meal ingredient to its new database entry so it
-        // can't be saved (and duplicated) again.
-        return upsertIngredient(day.id, meal.id, {
-          id: i.id,
-          mealId: meal.id,
-          name: i.name,
-          weight: i.weight,
-          calories: i.calorieSource === 'explicit' ? i.calories : null,
-          fat: i.fat,
-          saturatedFat: i.saturatedFat,
-          carbs: i.carbs,
-          fiber: i.fiber,
-          protein: i.protein,
-          sugarAlcohol: i.sugarAlcohol ?? null,
-          allulose: i.allulose ?? null,
-          alcohol: i.alcohol ?? null,
-          unsaturatedFat: i.unsaturatedFat ?? null,
-          monounsaturatedFat: i.monounsaturatedFat ?? null,
-          polyunsaturatedFat: i.polyunsaturatedFat ?? null,
-          transFat: i.transFat ?? null,
-          sugar: i.sugar ?? null,
-          micronutrients: i.micronutrients ?? null,
-          sourceDatabaseIngredientId: created.id,
-        });
-      })
-      .catch(() => {
-        setSaveToDbError('Failed to save ingredient to database.');
-      })
-      .finally(() => {
-        setSavingToDbId(null);
-      });
-  };
-
   return (
     <AnalyticsScope properties={{ dayId: day.id, mealId: meal.id }}>
       <MealEditTemplate
@@ -715,7 +679,6 @@ function MealEdit() {
                 Delete meal and all ingredients
               </Button>
             </div>
-            {saveToDbError ? <WarningText role="alert">{saveToDbError}</WarningText> : null}
           </SectionCard>
         }
         ingredientSection={
@@ -723,7 +686,6 @@ function MealEdit() {
             ingredients={meal.ingredients}
             analyticsContext="meal"
             showDatabaseCreate
-            savingToDbId={savingToDbId}
             onSubmit={(draft, editingId) => {
               const id = editingId ?? uuidv7();
               const next: UpsertIngredient = {
@@ -738,17 +700,17 @@ function MealEdit() {
                 carbs: draft.carbs ?? 0,
                 fiber: draft.fiber ?? 0,
                 protein: draft.protein ?? 0,
+                micronutrients: resolveDraftMicronutrients(draft.micronutrients),
               };
               void upsertIngredient(day.id, meal.id, next);
             }}
             onDelete={(id) => void removeIngredient(day.id, meal.id, id)}
-            onAddFromDatabase={(dbId, amount) =>
+            onAddFromDatabase={(dbId, input) =>
               addIngredientFromDatabase(day.id, meal.id, {
                 databaseIngredientId: dbId,
-                measuredAmount: amount,
+                ...input,
               })
             }
-            onSaveToDatabase={saveToDatabase}
           />
         }
       />
@@ -1091,6 +1053,14 @@ function MealTemplateEdit() {
               onNormalized={saveName}
             />
             {nameError ? <WarningText role="alert">{nameError}</WarningText> : null}
+            <div className={recipes.stack.row}>
+              <Button
+                variant="danger"
+                onClick={() => void removeTemplate(template.id).then(() => nav('/track/templates'))}
+              >
+                Delete template
+              </Button>
+            </div>
           </SectionCard>
         }
         ingredientsSection={
@@ -1101,7 +1071,7 @@ function MealTemplateEdit() {
             <IngredientEntry
               ingredients={template.ingredients}
               analyticsContext="template"
-              showDatabaseCreate={false}
+              showDatabaseCreate
               onSubmit={(draft, editingId) => {
                 const next = {
                   ...draft,
@@ -1114,29 +1084,18 @@ function MealTemplateEdit() {
                   carbs: draft.carbs ?? 0,
                   fiber: draft.fiber ?? 0,
                   protein: draft.protein ?? 0,
+                  micronutrients: resolveDraftMicronutrients(draft.micronutrients),
                 };
                 void upsertTemplateIngredient(template.id, next);
               }}
               onDelete={(id) => void removeTemplateIngredient(template.id, id)}
-              onAddFromDatabase={(dbId, amount) =>
+              onAddFromDatabase={(dbId, input) =>
                 addTemplateIngredientFromDatabase(template.id, {
                   databaseIngredientId: dbId,
-                  measuredAmount: amount,
+                  ...input,
                 })
               }
             />
-          </SectionCard>
-        }
-        // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
-        dangerZone={
-          <SectionCard title="Danger zone">
-            <Button
-              variant="danger"
-              className="w-full"
-              onClick={() => void removeTemplate(template.id).then(() => nav('/track/templates'))}
-            >
-              Delete template
-            </Button>
           </SectionCard>
         }
       />

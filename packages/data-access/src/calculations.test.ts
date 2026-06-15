@@ -8,7 +8,7 @@ import {
   estimatedWeightLost,
   weightLossCertainty,
   estimateCalories,
-  scaleNutritionDatabaseIngredient,
+  scaleLabelToIngredient,
 } from './calculations';
 import type { UserProfile, NutritionDatabaseIngredient } from './models';
 
@@ -235,6 +235,9 @@ const baseDbIngredient: NutritionDatabaseIngredient = {
   id: '01939f68-0000-7000-8000-000000000001',
   name: 'Chicken Breast',
   servingAmount: 170,
+  servingSizeUnit: 'gram',
+  servingSizeDisplayText: null,
+  servingsPerPackage: 2,
   addedByUserId: 'user-1',
   creationSource: 'manual',
   fat: 3.6,
@@ -248,6 +251,7 @@ const baseDbIngredient: NutritionDatabaseIngredient = {
   transFat: null,
   fiber: 0,
   sugar: null,
+  addedSugars: null,
   sugarAlcohol: null,
   allulose: null,
   alcohol: null,
@@ -256,19 +260,20 @@ const baseDbIngredient: NutritionDatabaseIngredient = {
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
-describe('scaleNutritionDatabaseIngredient', () => {
-  it('doubles all fields when measured amount is 2x serving', () => {
-    const result = scaleNutritionDatabaseIngredient(baseDbIngredient, 340);
+describe('scaleLabelToIngredient — weight mode', () => {
+  it('doubles all fields when consumed weight is 2x serving', () => {
+    const result = scaleLabelToIngredient(baseDbIngredient, { mode: 'weight', amount: 340 });
     expect(result.calories).toBe(312.8);
     expect(result.fat).toBe(7.2);
     expect(result.carbs).toBe(0);
     expect(result.protein).toBe(62);
     expect(result.weight).toBe(340);
     expect(result.saturatedFat).toBe(2);
+    expect(result.sourceDatabaseIngredientId).toBe(baseDbIngredient.id);
   });
 
   it('only scales present optional fields, leaves absent ones absent', () => {
-    const result = scaleNutritionDatabaseIngredient(baseDbIngredient, 340);
+    const result = scaleLabelToIngredient(baseDbIngredient, { mode: 'weight', amount: 340 });
     expect(result.unsaturatedFat).toBeUndefined();
     expect(result.monounsaturatedFat).toBeUndefined();
     expect(result.transFat).toBeUndefined();
@@ -285,38 +290,50 @@ describe('scaleNutritionDatabaseIngredient', () => {
       allulose: 2,
       alcohol: 1,
     };
-    const result = scaleNutritionDatabaseIngredient(ingredient, 340);
+    const result = scaleLabelToIngredient(ingredient, { mode: 'weight', amount: 340 });
     expect(result.sugarAlcohol).toBe(8);
     expect(result.allulose).toBe(4);
     expect(result.alcohol).toBe(2);
   });
 
-  it('scales micronutrient amounts and percentDailyValue', () => {
+  it('scales typed micronutrient amounts and drops %DV (R4)', () => {
     const ingredient: NutritionDatabaseIngredient = {
       ...baseDbIngredient,
       micronutrients: [
-        { name: 'Iron', amount: 2, percentDailyValue: 10 },
-        { name: 'Vitamin C', amount: 5, percentDailyValue: 50 },
+        { name: 'Iron', amount: 2, unit: 'milligram' },
+        { name: 'Vitamin C', amount: 5, unit: 'milligram' },
       ],
     };
-    const result = scaleNutritionDatabaseIngredient(ingredient, 340);
+    const result = scaleLabelToIngredient(ingredient, { mode: 'weight', amount: 340 });
     expect(result.micronutrients).toHaveLength(2);
-    expect(result.micronutrients![0].amount).toBe(4);
-    expect(result.micronutrients![0].percentDailyValue).toBe(20);
-    expect(result.micronutrients![1].amount).toBe(10);
-    expect(result.micronutrients![1].percentDailyValue).toBe(100);
+    expect(result.micronutrients![0]).toEqual({ name: 'Iron', amount: 4, unit: 'milligram' });
+    expect(result.micronutrients![1]).toEqual({ name: 'Vitamin C', amount: 10, unit: 'milligram' });
+    expect(result.micronutrients![0]).not.toHaveProperty('percentDailyValue');
   });
 
   it('half serving scales down correctly', () => {
-    const result = scaleNutritionDatabaseIngredient(baseDbIngredient, 85);
+    const result = scaleLabelToIngredient(baseDbIngredient, { mode: 'weight', amount: 85 });
     expect(result.fat).toBe(1.8);
     expect(result.protein).toBe(15.5);
     expect(result.weight).toBe(85);
   });
+});
 
-  it('includes name from ingredient', () => {
-    const result = scaleNutritionDatabaseIngredient(baseDbIngredient, 170);
-    expect(result.name).toBe('Chicken Breast');
+describe('scaleLabelToIngredient — servings & package modes', () => {
+  it('AE6: 2 servings keeps the source reference and scales macros by serving count', () => {
+    const label: NutritionDatabaseIngredient = { ...baseDbIngredient, protein: 10 };
+    const result = scaleLabelToIngredient(label, { mode: 'servings', amount: 2 });
+    expect(result.protein).toBe(20); // 10g/serving × 2
+    expect(result.weight).toBe(340); // 170g serving × 2
+    expect(result.sourceDatabaseIngredientId).toBe(label.id);
+  });
+
+  it('AE: entire package scales by servings-per-package and totals the package weight', () => {
+    // serving size 170g, 2 servings/pkg → consumed 340g, factor ×2
+    const result = scaleLabelToIngredient(baseDbIngredient, { mode: 'package' });
+    expect(result.weight).toBe(340);
+    expect(result.fat).toBe(7.2);
+    expect(result.protein).toBe(62);
   });
 });
 

@@ -1,6 +1,13 @@
-import type { NutritionDatabaseSearchResult } from '@leanlog/ui';
+import type {
+  AddFromDatabaseMode,
+  IngredientMicronutrientValue,
+  NutritionDatabaseSearchResult,
+} from '@leanlog/ui';
 import type { Ingredient, UpsertIngredient } from '@leanlog/data-access';
 import type { NutritionDatabaseIngredientSearchResult } from '../../types';
+
+// How a saved label is added to a meal (R22): by weight, servings, or package.
+export type AddFromDatabaseInput = { mode: AddFromDatabaseMode; amount?: number };
 
 type DraftNumericKey =
   | 'weight'
@@ -16,8 +23,11 @@ type DraftNumericKey =
 
 export type IngredientDraft = Omit<
   UpsertIngredient,
-  'id' | 'mealId' | 'createdAt' | 'updatedAt' | DraftNumericKey
-> & { [K in DraftNumericKey]: number | null };
+  'id' | 'mealId' | 'createdAt' | 'updatedAt' | 'micronutrients' | DraftNumericKey
+> & { [K in DraftNumericKey]: number | null } & {
+  // Editor shape: rows may carry a %DV that is resolved to an amount on save.
+  micronutrients?: IngredientMicronutrientValue[] | null;
+};
 
 export const emptyDraft: IngredientDraft = {
   name: '',
@@ -42,6 +52,8 @@ export function mapDbSearchResults(
     id: r.id,
     name: r.name,
     servingAmount: r.servingAmount,
+    servingSizeUnit: r.servingSizeUnit,
+    servingsPerPackage: r.servingsPerPackage,
     fat: r.fat,
     carbs: r.carbs,
     protein: r.protein,

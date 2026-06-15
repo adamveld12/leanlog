@@ -1,14 +1,34 @@
+import { useState } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
 import { HelperText } from '../atoms/HelperText';
 import { Input } from '../atoms/Input';
 import { NumberInput } from '../atoms/NumberInput';
+import { Select } from '../atoms/Select';
 import { SectionHeading } from '../atoms/SectionHeading';
 import { WarningText } from '../atoms/WarningText';
 import { SectionCard } from '../molecules/SectionCard';
 import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
+
+// Typed nutrient units (kept in sync with @leanlog/data-access NutritionUnitSchema).
+const NUTRITION_UNIT_OPTIONS = [
+  { value: 'gram', label: 'g' },
+  { value: 'milligram', label: 'mg' },
+  { value: 'microgram', label: 'mcg' },
+  { value: 'milliliter', label: 'ml' },
+  { value: 'international_unit', label: 'IU' },
+] as const;
+
+// A micronutrient row in the manual form: the user may enter a measured amount +
+// unit, or a percent daily value (resolved to an amount on save by the caller).
+export type IngredientMicronutrientValue = {
+  name: string;
+  amount?: number | null;
+  unit?: string;
+  percentDailyValue?: number | null;
+};
 
 export type IngredientEntryValue = {
   name: string;
@@ -22,6 +42,7 @@ export type IngredientEntryValue = {
   sugarAlcohol: number | null;
   allulose: number | null;
   alcohol: number | null;
+  micronutrients?: IngredientMicronutrientValue[] | null;
 };
 
 type IngredientEntryCardProps = {
@@ -42,6 +63,9 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 const sanitize = (n: number | null) => (n == null ? null : round1(clamp999(n)));
 const sanitizeCalories = (n: number | null) => (n == null ? null : round1(clamp9999(n)));
 
+let microRowSeq = 0;
+const nextMicroRowKey = () => `ing-micro-${microRowSeq++}`;
+
 export function IngredientEntryCard({
   value,
   estimatedCalories,
@@ -52,20 +76,38 @@ export function IngredientEntryCard({
   onCancel,
   normalizeNameOnBlur,
 }: IngredientEntryCardProps) {
-  const setNum = (
-    key: Exclude<keyof IngredientEntryValue, 'name' | 'calories'>,
-    next: number | null,
-  ) => onChange({ ...value, [key]: sanitize(next) });
+  type NumericKey = Exclude<keyof IngredientEntryValue, 'name' | 'calories' | 'micronutrients'>;
+  const setNum = (key: NumericKey, next: number | null) =>
+    onChange({ ...value, [key]: sanitize(next) });
 
-  const roundField = (key: Exclude<keyof IngredientEntryValue, 'name' | 'calories'>) =>
-    onChange({ ...value, [key]: sanitize(value[key]) });
+  const roundField = (key: NumericKey) => onChange({ ...value, [key]: sanitize(value[key]) });
 
   const fiberInvalid = (value.fiber ?? 0) > (value.carbs ?? 0);
+  // When the macros yield an estimate, an empty calories field uses it on save;
+  // otherwise calories must be entered (block submit).
+  const hasEstimate = estimatedCalories > 0;
+  const caloriesMissing = value.calories == null && !hasEstimate;
+  const caloriesPlaceholder = hasEstimate
+    ? `Estimated calories: ${Math.round(estimatedCalories)}`
+    : 'Calories';
 
-  const calorieDisplay =
-    value.calories != null && Math.round(value.calories) !== Math.round(estimatedCalories)
-      ? `Calories: ${Math.round(value.calories)} kcal · Estimated: ${Math.round(estimatedCalories)} kcal`
-      : `Estimated calories: ${Math.round(estimatedCalories)} kcal`;
+  // Micronutrient editor. Stable per-row keys so removing a row doesn't remount
+  // the wrong inputs (array index keys are unsafe for an editable list).
+  const micronutrients = value.micronutrients ?? [];
+  const [microKeys, setMicroKeys] = useState<string[]>(() => micronutrients.map(nextMicroRowKey));
+  const updateMicro = (idx: number, patch: Partial<IngredientMicronutrientValue>) =>
+    onChange({
+      ...value,
+      micronutrients: micronutrients.map((m, i) => (i === idx ? { ...m, ...patch } : m)),
+    });
+  const addMicro = () => {
+    setMicroKeys((keys) => [...keys, nextMicroRowKey()]);
+    onChange({ ...value, micronutrients: [...micronutrients, { name: '', unit: 'milligram' }] });
+  };
+  const removeMicro = (idx: number) => {
+    setMicroKeys((keys) => keys.filter((_, i) => i !== idx));
+    onChange({ ...value, micronutrients: micronutrients.filter((_, i) => i !== idx) });
+  };
 
   return (
     <AnalyticsScope properties={{ organism: 'IngredientEntryCard' }}>
@@ -78,7 +120,7 @@ export function IngredientEntryCard({
                 Cancel
               </Button>
             ) : null}
-            <Button size="sm" onClick={onSubmit} disabled={fiberInvalid}>
+            <Button size="sm" onClick={onSubmit} disabled={fiberInvalid || caloriesMissing}>
               {submitLabel}
             </Button>
           </div>
@@ -92,11 +134,11 @@ export function IngredientEntryCard({
             onNormalized={(name) => onChange({ ...value, name })}
           />
         </Field>
-        <HelperText as="p">{calorieDisplay}</HelperText>
 
         <NumberInput
           label="Calories (kcal)"
           value={value.calories}
+          placeholder={caloriesPlaceholder}
           onChange={(n) => onChange({ ...value, calories: sanitizeCalories(n) })}
           onBlur={() => onChange({ ...value, calories: sanitizeCalories(value.calories) })}
         />
@@ -170,6 +212,72 @@ export function IngredientEntryCard({
             onBlur={() => roundField('alcohol')}
           />
         </div>
+
+        <div className={cn(recipes.stack.row, recipes.stack.between)}>
+          <SectionHeading as="h4" noMargin>
+            Micronutrients
+          </SectionHeading>
+          <Button variant="subtle" size="sm" onClick={addMicro} type="button">
+            Add row
+          </Button>
+        </div>
+        {micronutrients.length > 0 ? (
+          <div className={recipes.stack.sm}>
+            {micronutrients.map((micro, idx) => (
+              <div key={microKeys[idx]} className={cn(recipes.stack.row, 'items-end')}>
+                <div className="flex-1">
+                  <Field label="Name">
+                    <Input
+                      value={micro.name}
+                      onChange={(e) => updateMicro(idx, { name: e.target.value })}
+                      placeholder="e.g. Sodium"
+                    />
+                  </Field>
+                </div>
+                <div className="w-20 shrink-0">
+                  <NumberInput
+                    label="Amount"
+                    value={micro.amount ?? null}
+                    onChange={(n) => updateMicro(idx, { amount: n })}
+                  />
+                </div>
+                <div className="w-20 shrink-0">
+                  <Field label="Unit">
+                    <Select
+                      value={micro.unit ?? 'milligram'}
+                      onChange={(e) => updateMicro(idx, { unit: e.target.value })}
+                    >
+                      {NUTRITION_UNIT_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                </div>
+                <div className="w-16 shrink-0">
+                  <NumberInput
+                    label="% DV"
+                    value={micro.percentDailyValue ?? null}
+                    onChange={(n) => updateMicro(idx, { percentDailyValue: n })}
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeMicro(idx)}
+                  type="button"
+                  className="shrink-0 self-end"
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <HelperText as="p">
+          % DV uses FDA Daily Values (21 CFR 101.9, 2016 Nutrition Facts label).
+        </HelperText>
       </SectionCard>
     </AnalyticsScope>
   );
