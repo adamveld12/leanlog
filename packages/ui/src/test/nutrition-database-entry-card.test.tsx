@@ -71,9 +71,8 @@ describe('NutritionDatabaseEntryCard', () => {
     expect(screen.queryByLabelText('Calories')).not.toBeInTheDocument();
   });
 
-  it('renders estimated calories text for basic macros without fiber', () => {
-    // fat=3.6, carbs=0, protein=31, fiber=null
-    // estimatedCalories = 3.6*9 + 31*4 + max(0, 0-0)*4 = 32.4 + 124 + 0 = 156.4
+  it('shows the estimate as the calories placeholder', () => {
+    // fat=3.6, carbs=0, protein=31 → estimate 156.4 → "Estimated calories: 156"
     render(
       <NutritionDatabaseEntryCard
         value={filledValue}
@@ -82,21 +81,28 @@ describe('NutritionDatabaseEntryCard', () => {
         onSubmit={() => {}}
       />,
     );
-    expect(screen.getByText(/Estimated calories: 156 kcal/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Calories (kcal)')).toHaveAttribute(
+      'placeholder',
+      'Estimated calories: 156',
+    );
   });
 
-  it('fiber reduces net carbs in calorie calculation', () => {
-    // fat=0, carbs=20, protein=0, fiber=5
-    // netCarbs = 15, estimatedCalories = 0 + 0 + 15*4 + 5*2 = 60 + 10 = 70
+  it('uses a plain Calories placeholder when there is no estimate', () => {
     render(
       <NutritionDatabaseEntryCard
-        value={{ ...emptyValue, carbs: 20, fiber: 5 }}
-        estimatedCalories={70}
+        value={emptyValue}
+        estimatedCalories={0}
         onChange={() => {}}
         onSubmit={() => {}}
       />,
     );
-    expect(screen.getByText(/Estimated calories: 70 kcal/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Calories (kcal)')).toHaveAttribute('placeholder', 'Calories');
+  });
+
+  it('allows publishing with empty calories when an estimate exists', () => {
+    // All required filled, calories empty, macros yield an estimate → enabled.
+    render(<Harness initial={{ ...filledValue, calories: null }} estimatedCalories={156} />);
+    expect(screen.getByRole('button', { name: 'Publish' })).not.toBeDisabled();
   });
 
   it('Publish button is disabled when name is missing', () => {

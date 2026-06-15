@@ -1,7 +1,6 @@
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
-import { HelperText } from '../atoms/HelperText';
 import { Input } from '../atoms/Input';
 import { NumberInput } from '../atoms/NumberInput';
 import { SectionHeading } from '../atoms/SectionHeading';
@@ -61,11 +60,13 @@ export function IngredientEntryCard({
     onChange({ ...value, [key]: sanitize(value[key]) });
 
   const fiberInvalid = (value.fiber ?? 0) > (value.carbs ?? 0);
-
-  const calorieDisplay =
-    value.calories != null && Math.round(value.calories) !== Math.round(estimatedCalories)
-      ? `Calories: ${Math.round(value.calories)} kcal · Estimated: ${Math.round(estimatedCalories)} kcal`
-      : `Estimated calories: ${Math.round(estimatedCalories)} kcal`;
+  // When the macros yield an estimate, an empty calories field uses it on save;
+  // otherwise calories must be entered (block submit).
+  const hasEstimate = estimatedCalories > 0;
+  const caloriesMissing = value.calories == null && !hasEstimate;
+  const caloriesPlaceholder = hasEstimate
+    ? `Estimated calories: ${Math.round(estimatedCalories)}`
+    : 'Calories';
 
   return (
     <AnalyticsScope properties={{ organism: 'IngredientEntryCard' }}>
@@ -78,7 +79,7 @@ export function IngredientEntryCard({
                 Cancel
               </Button>
             ) : null}
-            <Button size="sm" onClick={onSubmit} disabled={fiberInvalid}>
+            <Button size="sm" onClick={onSubmit} disabled={fiberInvalid || caloriesMissing}>
               {submitLabel}
             </Button>
           </div>
@@ -92,11 +93,11 @@ export function IngredientEntryCard({
             onNormalized={(name) => onChange({ ...value, name })}
           />
         </Field>
-        <HelperText as="p">{calorieDisplay}</HelperText>
 
         <NumberInput
           label="Calories (kcal)"
           value={value.calories}
+          placeholder={caloriesPlaceholder}
           onChange={(n) => onChange({ ...value, calories: sanitizeCalories(n) })}
           onBlur={() => onChange({ ...value, calories: sanitizeCalories(value.calories) })}
         />

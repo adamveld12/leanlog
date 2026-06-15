@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
-import { HelperText } from '../atoms/HelperText';
 import { Input } from '../atoms/Input';
 import { NumberInput } from '../atoms/NumberInput';
 import { Select } from '../atoms/Select';
@@ -75,14 +74,17 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 const sanitize = (n: number | null) => (n == null ? null : round1(clamp999(n)));
 const sanitizeCalories = (n: number | null) => (n == null ? null : round1(clamp9999(n)));
 
-function missingFields(value: NutritionDatabaseEntryValue): string[] {
+// `hasEstimate` is true when the macros yield an estimated calorie value. When
+// they do, an empty calories field is allowed (the estimate is applied on save);
+// otherwise calories must be entered.
+function missingFields(value: NutritionDatabaseEntryValue, hasEstimate: boolean): string[] {
   const missing: string[] = [];
   if (!value.name.trim()) missing.push('Name');
   if (value.servingAmount == null || !(value.servingAmount > 0))
     missing.push('Serving size (must be > 0)');
   if (value.servingsPerPackage == null || !(value.servingsPerPackage > 0))
     missing.push('Servings per package (must be > 0)');
-  if (value.calories == null) missing.push('Calories');
+  if (value.calories == null && !hasEstimate) missing.push('Calories');
   if (value.fat == null) missing.push('Fat');
   if (value.carbs == null) missing.push('Carbs');
   if (value.protein == null) missing.push('Protein');
@@ -119,8 +121,8 @@ function labelContradictions(value: NutritionDatabaseEntryValue): string[] {
   return errors;
 }
 
-function isValid(value: NutritionDatabaseEntryValue): boolean {
-  return missingFields(value).length === 0 && labelContradictions(value).length === 0;
+function isValid(value: NutritionDatabaseEntryValue, hasEstimate: boolean): boolean {
+  return missingFields(value, hasEstimate).length === 0 && labelContradictions(value).length === 0;
 }
 
 export function NutritionDatabaseEntryCard({
@@ -142,9 +144,11 @@ export function NutritionDatabaseEntryCard({
     if (typeof v === 'number') onChange({ ...value, [key]: sanitize(v) });
   };
 
-  const missing = missingFields(value);
+  // An estimate exists when the macros produce a non-zero calorie value.
+  const hasEstimate = estimatedCalories > 0;
+  const missing = missingFields(value, hasEstimate);
   const contradictions = labelContradictions(value);
-  const valid = isValid(value);
+  const valid = isValid(value, hasEstimate);
 
   // Highlight missing required fields in red once the form has been started
   // (e.g. a label scan prefilled some values but couldn't read the name). A
@@ -164,11 +168,12 @@ export function NutritionDatabaseEntryCard({
   const missPos = (v: number | null | undefined) =>
     started && !(v != null && v > 0) ? danger : '';
   const nameDanger = started && !value.name.trim() ? danger : '';
-
-  const calorieDisplay =
-    value.calories != null && Math.round(value.calories) !== Math.round(estimatedCalories)
-      ? `Calories: ${Math.round(value.calories)} kcal · Estimated: ${Math.round(estimatedCalories)} kcal`
-      : `Estimated calories: ${Math.round(estimatedCalories)} kcal`;
+  // Calories is only required (and only highlighted) when there is no estimate
+  // to fall back on; otherwise an empty field uses the estimate on save.
+  const caloriesDanger = started && value.calories == null && !hasEstimate ? danger : '';
+  const caloriesPlaceholder = hasEstimate
+    ? `Estimated calories: ${Math.round(estimatedCalories)}`
+    : 'Calories';
 
   // Micronutrient helpers
   const micronutrients = value.micronutrients ?? [];
@@ -218,7 +223,6 @@ export function NutritionDatabaseEntryCard({
             className={nameDanger}
           />
         </Field>
-        <HelperText as="p">{calorieDisplay}</HelperText>
 
         <div className={recipes.grid.two}>
           <NumberInput
@@ -261,9 +265,10 @@ export function NutritionDatabaseEntryCard({
         <NumberInput
           label="Calories (kcal)"
           value={value.calories}
+          placeholder={caloriesPlaceholder}
           onChange={(n) => onChange({ ...value, calories: sanitizeCalories(n) })}
           onBlur={() => onChange({ ...value, calories: sanitizeCalories(value.calories) })}
-          inputClassName={missReq(value.calories)}
+          inputClassName={caloriesDanger}
         />
 
         <div className={recipes.grid.two}>
