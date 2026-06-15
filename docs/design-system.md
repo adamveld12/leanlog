@@ -76,6 +76,7 @@
 - **Select:** `h-11` (44px) — matches Input height.
 - **Tabs:** segmented control; buttons are `h-10` inside a bordered `p-0.5` container (~44px overall). Active tab must be obvious.
 - **SectionCard:** title + children in a `gap-2.5` stack with a `noMargin` heading; default surface + line; saved state swaps border to `--ll-saved`.
+- **Content lives inside cards.** Interactive content — buttons, inputs, and the like — belongs **inside** a `SectionCard` (or a card organism), not floated as a bare sibling between cards. In particular, a control atom must never be a direct sibling of a card inside a tab panel; give the card a slot/prop for the action instead. The design audit enforces this for tab-panel composition.
 - **Modal:** `p-4` (16px) internal padding; dim backdrop + elevated surface; `max-w-[560px]`; explicit destructive copy in confirm flows.
 - **StickyFooter:** anchored totals with blended sticky surface + top border.
 

@@ -19,6 +19,12 @@ Feature: App Pages
     Then it uses @leanlog/ui components
     And it does not render raw native controls directly
 
+  Scenario: Interactive content is wrapped in a card, not floated between cards
+    Given an app composition renders a section or tab panel
+    When it places interactive content such as a scan, add, or submit action
+    Then that content lives inside a SectionCard or card organism
+    And no control atom is rendered as a bare sibling of a card
+
   Scenario: Storybook documents templates, not app pages
     Given Storybook loads Leanlog UI examples
     When route-level app pages exist in apps/web/src/pages

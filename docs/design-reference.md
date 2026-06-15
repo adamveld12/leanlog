@@ -97,6 +97,7 @@
 - No ambiguous destructive actions.
 - No inconsistent spacing/radius/font scales.
 - No raw native controls in app pages when a UI package element exists.
+- No controls floating outside a card. Interactive content lives inside a `SectionCard`/card organism — a control atom must never be a bare sibling of a card inside a tab panel (give the card a slot/prop for the action). Enforced by the design audit.
 
 ## Review Checklist
 
@@ -105,3 +106,4 @@
 - Is text concise and concrete?
 - Is destructive intent explicit?
 - Is behavior consistent on mobile and desktop?
+- Does interactive content live inside a card rather than floating between cards?

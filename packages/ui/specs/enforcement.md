@@ -25,6 +25,13 @@ Feature: Design System Enforcement
     Then the page is checked for Atomic Design boundaries and raw control usage
     But it is not checked against the packages/ui recipes.ts class-name allowlist
 
+  Scenario: Tab-panel content lives in cards
+    Given a tab panel (role="tabpanel") in an app composition file
+    When it renders interactive content
+    Then that content lives inside a SectionCard or card organism
+    And a control atom (Button, Input, Select, NumberInput, Checkbox, Radio, FileInput) is never a bare sibling of a card in the panel
+    And the design audit fails when a control floats outside a card in a tab panel
+
   Scenario: Claude provides advisory design review
     Given a pull request changes frontend or UI files
     When the Claude design review workflow runs
