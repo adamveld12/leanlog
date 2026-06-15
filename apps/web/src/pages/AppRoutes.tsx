@@ -1030,7 +1030,6 @@ function MealTemplateEdit() {
             <div className={recipes.stack.row}>
               <Button
                 variant="danger"
-                size="sm"
                 onClick={() => void removeTemplate(template.id).then(() => nav('/track/templates'))}
               >
                 Delete template
