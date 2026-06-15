@@ -348,6 +348,45 @@ describe('resolveScan — databaseCandidate', () => {
     expect((r.databaseCandidate as DatabaseCandidate).servingSizeDisplayText).toBeUndefined();
   });
 
+  it('carries an explicit milliliter serving unit into the candidate', () => {
+    const mlLabel: ScanLabel = {
+      ...perServingLabel,
+      servingSizeGrams: 240,
+      servingSizeUnit: 'milliliter',
+      servingSizeText: '1 cup (240mL)',
+    };
+    const r = resolveScan(mlLabel, req({ mode: 'weight', weight: 240, name: 'Almondmilk' }));
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.servingAmount).toBe(240);
+    expect(c.servingSizeUnit).toBe('milliliter');
+  });
+
+  it('recovers serving amount + ml unit from the display text when the numeric size is missing', () => {
+    // Mirrors the almondmilk bug: model returned the text but not servingSizeGrams.
+    const mlLabel: ScanLabel = {
+      ...perServingLabel,
+      servingSizeGrams: null,
+      servingSizeUnit: null,
+      servingSizeText: '1 cup (240mL)',
+    };
+    const r = resolveScan(mlLabel, req({ mode: 'weight', weight: 240, name: 'Almondmilk' }));
+    const c = r.databaseCandidate as DatabaseCandidate;
+    expect(c.servingAmount).toBe(240);
+    expect(c.servingSizeUnit).toBe('milliliter');
+    expect(c.servingSizeDisplayText).toBe('1 cup (240mL)');
+  });
+
+  it('recovers a gram serving from the display text', () => {
+    const gLabel: ScanLabel = {
+      ...perServingLabel,
+      servingSizeGrams: null,
+      servingSizeText: '3/4 cup (170g)',
+    };
+    const r = resolveScan(gLabel, req({ mode: 'weight', weight: 170, name: 'Yogurt' }));
+    expect(r.labelDraft!.servingAmount).toBe(170);
+    expect(r.labelDraft!.servingSizeUnit).toBe('gram');
+  });
+
   it('still returns a labelDraft for prefilling even when the name is missing', () => {
     const labelNoName: ScanLabel = { ...perServingLabel, inferredName: null };
     const r = resolveScan(labelNoName, req({ mode: 'weight', weight: 30, name: '' }));

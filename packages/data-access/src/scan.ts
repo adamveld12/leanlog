@@ -36,6 +36,8 @@ export type ScanLabel = {
   micronutrients?: Micronutrient[];
   /** The printed serving description, e.g. "1 tbsp. (7g)"; null when unreadable. */
   servingSizeText?: string | null;
+  /** Whether the metric serving size is a weight (gram) or volume (milliliter). */
+  servingSizeUnit?: ServingSizeUnit | null;
   inferredName: string | null;
 };
 
@@ -135,6 +137,21 @@ export type ScanResolution = {
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const safe = (n: number) => round1(Math.max(0, n));
 
+// Parse a metric serving size + unit from a printed serving description, e.g.
+// "1 cup (240mL)" → { amount: 240, unit: 'milliliter' }; "3/4 cup (170g)" →
+// { amount: 170, unit: 'gram' }. A fallback for when the model doesn't return a
+// numeric servingSizeGrams (common for volume servings).
+function parseServingFromText(
+  text: string | null | undefined,
+): { amount: number; unit: ServingSizeUnit } | null {
+  if (!text) return null;
+  const m = text.match(/(\d+(?:\.\d+)?)\s*(milliliters?|millilitres?|ml|grams?|g)\b/i);
+  if (!m) return null;
+  const amount = Number(m[1]);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return { amount, unit: m[2][0].toLowerCase() === 'm' ? 'milliliter' : 'gram' };
+}
+
 function buildLabel(
   label: ScanLabel,
   resolvedName: string,
@@ -146,8 +163,14 @@ function buildLabel(
   }
 
   const name = resolvedName.trim();
+  const parsedServing = parseServingFromText(label.servingSizeText);
   const serving =
-    label.servingSizeGrams && label.servingSizeGrams > 0 ? label.servingSizeGrams : null;
+    label.servingSizeGrams && label.servingSizeGrams > 0
+      ? label.servingSizeGrams
+      : (parsedServing?.amount ?? null);
+  // Serving size unit: explicit from the scan, else inferred from the printed
+  // serving text, else grams.
+  const servingSizeUnit: ServingSizeUnit = label.servingSizeUnit ?? parsedServing?.unit ?? 'gram';
   // Best-effort serving amount: per_serving uses the printed serving (may be
   // null); per_100g prefers the printed serving, falling back to 100.
   const servingAmount = label.basis === 'per_serving' ? serving : (serving ?? 100);
@@ -198,7 +221,7 @@ function buildLabel(
   const draft: ScanLabelDraft = {
     name: name || null,
     servingAmount: servingAmount ?? null,
-    servingSizeUnit: 'gram',
+    servingSizeUnit,
     servingsPerPackage,
     calories,
     fat,
@@ -234,7 +257,7 @@ function buildLabel(
   const candidate: DatabaseCandidate = {
     name,
     servingAmount,
-    servingSizeUnit: 'gram',
+    servingSizeUnit,
     servingsPerPackage,
     calories,
     fat,
