@@ -146,6 +146,25 @@ export function NutritionDatabaseEntryCard({
   const contradictions = labelContradictions(value);
   const valid = isValid(value);
 
+  // Highlight missing required fields in red once the form has been started
+  // (e.g. a label scan prefilled some values but couldn't read the name). A
+  // pristine, empty manual form stays unhighlighted to avoid premature errors.
+  const danger = 'border-[var(--ll-danger)]';
+  const started =
+    value.name.trim().length > 0 ||
+    [
+      value.servingAmount,
+      value.servingsPerPackage,
+      value.calories,
+      value.fat,
+      value.carbs,
+      value.protein,
+    ].some((v) => v != null);
+  const missReq = (v: number | null | undefined) => (started && v == null ? danger : '');
+  const missPos = (v: number | null | undefined) =>
+    started && !(v != null && v > 0) ? danger : '';
+  const nameDanger = started && !value.name.trim() ? danger : '';
+
   const calorieDisplay =
     value.calories != null && Math.round(value.calories) !== Math.round(estimatedCalories)
       ? `Calories: ${Math.round(value.calories)} kcal · Estimated: ${Math.round(estimatedCalories)} kcal`
@@ -196,6 +215,7 @@ export function NutritionDatabaseEntryCard({
           <Input
             value={value.name}
             onChange={(e) => onChange({ ...value, name: e.target.value })}
+            className={nameDanger}
           />
         </Field>
         <HelperText as="p">{calorieDisplay}</HelperText>
@@ -206,6 +226,7 @@ export function NutritionDatabaseEntryCard({
             value={value.servingAmount}
             onChange={(n) => setNum('servingAmount', n)}
             onBlur={() => roundField('servingAmount')}
+            inputClassName={missPos(value.servingAmount)}
           />
           <Field label="Serving unit">
             <Select
@@ -234,6 +255,7 @@ export function NutritionDatabaseEntryCard({
           value={value.servingsPerPackage}
           onChange={(n) => setNum('servingsPerPackage', n)}
           onBlur={() => roundField('servingsPerPackage')}
+          inputClassName={missPos(value.servingsPerPackage)}
         />
 
         <NumberInput
@@ -241,6 +263,7 @@ export function NutritionDatabaseEntryCard({
           value={value.calories}
           onChange={(n) => onChange({ ...value, calories: sanitizeCalories(n) })}
           onBlur={() => onChange({ ...value, calories: sanitizeCalories(value.calories) })}
+          inputClassName={missReq(value.calories)}
         />
 
         <div className={recipes.grid.two}>
@@ -249,12 +272,14 @@ export function NutritionDatabaseEntryCard({
             value={value.fat}
             onChange={(n) => setNum('fat', n)}
             onBlur={() => roundField('fat')}
+            inputClassName={missReq(value.fat)}
           />
           <NumberInput
             label="Carbs (g)"
             value={value.carbs}
             onChange={(n) => setNum('carbs', n)}
             onBlur={() => roundField('carbs')}
+            inputClassName={missReq(value.carbs)}
           />
         </div>
 
@@ -264,6 +289,7 @@ export function NutritionDatabaseEntryCard({
             value={value.protein}
             onChange={(n) => setNum('protein', n)}
             onBlur={() => roundField('protein')}
+            inputClassName={missReq(value.protein)}
           />
           <NumberInput
             label="Fiber (g)"

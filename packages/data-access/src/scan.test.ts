@@ -347,6 +347,41 @@ describe('resolveScan — databaseCandidate', () => {
     const r = resolveScan(perServingLabel, req({ mode: 'weight', weight: 30, name: 'Granola' }));
     expect((r.databaseCandidate as DatabaseCandidate).servingSizeDisplayText).toBeUndefined();
   });
+
+  it('still returns a labelDraft for prefilling even when the name is missing', () => {
+    const labelNoName: ScanLabel = { ...perServingLabel, inferredName: null };
+    const r = resolveScan(labelNoName, req({ mode: 'weight', weight: 30, name: '' }));
+    // Not save-ready (no name)…
+    expect(r.databaseCandidate).toBeNull();
+    expect(r.databaseBlockReason).toMatch(/name/i);
+    // …but the form can still be prefilled with everything that was read.
+    expect(r.labelDraft).not.toBeNull();
+    expect(r.labelDraft!.name).toBeNull();
+    expect(r.labelDraft!.servingAmount).toBe(30);
+    expect(r.labelDraft!.servingsPerPackage).toBe(4);
+    expect(r.labelDraft!.fat).toBe(6);
+    expect(r.labelDraft!.carbs).toBe(14);
+    expect(r.labelDraft!.protein).toBe(3);
+  });
+
+  it('labelDraft is null for an unreadable (unknown-basis) label', () => {
+    const r = resolveScan(
+      { ...perServingLabel, basis: 'unknown' },
+      req({ mode: 'weight', weight: 30, name: 'X' }),
+    );
+    expect(r.labelDraft).toBeNull();
+  });
+
+  it('labelDraft carries servings-per-package even when it blocks the candidate', () => {
+    const r = resolveScan(
+      { ...perServingLabel, servingsPerContainer: null },
+      req({ mode: 'weight', weight: 30, name: 'Granola' }),
+    );
+    expect(r.databaseCandidate).toBeNull();
+    expect(r.labelDraft).not.toBeNull();
+    expect(r.labelDraft!.servingsPerPackage).toBeNull();
+    expect(r.labelDraft!.name).toBe('Granola');
+  });
 });
 
 describe('resolveScan — strict (database tab) candidate', () => {

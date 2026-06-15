@@ -238,45 +238,52 @@ export function IngredientEntry({
     setEditingId(null);
   };
 
-  // Map a strict database scan's candidate into the label capture form (R14/R16);
-  // when the label isn't save-ready, surface why and keep the form open to fix.
+  // Map a database scan into the label capture form (R14/R16). Always prefills
+  // from the best-effort draft — even when the label isn't save-ready (e.g. the
+  // name couldn't be read) — so the user can fill the gaps; the form highlights
+  // the missing required fields. Only a fully unreadable label shows an error.
   const stageDatabaseScan = (result: ScanResolution) => {
-    setDbShowCreate(true);
     dbEntrySourceRef.current = 'scan';
-    const candidate = result.databaseCandidate;
-    if (!candidate) {
+    const draft = result.labelDraft;
+    if (!draft) {
+      setDbShowCreate(false);
       setDbError(
-        result.databaseBlockReason ??
-          'Could not read a complete label. Fix the missing fields or retake the photo.',
+        result.databaseBlockReason ?? 'Could not read the label. Retake the photo and try again.',
       );
       track('nutrition_facts.label.scan.blocked', {
-        reason: result.databaseBlockReason ?? 'incomplete',
+        reason: result.databaseBlockReason ?? 'unreadable',
       });
       return;
     }
+    setDbShowCreate(true);
     setDbError('');
     setDbEntryValue({
-      name: candidate.name,
-      servingAmount: candidate.servingAmount,
-      servingSizeUnit: candidate.servingSizeUnit,
-      servingSizeDisplayText: candidate.servingSizeDisplayText ?? null,
-      servingsPerPackage: candidate.servingsPerPackage,
-      calories: candidate.calories,
-      fat: candidate.fat,
-      carbs: candidate.carbs,
-      protein: candidate.protein,
-      saturatedFat: candidate.saturatedFat ?? null,
-      fiber: candidate.fiber ?? null,
-      sugar: candidate.sugar ?? null,
-      addedSugars: candidate.addedSugars ?? null,
-      sugarAlcohol: candidate.sugarAlcohol ?? null,
-      allulose: candidate.allulose ?? null,
-      micronutrients: candidate.micronutrients?.map((m) => ({
+      name: draft.name ?? '',
+      servingAmount: draft.servingAmount,
+      servingSizeUnit: draft.servingSizeUnit,
+      servingSizeDisplayText: draft.servingSizeDisplayText ?? null,
+      servingsPerPackage: draft.servingsPerPackage,
+      calories: draft.calories,
+      fat: draft.fat,
+      carbs: draft.carbs,
+      protein: draft.protein,
+      saturatedFat: draft.saturatedFat ?? null,
+      fiber: draft.fiber ?? null,
+      sugar: draft.sugar ?? null,
+      addedSugars: draft.addedSugars ?? null,
+      sugarAlcohol: draft.sugarAlcohol ?? null,
+      allulose: draft.allulose ?? null,
+      micronutrients: draft.micronutrients?.map((m) => ({
         name: m.name,
         amount: m.amount,
         unit: m.unit,
       })),
     });
+    if (!result.databaseCandidate) {
+      track('nutrition_facts.label.scan.blocked', {
+        reason: result.databaseBlockReason ?? 'incomplete',
+      });
+    }
   };
 
   const onScanFile = async (file: File) => {
@@ -586,7 +593,16 @@ export function IngredientEntry({
                         })
                     : undefined
                 }
-                onScanLabel={showDatabaseCreate ? () => void openCamera('database') : undefined}
+                onScanLabel={
+                  showDatabaseCreate
+                    ? () => {
+                        // Close any open manual-entry form immediately; the scan
+                        // result re-opens it prefilled.
+                        setDbShowCreate(false);
+                        void openCamera('database');
+                      }
+                    : undefined
+                }
                 scanning={scanLoading && scanTarget === 'database'}
                 truncated={dbResults.length >= 25}
                 totalCount={dbTotal ?? undefined}

@@ -114,6 +114,20 @@ describe('NutritionDatabaseEntryCard', () => {
     expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
   });
 
+  it('highlights a missing required field red once the form is started (scan prefill)', () => {
+    // A scan read the macros/serving but not the name → name input flags red.
+    render(<Harness initial={{ ...filledValue, name: '' }} />);
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveClass('border-[var(--ll-danger)]');
+  });
+
+  it('does not highlight required fields on a pristine empty form', () => {
+    render(<Harness initial={emptyValue} />);
+    expect(screen.getByRole('textbox', { name: 'Name' })).not.toHaveClass(
+      'border-[var(--ll-danger)]',
+    );
+    expect(screen.getByLabelText('Serving size')).not.toHaveClass('border-[var(--ll-danger)]');
+  });
+
   it('blocks save when saturated fat exceeds total fat (R5)', () => {
     render(<Harness initial={{ ...filledValue, fat: 1, saturatedFat: 5 }} />);
     expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
