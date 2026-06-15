@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { resolveScan, type ScanMode } from '@leanlog/data-access';
+import { resolveScan, resolveScannedMicronutrients, type ScanMode } from '@leanlog/data-access';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import type { Env } from './_env';
@@ -10,6 +10,8 @@ const mb15 = 15 * 1024 * 1024;
 const scanSchema = z.object({
   basis: z.enum(['per_serving', 'per_100g', 'unknown']),
   servingSizeGrams: z.number().finite().nonnegative().nullable(),
+  // The printed serving description exactly as shown, e.g. "1 tbsp. (7g)".
+  servingSizeText: z.string().nullable(),
   servingsPerContainer: z.number().finite().nonnegative().nullable(),
   nutrients: z.object({
     calories: z.number().finite().nonnegative(),
@@ -23,13 +25,18 @@ const scanSchema = z.object({
     sugarAlcohol: z.number().finite().nonnegative().optional(),
     allulose: z.number().finite().nonnegative().optional(),
   }),
-  // Sodium, cholesterol, vitamins, minerals. %DV is intentionally not extracted (R4).
+  // Sodium, cholesterol, potassium, iron, calcium, vitamins, etc. Each may carry
+  // a measured amount+unit, a percent daily value, or both. %DV is used only to
+  // back-compute an amount when no measurement is printed; it is never persisted.
   micronutrients: z
     .array(
       z.object({
         name: z.string().min(1),
-        amount: z.number().finite().nonnegative(),
-        unit: z.enum(['gram', 'milligram', 'microgram', 'milliliter', 'international_unit']),
+        amount: z.number().finite().nonnegative().optional(),
+        unit: z
+          .enum(['gram', 'milligram', 'microgram', 'milliliter', 'international_unit'])
+          .optional(),
+        percentDailyValue: z.number().finite().nonnegative().optional(),
       }),
     )
     .default([]),
@@ -79,9 +86,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       'Return nutrition values in grams/calories and infer the basis.',
       'basis=per_serving if values represent one serving; per_100g if values are per 100g; unknown otherwise.',
       'Extract servingSizeGrams if explicitly shown.',
+      'Extract servingSizeText as the printed serving description exactly as shown (e.g. "1 tbsp. (7g)"), otherwise null.',
       'Extract servingsPerContainer (servings per package/container) if explicitly shown, otherwise null.',
       'Extract sugar (total sugars), addedSugars, sugarAlcohol, and allulose from the label if shown; omit a field if not present.',
-      'Extract micronutrients such as sodium and cholesterol into the micronutrients array with a typed unit (gram, milligram, microgram, milliliter, or international_unit). Do NOT include percent daily value.',
+      'Extract every micronutrient listed (sodium, cholesterol, potassium, iron, calcium, vitamins, etc.) into the micronutrients array. For each, include the measured amount and a typed unit (gram, milligram, microgram, milliliter, or international_unit) when a weight is printed, and include percentDailyValue when the label shows a % Daily Value. Include both when both are shown.',
       'If a required field is missing, return 0 and add a note.',
       'Keep numbers realistic and non-negative.',
     ].join(' ');
@@ -110,7 +118,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           sugar: object.nutrients.sugar,
           addedSugars: object.nutrients.addedSugars,
         },
-        micronutrients: object.micronutrients,
+        // Prefer a measured amount; back-compute from %DV otherwise (drops zeros
+        // and unknown nutrients without a measurement).
+        micronutrients: resolveScannedMicronutrients(object.micronutrients),
+        servingSizeText: object.servingSizeText,
         inferredName: object.inferredName,
       },
       { mode, weight, servings, entirePackage, name, strict },

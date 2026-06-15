@@ -34,6 +34,8 @@ export type ScanLabel = {
   nutrients: ScanNutrients;
   /** Typed micronutrients (e.g. sodium, cholesterol) extracted from the label. */
   micronutrients?: Micronutrient[];
+  /** The printed serving description, e.g. "1 tbsp. (7g)"; null when unreadable. */
+  servingSizeText?: string | null;
   inferredName: string | null;
 };
 
@@ -67,6 +69,7 @@ export type DatabaseCandidate = {
   name: string;
   servingAmount: number;
   servingSizeUnit: ServingSizeUnit;
+  servingSizeDisplayText?: string;
   servingsPerPackage: number;
   calories: number;
   fat: number;
@@ -203,6 +206,9 @@ function buildDatabaseCandidate(
     protein,
   };
 
+  if (label.servingSizeText && label.servingSizeText.trim()) {
+    candidate.servingSizeDisplayText = label.servingSizeText.trim();
+  }
   if (saturatedFat != null) candidate.saturatedFat = saturatedFat;
   if (fiber != null) candidate.fiber = fiber;
   if (sugar != null) candidate.sugar = sugar;

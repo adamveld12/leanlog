@@ -336,6 +336,17 @@ describe('resolveScan — databaseCandidate', () => {
     const c = r.databaseCandidate as DatabaseCandidate;
     expect(c.micronutrients).toEqual([{ name: 'Sodium', amount: 60, unit: 'milligram' }]);
   });
+
+  it('candidate carries the printed serving display text', () => {
+    const labelWithText: ScanLabel = { ...perServingLabel, servingSizeText: '1 tbsp. (7g)' };
+    const r = resolveScan(labelWithText, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    expect((r.databaseCandidate as DatabaseCandidate).servingSizeDisplayText).toBe('1 tbsp. (7g)');
+  });
+
+  it('candidate omits serving display text when not provided', () => {
+    const r = resolveScan(perServingLabel, req({ mode: 'weight', weight: 30, name: 'Granola' }));
+    expect((r.databaseCandidate as DatabaseCandidate).servingSizeDisplayText).toBeUndefined();
+  });
 });
 
 describe('resolveScan — strict (database tab) candidate', () => {

@@ -259,7 +259,7 @@ export function IngredientEntry({
       name: candidate.name,
       servingAmount: candidate.servingAmount,
       servingSizeUnit: candidate.servingSizeUnit,
-      servingSizeDisplayText: null,
+      servingSizeDisplayText: candidate.servingSizeDisplayText ?? null,
       servingsPerPackage: candidate.servingsPerPackage,
       calories: candidate.calories,
       fat: candidate.fat,
