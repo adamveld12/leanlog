@@ -1027,6 +1027,15 @@ function MealTemplateEdit() {
               onNormalized={saveName}
             />
             {nameError ? <WarningText role="alert">{nameError}</WarningText> : null}
+            <div className={recipes.stack.row}>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => void removeTemplate(template.id).then(() => nav('/track/templates'))}
+              >
+                Delete template
+              </Button>
+            </div>
           </SectionCard>
         }
         ingredientsSection={
@@ -1061,18 +1070,6 @@ function MealTemplateEdit() {
                 })
               }
             />
-          </SectionCard>
-        }
-        // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
-        dangerZone={
-          <SectionCard title="Danger zone">
-            <Button
-              variant="danger"
-              className="w-full"
-              onClick={() => void removeTemplate(template.id).then(() => nav('/track/templates'))}
-            >
-              Delete template
-            </Button>
           </SectionCard>
         }
       />

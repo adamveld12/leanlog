@@ -93,6 +93,7 @@ export function NutritionDatabaseSearchCard({
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="e.g. Chicken breast"
+            disabled={scanning}
           />
         </Field>
 
@@ -106,7 +107,7 @@ export function NutritionDatabaseSearchCard({
               const amount = amounts[result.id] ?? 0;
               const isAdding = addingId === result.id;
               const mode: AddFromDatabaseMode = modes?.[result.id] ?? 'weight';
-              const canAdd = (mode === 'package' || amount > 0) && !isAdding;
+              const canAdd = (mode === 'package' || amount > 0) && !isAdding && !scanning;
               const amountLabel = mode === 'servings' ? '# of servings' : 'Weight (g/ml)';
               // Use idx in key to support duplicate entries
               const rowKey = `${result.id}-${idx}`;
@@ -146,6 +147,7 @@ export function NutritionDatabaseSearchCard({
                       <Field label="Add by">
                         <Select
                           value={mode}
+                          disabled={scanning}
                           onChange={(e) =>
                             onModeChange?.(result.id, e.target.value as AddFromDatabaseMode)
                           }
@@ -164,6 +166,7 @@ export function NutritionDatabaseSearchCard({
                           label={amountLabel}
                           value={amount || null}
                           onChange={(n) => onAmountChange(result.id, n)}
+                          disabled={scanning}
                         />
                       </div>
                     ) : null}
@@ -196,7 +199,7 @@ export function NutritionDatabaseSearchCard({
               </Button>
             ) : null}
             {onCreateNew ? (
-              <Button variant="primary" fullWidth onClick={onCreateNew}>
+              <Button variant="primary" fullWidth disabled={scanning} onClick={onCreateNew}>
                 Add database ingredient
               </Button>
             ) : null}

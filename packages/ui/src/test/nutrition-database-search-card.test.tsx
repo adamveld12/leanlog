@@ -243,6 +243,31 @@ describe('NutritionDatabaseSearchCard', () => {
     expect(onScanLabel).toHaveBeenCalledTimes(1);
   });
 
+  it('disables every control on the card while scanning', () => {
+    render(
+      <NutritionDatabaseSearchCard
+        query="chicken"
+        onQueryChange={() => {}}
+        results={[result1]}
+        searched={true}
+        amounts={{ 'ing-1': 150 }}
+        onAmountChange={() => {}}
+        modes={{ 'ing-1': 'weight' }}
+        onModeChange={() => {}}
+        onAdd={() => {}}
+        onCreateNew={() => {}}
+        onScanLabel={() => {}}
+        scanning
+      />,
+    );
+    expect(screen.getByPlaceholderText('e.g. Chicken breast')).toBeDisabled();
+    expect(screen.getByLabelText('Add by')).toBeDisabled();
+    expect(screen.getByLabelText('Weight (g/ml)')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add database ingredient' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Scanning…' })).toBeDisabled();
+  });
+
   it('shows the scanning label and disables the scan button while scanning', () => {
     render(
       <NutritionDatabaseSearchCard

@@ -8,8 +8,8 @@ export type MealTemplateEditTemplateProps = {
   nameSection: ReactNode;
   /** The default-ingredients card (manual / scan / database entry). */
   ingredientsSection: ReactNode;
-  /** The delete-template card. */
-  dangerZone: ReactNode;
+  /** Optional delete-template card. Page-level actions may instead live in the name card. */
+  dangerZone?: ReactNode;
   children?: ReactNode;
 };
 
