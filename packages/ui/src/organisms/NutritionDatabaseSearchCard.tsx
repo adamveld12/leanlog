@@ -195,12 +195,12 @@ export function NutritionDatabaseSearchCard({
           <div className={recipes.stack.sm}>
             {onScanLabel ? (
               <Button variant="primary" fullWidth disabled={scanning} onClick={onScanLabel}>
-                {scanning ? 'Scanning…' : 'Scan a label'}
+                {scanning ? 'Scanning…' : 'Scan to add'}
               </Button>
             ) : null}
             {onCreateNew ? (
               <Button variant="primary" fullWidth disabled={scanning} onClick={onCreateNew}>
-                Add database ingredient
+                Add an ingredient
               </Button>
             ) : null}
           </div>

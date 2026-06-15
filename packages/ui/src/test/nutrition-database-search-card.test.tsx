@@ -214,18 +214,16 @@ describe('NutritionDatabaseSearchCard', () => {
   it('renders onCreateNew button when provided', () => {
     const onCreateNew = vi.fn();
     render(<Harness results={[]} onCreateNew={onCreateNew} />);
-    const btn = screen.getByRole('button', { name: 'Add database ingredient' });
+    const btn = screen.getByRole('button', { name: 'Add an ingredient' });
     expect(btn).toBeInTheDocument();
   });
 
   it('does not render onCreateNew button when not provided', () => {
     render(<Harness results={[]} />);
-    expect(
-      screen.queryByRole('button', { name: 'Add database ingredient' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add an ingredient' })).not.toBeInTheDocument();
   });
 
-  it('renders the Scan a label button inside the card and fires onScanLabel', async () => {
+  it('renders the Scan to add button inside the card and fires onScanLabel', async () => {
     const onScanLabel = vi.fn();
     render(
       <NutritionDatabaseSearchCard
@@ -239,7 +237,7 @@ describe('NutritionDatabaseSearchCard', () => {
         onScanLabel={onScanLabel}
       />,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Scan a label' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Scan to add' }));
     expect(onScanLabel).toHaveBeenCalledTimes(1);
   });
 
@@ -264,7 +262,7 @@ describe('NutritionDatabaseSearchCard', () => {
     expect(screen.getByLabelText('Add by')).toBeDisabled();
     expect(screen.getByLabelText('Weight (g/ml)')).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Add database ingredient' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add an ingredient' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Scanning…' })).toBeDisabled();
   });
 

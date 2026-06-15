@@ -415,17 +415,17 @@ describe('nutrition database tab', () => {
     });
   });
 
-  it('shows inline entry card when "Add database ingredient" is clicked and calls create on publish', async () => {
+  it('shows inline entry card when "Add an ingredient" is clicked and calls create on publish', async () => {
     const onCreateIngredient = vi.fn().mockResolvedValue({ id: 'new1' });
     renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()], { onCreateIngredient });
 
     await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Add database ingredient' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Add an ingredient' })).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Add database ingredient' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add an ingredient' }));
 
     await waitFor(() => {
       expect(screen.getByText('Publish Ingredient')).toBeInTheDocument();

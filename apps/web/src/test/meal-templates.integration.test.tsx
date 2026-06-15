@@ -212,8 +212,8 @@ describe('meal templates', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
 
     // The template editor's Database tab supports creating and scanning labels too.
-    expect(screen.getByRole('button', { name: 'Add database ingredient' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Scan a label' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add an ingredient' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scan to add' })).toBeInTheDocument();
 
     const searchInput = await screen.findByPlaceholderText('e.g. Chicken breast');
     await userEvent.type(searchInput, 'ch');
