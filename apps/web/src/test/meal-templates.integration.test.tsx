@@ -211,10 +211,9 @@ describe('meal templates', () => {
     await screen.findByRole('tab', { name: 'Nutrition Facts Database' });
     await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
 
-    // The template editor's Database tab is search-and-add only: no create form.
-    expect(
-      screen.queryByRole('button', { name: 'Add database ingredient' }),
-    ).not.toBeInTheDocument();
+    // The template editor's Database tab supports creating and scanning labels too.
+    expect(screen.getByRole('button', { name: 'Add database ingredient' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scan a label' })).toBeInTheDocument();
 
     const searchInput = await screen.findByPlaceholderText('e.g. Chicken breast');
     await userEvent.type(searchInput, 'ch');

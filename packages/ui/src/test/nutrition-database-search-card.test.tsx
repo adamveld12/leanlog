@@ -225,6 +225,41 @@ describe('NutritionDatabaseSearchCard', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('renders the Scan a label button inside the card and fires onScanLabel', async () => {
+    const onScanLabel = vi.fn();
+    render(
+      <NutritionDatabaseSearchCard
+        query=""
+        onQueryChange={() => {}}
+        results={[]}
+        searched={false}
+        amounts={{}}
+        onAmountChange={() => {}}
+        onAdd={() => {}}
+        onScanLabel={onScanLabel}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Scan a label' }));
+    expect(onScanLabel).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the scanning label and disables the scan button while scanning', () => {
+    render(
+      <NutritionDatabaseSearchCard
+        query=""
+        onQueryChange={() => {}}
+        results={[]}
+        searched={false}
+        amounts={{}}
+        onAmountChange={() => {}}
+        onAdd={() => {}}
+        onScanLabel={() => {}}
+        scanning
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Scanning…' })).toBeDisabled();
+  });
+
   it('shows the total count in the search label when totalCount provided', () => {
     render(<Harness results={[]} totalCount={42} />);
     expect(screen.getByText('42 ingredients available for searching')).toBeInTheDocument();

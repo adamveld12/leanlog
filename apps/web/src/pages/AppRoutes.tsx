@@ -1037,7 +1037,7 @@ function MealTemplateEdit() {
             <IngredientEntry
               ingredients={template.ingredients}
               analyticsContext="template"
-              showDatabaseCreate={false}
+              showDatabaseCreate
               onSubmit={(draft, editingId) => {
                 const next = {
                   ...draft,

@@ -46,7 +46,12 @@ export type NutritionDatabaseSearchCardProps = {
   onModeChange?: (id: string, mode: AddFromDatabaseMode) => void;
   onAdd: (id: string) => void;
   addingId?: string | null;
+  /** Opens the inline manual label-creation form. */
   onCreateNew?: () => void;
+  /** Starts a strict label scan that stages into the creation form. */
+  onScanLabel?: () => void;
+  /** True while a label scan is in flight (drives the scan button label). */
+  scanning?: boolean;
   truncated?: boolean;
   /** Total ingredients in the shared database; shown in the search label when known. */
   totalCount?: number;
@@ -71,6 +76,8 @@ export function NutritionDatabaseSearchCard({
   onAdd,
   addingId,
   onCreateNew,
+  onScanLabel,
+  scanning,
   truncated,
   totalCount,
 }: NutritionDatabaseSearchCardProps) {
@@ -181,10 +188,19 @@ export function NutritionDatabaseSearchCard({
           </HelperText>
         ) : null}
 
-        {onCreateNew ? (
-          <Button variant="subtle" size="sm" onClick={onCreateNew}>
-            Add database ingredient
-          </Button>
+        {onCreateNew || onScanLabel ? (
+          <div className={cn(recipes.stack.row, 'flex-wrap')}>
+            {onScanLabel ? (
+              <Button variant="subtle" size="sm" disabled={scanning} onClick={onScanLabel}>
+                {scanning ? 'Scanning…' : 'Scan a label'}
+              </Button>
+            ) : null}
+            {onCreateNew ? (
+              <Button variant="subtle" size="sm" onClick={onCreateNew}>
+                Add database ingredient
+              </Button>
+            ) : null}
+          </div>
         ) : null}
       </SectionCard>
     </AnalyticsScope>

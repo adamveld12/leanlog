@@ -586,19 +586,11 @@ export function IngredientEntry({
                         })
                     : undefined
                 }
+                onScanLabel={showDatabaseCreate ? () => void openCamera('database') : undefined}
+                scanning={scanLoading && scanTarget === 'database'}
                 truncated={dbResults.length >= 25}
                 totalCount={dbTotal ?? undefined}
               />
-              {showDatabaseCreate ? (
-                <Button
-                  variant="subtle"
-                  size="sm"
-                  disabled={scanLoading}
-                  onClick={() => void openCamera('database')}
-                >
-                  {scanLoading && scanTarget === 'database' ? 'Scanning…' : 'Scan a label'}
-                </Button>
-              ) : null}
               {showDatabaseCreate && dbShowCreate ? (
                 <NutritionDatabaseEntryCard
                   value={dbEntryValue}
