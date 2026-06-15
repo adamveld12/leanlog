@@ -264,4 +264,29 @@ describe('IngredientEntryCard', () => {
     render(<Harness onSubmit={onSubmit} />);
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
   });
+
+  it('adds a micronutrient row with amount, unit, and %DV inputs', async () => {
+    render(<Harness onSubmit={() => {}} />);
+    // No rows until you add one.
+    expect(screen.queryByLabelText('% DV')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Add row' }));
+    expect(screen.getByPlaceholderText('e.g. Sodium')).toBeInTheDocument();
+    expect(screen.getByLabelText('Amount')).toBeInTheDocument();
+    expect(screen.getByLabelText('% DV')).toBeInTheDocument();
+    // Unit defaults to mg.
+    expect(screen.getByLabelText('Unit')).toHaveValue('milligram');
+  });
+
+  it('renders existing micronutrient rows from the value', () => {
+    render(
+      <IngredientEntryCard
+        value={{ ...base, micronutrients: [{ name: 'Sodium', amount: 60, unit: 'milligram' }] }}
+        estimatedCalories={222}
+        onChange={() => {}}
+        onSubmit={() => {}}
+        submitLabel="Add"
+      />,
+    );
+    expect(screen.getByDisplayValue('Sodium')).toBeInTheDocument();
+  });
 });

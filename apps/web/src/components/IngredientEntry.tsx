@@ -14,13 +14,14 @@ import {
   NutritionDatabaseSearchCard,
   recipes,
   ScanReviewModal,
-  SectionHeading,
+  SectionCard,
   Tabs,
   WarningText,
   useAnalytics,
 } from '@leanlog/ui';
 import type {
   AddFromDatabaseMode,
+  IngredientMicronutrientValue,
   LabelScanValue,
   NutritionDatabaseEntryValue,
   NutritionDatabaseSearchResult,
@@ -51,8 +52,11 @@ type DraftNumericKey =
 
 export type IngredientDraft = Omit<
   UpsertIngredient,
-  'id' | 'mealId' | 'createdAt' | 'updatedAt' | DraftNumericKey
-> & { [K in DraftNumericKey]: number | null };
+  'id' | 'mealId' | 'createdAt' | 'updatedAt' | 'micronutrients' | DraftNumericKey
+> & { [K in DraftNumericKey]: number | null } & {
+  // Editor shape: rows may carry a %DV that is resolved to an amount on save.
+  micronutrients?: IngredientMicronutrientValue[] | null;
+};
 
 const emptyDraft: IngredientDraft = {
   name: '',
@@ -370,10 +374,7 @@ export function IngredientEntry({
 
   return (
     <>
-      <div className={cn(recipes.stack.sm, 'mb-5')}>
-        <SectionHeading as="h4" noMargin>
-          Ingredients
-        </SectionHeading>
+      <SectionCard title="Ingredients" className="mb-5">
         <HelperText as="p">Tap an ingredient row to edit values.</HelperText>
         {ingredients.length ? null : <HelperText as="p">No items</HelperText>}
         {ingredients.map((i) => (
@@ -433,13 +434,20 @@ export function IngredientEntry({
                 polyunsaturatedFat: i.polyunsaturatedFat ?? null,
                 transFat: i.transFat ?? null,
                 sugar: i.sugar ?? null,
-                micronutrients: i.micronutrients ?? null,
+                // Map stored micronutrients into the editor shape (no %DV — the
+                // stored amount is authoritative).
+                micronutrients: (i.micronutrients ?? []).map((m) => ({
+                  name: m.name,
+                  amount: m.amount,
+                  unit: m.unit,
+                  percentDailyValue: null,
+                })),
                 sourceDatabaseIngredientId: i.sourceDatabaseIngredientId ?? null,
               });
             }}
           />
         ))}
-      </div>
+      </SectionCard>
       <div className={recipes.stack.lg}>
         <Tabs
           tabs={[
@@ -465,6 +473,9 @@ export function IngredientEntry({
         >
           {entryTab === 'manual' ? (
             <IngredientEntryCard
+              // Remount per edit target so the micronutrient row keys reseed from
+              // the opened ingredient's values.
+              key={editingId ?? 'new'}
               value={draft}
               estimatedCalories={estimateCalories({
                 fat: draft.fat ?? 0,

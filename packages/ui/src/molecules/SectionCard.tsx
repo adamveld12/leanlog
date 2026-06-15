@@ -4,12 +4,12 @@ import { SectionHeading } from '../atoms/SectionHeading';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { recipes } from '../styles/recipes';
 
-type SectionCardProps = PropsWithChildren<{ title?: string; saved?: boolean }>;
+type SectionCardProps = PropsWithChildren<{ title?: string; saved?: boolean; className?: string }>;
 
-export function SectionCard({ title, saved, children }: SectionCardProps) {
+export function SectionCard({ title, saved, className, children }: SectionCardProps) {
   return (
     <AnalyticsScope properties={{ molecule: 'SectionCard', section: title }}>
-      <Card saved={saved}>
+      <Card saved={saved} className={className}>
         <div className={recipes.stack.sm}>
           {title ? <SectionHeading noMargin>{title}</SectionHeading> : null}
           {children}

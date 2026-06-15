@@ -41,7 +41,13 @@ import {
   WeeklyStatsCard,
   WeightTrendCard,
 } from '@leanlog/ui';
-import { caloriesFromMode, dayTargetsFromProfile, dayMealStructure } from '@leanlog/data-access';
+import {
+  caloriesFromMode,
+  dayTargetsFromProfile,
+  dayMealStructure,
+  resolveScannedMicronutrients,
+  type NutritionUnit,
+} from '@leanlog/data-access';
 import { isPastIso, normalizeIngredientName, prettyDate, todayIso } from '../lib';
 import { IngredientEntry } from '../components/IngredientEntry';
 import {
@@ -57,6 +63,25 @@ import {
 import { useStore } from '../state';
 import { api } from '../api';
 import type { UpsertIngredient, SaveSections } from '../types';
+
+// Resolve the manual-entry micronutrient rows (which may carry a %DV) into typed
+// amounts: a measured amount wins; otherwise the %DV is converted via the Daily
+// Value table. Empty / unknown-with-only-%DV rows are dropped.
+function resolveDraftMicronutrients(
+  micros:
+    | { name: string; amount?: number | null; unit?: string; percentDailyValue?: number | null }[]
+    | null
+    | undefined,
+) {
+  return resolveScannedMicronutrients(
+    micros?.map((m) => ({
+      name: m.name,
+      amount: m.amount ?? undefined,
+      unit: (m.unit as NutritionUnit | undefined) ?? undefined,
+      percentDailyValue: m.percentDailyValue ?? undefined,
+    })),
+  );
+}
 
 function useSavedSections() {
   const [saved, setSaved] = useState<SaveSections>({});
@@ -675,6 +700,7 @@ function MealEdit() {
                 carbs: draft.carbs ?? 0,
                 fiber: draft.fiber ?? 0,
                 protein: draft.protein ?? 0,
+                micronutrients: resolveDraftMicronutrients(draft.micronutrients),
               };
               void upsertIngredient(day.id, meal.id, next);
             }}
@@ -1058,6 +1084,7 @@ function MealTemplateEdit() {
                   carbs: draft.carbs ?? 0,
                   fiber: draft.fiber ?? 0,
                   protein: draft.protein ?? 0,
+                  micronutrients: resolveDraftMicronutrients(draft.micronutrients),
                 };
                 void upsertTemplateIngredient(template.id, next);
               }}
