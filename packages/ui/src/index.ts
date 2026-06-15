@@ -40,6 +40,8 @@ export * from './molecules/StickyFooter';
 export * from './molecules/Tabs';
 export * from './organisms/AuthLanding';
 export * from './organisms/IngredientEntryCard';
+export * from './organisms/IngredientList';
+export * from './organisms/CameraCaptureModal';
 export * from './organisms/LabelScanCard';
 export * from './organisms/ListSectionCard';
 export * from './organisms/PageNavHeading';
