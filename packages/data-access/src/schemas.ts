@@ -294,6 +294,10 @@ export const CreateDailyMealLogSchema = DailyMealLogSchema.omit({
   weightLbs: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  // The goal that covers this date (#56). When present, the server materializes
+  // the day's meals from that goal's meal slots instead of the legacy templates.
+  goalId: z.string().optional(),
 });
 // Defined from profileFields (not UserProfileSchema) so .partial() keeps missing fields
 // as undefined — prevents Zod 4 defaults from overwriting existing DB values on partial updates.

@@ -46,22 +46,16 @@ function makeDay(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
   };
 }
 
-type AddDayOpts = {
-  targetCalories: number;
-  targetFat: number;
-  targetCarbs: number;
-  targetProtein: number;
-};
-
 type StoreCtx = {
   days: DailyMealLog[];
+  goals: unknown[];
   profile: UserProfile;
   loading: boolean;
   error: null;
   ensureDayLoaded: (
     dayId: string,
   ) => Promise<{ status: 'found'; day: DailyMealLog } | { status: 'not_found' }>;
-  addDay: (date: string, opts: AddDayOpts) => Promise<DailyMealLog>;
+  addDay: (date: string) => Promise<DailyMealLog>;
   removeDay: (id: string) => Promise<void>;
   addMeal: (...args: unknown[]) => Promise<null>;
   removeMeal: (...args: unknown[]) => Promise<void>;
@@ -78,7 +72,7 @@ type StoreCtx = {
 
 const FakeStoreCtx = createContext<StoreCtx | null>(null);
 
-const addDaySpy = vi.fn<(date: string, opts: AddDayOpts) => Promise<DailyMealLog>>();
+const addDaySpy = vi.fn<(date: string) => Promise<DailyMealLog>>();
 const addMealSpy = vi.fn<(...args: unknown[]) => Promise<null>>(async () => null);
 
 function FakeStateProvider({
@@ -90,6 +84,7 @@ function FakeStateProvider({
 
   const store: StoreCtx = {
     days,
+    goals: [],
     profile: mockProfile,
     loading: false,
     error: null,
@@ -97,8 +92,8 @@ function FakeStateProvider({
       const day = days.find((d) => d.id === dayId);
       return day ? { status: 'found', day } : { status: 'not_found' };
     },
-    addDay: async (date, opts) => {
-      addDaySpy(date, opts);
+    addDay: async (date) => {
+      addDaySpy(date);
       if (addDayDelay) await addDayDelay;
       const day = makeDay({ date });
       setDays((prev) => [day, ...prev]);
@@ -159,10 +154,9 @@ describe('Log a meal quick action', () => {
     await userEvent.click(screen.getByRole('button', { name: /Log a meal/i }));
 
     expect(addDaySpy).toHaveBeenCalledTimes(1);
-    const [date, opts] = addDaySpy.mock.calls[0];
+    const [date] = addDaySpy.mock.calls[0];
     expect(date).toBe(todayIso());
-    // Meal structure now comes from templates server-side, not a client target.
-    expect(opts).not.toHaveProperty('mealCountTarget');
+    // Targets + meal slots are derived from the covering goal inside addDay (#56).
   });
 
   it('navigates to the new day page after creating today', async () => {

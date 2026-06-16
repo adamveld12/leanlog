@@ -17,6 +17,9 @@ import type {
   MealTemplateIngredient,
   CreateMealTemplate,
   UpsertTemplateIngredient,
+  Goal,
+  CreateGoal,
+  UpdateGoal,
 } from '@leanlog/data-access';
 import { todayIso } from './lib';
 
@@ -321,6 +324,19 @@ export const api = {
     get: (token: string) => apiFetch<UserProfile>('/api/profile', { token, method: 'GET' }),
     update: (token: string, data: UpdateProfile) =>
       apiFetch<UserProfile>('/api/profile', { token, method: 'PUT', body: JSON.stringify(data) }),
+  },
+  goals: {
+    list: (token: string) => apiFetch<{ goals: Goal[] }>('/api/goals', { token, method: 'GET' }),
+    create: (token: string, data: CreateGoal) =>
+      apiFetch<Goal>('/api/goals', { token, method: 'POST', body: JSON.stringify(data) }),
+    update: (token: string, goalId: string, data: UpdateGoal) =>
+      apiFetch<Goal>(`/api/goals/${goalId}`, {
+        token,
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    delete: (token: string, goalId: string) =>
+      apiFetch<void>(`/api/goals/${goalId}`, { token, method: 'DELETE' }),
   },
   scanNutrition: (token: string, data: FormData) =>
     apiFetch<ScanResolution>('/api/scan-nutrition', { token, method: 'POST', body: data }),

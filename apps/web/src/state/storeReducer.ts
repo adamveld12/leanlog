@@ -1,4 +1,4 @@
-import type { DailyMealLog, Meal, MealTemplate, UserProfile } from '@leanlog/data-access';
+import type { DailyMealLog, Goal, Meal, MealTemplate, UserProfile } from '@leanlog/data-access';
 
 type MealIngredient = Meal['ingredients'][number];
 type TemplateIngredient = MealTemplate['ingredients'][number];
@@ -6,6 +6,7 @@ type TemplateIngredient = MealTemplate['ingredients'][number];
 export type StoreState = {
   days: DailyMealLog[];
   templates: MealTemplate[];
+  goals: Goal[];
   profile: UserProfile | null;
   loading: boolean;
   error: string | null;
@@ -14,13 +15,20 @@ export type StoreState = {
 export const initialStoreState: StoreState = {
   days: [],
   templates: [],
+  goals: [],
   profile: null,
   loading: true,
   error: null,
 };
 
 export type StoreAction =
-  | { type: 'loaded'; days: DailyMealLog[]; profile: UserProfile; templates: MealTemplate[] }
+  | {
+      type: 'loaded';
+      days: DailyMealLog[];
+      profile: UserProfile;
+      templates: MealTemplate[];
+      goals: Goal[];
+    }
   | { type: 'loadFailed'; error: string }
   | { type: 'loadingDone' }
   | { type: 'dayUpserted'; day: DailyMealLog }
@@ -40,7 +48,11 @@ export type StoreAction =
   | { type: 'templateIngredientUpserted'; templateId: string; ingredient: TemplateIngredient }
   | { type: 'templateIngredientRemoved'; templateId: string; ingredientId: string }
   | { type: 'profileSet'; profile: UserProfile | null }
-  | { type: 'profilePatched'; data: Partial<UserProfile> };
+  | { type: 'profilePatched'; data: Partial<UserProfile> }
+  | { type: 'goalsSet'; goals: Goal[] }
+  | { type: 'goalAdded'; goal: Goal }
+  | { type: 'goalReplaced'; goal: Goal }
+  | { type: 'goalRemoved'; goalId: string };
 
 function mapDay(
   days: DailyMealLog[],
@@ -63,6 +75,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
         days: [...action.days, ...state.days.filter((day) => !loadedIds.has(day.id))],
         profile: action.profile,
         templates: action.templates,
+        goals: action.goals,
       };
     }
     case 'loadFailed':
@@ -191,6 +204,18 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
         ...state,
         profile: state.profile ? { ...state.profile, ...action.data } : state.profile,
       };
+
+    case 'goalsSet':
+      return { ...state, goals: action.goals };
+    case 'goalAdded':
+      return { ...state, goals: [...state.goals, action.goal] };
+    case 'goalReplaced':
+      return {
+        ...state,
+        goals: state.goals.map((g) => (g.id === action.goal.id ? action.goal : g)),
+      };
+    case 'goalRemoved':
+      return { ...state, goals: state.goals.filter((g) => g.id !== action.goalId) };
 
     default:
       return state;

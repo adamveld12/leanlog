@@ -123,6 +123,42 @@ vi.mock('../api', () => ({
         }),
       update: vi.fn(),
     },
+    goals: {
+      // Default: just the background maintenance goal, so day creation always
+      // resolves a covering goal.
+      list: vi.fn(() =>
+        Promise.resolve({
+          goals: [
+            {
+              id: 'bg',
+              userId: 'user_test',
+              isBackground: true,
+              name: 'Maintenance',
+              description: null,
+              mode: 'maintain' as const,
+              targetWeightLbs: null,
+              macroFats: 25,
+              macroCarbs: 35,
+              macroProtein: 40,
+              startDate: null,
+              endDate: null,
+              calorieDelta: 0,
+              mealSlots: [
+                { name: 'Breakfast', ingredients: [] },
+                { name: 'Lunch', ingredients: [] },
+                { name: 'Dinner', ingredients: [] },
+                { name: 'Snack', ingredients: [] },
+              ],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          ],
+        }),
+      ),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
     scanNutrition: vi.fn(),
   } satisfies typeof RealApi,
 }));

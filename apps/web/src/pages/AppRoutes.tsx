@@ -58,7 +58,7 @@ import {
 } from '@leanlog/ui';
 import {
   caloriesFromMode,
-  dayTargetsFromProfile,
+  deriveDayPlan,
   dayMealStructure,
   resolveScannedMicronutrients,
   type NutritionUnit,
@@ -258,17 +258,17 @@ function DayList() {
   // by the "Log a meal" quick action and the calendar's tap-to-create.
   const createAndOpenDay = useCallback(
     async (iso: string) => {
-      if (!profile || creatingRef.current) return;
+      if (creatingRef.current) return;
       creatingRef.current = true;
       try {
-        const targets = dayTargetsFromProfile(profile);
-        const day = await addDay(iso, targets);
+        // Targets + meal slots are derived from the covering goal inside addDay (#56).
+        const day = await addDay(iso);
         nav(`/track/day/${day.id}`);
       } finally {
         creatingRef.current = false;
       }
     },
-    [profile, addDay, nav],
+    [addDay, nav],
   );
 
   async function handleAction() {
@@ -396,7 +396,7 @@ function DayDetail() {
   const nav = useNavigate();
   const {
     days,
-    profile,
+    goals,
     ensureDayLoaded,
     addMeal,
     removeMeal,
@@ -483,9 +483,21 @@ function DayDetail() {
             isPast
               ? undefined
               : () => {
-                  if (!profile) return;
-                  const nextTargets = dayTargetsFromProfile(profile);
-                  void updateDayTargets(day.id, nextTargets);
+                  // Recompute from the covering goal + latest weight on/before
+                  // this day (#56, R61).
+                  const plan = deriveDayPlan(
+                    day.date,
+                    goals,
+                    selectWeightEntries(days),
+                    todayIso(),
+                  );
+                  if (!plan) return;
+                  void updateDayTargets(day.id, {
+                    targetCalories: plan.targetCalories,
+                    targetFat: plan.targetFat,
+                    targetCarbs: plan.targetCarbs,
+                    targetProtein: plan.targetProtein,
+                  });
                 }
           }
         />
