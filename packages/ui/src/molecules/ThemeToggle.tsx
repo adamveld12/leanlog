@@ -21,6 +21,9 @@ export type ThemeToggleProps = {
 export function ThemeToggle({ value, onChange }: ThemeToggleProps) {
   return (
     <AnalyticsScope properties={{ molecule: 'ThemeToggle' }}>
+      {/* A labelled cluster of related controls; role="group" is the correct ARIA
+          semantic here and has no single matching HTML tag. */}
+      {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role */}
       <div
         className={cn(recipes.radius.control, 'flex border border-[var(--ll-line)] p-0.5')}
         role="group"

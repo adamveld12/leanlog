@@ -26,6 +26,7 @@ import {
   findTrimmableActiveGoal,
   DEFAULT_MEAL_SLOTS,
   GOAL_DEFAULTS,
+  uuidv7,
   type CreateGoal,
   type Goal,
   type GoalMode,
@@ -190,6 +191,7 @@ export function GoalsPage() {
         <MaintenanceDetail onCreate={() => setAdding(true)} canAddGoal={canAddGoal} />
       ) : selectedGoal ? (
         <GoalDetail
+          key={selectedGoal.id}
           goal={selectedGoal}
           today={today}
           weightEntries={weightEntries}
@@ -251,6 +253,9 @@ function GoalDetail({
 
   const [name, setName] = useState(goal.name ?? '');
   const [description, setDescription] = useState(goal.description ?? '');
+  // Seeded once from the goal; GoalDetail is remounted via key={goal.id} when the
+  // selected goal changes, so this never goes stale.
+  // react-doctor-disable-next-line react-doctor/no-derived-useState
   const [delta, setDelta] = useState<number | null>(goal.calorieDelta);
 
   if (fullyEditable) {
@@ -335,6 +340,8 @@ function GoalDetail({
 
 type SubmitTrim = { goalId: string; endDate: string };
 
+type FormSlot = MealSlot & { id: string };
+
 // Inline Add Goal / Edit-future-goal form (R54/R55). Mode is chosen first; the
 // rest prefill from standard defaults.
 function AddOrEditGoal({
@@ -349,6 +356,9 @@ function AddOrEditGoal({
   editingGoal?: Goal;
   onCancel: () => void;
   onSubmit: (data: CreateGoal, trim?: SubmitTrim) => Promise<void>;
+  // Several useState hooks for this multi-field form are intentional; a useReducer
+  // migration is tracked separately (#50).
+  // react-doctor-disable-next-line react-doctor/prefer-useReducer
 }) {
   const [mode, setMode] = useState<GoalMode>(editingGoal?.mode ?? GOAL_DEFAULTS.mode);
   const [name, setName] = useState(editingGoal?.name ?? '');
@@ -356,9 +366,9 @@ function AddOrEditGoal({
   const [targetWeight, setTargetWeight] = useState<number | null>(
     editingGoal?.targetWeightLbs ?? null,
   );
-  const [start, setStart] = useState(isoToParts(editingGoal?.startDate ?? today));
+  const [start, setStart] = useState(() => isoToParts(editingGoal?.startDate ?? today));
   const [hasEnd, setHasEnd] = useState(editingGoal?.endDate != null);
-  const [end, setEnd] = useState(isoToParts(editingGoal?.endDate ?? today));
+  const [end, setEnd] = useState(() => isoToParts(editingGoal?.endDate ?? today));
   const [fats, setFats] = useState<number | null>(
     editingGoal?.macroFats ?? GOAL_DEFAULTS.macroFats,
   );
@@ -368,7 +378,11 @@ function AddOrEditGoal({
   const [protein, setProtein] = useState<number | null>(
     editingGoal?.macroProtein ?? GOAL_DEFAULTS.macroProtein,
   );
-  const [slots, setSlots] = useState<MealSlot[]>(editingGoal?.mealSlots ?? DEFAULT_MEAL_SLOTS);
+  // Form slots carry a stable local id so the editable list keys never fall back
+  // to the array index.
+  const [slots, setSlots] = useState<FormSlot[]>(() =>
+    (editingGoal?.mealSlots ?? DEFAULT_MEAL_SLOTS).map((s) => ({ ...s, id: uuidv7() })),
+  );
   const [error, setError] = useState<string | null>(null);
   const [pendingTrim, setPendingTrim] = useState<SubmitTrim | null>(null);
 
@@ -386,7 +400,7 @@ function AddOrEditGoal({
       macroProtein: Math.round(protein ?? 0),
       startDate: startIso,
       endDate: endIso,
-      mealSlots: slots,
+      mealSlots: slots.map(({ name: slotName, ingredients }) => ({ name: slotName, ingredients })),
     };
   }
 
@@ -472,15 +486,15 @@ function AddOrEditGoal({
       </div>
 
       <SectionHeading noMargin>Meal slots</SectionHeading>
-      {slots.map((slot, i) => (
+      {slots.map((slot) => (
         <ListRow
-          key={i}
+          key={slot.id}
           title={
             <Input
               value={slot.name}
               onChange={(e) =>
                 setSlots((prev) =>
-                  prev.map((s, j) => (j === i ? { ...s, name: e.target.value } : s)),
+                  prev.map((s) => (s.id === slot.id ? { ...s, name: e.target.value } : s)),
                 )
               }
             />
@@ -489,7 +503,7 @@ function AddOrEditGoal({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setSlots((prev) => prev.filter((_, j) => j !== i))}
+              onClick={() => setSlots((prev) => prev.filter((s) => s.id !== slot.id))}
             >
               Remove
             </Button>
@@ -500,7 +514,10 @@ function AddOrEditGoal({
         variant="subtle"
         size="sm"
         onClick={() =>
-          setSlots((prev) => [...prev, { name: `Meal ${prev.length + 1}`, ingredients: [] }])
+          setSlots((prev) => [
+            ...prev,
+            { id: uuidv7(), name: `Meal ${prev.length + 1}`, ingredients: [] },
+          ])
         }
       >
         + Add slot

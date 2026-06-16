@@ -16,8 +16,19 @@ const FALLBACK_TARGETS = {
   targetProtein: 140,
 };
 
+type DayTargetsPatch = {
+  targetCalories: number;
+  targetFat: number;
+  targetCarbs: number;
+  targetProtein: number;
+};
+
 // Targets for a date derived from the covering goal + latest known weight (#56).
-function deriveTargetsForDay(date: string, days: DailyMealLog[], goals: Goal[]) {
+function deriveTargetsForDay(
+  date: string,
+  days: DailyMealLog[],
+  goals: Goal[],
+): DayTargetsPatch | null {
   const plan = deriveDayPlan(date, goals, selectWeightEntries(days), todayIso());
   if (!plan) return null;
   return {
@@ -290,15 +301,18 @@ export function useCreateStore(): Store {
       // days keep their snapshots. Use a goals list that includes the edited goal.
       const goals = goalsRef.current.map((g) => (g.id === updated.id ? updated : g));
       const today = todayIso();
-      const affected = daysRef.current.filter(
-        (day) => day.date >= today && goalCoversDate(updated, day.date),
-      );
-      for (const day of affected) {
+      const recomputes: { dayId: string; targets: DayTargetsPatch }[] = [];
+      for (const day of daysRef.current) {
+        if (day.date < today || !goalCoversDate(updated, day.date)) continue;
         const targets = deriveTargetsForDay(day.date, daysRef.current, goals);
-        if (!targets) continue;
-        const recomputed = await withToken((t) => api.days.updateTargets(t, day.id, targets));
-        dispatch({ type: 'dayReplaced', day: recomputed });
+        if (targets) recomputes.push({ dayId: day.id, targets });
       }
+      const recomputed = await Promise.all(
+        recomputes.map(({ dayId, targets }) =>
+          withToken((t) => api.days.updateTargets(t, dayId, targets)),
+        ),
+      );
+      for (const day of recomputed) dispatch({ type: 'dayReplaced', day });
       return updated;
     },
 
