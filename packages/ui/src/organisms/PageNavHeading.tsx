@@ -58,16 +58,17 @@ export function PageNavHeading({
             {subtitle ? <div className="hidden px-4 min-[512px]:inline">{subtitle}</div> : null}
           </div>
           <div className={cn(recipes.stack.row, 'shrink-0')}>
-            {nutritionFactsHref ? (
-              <div className="hidden min-[512px]:inline-flex">
-                {/* react-doctor-disable-next-line react-doctor/no-render-in-render */}
-                {renderNavLink({
+            {nutritionFactsHref
+              ? // Shown on all viewports (mobile is the primary target), mirroring the
+                // always-visible Profile link, so the page is reachable from the header
+                // everywhere — not just on wide screens.
+                // react-doctor-disable-next-line react-doctor/no-render-in-render
+                renderNavLink({
                   href: nutritionFactsHref,
                   label: nutritionFactsLabel,
                   className: linkClassName,
-                })}
-              </div>
-            ) : null}
+                })
+              : null}
             {/* react-doctor-disable-next-line react-doctor/no-render-in-render */}
             {renderNavLink({ href: profileHref, label: profileLabel, className: linkClassName })}
             {rightContent}
