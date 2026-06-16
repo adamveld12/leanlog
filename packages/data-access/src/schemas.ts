@@ -129,6 +129,18 @@ export const CreateNutritionDatabaseIngredientSchema = NutritionDatabaseIngredie
   updatedAt: true,
 }).strict();
 
+// Editing an existing label (#49). Same shape as create minus the immutable
+// fields: `creationSource` is fixed at capture time (it records whether the
+// label was scanned or typed) and `addedByUserId` is the owner; neither can be
+// changed by an edit. Server still re-runs validateNutritionLabel on the result.
+export const UpdateNutritionDatabaseIngredientSchema = NutritionDatabaseIngredientSchema.omit({
+  id: true,
+  addedByUserId: true,
+  creationSource: true,
+  createdAt: true,
+  updatedAt: true,
+}).strict();
+
 // How a saved label is scaled into a meal ingredient (R22): by consumed weight,
 // by a number of servings, or by the entire package. `amount` carries the
 // weight (grams/ml) or serving count; it is unused (and ignored) for 'package'.

@@ -9,6 +9,7 @@ import type {
   DayTargets,
   NutritionDatabaseIngredient,
   CreateNutritionDatabaseIngredient,
+  UpdateNutritionDatabaseIngredient,
   MealTemplate,
   MealTemplateIngredient,
   CreateMealTemplate,
@@ -85,12 +86,35 @@ export interface ProfileRepository {
   update(clerkUserId: string, data: UpdateProfile): Promise<UserProfile>;
 }
 
+// Thrown when a user tries to edit or delete a label they did not add (#49).
+// The Nutrition Facts Database is a shared catalog, so writes are ownership-gated
+// and API routes map this to a 403.
+export class NutritionLabelOwnershipError extends Error {
+  constructor() {
+    super('You can only edit or delete labels you added');
+    this.name = 'NutritionLabelOwnershipError';
+  }
+}
+
 export interface NutritionDatabaseRepository {
   create(
     userId: string,
     data: CreateNutritionDatabaseIngredient,
   ): Promise<NutritionDatabaseIngredient>;
   search(query: string, limit?: number): Promise<NutritionDatabaseIngredient[]>;
+  // Browse the catalog newest-first without a search query (#49). Paginated so a
+  // large catalog doesn't ship in one response.
+  listAll(limit?: number, offset?: number): Promise<NutritionDatabaseIngredient[]>;
   getById(id: string): Promise<NutritionDatabaseIngredient | null>;
+  // Returns the updated label, or null when no label has that id. Throws
+  // NutritionLabelOwnershipError when the label exists but belongs to another user.
+  update(
+    userId: string,
+    id: string,
+    data: UpdateNutritionDatabaseIngredient,
+  ): Promise<NutritionDatabaseIngredient | null>;
+  // Returns 'deleted' on success, 'not_found' when no label has that id. Throws
+  // NutritionLabelOwnershipError when the label belongs to another user.
+  delete(userId: string, id: string): Promise<'deleted' | 'not_found'>;
   count(): Promise<number>;
 }

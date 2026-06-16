@@ -19,6 +19,7 @@ import type {
   ServingSizeUnitSchema,
   NutritionDatabaseIngredientSchema,
   CreateNutritionDatabaseIngredientSchema,
+  UpdateNutritionDatabaseIngredientSchema,
   AddIngredientFromDatabaseSchema,
   NutritionDatabaseIngredientSearchResult,
 } from './schemas';
@@ -43,6 +44,9 @@ export type ServingSizeUnit = z.infer<typeof ServingSizeUnitSchema>;
 export type NutritionDatabaseIngredient = z.infer<typeof NutritionDatabaseIngredientSchema>;
 export type CreateNutritionDatabaseIngredient = z.infer<
   typeof CreateNutritionDatabaseIngredientSchema
+>;
+export type UpdateNutritionDatabaseIngredient = z.infer<
+  typeof UpdateNutritionDatabaseIngredientSchema
 >;
 export type AddIngredientFromDatabase = z.infer<typeof AddIngredientFromDatabaseSchema>;
 export type { NutritionDatabaseIngredientSearchResult };

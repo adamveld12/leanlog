@@ -6,6 +6,7 @@ import {
   UserProfileSchema,
   PROFILE_DEFAULTS,
   CreateNutritionDatabaseIngredientSchema,
+  UpdateNutritionDatabaseIngredientSchema,
   UpsertIngredientSchema,
   normalizeMicronutrients,
   parseMicronutrientsJson,
@@ -284,6 +285,37 @@ describe('CreateNutritionDatabaseIngredientSchema', () => {
     const result = CreateNutritionDatabaseIngredientSchema.safeParse({
       ...validCreateDbIngredient,
       calories: undefined,
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('UpdateNutritionDatabaseIngredientSchema', () => {
+  it('accepts a full editable label payload', () => {
+    const { creationSource: _creationSource, ...editable } = validCreateDbIngredient;
+    const result = UpdateNutritionDatabaseIngredientSchema.safeParse(editable);
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects an attempt to change the immutable creationSource', () => {
+    const result = UpdateNutritionDatabaseIngredientSchema.safeParse(validCreateDbIngredient);
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects an attempt to change the immutable addedByUserId', () => {
+    const { creationSource: _creationSource, ...editable } = validCreateDbIngredient;
+    const result = UpdateNutritionDatabaseIngredientSchema.safeParse({
+      ...editable,
+      addedByUserId: 'someone-else',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('still requires the core macros', () => {
+    const { creationSource: _creationSource, ...editable } = validCreateDbIngredient;
+    const result = UpdateNutritionDatabaseIngredientSchema.safeParse({
+      ...editable,
+      protein: undefined,
     });
     expect(result.success).toBe(false);
   });
