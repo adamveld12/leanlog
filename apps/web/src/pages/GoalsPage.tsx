@@ -345,7 +345,7 @@ function GoalDetail({
       />
       <SummaryRow
         label="Macros"
-        value={`${goal.macroFats}/${goal.macroCarbs}/${goal.macroProtein} (F/C/P)`}
+        value={`${goal.macroProtein}/${goal.macroCarbs}/${goal.macroFats} (P/C/F)`}
       />
       <SummaryRow label="Meal slots" value={slotNames} />
 
@@ -526,9 +526,9 @@ function AddOrEditGoal({
 
       <SectionHeading noMargin>Macros (must total 100%)</SectionHeading>
       <div className={recipes.grid.three}>
-        <NumberInput label="Fat %" value={fats} onChange={setFats} />
-        <NumberInput label="Carbs %" value={carbs} onChange={setCarbs} />
         <NumberInput label="Protein %" value={protein} onChange={setProtein} />
+        <NumberInput label="Carbs %" value={carbs} onChange={setCarbs} />
+        <NumberInput label="Fat %" value={fats} onChange={setFats} />
       </div>
 
       <SectionHeading noMargin>Meal slots</SectionHeading>

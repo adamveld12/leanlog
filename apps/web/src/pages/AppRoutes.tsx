@@ -176,7 +176,9 @@ function GoalsRoute() {
         renderNavLink={renderRouterNavLink}
         rightContent={<HeaderControls />}
       />
-      <GoalsPage />
+      <AnalyticsScope properties={{ page: 'Goals' }}>
+        <GoalsPage />
+      </AnalyticsScope>
     </AppShell>
   );
 }

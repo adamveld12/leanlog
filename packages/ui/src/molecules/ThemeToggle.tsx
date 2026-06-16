@@ -40,7 +40,9 @@ export function ThemeToggle({ value, onChange }: ThemeToggleProps) {
             aria-pressed={value === opt.value}
             aria-label={opt.label}
             title={opt.label}
-            className={cn(recipes.radius.controlInner, 'px-2')}
+            // h-10 inside the p-0.5 container lands at ~44px, matching the Tabs
+            // precedent for touch targets while staying compact.
+            className={cn(recipes.radius.controlInner, 'h-10 px-2')}
             onClick={() => onChange(opt.value)}
           >
             {opt.icon}
