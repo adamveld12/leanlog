@@ -345,8 +345,31 @@ import {
   dayMealStructure,
   contributesNutrition,
   DEFAULT_MEAL_TEMPLATE_NAMES,
+  dayAdherence,
+  dayConsumed,
+  goalOutcome,
 } from './calculations';
-import type { Meal, DailyMealLog } from './models';
+import type { Meal, DailyMealLog, Goal, Ingredient, WeightEntry } from './models';
+
+function makeIngredient(partial: Partial<Ingredient> = {}): Ingredient {
+  return {
+    id: 'i',
+    mealId: 'm',
+    name: 'Ingredient',
+    weight: 100,
+    calories: 0,
+    fat: 0,
+    saturatedFat: 0,
+    carbs: 0,
+    fiber: 0,
+    protein: 0,
+    calorieSource: 'explicit',
+    estimatedCalories: 0,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+    ...partial,
+  };
+}
 
 function makeMeal(partial: Partial<Meal>): Meal {
   return {
@@ -426,5 +449,139 @@ describe('contributesNutrition', () => {
 
   it('ad-hoc meal always contributes regardless of logged flag', () => {
     expect(contributesNutrition(makeMeal({ origin: 'adhoc', logged: false }))).toBe(true);
+  });
+});
+
+function makeGoalFor(partial: Partial<Goal> = {}): Goal {
+  return {
+    id: 'g',
+    userId: 'u',
+    isBackground: false,
+    name: null,
+    description: null,
+    mode: 'cut',
+    targetWeightLbs: 180,
+    macroFats: 25,
+    macroCarbs: 35,
+    macroProtein: 40,
+    startDate: '2026-05-01',
+    endDate: '2026-05-31',
+    calorieDelta: 0,
+    mealSlots: [],
+    createdAt: '2026-05-01T00:00:00.000Z',
+    updatedAt: '2026-05-01T00:00:00.000Z',
+    ...partial,
+  };
+}
+
+// A day whose four ad-hoc meals each carry one ingredient that exactly hits the
+// day's targets, so individual checks can be perturbed one at a time.
+function onTargetDay(): DailyMealLog {
+  const day = makeDay(
+    [
+      makeMeal({
+        origin: 'adhoc',
+        ingredients: [makeIngredient({ calories: 2000, fat: 60, carbs: 200, protein: 150 })],
+      }),
+      makeMeal({ origin: 'adhoc', ingredients: [makeIngredient({ name: 'a' })] }),
+      makeMeal({ origin: 'adhoc', ingredients: [makeIngredient({ name: 'b' })] }),
+      makeMeal({ origin: 'adhoc', ingredients: [makeIngredient({ name: 'c' })] }),
+    ],
+    0,
+  );
+  return day;
+}
+
+describe('dayConsumed', () => {
+  it('sums only contributing meals', () => {
+    const day = makeDay([
+      makeMeal({
+        origin: 'template',
+        logged: true,
+        ingredients: [makeIngredient({ calories: 500, protein: 40 })],
+      }),
+      makeMeal({
+        origin: 'template',
+        logged: false,
+        ingredients: [makeIngredient({ calories: 999 })],
+      }),
+    ]);
+    expect(dayConsumed(day)).toEqual({ calories: 500, fat: 0, carbs: 0, protein: 40 });
+  });
+});
+
+describe('dayAdherence', () => {
+  it('passes when meal count, calories (±5%) and all macros (±2%) pass (AE12)', () => {
+    expect(dayAdherence(onTargetDay()).pass).toBe(true);
+  });
+
+  it('fails when calories exceed ±5% (AE13 calories)', () => {
+    const day = onTargetDay();
+    day.meals[0].ingredients[0].calories = 2200; // +10%
+    const a = dayAdherence(day);
+    expect(a.calories).toBe(false);
+    expect(a.pass).toBe(false);
+  });
+
+  it('fails when any macro exceeds ±2% (AE13 macro)', () => {
+    const day = onTargetDay();
+    day.meals[0].ingredients[0].protein = 200; // far over
+    const a = dayAdherence(day);
+    expect(a.protein).toBe(false);
+    expect(a.pass).toBe(false);
+  });
+
+  it('fails when meal count is incomplete (AE14)', () => {
+    const day = onTargetDay();
+    day.meals[3].ingredients = []; // only 3 of 4 ad-hoc meals carry ingredients
+    const a = dayAdherence(day);
+    expect(a.mealCount).toBe(false);
+    expect(a.pass).toBe(false);
+  });
+
+  it('fails an empty day (R67)', () => {
+    expect(dayAdherence(makeDay([], 0)).pass).toBe(false);
+  });
+});
+
+describe('goalOutcome', () => {
+  const today = '2026-06-16';
+
+  it('reaches a Cut goal within +2% (AE15)', () => {
+    const goal = makeGoalFor({
+      mode: 'cut',
+      targetWeightLbs: 180,
+      startDate: '2026-05-01',
+      endDate: '2026-05-31',
+    });
+    const w: WeightEntry[] = [{ date: '2026-05-30', weightLbs: 183 }];
+    expect(goalOutcome(goal, w, today)).toBe('reached');
+  });
+
+  it('misses a Cut goal above +2%', () => {
+    const goal = makeGoalFor({
+      mode: 'cut',
+      targetWeightLbs: 180,
+      startDate: '2026-05-01',
+      endDate: '2026-05-31',
+    });
+    const w: WeightEntry[] = [{ date: '2026-05-30', weightLbs: 185 }];
+    expect(goalOutcome(goal, w, today)).toBe('missed');
+  });
+
+  it('misses a completed goal with no in-window weight (AE16)', () => {
+    const goal = makeGoalFor({ mode: 'maintain', startDate: '2026-05-01', endDate: '2026-05-31' });
+    const w: WeightEntry[] = [{ date: '2026-06-10', weightLbs: 180 }];
+    expect(goalOutcome(goal, w, today)).toBe('missed');
+  });
+
+  it('returns null for an active (not-yet-completed) goal', () => {
+    const goal = makeGoalFor({ endDate: '2026-07-31' });
+    expect(goalOutcome(goal, [], today)).toBeNull();
+  });
+
+  it('returns null for the background goal (R75)', () => {
+    const goal = makeGoalFor({ isBackground: true, endDate: null, targetWeightLbs: null });
+    expect(goalOutcome(goal, [], today)).toBeNull();
   });
 });

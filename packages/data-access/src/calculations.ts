@@ -4,6 +4,8 @@ import type {
   NutritionUnit,
   Meal,
   DailyMealLog,
+  Goal,
+  WeightEntry,
 } from './models';
 
 // Default meal templates seeded for a brand-new user (issue #41).
@@ -101,6 +103,97 @@ export function estimatedWeightLost(totalConsumed: number, totalMaintenance: num
 
 export function weightLossCertainty(coveragePct: number): number {
   return Math.min(80, Math.round(coveragePct * 0.8));
+}
+
+// ---------------------------------------------------------------------------
+// Goal adherence & outcomes (#56)
+// ---------------------------------------------------------------------------
+
+// Daily calorie adherence allows ±5% (R69); each macro allows ±2% (R70).
+export const CALORIE_TOLERANCE = 0.05;
+export const MACRO_TOLERANCE = 0.02;
+
+function withinTolerance(actual: number, target: number, tol: number): boolean {
+  if (target <= 0) return false;
+  return Math.abs(actual - target) <= target * tol;
+}
+
+// Sum of calories/macros across the meals that contribute to a day's totals
+// (logged template meals + ad-hoc meals). Used for adherence checks.
+export function dayConsumed(day: DailyMealLog): {
+  calories: number;
+  fat: number;
+  carbs: number;
+  protein: number;
+} {
+  let calories = 0;
+  let fat = 0;
+  let carbs = 0;
+  let protein = 0;
+  for (const meal of day.meals) {
+    if (!contributesNutrition(meal)) continue;
+    for (const ing of meal.ingredients) {
+      calories += ing.calories;
+      fat += ing.fat;
+      carbs += ing.carbs;
+      protein += ing.protein;
+    }
+  }
+  return { calories, fat, carbs, protein };
+}
+
+export type DayAdherence = {
+  mealCount: boolean;
+  calories: boolean;
+  fat: boolean;
+  carbs: boolean;
+  protein: boolean;
+  pass: boolean;
+};
+
+// A day succeeds only when its expected meals all have ingredients and calories
+// and every macro land inside tolerance (R64–R70). A day with nothing tracked
+// fails outright (R67); meal-count success counts meals with ≥1 ingredient and
+// ignores slot names (R68).
+export function dayAdherence(day: DailyMealLog): DayAdherence {
+  const { mealsExpected } = dayMealStructure(day);
+  // R68: meal-count success counts meals that actually carry ingredients,
+  // regardless of slot name or logged flag.
+  const mealsTracked = day.meals.filter((m) => m.ingredients.length > 0).length;
+  const consumed = dayConsumed(day);
+  const mealCount = mealsExpected > 0 && mealsTracked >= mealsExpected;
+  const calories = withinTolerance(consumed.calories, day.targetCalories, CALORIE_TOLERANCE);
+  const fat = withinTolerance(consumed.fat, day.targetFat, MACRO_TOLERANCE);
+  const carbs = withinTolerance(consumed.carbs, day.targetCarbs, MACRO_TOLERANCE);
+  const protein = withinTolerance(consumed.protein, day.targetProtein, MACRO_TOLERANCE);
+  const pass = mealsTracked > 0 && mealCount && calories && fat && carbs && protein;
+  return { mealCount, calories, fat, carbs, protein, pass };
+}
+
+export type GoalOutcome = 'reached' | 'missed' | null;
+
+// Outcome of a completed user goal, judged only by the final logged weight inside
+// its window (R71–R75): Cut reaches at ≤ target+2%, Lean Gain at ≥ target−2%,
+// Maintain within ±2%. No in-window weight is a miss. Background/generated
+// segments and not-yet-completed goals return null.
+export function goalOutcome(goal: Goal, weightEntries: WeightEntry[], today: string): GoalOutcome {
+  if (goal.isBackground) return null;
+  if (goal.endDate == null || goal.endDate >= today) return null;
+  const inWindow = weightEntries
+    .filter((e) => (goal.startDate == null || e.date >= goal.startDate) && e.date <= goal.endDate!)
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+  const final = inWindow.at(-1);
+  if (!final || goal.targetWeightLbs == null) return 'missed';
+  const t = goal.targetWeightLbs;
+  const w = final.weightLbs;
+  switch (goal.mode) {
+    case 'cut':
+      return w <= t * (1 + MACRO_TOLERANCE) ? 'reached' : 'missed';
+    case 'lean_gain':
+      return w >= t * (1 - MACRO_TOLERANCE) ? 'reached' : 'missed';
+    case 'maintain':
+      return Math.abs(w - t) <= t * MACRO_TOLERANCE ? 'reached' : 'missed';
+  }
 }
 
 // ---------------------------------------------------------------------------
