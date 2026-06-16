@@ -109,9 +109,9 @@ export interface GoalsRepository {
   listByUser(userId: string): Promise<Goal[]>;
   getById(userId: string, goalId: string): Promise<Goal | null>;
   create(userId: string, data: CreateGoal, today: string): Promise<Goal>;
+  // Editing an active goal's end date is how the timeline trim (R28–R30) is
+  // applied: the UI patches the active goal's end to the day before a new goal.
   update(userId: string, goalId: string, data: UpdateGoal, today: string): Promise<Goal>;
-  // Trims an active goal's end to the day before a new goal starts (R28–R30).
-  trimActiveGoalEnd(userId: string, goalId: string, endDate: string, today: string): Promise<Goal>;
   delete(userId: string, goalId: string, today: string): Promise<void>;
 }
 

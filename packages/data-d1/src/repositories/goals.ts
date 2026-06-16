@@ -204,25 +204,6 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
       return updated!;
     },
 
-    async trimActiveGoalEnd(userId, goalId, endDate, today) {
-      const goal = await getOwned(userId, goalId);
-      if (!goal || goal.isBackground) throw new GoalNotEditableError('Goal not found');
-      const lifecycle = goalLifecycle(goal, today);
-      if (lifecycle !== 'active' && lifecycle !== 'today') {
-        throw new GoalNotEditableError('Only the active goal can be trimmed');
-      }
-      if (goal.startDate != null && endDate < goal.startDate) {
-        throw new GoalDateError('Trimmed end date cannot precede the start date');
-      }
-      const ts = now();
-      await d
-        .update(goals)
-        .set({ endDate, updatedAt: ts })
-        .where(and(eq(goals.id, goalId), eq(goals.userId, userId)));
-      const updated = await getOwned(userId, goalId);
-      return updated!;
-    },
-
     async delete(userId, goalId, today) {
       const goal = await getOwned(userId, goalId);
       if (!goal) return;
