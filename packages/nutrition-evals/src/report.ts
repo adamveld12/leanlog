@@ -37,7 +37,8 @@ export function aggregateFieldRates(result: ModelRunResult): Map<string, Rate> {
   return rates;
 }
 
-// Coverage = matched names / (matched + missing) across all fixtures (R6).
+// Coverage = matched names / (matched + missing) across all fixtures (R6). This is a
+// name-coverage metric only — it says nothing about whether the matched values are right.
 export function micronutrientCoverage(result: ModelRunResult): Rate {
   let pass = 0;
   let total = 0;
@@ -46,6 +47,34 @@ export function micronutrientCoverage(result: ModelRunResult): Rate {
     total += score.micronutrients.matched.length + score.micronutrients.missing.length;
   }
   return { pass, total };
+}
+
+// Accuracy = matched entries whose amount AND unit AND %DV all pass / matched entries.
+// Complements coverage: a model can find "Sodium" (coverage) yet report the wrong amount
+// (accuracy), and without this a value regression on a matched micronutrient is invisible.
+export function micronutrientAccuracy(result: ModelRunResult): Rate {
+  let pass = 0;
+  let total = 0;
+  for (const { score } of result.caseScores) {
+    for (const m of score.micronutrients.matched) {
+      total += 1;
+      if (m.amountPass && m.unitPass && m.dvPass) pass += 1;
+    }
+  }
+  return { pass, total };
+}
+
+// Names the failing sub-fields of a matched-but-wrong micronutrient, e.g. "Sodium (amount, unit)".
+function wrongMicronutrients(score: ModelRunResult['caseScores'][number]['score']): string[] {
+  return score.micronutrients.matched
+    .filter((m) => !m.amountPass || !m.unitPass || !m.dvPass)
+    .map((m) => {
+      const bad: string[] = [];
+      if (!m.amountPass) bad.push('amount');
+      if (!m.unitPass) bad.push('unit');
+      if (!m.dvPass) bad.push('%DV');
+      return `${m.name} (${bad.join(', ')})`;
+    });
 }
 
 function deltaPct(baseline: Rate, candidate: Rate): string {
@@ -92,7 +121,7 @@ export function renderReport(results: ModelRunResult[], fixtureCount: number): s
   const header = ['Field', ...results.map((r) => `${r.modelId} (${r.label})`)];
   if (hasDelta) header.push('Δ');
   lines.push(`| ${header.join(' | ')} |`);
-  lines.push(`|${header.map(() => '---').join('|')}|`);
+  lines.push(`| ${header.map(() => '---').join(' | ')} |`);
 
   for (const field of fieldOrder) {
     const cells = rates.map((r) => {
@@ -111,16 +140,21 @@ export function renderReport(results: ModelRunResult[], fixtureCount: number): s
     lines.push(`| ${row.join(' | ')} |`);
   }
 
-  // Micronutrient coverage row.
+  // Micronutrient coverage (found the name?) and accuracy (got the values right?) rows.
   const covs = results.map(micronutrientCoverage);
   const covRow = ['micronutrient cov', ...covs.map((c) => `${ratio(c)} (${pct(c)})`)];
   if (hasDelta) covRow.push(deltaPct(covs[0], covs[covs.length - 1]));
   lines.push(`| ${covRow.join(' | ')} |`);
 
+  const accs = results.map(micronutrientAccuracy);
+  const accRow = ['micronutrient acc', ...accs.map((a) => `${ratio(a)} (${pct(a)})`)];
+  if (hasDelta) accRow.push(deltaPct(accs[0], accs[accs.length - 1]));
+  lines.push(`| ${accRow.join(' | ')} |`);
+
   // Summary rows.
   lines.push('');
   lines.push(`| Metric | ${results.map((r) => `${r.modelId} (${r.label})`).join(' | ')} |`);
-  lines.push(`|${['---', ...results.map(() => '---')].join('|')}|`);
+  lines.push(`| ${['---', ...results.map(() => '---')].join(' | ')} |`);
   lines.push(`| Avg latency | ${results.map(avgLatencySeconds).join(' | ')} |`);
   lines.push(`| Total cost | ${results.map((r) => `$${r.cost.toFixed(4)}`).join(' | ')} |`);
   lines.push(
@@ -134,6 +168,8 @@ export function renderReport(results: ModelRunResult[], fixtureCount: number): s
       const failed = score.fields.filter((f) => !f.pass).map((f) => f.field);
       if (score.micronutrients.missing.length > 0)
         failed.push(`missing micros: ${score.micronutrients.missing.join(', ')}`);
+      const wrong = wrongMicronutrients(score);
+      if (wrong.length > 0) failed.push(`wrong micros: ${wrong.join('; ')}`);
       if (failed.length > 0) misses.push(`- ${fixture}: ${failed.join('; ')}`);
     }
     for (const e of r.errors) misses.push(`- ${e.fixture}: ERROR — ${e.error}`);

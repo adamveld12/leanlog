@@ -70,7 +70,8 @@ GOOGLE_GENERATIVE_AI_API_KEY=... pnpm run test:evals
   normal `pnpm test` and never call models. Run them after editing harness code.
 
 After a run, read the report top-to-bottom: per-field pass rates per model, the Δ column,
-the micronutrient-coverage row, then the cost/latency/token summary and per-fixture misses.
+the micronutrient coverage and accuracy rows, then the cost/latency/token summary and
+per-fixture misses.
 
 ## 2. Add a fixture
 
@@ -117,13 +118,18 @@ CI runs the harness on PRs that touch `packages/nutrition-evals/**` or
 posts the report as a **sticky comment** (header `nutrition-scan-evals`, author
 `github-actions[bot]`) and as an uploaded artifact named `eval-report`.
 
-To fetch it, read the PR comments via the GitHub MCP tools (`mcp__github__pull_request_read`
-with `get_comments`, or the issue-comments endpoint) and find the sticky comment. To re-read
-CI run status, use the actions tools.
+To fetch it, read the PR's comments with whatever GitHub tooling is available in the current
+environment (the GitHub MCP comment/PR tools, or `gh pr view --comments`) and find the
+sticky comment by its `nutrition-scan-evals` header. To re-read CI run status, use the
+corresponding GitHub Actions tooling.
 
 **How to read it:**
 - The first model column is the **baseline**; the last is the **candidate**. The `Δ` column
   is candidate − baseline (negative = regression).
+- **Micronutrients have two rows: `micronutrient cov` (coverage — did it find the name?) and
+  `micronutrient acc` (accuracy — of those found, were amount/unit/%DV right?).** A green
+  coverage with a dropping accuracy means the model finds micros but gets their values
+  wrong; check the per-fixture `wrong micros: ...` lines.
 - **Per-field deltas are the actionable signal.** A −X% on a field tells you *what*
   regressed, which matters more than an aggregate. Cross-reference the **per-fixture misses**
   section: a miss isolated to one hard photo is weaker evidence than the same field missing
@@ -184,3 +190,6 @@ separately from fixture additions when practical, with conventional-commit messa
   `@leanlog/nutrition-scan`.
 - The eval is non-blocking and the production model switch is a **separate** change; merging
   a PR is never blocked on eval numbers.
+- The eval baseline in `nutrition-evals/src/models.ts` is a **separate list** from the
+  endpoint's `MODEL` constant in `scan-nutrition.ts`. When the production model changes,
+  update the eval's baseline entry to match — there's no automatic link between them.

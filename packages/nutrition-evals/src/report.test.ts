@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CaseScore } from './scoring';
 import {
   aggregateFieldRates,
+  micronutrientAccuracy,
   micronutrientCoverage,
   renderReport,
   type ModelRunResult,
@@ -61,6 +62,28 @@ describe('micronutrientCoverage', () => {
   });
 });
 
+describe('micronutrientAccuracy', () => {
+  it('passes a matched entry only when amount, unit, and %DV all pass', () => {
+    const r = run('flash', {
+      caseScores: [
+        {
+          fixture: 'a',
+          score: caseScore([], {
+            matched: [
+              { name: 'Sodium', amountPass: true, unitPass: true, dvPass: true },
+              // found by name but wrong amount — counts against accuracy, not coverage
+              { name: 'Calcium', amountPass: false, unitPass: true, dvPass: true },
+            ],
+          }),
+        },
+      ],
+    });
+    // coverage stays 100% (both names found); accuracy is 1/2
+    expect(micronutrientCoverage(r)).toEqual({ pass: 2, total: 2 });
+    expect(micronutrientAccuracy(r)).toEqual({ pass: 1, total: 2 });
+  });
+});
+
 describe('renderReport', () => {
   it('renders an empty-fixture notice', () => {
     const md = renderReport([run('flash')], 0);
@@ -91,5 +114,24 @@ describe('renderReport', () => {
     expect(md).toContain('-100%'); // basis regressed from 100% to 0%
     expect(md).toContain('Total cost');
     expect(md).toContain('Misses — gemini-flash-lite (candidate)');
+  });
+
+  it('surfaces matched-but-wrong micronutrients in misses and an accuracy row', () => {
+    const candidate = run('flash-lite', {
+      label: 'candidate',
+      caseScores: [
+        {
+          fixture: '001-avocado-oil',
+          score: caseScore([], {
+            // found by name (coverage 100%) but wrong amount + unit (accuracy fails)
+            matched: [{ name: 'Sodium', amountPass: false, unitPass: false, dvPass: true }],
+          }),
+        },
+      ],
+      runs: 1,
+    });
+    const md = renderReport([candidate], 1);
+    expect(md).toContain('micronutrient acc');
+    expect(md).toContain('wrong micros: Sodium (amount, unit)');
   });
 });
