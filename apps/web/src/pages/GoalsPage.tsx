@@ -124,7 +124,9 @@ export function GoalsPage() {
   return (
     <>
       <SectionCard title="Timeline">
-        <div className={recipes.stack.xs}>
+        {/* Horizontal, scrollable timeline: a continuous rail with a node per
+            segment and a selectable label beneath each. */}
+        <div className="flex items-stretch overflow-x-auto pb-1">
           {segments.map((seg, i) => {
             const key = segmentKey(seg);
             const isSelected = key === activeKey;
@@ -132,49 +134,51 @@ export function GoalsPage() {
               seg.kind === 'goal' ? (goals.find((g) => g.id === seg.goalId) ?? null) : null;
             const node = goal ? goalEmoji(goal, today, weightEntries) : '🛟';
             const title = goal ? MODE_LABEL[goal.mode] : 'Maintenance';
+            const isFirst = i === 0;
             const isLast = i === segments.length - 1;
             return (
-              <div key={key} className="relative pl-10">
-                {/* connecting rail between nodes */}
-                {!isLast ? (
+              <div key={key} className="flex w-32 shrink-0 flex-col items-center">
+                {/* rail row: left/right half lines meet across flush columns */}
+                <div className="relative flex h-8 w-full items-center justify-center">
+                  {!isFirst ? (
+                    <div
+                      className="absolute left-0 right-1/2 top-1/2 h-px bg-[var(--ll-line)]"
+                      aria-hidden
+                    />
+                  ) : null}
+                  {!isLast ? (
+                    <div
+                      className="absolute left-1/2 right-0 top-1/2 h-px bg-[var(--ll-line)]"
+                      aria-hidden
+                    />
+                  ) : null}
                   <div
-                    className="absolute left-4 top-8 -bottom-1 w-px bg-[var(--ll-line)]"
+                    className={cn(
+                      'relative z-10 flex h-8 w-8 items-center justify-center rounded-full border bg-[var(--ll-surface)]',
+                      isSelected ? 'border-[var(--ll-line-strong)]' : 'border-[var(--ll-line)]',
+                    )}
                     aria-hidden
-                  />
-                ) : null}
-                {/* node marker, surface-filled so it masks the rail */}
-                <div
-                  className="absolute left-0 top-1.5 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--ll-line)] bg-[var(--ll-surface)]"
-                  aria-hidden
-                >
-                  <Text as="span" variant="body">
-                    {node}
-                  </Text>
-                </div>
-                {/* ListRow title/rightMetric are slot props — intentional composition. */}
-                {/* react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop */}
-                <ListRow
-                  title={
+                  >
                     <Text as="span" variant="body">
-                      {title}
+                      {node}
                     </Text>
-                  }
-                  meta={dateRangeLabel(seg.startDate, seg.endDate)}
-                  rightMetric={
-                    <HelperText as="span">{statusBadge(goal, today, weightEntries)}</HelperText>
-                  }
-                  onOpen={() => {
+                  </div>
+                </div>
+                <Button
+                  variant={isSelected ? 'primary' : 'subtle'}
+                  aria-pressed={isSelected}
+                  className="mx-1 mt-2 h-auto w-[calc(100%-0.5rem)] flex-col items-center gap-0.5 py-2"
+                  onClick={() => {
                     setAdding(false);
                     setSelectedKey(key);
                   }}
-                  className={cn(
-                    recipes.radius.control,
-                    'border px-3',
-                    isSelected
-                      ? 'border-[var(--ll-line-strong)] bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]'
-                      : 'border-[var(--ll-line)]',
-                  )}
-                />
+                >
+                  <Text as="span" variant="body">
+                    {title}
+                  </Text>
+                  <HelperText as="span">{statusBadge(goal, today, weightEntries)}</HelperText>
+                  <HelperText as="span">{dateRangeLabel(seg.startDate, seg.endDate)}</HelperText>
+                </Button>
               </div>
             );
           })}
