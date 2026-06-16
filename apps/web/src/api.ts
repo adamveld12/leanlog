@@ -11,6 +11,7 @@ import type {
   NutritionDatabaseIngredient,
   NutritionDatabaseIngredientSearchResult,
   CreateNutritionDatabaseIngredient,
+  UpdateNutritionDatabaseIngredient,
   AddIngredientFromDatabase,
   MealTemplate,
   MealTemplateIngredient,
@@ -329,11 +330,29 @@ export const api = {
         `/api/nutrition-database?q=${encodeURIComponent(query)}`,
         { token, method: 'GET' },
       ),
+    // Browse the whole catalog newest-first, paginated (#49).
+    list: (token: string, opts: { limit?: number; offset?: number } = {}) => {
+      const params = new URLSearchParams({ browse: 'true' });
+      if (opts.limit != null) params.set('limit', String(opts.limit));
+      if (opts.offset != null) params.set('offset', String(opts.offset));
+      return apiFetch<{ results: NutritionDatabaseIngredientSearchResult[]; total: number }>(
+        `/api/nutrition-database?${params.toString()}`,
+        { token, method: 'GET' },
+      );
+    },
     create: (token: string, data: CreateNutritionDatabaseIngredient) =>
       apiFetch<NutritionDatabaseIngredient>('/api/nutrition-database', {
         token,
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    update: (token: string, id: string, data: UpdateNutritionDatabaseIngredient) =>
+      apiFetch<NutritionDatabaseIngredient>(`/api/nutrition-database/${id}`, {
+        token,
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    delete: (token: string, id: string) =>
+      apiFetch<void>(`/api/nutrition-database/${id}`, { token, method: 'DELETE' }),
   },
 };

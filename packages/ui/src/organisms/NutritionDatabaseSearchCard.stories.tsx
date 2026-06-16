@@ -113,3 +113,27 @@ export const WithTotalCount: Story = {
     totalCount: 128,
   },
 };
+
+// Management page (#49): rows show Edit/Delete instead of the add controls, and
+// only for labels the current user owns (here, ing-1).
+export const ManageMode: Story = {
+  args: {
+    onAdd: undefined,
+    onAmountChange: undefined,
+    onEdit: () => {},
+    onDelete: () => {},
+    canManage: (id: string) => id === 'ing-1',
+    totalCount: 128,
+  },
+};
+
+export const ManageModeDeleting: Story = {
+  args: {
+    onAdd: undefined,
+    onAmountChange: undefined,
+    onEdit: () => {},
+    onDelete: () => {},
+    canManage: () => true,
+    deletingId: 'ing-1',
+  },
+};
