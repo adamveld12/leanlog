@@ -5,10 +5,12 @@ import { recipes } from '../styles/recipes';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
-const OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: 'system', label: 'Auto' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+// Icon-only options keep the header control compact (#56, R5). Each carries an
+// aria-label so the emoji still has an accessible name.
+const OPTIONS: { value: ThemePreference; icon: string; label: string }[] = [
+  { value: 'system', icon: '⚙️', label: 'System theme' },
+  { value: 'light', icon: '💡', label: 'Light theme' },
+  { value: 'dark', icon: '🌝', label: 'Dark theme' },
 ];
 
 export type ThemeToggleProps = {
@@ -36,10 +38,12 @@ export function ThemeToggle({ value, onChange }: ThemeToggleProps) {
             size="sm"
             variant={value === opt.value ? 'primary' : 'subtle'}
             aria-pressed={value === opt.value}
-            className={recipes.radius.controlInner}
+            aria-label={opt.label}
+            title={opt.label}
+            className={cn(recipes.radius.controlInner, 'px-2')}
             onClick={() => onChange(opt.value)}
           >
-            {opt.label}
+            {opt.icon}
           </Button>
         ))}
       </div>

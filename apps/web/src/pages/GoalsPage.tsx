@@ -80,6 +80,21 @@ function dateRangeLabel(start: string | null, end: string | null): string {
   return `${from} → ${to}`;
 }
 
+// Short lifecycle/outcome label shown on the right of each timeline node.
+function statusBadge(
+  goal: Goal | null,
+  today: string,
+  weightEntries: { date: string; weightLbs: number }[],
+): string {
+  if (!goal) return 'Fallback';
+  const lifecycle = goalLifecycle(goal, today);
+  if (lifecycle === 'past')
+    return goalOutcome(goal, weightEntries, today) === 'reached' ? 'Reached' : 'Missed';
+  if (lifecycle === 'today') return 'Starts today';
+  if (lifecycle === 'future') return 'Planned';
+  return 'Active';
+}
+
 export function GoalsPage() {
   const { goals, days, loading, createGoal, updateGoal, removeGoal } = useStore();
   const today = todayIso();
@@ -109,34 +124,58 @@ export function GoalsPage() {
   return (
     <>
       <SectionCard title="Timeline">
-        <div className={cn(recipes.stack.sm)}>
-          {segments.map((seg) => {
+        <div className={recipes.stack.xs}>
+          {segments.map((seg, i) => {
             const key = segmentKey(seg);
             const isSelected = key === activeKey;
-            const goal = seg.kind === 'goal' ? goals.find((g) => g.id === seg.goalId) : null;
-            const label =
-              seg.kind === 'goal' && goal
-                ? `${goalEmoji(goal, today, weightEntries)} ${MODE_LABEL[goal.mode]}`
-                : '🛟 Maintenance (fallback)';
+            const goal =
+              seg.kind === 'goal' ? (goals.find((g) => g.id === seg.goalId) ?? null) : null;
+            const node = goal ? goalEmoji(goal, today, weightEntries) : '🛟';
+            const title = goal ? MODE_LABEL[goal.mode] : 'Maintenance';
+            const isLast = i === segments.length - 1;
             return (
-              <Button
-                key={key}
-                variant={isSelected ? 'primary' : 'subtle'}
-                fullWidth
-                onClick={() => {
-                  setAdding(false);
-                  setSelectedKey(key);
-                }}
-              >
-                <div className={cn(recipes.stack.row, recipes.stack.between, 'w-full')}>
+              <div key={key} className="relative pl-10">
+                {/* connecting rail between nodes */}
+                {!isLast ? (
+                  <div
+                    className="absolute left-4 top-8 -bottom-1 w-px bg-[var(--ll-line)]"
+                    aria-hidden
+                  />
+                ) : null}
+                {/* node marker, surface-filled so it masks the rail */}
+                <div
+                  className="absolute left-0 top-1.5 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--ll-line)] bg-[var(--ll-surface)]"
+                  aria-hidden
+                >
                   <Text as="span" variant="body">
-                    {label}
-                  </Text>
-                  <Text as="span" variant="body">
-                    {dateRangeLabel(seg.startDate, seg.endDate)}
+                    {node}
                   </Text>
                 </div>
-              </Button>
+                {/* ListRow title/rightMetric are slot props — intentional composition. */}
+                {/* react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop */}
+                <ListRow
+                  title={
+                    <Text as="span" variant="body">
+                      {title}
+                    </Text>
+                  }
+                  meta={dateRangeLabel(seg.startDate, seg.endDate)}
+                  rightMetric={
+                    <HelperText as="span">{statusBadge(goal, today, weightEntries)}</HelperText>
+                  }
+                  onOpen={() => {
+                    setAdding(false);
+                    setSelectedKey(key);
+                  }}
+                  className={cn(
+                    recipes.radius.control,
+                    'border px-3',
+                    isSelected
+                      ? 'border-[var(--ll-line-strong)] bg-[color-mix(in_srgb,var(--ll-line)_25%,transparent)]'
+                      : 'border-[var(--ll-line)]',
+                  )}
+                />
+              </div>
             );
           })}
         </div>
@@ -211,16 +250,18 @@ function MaintenanceDetail({
 }) {
   return (
     <SectionCard title="Maintenance (fallback)">
-      <Text variant="body">
-        This stretch is covered by your background maintenance goal — targets come from your latest
-        logged weight at 15× calories.
-      </Text>
-      <Text variant="body">Interested in cutting or lean gaining? Create a goal.</Text>
-      {canAddGoal ? (
-        <Button variant="primary" onClick={onCreate}>
-          + Create a goal
-        </Button>
-      ) : null}
+      <div className={cn(recipes.stack.md, 'items-center py-4 text-center')}>
+        <Text variant="body">
+          This stretch is covered by your background maintenance goal — targets come from your
+          latest logged weight at 15× calories.
+        </Text>
+        <Text variant="body">Interested in cutting or lean gaining? Create a goal.</Text>
+        {canAddGoal ? (
+          <Button variant="primary" onClick={onCreate}>
+            + Create a goal
+          </Button>
+        ) : null}
+      </div>
     </SectionCard>
   );
 }
@@ -445,24 +486,12 @@ function AddOrEditGoal({
 
   return (
     <SectionCard title={editingGoal ? 'Edit goal' : 'Add goal'}>
-      <RadioGroup
-        name="goal-mode"
-        label="Mode"
-        value={mode}
-        options={[
-          { value: 'cut', label: 'Cut (10×)' },
-          { value: 'maintain', label: 'Maintain (15×)' },
-          { value: 'lean_gain', label: 'Lean Gain (16×)' },
-        ]}
-        onChange={(v) => setMode(v)}
-      />
       <Field label="Name (optional)">
         <Input value={name} onChange={(e) => setName(e.target.value)} />
       </Field>
       <Field label="Description (optional)">
         <Input value={description} onChange={(e) => setDescription(e.target.value)} />
       </Field>
-      <NumberInput label="Target weight (lb)" value={targetWeight} onChange={setTargetWeight} />
 
       <Field label="Start date">
         <DateSelect3 {...start} onChange={setStart} />
@@ -477,6 +506,19 @@ function AddOrEditGoal({
           <DateSelect3 {...end} onChange={setEnd} />
         </Field>
       ) : null}
+
+      <RadioGroup
+        name="goal-mode"
+        label="Mode"
+        value={mode}
+        options={[
+          { value: 'cut', label: 'Cut (10×)' },
+          { value: 'maintain', label: 'Maintain (15×)' },
+          { value: 'lean_gain', label: 'Lean Gain (16×)' },
+        ]}
+        onChange={(v) => setMode(v)}
+      />
+      <NumberInput label="Target weight (lb)" value={targetWeight} onChange={setTargetWeight} />
 
       <SectionHeading noMargin>Macros (must total 100%)</SectionHeading>
       <div className={recipes.grid.three}>
