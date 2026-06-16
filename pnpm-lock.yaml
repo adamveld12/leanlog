@@ -62,9 +62,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@ai-sdk/google':
-        specifier: ^2.0.14
-        version: 2.0.52(zod@4.3.6)
       '@clerk/clerk-react':
         specifier: ^5.61.3
         version: 5.61.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -80,9 +77,6 @@ importers:
       '@leanlog/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      ai:
-        specifier: ^5.0.100
-        version: 5.0.159(zod@4.3.6)
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
