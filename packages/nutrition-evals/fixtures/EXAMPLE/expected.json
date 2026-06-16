@@ -1,0 +1,23 @@
+{
+  "basis": "per_serving",
+  "servingSizeGrams": 170,
+  "servingSizeUnit": "gram",
+  "servingSizeText": "3/4 cup (170g)",
+  "servingsPerContainer": 4,
+  "nutrients": {
+    "calories": 150,
+    "fat": 8,
+    "saturatedFat": 1,
+    "carbs": 12,
+    "fiber": 0,
+    "protein": 11,
+    "sugar": 11,
+    "addedSugars": 9
+  },
+  "micronutrients": [
+    { "name": "Sodium", "amount": 95, "unit": "milligram", "percentDailyValue": 4 },
+    { "name": "Calcium", "percentDailyValue": 20 },
+    { "name": "Potassium", "amount": 240, "unit": "milligram" }
+  ],
+  "inferredName": "Vanilla Yogurt"
+}
