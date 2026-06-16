@@ -67,3 +67,4 @@ export * from './templates/MealEditTemplate';
 export * from './templates/MealTemplatesTemplate';
 export * from './templates/MealTemplateEditTemplate';
 export * from './templates/ProfileTemplate';
+export * from './templates/NutritionFactsDatabaseTemplate';

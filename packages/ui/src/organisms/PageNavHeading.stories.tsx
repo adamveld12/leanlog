@@ -32,3 +32,12 @@ export const WithBackAndSubtitle: Story = {
     profileHref: '/profile',
   },
 };
+
+export const WithNutritionFactsLink: Story = {
+  args: {
+    title: 'leanlog',
+    backHref: '/track',
+    profileHref: '/track/profile',
+    nutritionFactsHref: '/track/nutrition-facts',
+  },
+};

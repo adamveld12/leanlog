@@ -137,3 +137,16 @@ export const ManageModeDeleting: Story = {
     deletingId: 'ing-1',
   },
 };
+
+export const ManageModeWithLoadMore: Story = {
+  args: {
+    query: '',
+    onAdd: undefined,
+    onAmountChange: undefined,
+    onEdit: () => {},
+    onDelete: () => {},
+    canManage: () => true,
+    onLoadMore: () => {},
+    totalCount: 128,
+  },
+};

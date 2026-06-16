@@ -1,6 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type PropsWithChildren,
+} from 'react';
 import {
   useAuth,
+  useUser,
   PricingTable,
   SignInButton,
   SignedIn,
@@ -14,12 +23,14 @@ import {
   BodyInfoCard,
   Button,
   CalorieTargetCard,
+  CameraCaptureModal,
   cn,
   DailyTotalsCard,
   DayDetailTemplate,
   ErrorTemplate,
   DayListTemplate,
   DayWeightCard,
+  FileInput,
   HelperText,
   Input,
   LandingTemplate,
@@ -30,13 +41,17 @@ import {
   MealEditTemplate,
   MealTemplatesTemplate,
   MealTemplateEditTemplate,
+  Modal,
   MonthCalendarCard,
+  NutritionDatabaseSearchCard,
+  NutritionFactsDatabaseTemplate,
   ProfileTemplate,
   QuickActionsCard,
   recipes,
   ReorderableList,
   SectionCard,
   Text,
+  useAnalytics,
   WarningText,
   WeeklyStatsCard,
   WeightTrendCard,
@@ -47,9 +62,20 @@ import {
   dayMealStructure,
   resolveScannedMicronutrients,
   type NutritionUnit,
+  type ScanResolution,
+  type NutritionDatabaseIngredient,
 } from '@leanlog/data-access';
 import { isPastIso, normalizeIngredientName, prettyDate, todayIso } from '../lib';
 import { IngredientEntry } from '../components/IngredientEntry';
+import { DatabaseLabelForm } from '../components/ingredient-entry/DatabaseLabelForm';
+import { useDatabaseScan } from '../components/ingredient-entry/useDatabaseScan';
+import { mapDbSearchResults } from '../components/ingredient-entry/types';
+import {
+  nutritionFactsReducer,
+  initialNutritionFactsState,
+  labelToEntryValue,
+  NUTRITION_FACTS_PAGE_SIZE,
+} from '../components/nutrition-facts/nutritionFactsReducer';
 import {
   dayTotals,
   mealTotals,
@@ -62,7 +88,11 @@ import {
 } from '../selectors';
 import { useStore } from '../state';
 import { api } from '../api';
-import type { UpsertIngredient, SaveSections } from '../types';
+import type {
+  UpsertIngredient,
+  SaveSections,
+  NutritionDatabaseIngredientSearchResult,
+} from '../types';
 
 // Resolve the manual-entry micronutrient rows (which may carry a %DV) into typed
 // amounts: a measured amount wins; otherwise the %DV is converted via the Daily
@@ -259,6 +289,7 @@ function DayList() {
       heading={{
         title: 'leanlog',
         profileHref: '/track/profile',
+        nutritionFactsHref: '/track/nutrition-facts',
         renderNavLink: renderRouterNavLink,
         rightContent: <HeaderAuthControl />,
       }}
@@ -418,6 +449,7 @@ function DayDetail() {
         title: prettyDate(day.date),
         backHref: '/track',
         profileHref: '/track/profile',
+        nutritionFactsHref: '/track/nutrition-facts',
         renderNavLink: renderRouterNavLink,
         rightContent: <HeaderAuthControl />,
       }}
@@ -590,6 +622,7 @@ function MealEdit() {
           ),
           backHref: `/track/day/${day.id}`,
           profileHref: '/track/profile',
+          nutritionFactsHref: '/track/nutrition-facts',
           renderNavLink: renderRouterNavLink,
           rightContent: <HeaderAuthControl />,
         }}
@@ -644,6 +677,7 @@ function MealEdit() {
           ),
           backHref: `/track/day/${day.id}`,
           profileHref: '/track/profile',
+          nutritionFactsHref: '/track/nutrition-facts',
           renderNavLink: renderRouterNavLink,
           rightContent: <HeaderAuthControl />,
         }}
@@ -801,6 +835,7 @@ function ProfilePage() {
         title: 'Profile',
         backHref: '/track',
         profileHref: '/track/profile',
+        nutritionFactsHref: '/track/nutrition-facts',
         renderNavLink: renderRouterNavLink,
         rightContent: <HeaderAuthControl />,
       }}
@@ -929,6 +964,7 @@ function MealTemplates() {
           title: 'Meal templates',
           backHref: '/track',
           profileHref: '/track/profile',
+          nutritionFactsHref: '/track/nutrition-facts',
           renderNavLink: renderRouterNavLink,
           rightContent: <HeaderAuthControl />,
         }}
@@ -1037,6 +1073,7 @@ function MealTemplateEdit() {
           title: template.name || 'Template',
           backHref: '/track/templates',
           profileHref: '/track/profile',
+          nutritionFactsHref: '/track/nutrition-facts',
           renderNavLink: renderRouterNavLink,
           rightContent: <HeaderAuthControl />,
         }}
@@ -1103,6 +1140,263 @@ function MealTemplateEdit() {
   );
 }
 
+function NutritionFactsDatabase() {
+  const {
+    browseNutritionDatabase,
+    searchNutritionDatabase,
+    createNutritionDatabaseIngredient,
+    updateNutritionDatabaseIngredient,
+    deleteNutritionDatabaseIngredient,
+  } = useStore();
+  const { user } = useUser();
+  const track = useAnalytics();
+  const [state, dispatch] = useReducer(nutritionFactsReducer, initialNutritionFactsState);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didInit = useRef(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const currentUserId = user?.id ?? null;
+  const currentUserName = user?.fullName ?? 'You';
+
+  // Build a search-result record (the row shape the catalog list renders) from a
+  // saved label returned by the store. The label is the current user's, so the
+  // attribution name is theirs.
+  const toResult = useCallback(
+    (label: NutritionDatabaseIngredient): NutritionDatabaseIngredientSearchResult => ({
+      ...label,
+      addedByName: currentUserName,
+    }),
+    [currentUserName],
+  );
+
+  const runBrowse = useCallback(
+    (offset: number, append: boolean) => {
+      dispatch({ type: 'browseStart' });
+      void browseNutritionDatabase({ limit: NUTRITION_FACTS_PAGE_SIZE, offset })
+        .then(({ results, total }) =>
+          dispatch({ type: 'browseSucceeded', records: results, total, append }),
+        )
+        .catch(() => dispatch({ type: 'browseFailed' }));
+    },
+    [browseNutritionDatabase],
+  );
+
+  // Browse the catalog once on first mount. The store methods are recreated each
+  // render, so a ref guard (not the dep array) is what keeps this to one fetch.
+  useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
+    track('nutrition_facts.page.viewed', {});
+    runBrowse(0, false);
+  }, [track, runBrowse]);
+
+  const onQueryChange = (q: string) => {
+    const wasSearching = state.query.trim().length >= 2;
+    dispatch({ type: 'setQuery', query: q });
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (q.trim().length < 2) {
+      // Leaving search mode: restore the full browse list from the top.
+      if (wasSearching) runBrowse(0, false);
+      return;
+    }
+    searchTimerRef.current = setTimeout(() => {
+      dispatch({ type: 'searchStart' });
+      void searchNutritionDatabase(q)
+        .then(({ results, total }) =>
+          dispatch({ type: 'searchSucceeded', records: results, total }),
+        )
+        .catch(() => dispatch({ type: 'searchFailed' }));
+    }, 300);
+  };
+
+  // Stage a strict scan into the create form (always prefills from the best-effort
+  // draft so the user can fill gaps; the form highlights what's missing).
+  const stageScan = (result: ScanResolution) => {
+    const draft = result.labelDraft;
+    if (!draft) {
+      dispatch({
+        type: 'scanUnreadable',
+        error:
+          result.databaseBlockReason ?? 'Could not read the label. Retake the photo and try again.',
+      });
+      track('nutrition_facts.label.scan.blocked', {
+        reason: result.databaseBlockReason ?? 'unreadable',
+      });
+      return;
+    }
+    dispatch({
+      type: 'stageScan',
+      value: {
+        name: draft.name ?? '',
+        servingAmount: draft.servingAmount,
+        servingSizeUnit: draft.servingSizeUnit,
+        servingSizeDisplayText: draft.servingSizeDisplayText ?? null,
+        servingsPerPackage: draft.servingsPerPackage,
+        calories: draft.calories,
+        fat: draft.fat,
+        carbs: draft.carbs,
+        protein: draft.protein,
+        saturatedFat: draft.saturatedFat ?? null,
+        fiber: draft.fiber ?? null,
+        sugar: draft.sugar ?? null,
+        addedSugars: draft.addedSugars ?? null,
+        sugarAlcohol: draft.sugarAlcohol ?? null,
+        allulose: draft.allulose ?? null,
+        micronutrients: draft.micronutrients?.map((m) => ({
+          name: m.name,
+          amount: m.amount,
+          unit: m.unit,
+        })),
+      },
+    });
+    if (!result.databaseCandidate) {
+      track('nutrition_facts.label.scan.blocked', {
+        reason: result.databaseBlockReason ?? 'incomplete',
+      });
+    }
+  };
+
+  const {
+    scanning,
+    cameraOpen,
+    fileInputRef,
+    videoRef,
+    openCamera,
+    capturePhoto,
+    cancelCamera,
+    onFileSelected,
+  } = useDatabaseScan({
+    analyticsContext: 'database',
+    onResult: stageScan,
+    onError: (error) => dispatch({ type: 'scanUnreadable', error }),
+  });
+
+  const performDelete = (id: string) => {
+    setConfirmDeleteId(null);
+    dispatch({ type: 'deleteStart', id });
+    void deleteNutritionDatabaseIngredient(id)
+      .then(() => {
+        track('nutrition_facts.label.deleted', {});
+        dispatch({ type: 'deleteSucceeded', id });
+      })
+      .catch(() => dispatch({ type: 'deleteFailed' }));
+  };
+
+  const ownedBy = (id: string) =>
+    state.records.find((r) => r.id === id)?.addedByUserId === currentUserId;
+
+  return (
+    <AnalyticsScope properties={{ page: 'NutritionFactsDatabase' }}>
+      <NutritionFactsDatabaseTemplate
+        heading={{
+          title: 'Nutrition Facts Database',
+          backHref: '/track',
+          profileHref: '/track/profile',
+          renderNavLink: renderRouterNavLink,
+          rightContent: <HeaderAuthControl />,
+        }}
+      >
+        {state.error ? <WarningText role="alert">{state.error}</WarningText> : null}
+        <NutritionDatabaseSearchCard
+          query={state.query}
+          onQueryChange={onQueryChange}
+          results={mapDbSearchResults(state.records)}
+          loading={state.loading}
+          searched={state.searched}
+          onEdit={(id) => {
+            const rec = state.records.find((r) => r.id === id);
+            if (rec) dispatch({ type: 'openEdit', id, value: labelToEntryValue(rec) });
+          }}
+          onDelete={(id) => setConfirmDeleteId(id)}
+          canManage={ownedBy}
+          deletingId={state.deletingId}
+          onScanLabel={() => {
+            dispatch({ type: 'closeForm' });
+            void openCamera();
+          }}
+          onCreateNew={() => dispatch({ type: 'openCreate' })}
+          onLoadMore={
+            state.hasMore && state.query.trim().length < 2
+              ? () => runBrowse(state.offset, true)
+              : undefined
+          }
+          scanning={scanning}
+          totalCount={state.total ?? undefined}
+        />
+        {state.formOpen ? (
+          <DatabaseLabelForm
+            value={state.entryValue}
+            submitting={state.submitting}
+            source={state.entrySource}
+            onChange={(value) => dispatch({ type: 'setEntryValue', value })}
+            onPublish={(payload) => {
+              dispatch({ type: 'submitStart' });
+              if (state.editingId) {
+                // creationSource is immutable on edit; drop it so the strict
+                // update schema accepts the payload.
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { creationSource, ...editable } = payload;
+                void updateNutritionDatabaseIngredient(state.editingId, editable)
+                  .then((label) => {
+                    track('nutrition_facts.label.edited', {});
+                    dispatch({ type: 'updateSucceeded', record: toResult(label) });
+                  })
+                  .catch(() => dispatch({ type: 'submitFailed' }));
+              } else {
+                void createNutritionDatabaseIngredient(payload)
+                  .then((label) => {
+                    track('nutrition_facts.label.published', { source: payload.creationSource });
+                    dispatch({ type: 'createSucceeded', record: toResult(label) });
+                  })
+                  .catch(() => dispatch({ type: 'submitFailed' }));
+              }
+            }}
+          />
+        ) : null}
+        <FileInput
+          ref={fileInputRef}
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) onFileSelected(file);
+          }}
+        />
+        <CameraCaptureModal
+          open={cameraOpen}
+          videoRef={videoRef}
+          onCapture={() => void capturePhoto()}
+          onCancel={cancelCamera}
+        />
+        <Modal
+          open={confirmDeleteId != null}
+          title="Delete label?"
+          onClose={() => setConfirmDeleteId(null)}
+        >
+          <Text as="p">
+            This permanently removes the saved label from the database. Ingredients already logged
+            from it keep their values.
+          </Text>
+          <div className={recipes.stack.row}>
+            <Button
+              variant="danger"
+              onClick={() => {
+                if (confirmDeleteId) performDelete(confirmDeleteId);
+              }}
+            >
+              Delete
+            </Button>
+            <Button variant="subtle" onClick={() => setConfirmDeleteId(null)}>
+              Cancel
+            </Button>
+          </div>
+        </Modal>
+      </NutritionFactsDatabaseTemplate>
+    </AnalyticsScope>
+  );
+}
+
 export default function App() {
   return (
     <Routes>
@@ -1144,6 +1438,14 @@ export default function App() {
         element={
           <RequireSignedIn>
             <MealTemplateEdit />
+          </RequireSignedIn>
+        }
+      />
+      <Route
+        path="/track/nutrition-facts"
+        element={
+          <RequireSignedIn>
+            <NutritionFactsDatabase />
           </RequireSignedIn>
         }
       />

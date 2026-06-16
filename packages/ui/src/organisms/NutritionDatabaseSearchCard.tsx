@@ -61,6 +61,8 @@ export type NutritionDatabaseSearchCardProps = {
   onScanLabel?: () => void;
   /** True while a label scan is in flight (drives the scan button label). */
   scanning?: boolean;
+  /** When provided, renders a "Load more" button (management browse, #49). */
+  onLoadMore?: () => void;
   truncated?: boolean;
   /** Total ingredients in the shared database; shown in the search label when known. */
   totalCount?: number;
@@ -91,6 +93,7 @@ export function NutritionDatabaseSearchCard({
   onCreateNew,
   onScanLabel,
   scanning,
+  onLoadMore,
   truncated,
   totalCount,
 }: NutritionDatabaseSearchCardProps) {
@@ -230,6 +233,12 @@ export function NutritionDatabaseSearchCard({
           <HelperText as="p">
             Showing first 25 results. Refine your search to narrow results.
           </HelperText>
+        ) : null}
+
+        {onLoadMore ? (
+          <Button variant="secondary" fullWidth disabled={loading} onClick={onLoadMore}>
+            {loading ? 'Loading…' : 'Load more'}
+          </Button>
         ) : null}
 
         {onCreateNew || onScanLabel ? (

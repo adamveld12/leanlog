@@ -11,8 +11,11 @@ export type PageNavHeadingProps = {
   subtitle?: ReactNode;
   backHref?: string;
   profileHref: string;
+  /** When set, a link to the dedicated Nutrition Facts Database page (#49). */
+  nutritionFactsHref?: string;
   backLabel?: string;
   profileLabel?: string;
+  nutritionFactsLabel?: string;
   renderNavLink: (props: NavLinkRenderProps) => ReactNode;
   rightContent?: ReactNode;
 };
@@ -22,8 +25,10 @@ export function PageNavHeading({
   subtitle,
   backHref,
   profileHref,
+  nutritionFactsHref,
   backLabel = '← Back',
   profileLabel = 'Profile',
+  nutritionFactsLabel = 'Nutrition Facts',
   renderNavLink,
   rightContent,
 }: PageNavHeadingProps) {
@@ -53,6 +58,16 @@ export function PageNavHeading({
             {subtitle ? <div className="hidden px-4 min-[512px]:inline">{subtitle}</div> : null}
           </div>
           <div className={cn(recipes.stack.row, 'shrink-0')}>
+            {nutritionFactsHref ? (
+              <div className="hidden min-[512px]:inline-flex">
+                {/* react-doctor-disable-next-line react-doctor/no-render-in-render */}
+                {renderNavLink({
+                  href: nutritionFactsHref,
+                  label: nutritionFactsLabel,
+                  className: linkClassName,
+                })}
+              </div>
+            ) : null}
             {/* react-doctor-disable-next-line react-doctor/no-render-in-render */}
             {renderNavLink({ href: profileHref, label: profileLabel, className: linkClassName })}
             {rightContent}
