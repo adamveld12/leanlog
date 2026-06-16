@@ -1,0 +1,19 @@
+{
+  "basis": "per_serving",
+  "servingSizeGrams": 15,
+  "servingSizeUnit": "milliliter",
+  "servingSizeText": "1 Tbsp (15mL)",
+  "servingsPerContainer": 50,
+  "nutrients": {
+    "calories": 120,
+    "fat": 14,
+    "saturatedFat": 2,
+    "carbs": 0,
+    "fiber": 0,
+    "protein": 0
+  },
+  "micronutrients": [
+    { "name": "Sodium", "amount": 0, "unit": "milligram", "percentDailyValue": 0 }
+  ],
+  "inferredName": "Avocado Oil"
+}
