@@ -103,6 +103,25 @@ export function deriveDayPlan(
   };
 }
 
+// Lifecycle state drives editability and deletability (R47–R53).
+//  - background: system goal, immutable through the goals API
+//  - past:       ended before today, read-only
+//  - active:     started before today and still running, limited edits only
+//  - today:      started today, fully editable/deletable until tomorrow
+//  - future:     starts after today, fully editable/deletable
+export type GoalLifecycle = 'background' | 'past' | 'active' | 'today' | 'future';
+
+export function goalLifecycle(goal: Goal, today: string): GoalLifecycle {
+  if (goal.isBackground) return 'background';
+  if (goal.startDate === today) return 'today';
+  if (goal.startDate != null && goal.startDate > today) return 'future';
+  if (goal.endDate != null && goal.endDate < today) return 'past';
+  return 'active';
+}
+
+// Fields an active (older-than-today) goal still allows (R50/R51).
+export const ACTIVE_EDITABLE_FIELDS = ['name', 'description', 'endDate', 'calorieDelta'] as const;
+
 // ---------------------------------------------------------------------------
 // Timeline
 // ---------------------------------------------------------------------------

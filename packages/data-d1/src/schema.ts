@@ -27,6 +27,42 @@ export const userProfiles = sqliteTable('user_profiles', {
   updatedAt: text('updated_at').notNull(),
 });
 
+// Goals are the target-planning authority that replaces Profile (#56). Each user
+// has one background maintenance goal (null start/end) that supplies fallback
+// targets, plus timeline-constrained user goals. Macro fields are percentages
+// that sum to 100. `meal_slots_json` stores the slot templates (name + optional
+// default ingredients) copied into each new day in the goal window.
+export const goals = sqliteTable(
+  'goals',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => userProfiles.clerkUserId),
+    isBackground: integer('is_background', { mode: 'boolean' }).notNull().default(false),
+    name: text('name'),
+    description: text('description'),
+    mode: text('mode', { enum: ['cut', 'maintain', 'lean_gain'] }).notNull(),
+    // Null only for the background goal until a weight is known.
+    targetWeightLbs: real('target_weight_lbs'),
+    macroFats: integer('macro_fats').notNull().default(25),
+    macroCarbs: integer('macro_carbs').notNull().default(35),
+    macroProtein: integer('macro_protein').notNull().default(40),
+    // Null start only for the background goal; user goals always have a start.
+    startDate: text('start_date'),
+    endDate: text('end_date'),
+    calorieDelta: integer('calorie_delta').notNull().default(0),
+    mealSlotsJson: text('meal_slots_json')
+      .notNull()
+      .default(
+        '[{"name":"Breakfast","ingredients":[]},{"name":"Lunch","ingredients":[]},{"name":"Dinner","ingredients":[]},{"name":"Snack","ingredients":[]}]',
+      ),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => [index('goals_user_idx').on(table.userId)],
+);
+
 export const dailyMealLogs = sqliteTable(
   'daily_meal_logs',
   {

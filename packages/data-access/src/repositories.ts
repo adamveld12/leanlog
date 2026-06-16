@@ -14,6 +14,9 @@ import type {
   MealTemplateIngredient,
   CreateMealTemplate,
   UpsertTemplateIngredient,
+  Goal,
+  CreateGoal,
+  UpdateGoal,
 } from './models';
 
 export interface DayRepository {
@@ -93,6 +96,66 @@ export class NutritionLabelOwnershipError extends Error {
   constructor() {
     super('You can only edit or delete labels you added');
     this.name = 'NutritionLabelOwnershipError';
+  }
+}
+
+// The Goals planning authority (#56). `today` is the request's local date, used
+// to enforce date rules and lifecycle editability server-side. Validation
+// failures throw the typed errors below, which API routes map to status codes.
+export interface GoalsRepository {
+  // Returns the user's background maintenance goal, creating it on first access.
+  ensureBackground(userId: string): Promise<Goal>;
+  // All of the user's goals, background last; user goals ordered by start date.
+  listByUser(userId: string): Promise<Goal[]>;
+  getById(userId: string, goalId: string): Promise<Goal | null>;
+  create(userId: string, data: CreateGoal, today: string): Promise<Goal>;
+  update(userId: string, goalId: string, data: UpdateGoal, today: string): Promise<Goal>;
+  // Trims an active goal's end to the day before a new goal starts (R28–R30).
+  trimActiveGoalEnd(userId: string, goalId: string, endDate: string, today: string): Promise<Goal>;
+  delete(userId: string, goalId: string, today: string): Promise<void>;
+}
+
+// A new/edited goal would overlap an existing user goal (R27). `conflictingGoalId`
+// lets the UI offer the trim flow when the conflict is the active goal.
+export class GoalOverlapError extends Error {
+  conflictingGoalId: string;
+  constructor(conflictingGoalId: string) {
+    super('Goal dates overlap an existing goal');
+    this.name = 'GoalOverlapError';
+    this.conflictingGoalId = conflictingGoalId;
+  }
+}
+
+// More than two future user goals would exist (R31).
+export class TooManyFutureGoalsError extends Error {
+  constructor() {
+    super('At most two future goals are allowed');
+    this.name = 'TooManyFutureGoalsError';
+  }
+}
+
+// A goal date rule was violated: start in the past, or end not after start (R23/R26).
+export class GoalDateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GoalDateError';
+  }
+}
+
+// An edit touched a field not allowed for the goal's lifecycle state, or targeted
+// an immutable goal (past / background) (R47–R52).
+export class GoalNotEditableError extends Error {
+  constructor(message = 'This goal field cannot be edited in its current state') {
+    super(message);
+    this.name = 'GoalNotEditableError';
+  }
+}
+
+// Delete attempted on a goal that is not future or today-started (R53).
+export class GoalNotDeletableError extends Error {
+  constructor() {
+    super('Only future or today-started goals can be deleted');
+    this.name = 'GoalNotDeletableError';
   }
 }
 

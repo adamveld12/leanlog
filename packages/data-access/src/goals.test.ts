@@ -10,6 +10,7 @@ import {
   defaultSelectedSegment,
   validateNewGoal,
   findTrimmableActiveGoal,
+  goalLifecycle,
   shiftIsoDate,
   FALLBACK_WEIGHT_LBS,
 } from './goals';
@@ -304,6 +305,25 @@ describe('findTrimmableActiveGoal', () => {
         [active],
       ),
     ).toBeNull();
+  });
+});
+
+describe('goalLifecycle', () => {
+  const today = '2026-06-16';
+  it('classifies background, past, active, today and future (R47–R52)', () => {
+    expect(goalLifecycle(background, today)).toBe('background');
+    expect(goalLifecycle(makeGoal({ startDate: '2026-05-01', endDate: '2026-05-31' }), today)).toBe(
+      'past',
+    );
+    expect(goalLifecycle(makeGoal({ startDate: '2026-06-01', endDate: '2026-06-30' }), today)).toBe(
+      'active',
+    );
+    expect(goalLifecycle(makeGoal({ startDate: today, endDate: '2026-06-30' }), today)).toBe(
+      'today',
+    );
+    expect(goalLifecycle(makeGoal({ startDate: '2026-07-01', endDate: '2026-07-31' }), today)).toBe(
+      'future',
+    );
   });
 });
 

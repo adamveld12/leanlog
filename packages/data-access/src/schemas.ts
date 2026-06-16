@@ -384,6 +384,21 @@ export const GOAL_DEFAULTS = {
   calorieDelta: 0,
 };
 
+// Resilient reader for the stored meal_slots_json column: tolerates malformed
+// JSON (falls back to the default four slots) and normalizes each slot through
+// MealSlotSchema so a bad row never crashes a goal read.
+export function parseMealSlotsJson(
+  json: string | null | undefined,
+): z.infer<typeof MealSlotSchema>[] {
+  if (json == null) return DEFAULT_MEAL_SLOTS;
+  try {
+    const parsed = z.array(MealSlotSchema).safeParse(JSON.parse(json));
+    return parsed.success ? parsed.data : DEFAULT_MEAL_SLOTS;
+  } catch {
+    return DEFAULT_MEAL_SLOTS;
+  }
+}
+
 export const GoalSchema = z.object({
   id: z.string(),
   userId: z.string(),
