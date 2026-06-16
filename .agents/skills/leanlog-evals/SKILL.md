@@ -95,12 +95,12 @@ it.** The essentials:
 **Labeling judgment** that the runbook can't decide for you:
 - Use `null` for a metric field the label genuinely doesn't show (e.g.
   `servingSizeGrams: null`). That asserts "unreadable", and is scored.
-- For a footnote like "not a significant source of total sugars", **omit** the optional
-  nutrient rather than asserting `0` — a model that omits it shouldn't be marked wrong, and
-  ground-truth `0` must be matched exactly.
-- A printed zero (e.g. "Sodium 0mg") is real ground truth, but models often drop zero-value
-  micronutrients. Asserting it is legitimate and surfaces thoroughness differences; just
-  know it will read as a coverage miss when a model omits it.
+- A ground-truth **`0` is satisfied by either `0` or omission** — a model that drops a `0mg`
+  or `0%` optional field is not penalized (a non-zero value still fails). So a printed zero
+  (e.g. "Sodium 0mg 0%") is fine to assert as `0`; you don't have to choose between asserting
+  `0` and omitting the field to avoid false misses.
+- A printed zero entry still counts toward **name coverage**: if a model drops the whole
+  "Sodium" entry it's a coverage miss, even though omitting its zero sub-values is fine.
 
 **Grow toward the divergence axes.** Aim for the set to collectively cover: each `basis`
 (`per_serving`, `per_100g`, `unknown`); both serving units (`gram`, `milliliter`); a label

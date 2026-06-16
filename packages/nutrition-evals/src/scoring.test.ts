@@ -119,4 +119,23 @@ describe('scoreMicronutrients (R6, AE4)', () => {
     expect(m.unit).toBe('unscored');
     expect(m.dv).toBe('unscored');
   });
+
+  it('accepts an omitted sub-field when ground truth is zero (0 == absent)', () => {
+    // label prints "Sodium 0mg 0%"; model returns the name but omits amount + %DV
+    const score = scoreMicronutrients(
+      [{ name: 'Sodium', amount: 0, percentDailyValue: 0 }],
+      [{ name: 'Sodium' }],
+    );
+    const m = score.matched[0];
+    expect(m.amount).toBe('pass'); // expected 0, omitted → acceptable
+    expect(m.dv).toBe('pass'); // expected 0, omitted → acceptable
+  });
+
+  it('still fails a zero-asserted sub-field when the model returns a non-zero value', () => {
+    const score = scoreMicronutrients(
+      [{ name: 'Sodium', percentDailyValue: 0 }],
+      [{ name: 'Sodium', percentDailyValue: 6 }],
+    );
+    expect(score.matched[0].dv).toBe('fail');
+  });
 });

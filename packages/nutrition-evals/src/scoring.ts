@@ -67,6 +67,11 @@ export function fuzzyPass(expected: string, actual: string): boolean {
 function scalarPass(kind: ScalarKind, field: string, expected: unknown, actual: unknown): boolean {
   // A null ground-truth value asserts "unreadable / not present".
   if (expected === null) return actual === null || actual === undefined;
+  // A ground-truth zero means "nothing to report": the model may either return 0 or omit
+  // the (optional) field entirely. A label that prints "0%" %DV or "0mg" is commonly left
+  // out of the structured output, and that omission is acceptable — not a miss.
+  if (kind === 'numeric' && expected === 0 && (actual === null || actual === undefined))
+    return true;
   if (actual === null || actual === undefined) return false;
   switch (kind) {
     case 'numeric':

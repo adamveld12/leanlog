@@ -30,8 +30,10 @@ Each field is scored independently against ground truth:
 
 - **Numeric** fields (calories, macros, serving size, micronutrient amounts / %DV) pass
   within a **relative** tolerance. Default is ±2%; `calories` is ±5%; micronutrient %DV
-  is ±10%. Ground-truth `0` must be matched exactly. Override per field in
-  [`src/tolerance.ts`](./src/tolerance.ts).
+  is ±10%. Override per field in [`src/tolerance.ts`](./src/tolerance.ts). A ground-truth
+  `0` means "nothing to report": the model passes by returning `0` **or** by omitting the
+  (optional) field — a label that prints `0mg` / `0%` is commonly left out of the output,
+  and that omission is acceptable. A non-zero value against a ground-truth `0` still fails.
 - **Enum** fields (`basis`, `servingSizeUnit`, micronutrient `unit`) must match exactly.
 - **Name / text** fields (`inferredName`, `servingSizeText`, micronutrient names) match
   fuzzily (case-insensitive, containment-tolerant).
