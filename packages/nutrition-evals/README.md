@@ -36,10 +36,11 @@ Each field is scored independently against ground truth:
 - **Name / text** fields (`inferredName`, `servingSizeText`, micronutrient names) match
   fuzzily (case-insensitive, containment-tolerant).
 - **Micronutrients** are matched by name, then amount / unit / %DV are scored with the
-  rules above. The report shows two distinct rows: **coverage** (did the model find the
-  micronutrient by name?) and **accuracy** (of those it found, did it get amount + unit +
-  %DV right?). Missing, extra, and matched-but-wrong micronutrients are all surfaced in the
-  per-fixture misses, so a wrong value on a found micronutrient can't hide behind 100%
+  rules above. The report shows a **coverage** row (did the model find the micronutrient by
+  name?) plus three accuracy rows — **amount**, **unit**, **%DV** — each scored over only the
+  matched entries where ground truth asserted that sub-field (an unasserted sub-field is
+  never counted). Missing, extra, and matched-but-wrong micronutrients are all surfaced in
+  the per-fixture misses, so a wrong value on a found micronutrient can't hide behind 100%
   coverage.
 
 Only fields **present in `expected.json`** are scored — ground truth can be partial, so

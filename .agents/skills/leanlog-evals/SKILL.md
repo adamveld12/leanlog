@@ -126,10 +126,12 @@ corresponding GitHub Actions tooling.
 **How to read it:**
 - The first model column is the **baseline**; the last is the **candidate**. The `Δ` column
   is candidate − baseline (negative = regression).
-- **Micronutrients have two rows: `micronutrient cov` (coverage — did it find the name?) and
-  `micronutrient acc` (accuracy — of those found, were amount/unit/%DV right?).** A green
-  coverage with a dropping accuracy means the model finds micros but gets their values
-  wrong; check the per-fixture `wrong micros: ...` lines.
+- **Micronutrients are scored on two axes.** `micronutrient cov` is name coverage (did it
+  find the entry?). Then three sub-field rows — `micronutrient amount`, `micronutrient unit`,
+  `micronutrient %DV` — score, over only the entries where ground truth asserted that
+  sub-field, whether the matched values are right. Green coverage with a dropping sub-field
+  row means the model finds micros but gets that value wrong; check the per-fixture
+  `wrong micros: <name> (amount/unit/%DV)` lines.
 - **Per-field deltas are the actionable signal.** A −X% on a field tells you *what*
   regressed, which matters more than an aggregate. Cross-reference the **per-fixture misses**
   section: a miss isolated to one hard photo is weaker evidence than the same field missing

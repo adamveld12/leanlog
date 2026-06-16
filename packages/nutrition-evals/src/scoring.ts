@@ -23,8 +23,19 @@ export type ExpectedLabel = {
 
 export type FieldScore = { field: string; pass: boolean; expected: unknown; actual: unknown };
 
+// A matched micronutrient's sub-field is `unscored` when ground truth didn't assert it —
+// so it never counts toward a pass rate. Only `pass`/`fail` are aggregated.
+export type SubFieldResult = 'pass' | 'fail' | 'unscored';
+
+export type MatchedMicronutrient = {
+  name: string;
+  amount: SubFieldResult;
+  unit: SubFieldResult;
+  dv: SubFieldResult;
+};
+
 export type MicronutrientScore = {
-  matched: { name: string; amountPass: boolean; unitPass: boolean; dvPass: boolean }[];
+  matched: MatchedMicronutrient[];
   missing: string[];
   extra: string[];
 };
@@ -107,22 +118,24 @@ export function scoreMicronutrients(
     }
     usedActual.add(idx);
     const a = act[idx];
+    const result = (asserted: boolean, pass: boolean): SubFieldResult =>
+      !asserted ? 'unscored' : pass ? 'pass' : 'fail';
     matched.push({
       name: e.name,
-      amountPass:
-        e.amount === undefined
-          ? true
-          : scalarPass('numeric', 'micronutrient.amount', e.amount, a.amount),
-      unitPass: e.unit === undefined ? true : e.unit === a.unit,
-      dvPass:
-        e.percentDailyValue === undefined
-          ? true
-          : scalarPass(
-              'numeric',
-              'micronutrient.percentDailyValue',
-              e.percentDailyValue,
-              a.percentDailyValue,
-            ),
+      amount: result(
+        e.amount !== undefined,
+        scalarPass('numeric', 'micronutrient.amount', e.amount, a.amount),
+      ),
+      unit: result(e.unit !== undefined, e.unit === a.unit),
+      dv: result(
+        e.percentDailyValue !== undefined,
+        scalarPass(
+          'numeric',
+          'micronutrient.percentDailyValue',
+          e.percentDailyValue,
+          a.percentDailyValue,
+        ),
+      ),
     });
   }
 

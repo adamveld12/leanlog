@@ -103,8 +103,20 @@ describe('scoreMicronutrients (R6, AE4)', () => {
       [{ name: 'Sodium', amount: 96, unit: 'gram', percentDailyValue: 4 }],
     );
     const m = score.matched[0];
-    expect(m.amountPass).toBe(true); // within 2%
-    expect(m.unitPass).toBe(false); // gram != milligram (enum, exact)
-    expect(m.dvPass).toBe(true);
+    expect(m.amount).toBe('pass'); // within 2%
+    expect(m.unit).toBe('fail'); // gram != milligram (enum, exact)
+    expect(m.dv).toBe('pass');
+  });
+
+  it('marks an unasserted sub-field as unscored so it never counts toward a rate', () => {
+    // ground truth asserts only the name → amount/unit/%DV are not scored
+    const score = scoreMicronutrients(
+      [{ name: 'Calcium' }],
+      [{ name: 'Calcium', amount: 200, unit: 'milligram' }],
+    );
+    const m = score.matched[0];
+    expect(m.amount).toBe('unscored');
+    expect(m.unit).toBe('unscored');
+    expect(m.dv).toBe('unscored');
   });
 });

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { CaseScore } from './scoring';
 import {
   aggregateFieldRates,
-  micronutrientAccuracy,
   micronutrientCoverage,
+  micronutrientFieldRate,
   renderReport,
   type ModelRunResult,
 } from './report';
@@ -52,7 +52,7 @@ describe('micronutrientCoverage', () => {
         {
           fixture: 'a',
           score: caseScore([], {
-            matched: [{ name: 'Sodium', amountPass: true, unitPass: true, dvPass: true }],
+            matched: [{ name: 'Sodium', amount: 'pass', unit: 'pass', dv: 'pass' }],
             missing: ['Potassium'],
           }),
         },
@@ -62,25 +62,27 @@ describe('micronutrientCoverage', () => {
   });
 });
 
-describe('micronutrientAccuracy', () => {
-  it('passes a matched entry only when amount, unit, and %DV all pass', () => {
+describe('micronutrientFieldRate', () => {
+  it('scores a sub-field over asserted entries only, ignoring unscored', () => {
     const r = run('flash', {
       caseScores: [
         {
           fixture: 'a',
           score: caseScore([], {
             matched: [
-              { name: 'Sodium', amountPass: true, unitPass: true, dvPass: true },
-              // found by name but wrong amount — counts against accuracy, not coverage
-              { name: 'Calcium', amountPass: false, unitPass: true, dvPass: true },
+              { name: 'Sodium', amount: 'pass', unit: 'pass', dv: 'pass' },
+              // found by name but wrong amount — regresses the amount row, not coverage
+              { name: 'Calcium', amount: 'fail', unit: 'pass', dv: 'unscored' },
             ],
           }),
         },
       ],
     });
-    // coverage stays 100% (both names found); accuracy is 1/2
+    // coverage stays 100% (both names found); amount accuracy is 1/2
     expect(micronutrientCoverage(r)).toEqual({ pass: 2, total: 2 });
-    expect(micronutrientAccuracy(r)).toEqual({ pass: 1, total: 2 });
+    expect(micronutrientFieldRate(r, 'amount')).toEqual({ pass: 1, total: 2 });
+    // %DV: Sodium passed, Calcium was unscored → only 1 counts
+    expect(micronutrientFieldRate(r, 'dv')).toEqual({ pass: 1, total: 1 });
   });
 });
 
@@ -116,22 +118,24 @@ describe('renderReport', () => {
     expect(md).toContain('Misses — gemini-flash-lite (candidate)');
   });
 
-  it('surfaces matched-but-wrong micronutrients in misses and an accuracy row', () => {
+  it('surfaces matched-but-wrong micronutrients in misses and per-sub-field rows', () => {
     const candidate = run('flash-lite', {
       label: 'candidate',
       caseScores: [
         {
           fixture: '001-avocado-oil',
           score: caseScore([], {
-            // found by name (coverage 100%) but wrong amount + unit (accuracy fails)
-            matched: [{ name: 'Sodium', amountPass: false, unitPass: false, dvPass: true }],
+            // found by name (coverage 100%) but wrong amount + unit (sub-field rows fail)
+            matched: [{ name: 'Sodium', amount: 'fail', unit: 'fail', dv: 'pass' }],
           }),
         },
       ],
       runs: 1,
     });
     const md = renderReport([candidate], 1);
-    expect(md).toContain('micronutrient acc');
+    expect(md).toContain('micronutrient amount');
+    expect(md).toContain('micronutrient unit');
+    expect(md).toContain('micronutrient %DV');
     expect(md).toContain('wrong micros: Sodium (amount, unit)');
   });
 });

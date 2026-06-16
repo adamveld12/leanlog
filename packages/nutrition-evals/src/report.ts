@@ -49,16 +49,28 @@ export function micronutrientCoverage(result: ModelRunResult): Rate {
   return { pass, total };
 }
 
-// Accuracy = matched entries whose amount AND unit AND %DV all pass / matched entries.
-// Complements coverage: a model can find "Sodium" (coverage) yet report the wrong amount
-// (accuracy), and without this a value regression on a matched micronutrient is invisible.
-export function micronutrientAccuracy(result: ModelRunResult): Rate {
+// The sub-fields scored on a matched micronutrient, with the report label for each.
+const MICRO_SUBFIELDS = [
+  { key: 'amount', label: 'micronutrient amount' },
+  { key: 'unit', label: 'micronutrient unit' },
+  { key: 'dv', label: 'micronutrient %DV' },
+] as const;
+
+// Per-sub-field accuracy across all matched micronutrients. Only entries where ground
+// truth asserted that sub-field count toward the rate ('unscored' is ignored), so a model
+// that finds "Sodium" but reports the wrong amount/unit/%DV regresses the matching row —
+// the value regression coverage alone can't see.
+export function micronutrientFieldRate(
+  result: ModelRunResult,
+  key: (typeof MICRO_SUBFIELDS)[number]['key'],
+): Rate {
   let pass = 0;
   let total = 0;
   for (const { score } of result.caseScores) {
     for (const m of score.micronutrients.matched) {
+      if (m[key] === 'unscored') continue;
       total += 1;
-      if (m.amountPass && m.unitPass && m.dvPass) pass += 1;
+      if (m[key] === 'pass') pass += 1;
     }
   }
   return { pass, total };
@@ -67,12 +79,12 @@ export function micronutrientAccuracy(result: ModelRunResult): Rate {
 // Names the failing sub-fields of a matched-but-wrong micronutrient, e.g. "Sodium (amount, unit)".
 function wrongMicronutrients(score: ModelRunResult['caseScores'][number]['score']): string[] {
   return score.micronutrients.matched
-    .filter((m) => !m.amountPass || !m.unitPass || !m.dvPass)
+    .filter((m) => m.amount === 'fail' || m.unit === 'fail' || m.dv === 'fail')
     .map((m) => {
       const bad: string[] = [];
-      if (!m.amountPass) bad.push('amount');
-      if (!m.unitPass) bad.push('unit');
-      if (!m.dvPass) bad.push('%DV');
+      if (m.amount === 'fail') bad.push('amount');
+      if (m.unit === 'fail') bad.push('unit');
+      if (m.dv === 'fail') bad.push('%DV');
       return `${m.name} (${bad.join(', ')})`;
     });
 }
@@ -146,10 +158,12 @@ export function renderReport(results: ModelRunResult[], fixtureCount: number): s
   if (hasDelta) covRow.push(deltaPct(covs[0], covs[covs.length - 1]));
   lines.push(`| ${covRow.join(' | ')} |`);
 
-  const accs = results.map(micronutrientAccuracy);
-  const accRow = ['micronutrient acc', ...accs.map((a) => `${ratio(a)} (${pct(a)})`)];
-  if (hasDelta) accRow.push(deltaPct(accs[0], accs[accs.length - 1]));
-  lines.push(`| ${accRow.join(' | ')} |`);
+  for (const { key, label } of MICRO_SUBFIELDS) {
+    const subRates = results.map((r) => micronutrientFieldRate(r, key));
+    const subRow = [label, ...subRates.map((s) => `${ratio(s)} (${pct(s)})`)];
+    if (hasDelta) subRow.push(deltaPct(subRates[0], subRates[subRates.length - 1]));
+    lines.push(`| ${subRow.join(' | ')} |`);
+  }
 
   // Summary rows.
   lines.push('');
