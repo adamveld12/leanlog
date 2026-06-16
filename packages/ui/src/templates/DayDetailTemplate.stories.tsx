@@ -9,7 +9,10 @@ const meta: Meta<typeof DayDetailTemplate> = {
   args: {
     heading: {
       title: 'May 22',
-      profileHref: '/profile',
+      navLinks: [
+        { href: '/track', label: 'Execute' },
+        { href: '/track/goals', label: 'Goals' },
+      ],
       renderNavLink: ({ href, label, className }) => (
         <a className={className} href={href}>
           {label}

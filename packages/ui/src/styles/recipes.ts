@@ -48,6 +48,7 @@ export const recipes = {
   },
   grid: {
     two: 'grid grid-cols-2 gap-2',
+    three: 'grid grid-cols-3 gap-2',
     carbFiber: 'grid grid-cols-3 gap-2 [&>*:first-child]:col-span-2',
     calendar7: 'grid grid-cols-7 gap-0.5',
   },

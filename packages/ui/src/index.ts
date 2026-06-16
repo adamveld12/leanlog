@@ -38,6 +38,8 @@ export * from './molecules/MacroProgressBlock';
 export * from './molecules/StatMetric';
 export * from './molecules/StickyFooter';
 export * from './molecules/Tabs';
+export * from './molecules/ThemeToggle';
+export * from './organisms/appNav';
 export * from './organisms/AuthLanding';
 export * from './organisms/IngredientEntryCard';
 export * from './organisms/IngredientList';

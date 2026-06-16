@@ -20,6 +20,9 @@ import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-rou
 import { uuidv7 } from '@leanlog/data-access';
 import {
   AnalyticsScope,
+  APP_NAV_LINKS,
+  AppPageHeading,
+  AppShell,
   BodyInfoCard,
   Button,
   CalorieTargetCard,
@@ -51,6 +54,7 @@ import {
   ReorderableList,
   SectionCard,
   Text,
+  ThemeToggle,
   useAnalytics,
   WarningText,
   WeeklyStatsCard,
@@ -66,6 +70,7 @@ import {
   type NutritionDatabaseIngredient,
 } from '@leanlog/data-access';
 import { isPastIso, normalizeIngredientName, prettyDate, todayIso } from '../lib';
+import { GoalsPage } from './GoalsPage';
 import { IngredientEntry } from '../components/IngredientEntry';
 import { DatabaseLabelForm } from '../components/ingredient-entry/DatabaseLabelForm';
 import { useDatabaseScan } from '../components/ingredient-entry/useDatabaseScan';
@@ -147,11 +152,32 @@ const renderRouterNavLink = ({
   </Link>
 );
 
-function HeaderAuthControl() {
+// Theme toggle (left) + Clerk user control (right), shown in every page header
+// in place of the old Settings page (#56, R5).
+function HeaderControls() {
+  const [theme, setTheme] = useTheme();
   return (
-    <SignedIn>
-      <UserButton afterSignOutUrl="/" />
-    </SignedIn>
+    <>
+      <ThemeToggle value={theme} onChange={setTheme} />
+      <SignedIn>
+        <UserButton afterSignOutUrl="/" />
+      </SignedIn>
+    </>
+  );
+}
+
+// Goals command center (#56): timeline planner + selected-goal detail / inline
+// Add Goal, inside the standard app shell with Execute/Goals nav.
+function GoalsRoute() {
+  return (
+    <AppShell>
+      <AppPageHeading
+        title="Goals"
+        renderNavLink={renderRouterNavLink}
+        rightContent={<HeaderControls />}
+      />
+      <GoalsPage />
+    </AppShell>
   );
 }
 
@@ -288,10 +314,9 @@ function DayList() {
     <DayListTemplate
       heading={{
         title: 'leanlog',
-        profileHref: '/track/profile',
-        nutritionFactsHref: '/track/nutrition-facts',
+        navLinks: APP_NAV_LINKS,
         renderNavLink: renderRouterNavLink,
-        rightContent: <HeaderAuthControl />,
+        rightContent: <HeaderControls />,
       }}
       quickActions={
         <QuickActionsCard
@@ -448,10 +473,9 @@ function DayDetail() {
       heading={{
         title: prettyDate(day.date),
         backHref: '/track',
-        profileHref: '/track/profile',
-        nutritionFactsHref: '/track/nutrition-facts',
+        navLinks: APP_NAV_LINKS,
         renderNavLink: renderRouterNavLink,
-        rightContent: <HeaderAuthControl />,
+        rightContent: <HeaderControls />,
       }}
       weightSection={
         isPast ? undefined : (
@@ -633,10 +657,9 @@ function MealEdit() {
             />
           ),
           backHref: `/track/day/${day.id}`,
-          profileHref: '/track/profile',
-          nutritionFactsHref: '/track/nutrition-facts',
+          navLinks: APP_NAV_LINKS,
           renderNavLink: renderRouterNavLink,
-          rightContent: <HeaderAuthControl />,
+          rightContent: <HeaderControls />,
         }}
         mealSection={
           <SectionCard title="Meal name">
@@ -688,10 +711,9 @@ function MealEdit() {
             />
           ),
           backHref: `/track/day/${day.id}`,
-          profileHref: '/track/profile',
-          nutritionFactsHref: '/track/nutrition-facts',
+          navLinks: APP_NAV_LINKS,
           renderNavLink: renderRouterNavLink,
-          rightContent: <HeaderAuthControl />,
+          rightContent: <HeaderControls />,
         }}
         mealSection={
           <SectionCard title="Meal name" saved={saved.mealName}>
@@ -846,10 +868,9 @@ function ProfilePage() {
       heading={{
         title: 'Profile',
         backHref: '/track',
-        profileHref: '/track/profile',
-        nutritionFactsHref: '/track/nutrition-facts',
+        navLinks: APP_NAV_LINKS,
         renderNavLink: renderRouterNavLink,
-        rightContent: <HeaderAuthControl />,
+        rightContent: <HeaderControls />,
       }}
     >
       <BodyInfoCard
@@ -975,10 +996,9 @@ function MealTemplates() {
         heading={{
           title: 'Meal templates',
           backHref: '/track',
-          profileHref: '/track/profile',
-          nutritionFactsHref: '/track/nutrition-facts',
+          navLinks: APP_NAV_LINKS,
           renderNavLink: renderRouterNavLink,
-          rightContent: <HeaderAuthControl />,
+          rightContent: <HeaderControls />,
         }}
         listSection={
           <SectionCard title="Your templates">
@@ -1084,10 +1104,9 @@ function MealTemplateEdit() {
         heading={{
           title: template.name || 'Template',
           backHref: '/track/templates',
-          profileHref: '/track/profile',
-          nutritionFactsHref: '/track/nutrition-facts',
+          navLinks: APP_NAV_LINKS,
           renderNavLink: renderRouterNavLink,
-          rightContent: <HeaderAuthControl />,
+          rightContent: <HeaderControls />,
         }}
         nameSection={
           <SectionCard title="Template name">
@@ -1458,6 +1477,14 @@ export default function App() {
         element={
           <RequireSignedIn>
             <NutritionFactsDatabase />
+          </RequireSignedIn>
+        }
+      />
+      <Route
+        path="/track/goals"
+        element={
+          <RequireSignedIn>
+            <GoalsRoute />
           </RequireSignedIn>
         }
       />

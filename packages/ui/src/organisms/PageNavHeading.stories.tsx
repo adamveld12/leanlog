@@ -17,10 +17,15 @@ const meta: Meta<typeof PageNavHeading> = {
 export default meta;
 type Story = StoryObj<typeof PageNavHeading>;
 
+const navLinks = [
+  { href: '/track', label: 'Execute' },
+  { href: '/track/goals', label: 'Goals' },
+];
+
 export const TitleOnly: Story = {
   args: {
     title: 'leanlog',
-    profileHref: '/profile',
+    navLinks,
   },
 };
 
@@ -29,7 +34,7 @@ export const WithBackAndSubtitle: Story = {
     title: 'leanlog',
     subtitle: <MacroSummaryLine calories={520} protein={31} carbs={42} fat={20} />,
     backHref: '/day/1',
-    profileHref: '/profile',
+    navLinks,
   },
 };
 

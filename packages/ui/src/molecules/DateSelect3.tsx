@@ -1,4 +1,5 @@
 import { Select } from '../atoms/Select';
+import { recipes } from '../styles/recipes';
 
 type DateSelect3Props = {
   month: number;
@@ -14,7 +15,7 @@ export function DateSelect3({ month, day, year, onChange }: DateSelect3Props) {
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className={recipes.grid.three}>
       <Select
         name="month"
         value={month}

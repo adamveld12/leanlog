@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { PageTitle } from '../atoms/PageTitle';
 import { recipes } from '../styles/recipes';
@@ -6,16 +6,17 @@ import { cn } from '../styles/cn';
 
 type NavLinkRenderProps = { href: string; label: string; className: string };
 
+export type NavLink = { href: string; label: string };
+
 export type PageNavHeadingProps = {
   title: ReactNode;
   subtitle?: ReactNode;
   backHref?: string;
-  profileHref: string;
-  /** When set, a link to the dedicated Nutrition Facts Database page (#49). */
-  nutritionFactsHref?: string;
+  // Primary navigation links rendered to the right of the title (#56: Execute,
+  // Goals, Nutrition Facts). Each is rendered through renderNavLink so the
+  // consumer can inject a router-aware link.
+  navLinks: NavLink[];
   backLabel?: string;
-  profileLabel?: string;
-  nutritionFactsLabel?: string;
   renderNavLink: (props: NavLinkRenderProps) => ReactNode;
   rightContent?: ReactNode;
 };
@@ -24,11 +25,8 @@ export function PageNavHeading({
   title,
   subtitle,
   backHref,
-  profileHref,
-  nutritionFactsHref,
+  navLinks,
   backLabel = '← Back',
-  profileLabel = 'Profile',
-  nutritionFactsLabel = 'Nutrition Facts',
   renderNavLink,
   rightContent,
 }: PageNavHeadingProps) {
@@ -58,19 +56,12 @@ export function PageNavHeading({
             {subtitle ? <div className="hidden px-4 min-[512px]:inline">{subtitle}</div> : null}
           </div>
           <div className={cn(recipes.stack.row, 'shrink-0')}>
-            {nutritionFactsHref
-              ? // Shown on all viewports (mobile is the primary target), mirroring the
-                // always-visible Profile link, so the page is reachable from the header
-                // everywhere — not just on wide screens.
-                // react-doctor-disable-next-line react-doctor/no-render-in-render
-                renderNavLink({
-                  href: nutritionFactsHref,
-                  label: nutritionFactsLabel,
-                  className: linkClassName,
-                })
-              : null}
-            {/* react-doctor-disable-next-line react-doctor/no-render-in-render */}
-            {renderNavLink({ href: profileHref, label: profileLabel, className: linkClassName })}
+            {navLinks.map((link) => (
+              <Fragment key={link.href}>
+                {/* react-doctor-disable-next-line react-doctor/no-render-in-render */}
+                {renderNavLink({ href: link.href, label: link.label, className: linkClassName })}
+              </Fragment>
+            ))}
             {rightContent}
           </div>
         </div>
