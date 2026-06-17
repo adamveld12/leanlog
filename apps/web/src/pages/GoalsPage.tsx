@@ -517,14 +517,17 @@ function AddOrEditGoal({
       };
       const otherGoals = goals.filter((g) => !g.isBackground);
       const violation = validateNewGoal(candidate, otherGoals, today);
-      if (violation && violation.code === 'overlap' && !trim) {
+      // An overlap is resolvable by trimming the single overlapping goal: offer
+      // the trim, and once the user confirms (trim is set) let it through — the
+      // trim is applied before the create in onSubmit.
+      if (violation?.code === 'overlap' && !trim) {
         const trimmable = findTrimmableActiveGoal(candidate, otherGoals);
         if (trimmable) {
           setPendingTrim({ goalId: trimmable.goal.id, endDate: trimmable.trimmedEndDate });
           return;
         }
       }
-      if (violation) {
+      if (violation && !(violation.code === 'overlap' && trim)) {
         setError(violationMessage(violation.code));
         return;
       }

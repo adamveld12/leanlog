@@ -142,7 +142,9 @@ const renderRouterNavLink = ({
   <NavLink
     to={href}
     end={href === '/track'}
-    className={({ isActive }) => cn(className, isActive && 'underline underline-offset-4')}
+    className={({ isActive }) =>
+      cn(className, isActive && 'text-[var(--ll-text)] underline decoration-2 underline-offset-4')
+    }
   >
     {label}
   </NavLink>
