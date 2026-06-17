@@ -10,6 +10,6 @@ const meta: Meta<typeof ThemeToggle> = {
 export default meta;
 type Story = StoryObj<typeof ThemeToggle>;
 
-export const Auto: Story = {};
+export const SystemDefault: Story = {};
 export const Light: Story = { args: { value: 'light' } };
 export const Dark: Story = { args: { value: 'dark' } };

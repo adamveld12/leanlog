@@ -5,50 +5,39 @@ import { recipes } from '../styles/recipes';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
-// Icon-only options keep the header control compact (#56, R5). Each carries an
-// aria-label so the emoji still has an accessible name.
-const OPTIONS: { value: ThemePreference; icon: string; label: string }[] = [
-  { value: 'system', icon: '⚙️', label: 'System theme' },
-  { value: 'light', icon: '💡', label: 'Light theme' },
-  { value: 'dark', icon: '🌝', label: 'Dark theme' },
-];
+function prefersDark(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
+}
 
 export type ThemeToggleProps = {
   value: ThemePreference;
   onChange: (value: ThemePreference) => void;
 };
 
-// Compact system/light/dark switch (#56, R5) that lives next to the Clerk user
-// control in the app header, replacing the old Settings-page theme section.
+// A single icon that flips between light and dark (#56, R5). The app defaults to
+// system mode; the first tap pins an explicit theme. The emoji reflects the
+// current effective theme — 💡 light, 🌝 dark.
 export function ThemeToggle({ value, onChange }: ThemeToggleProps) {
+  const isDark = value === 'dark' || (value === 'system' && prefersDark());
+  const next: ThemePreference = isDark ? 'light' : 'dark';
+  const label = `Switch to ${next} theme`;
   return (
     <AnalyticsScope properties={{ molecule: 'ThemeToggle' }}>
-      {/* A labelled cluster of related controls; role="group" is the correct ARIA
-          semantic here and has no single matching HTML tag. */}
-      {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role */}
-      <div
-        className={cn(recipes.radius.control, 'flex border border-[var(--ll-line)] p-0.5')}
-        role="group"
-        aria-label="Theme"
+      <Button
+        type="button"
+        variant="subtle"
+        size="sm"
+        aria-label={label}
+        title={label}
+        className={cn(recipes.radius.control, 'h-10 px-2 text-lg')}
+        onClick={() => onChange(next)}
       >
-        {OPTIONS.map((opt) => (
-          <Button
-            key={opt.value}
-            type="button"
-            size="sm"
-            variant={value === opt.value ? 'primary' : 'subtle'}
-            aria-pressed={value === opt.value}
-            aria-label={opt.label}
-            title={opt.label}
-            // h-10 inside the p-0.5 container lands at ~44px, matching the Tabs
-            // precedent for touch targets while staying compact.
-            className={cn(recipes.radius.controlInner, 'h-10 px-2')}
-            onClick={() => onChange(opt.value)}
-          >
-            {opt.icon}
-          </Button>
-        ))}
-      </div>
+        {isDark ? '🌝' : '💡'}
+      </Button>
     </AnalyticsScope>
   );
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import posthog from 'posthog-js';
 import {
   Button,
@@ -22,6 +22,7 @@ import {
   defaultSelectedSegment,
   goalLifecycle,
   goalOutcome,
+  macrosFromPercentage,
   validateNewGoal,
   findTrimmableActiveGoal,
   DEFAULT_MEAL_SLOTS,
@@ -60,8 +61,9 @@ function segmentKey(seg: TimelineSegment): string {
     : `maint:${seg.startDate ?? 'start'}:${seg.endDate ?? 'end'}`;
 }
 
-// Emoji status for a goal segment (R38–R40): completed goals show their weight
-// outcome, the active goal shows construction, future goals show an hourglass.
+// Emoji marker for a timeline node (R38–R40): completed goals show their weight
+// outcome (✅/❌), the active goal an hourglass, future goals a calendar, and the
+// background maintenance fallback a flag.
 function goalEmoji(
   goal: Goal,
   today: string,
@@ -70,29 +72,14 @@ function goalEmoji(
   const lifecycle = goalLifecycle(goal, today);
   if (lifecycle === 'past')
     return goalOutcome(goal, weightEntries, today) === 'reached' ? '✅' : '❌';
-  if (lifecycle === 'future') return '⏳';
-  return '🚧';
+  if (lifecycle === 'future') return '🗓️';
+  return '⌛';
 }
 
 function dateRangeLabel(start: string | null, end: string | null): string {
   const from = start ? prettyDate(start) : 'Always';
   const to = end ? prettyDate(end) : 'ongoing';
   return `${from} → ${to}`;
-}
-
-// Short lifecycle/outcome label shown on the right of each timeline node.
-function statusBadge(
-  goal: Goal | null,
-  today: string,
-  weightEntries: { date: string; weightLbs: number }[],
-): string {
-  if (!goal) return 'Fallback';
-  const lifecycle = goalLifecycle(goal, today);
-  if (lifecycle === 'past')
-    return goalOutcome(goal, weightEntries, today) === 'reached' ? 'Reached' : 'Missed';
-  if (lifecycle === 'today') return 'Starts today';
-  if (lifecycle === 'future') return 'Planned';
-  return 'Active';
 }
 
 export function GoalsPage() {
@@ -124,62 +111,51 @@ export function GoalsPage() {
   return (
     <>
       <SectionCard title="Timeline">
-        {/* Horizontal, scrollable timeline: a continuous rail with a node per
-            segment and a selectable label beneath each. */}
-        <div className="flex items-stretch overflow-x-auto pb-1">
+        {/* Compact horizontal timeline: emoji nodes joined by dashed connectors,
+            with a trailing arrow on an open-ended (ongoing) span. Tap a node to
+            select it; the detail card below shows the specifics. */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
           {segments.map((seg, i) => {
             const key = segmentKey(seg);
             const isSelected = key === activeKey;
             const goal =
               seg.kind === 'goal' ? (goals.find((g) => g.id === seg.goalId) ?? null) : null;
-            const node = goal ? goalEmoji(goal, today, weightEntries) : '🛟';
-            const title = goal ? MODE_LABEL[goal.mode] : 'Maintenance';
-            const isFirst = i === 0;
+            const emoji = goal ? goalEmoji(goal, today, weightEntries) : '🏁';
+            const label = `${goal ? MODE_LABEL[goal.mode] : 'Maintenance'} · ${dateRangeLabel(seg.startDate, seg.endDate)}`;
             const isLast = i === segments.length - 1;
             return (
-              <div key={key} className="flex w-32 shrink-0 flex-col items-center">
-                {/* rail row: left/right half lines meet across flush columns */}
-                <div className="relative flex h-8 w-full items-center justify-center">
-                  {!isFirst ? (
-                    <div
-                      className="absolute left-0 right-1/2 top-1/2 h-px bg-[var(--ll-line)]"
-                      aria-hidden
-                    />
-                  ) : null}
-                  {!isLast ? (
-                    <div
-                      className="absolute left-1/2 right-0 top-1/2 h-px bg-[var(--ll-line)]"
-                      aria-hidden
-                    />
-                  ) : null}
-                  <div
-                    className={cn(
-                      'relative z-10 flex h-8 w-8 items-center justify-center rounded-full border bg-[var(--ll-surface)]',
-                      isSelected ? 'border-[var(--ll-line-strong)]' : 'border-[var(--ll-line)]',
-                    )}
-                    aria-hidden
-                  >
-                    <Text as="span" variant="body">
-                      {node}
-                    </Text>
-                  </div>
-                </div>
+              <Fragment key={key}>
                 <Button
                   variant={isSelected ? 'primary' : 'subtle'}
+                  size="sm"
                   aria-pressed={isSelected}
-                  className="mx-1 mt-2 h-auto w-[calc(100%-0.5rem)] flex-col items-center gap-0.5 py-2"
+                  aria-label={label}
+                  title={label}
+                  className={cn(recipes.radius.control, 'h-11 w-11 shrink-0 text-lg')}
                   onClick={() => {
                     setAdding(false);
                     setSelectedKey(key);
                   }}
                 >
-                  <Text as="span" variant="body">
-                    {title}
-                  </Text>
-                  <HelperText as="span">{statusBadge(goal, today, weightEntries)}</HelperText>
-                  <HelperText as="span">{dateRangeLabel(seg.startDate, seg.endDate)}</HelperText>
+                  {emoji}
                 </Button>
-              </div>
+                {!isLast ? (
+                  <div
+                    className="w-6 shrink-0 border-t-2 border-dashed border-[var(--ll-line)]"
+                    aria-hidden
+                  />
+                ) : seg.openEnd ? (
+                  <div className="flex shrink-0 items-center">
+                    <div
+                      className="w-6 border-t-2 border-dashed border-[var(--ll-line)]"
+                      aria-hidden
+                    />
+                    <Text as="span" variant="body">
+                      →
+                    </Text>
+                  </div>
+                ) : null}
+              </Fragment>
             );
           })}
         </div>
@@ -434,6 +410,16 @@ function AddOrEditGoal({
   const startIso = partsToIso(start);
   const endIso = hasEnd ? partsToIso(end) : null;
 
+  // Live gram targets shown beside each macro %: calories = weight × mode
+  // multiplier (delta is 0 for new/edited goals here), split by the percentages.
+  const estimatedCalories = targetWeight ? Math.ceil(targetWeight * MODE_MULTIPLIER[mode]) : 0;
+  const gramTargets = macrosFromPercentage(
+    estimatedCalories,
+    Math.round(fats ?? 0),
+    Math.round(carbs ?? 0),
+    Math.round(protein ?? 0),
+  );
+
   function build(): CreateGoal {
     return {
       name: name || null,
@@ -526,9 +512,17 @@ function AddOrEditGoal({
 
       <SectionHeading noMargin>Macros (must total 100%)</SectionHeading>
       <div className={recipes.grid.three}>
-        <NumberInput label="Protein %" value={protein} onChange={setProtein} />
-        <NumberInput label="Carbs %" value={carbs} onChange={setCarbs} />
-        <NumberInput label="Fat %" value={fats} onChange={setFats} />
+        <NumberInput
+          label={`Protein % (${gramTargets.targetProtein} g)`}
+          value={protein}
+          onChange={setProtein}
+        />
+        <NumberInput
+          label={`Carbs % (${gramTargets.targetCarbs} g)`}
+          value={carbs}
+          onChange={setCarbs}
+        />
+        <NumberInput label={`Fat % (${gramTargets.targetFat} g)`} value={fats} onChange={setFats} />
       </div>
 
       <SectionHeading noMargin>Meal slots</SectionHeading>
