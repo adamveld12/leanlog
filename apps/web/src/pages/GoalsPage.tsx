@@ -343,7 +343,7 @@ function GoalDetail({
   }
 
   return (
-    <SectionCard title={goal.name?.trim() || `${MODE_LABEL[goal.mode]} goal`}>
+    <SectionCard title={goal.name?.trim() || MODE_LABEL[goal.mode]}>
       {lifecycle === 'past' ? (
         <SummaryRow
           label="Outcome"
