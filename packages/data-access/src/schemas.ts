@@ -445,9 +445,9 @@ export const CreateGoalSchema = GoalSchema.omit({
   updatedAt: true,
 })
   .extend({
-    // Optional: a goal can be a phase without an explicit weight target. When
-    // absent, targets derive from the latest logged weight (or 180) like the
-    // background goal, and the goal has no weight outcome.
+    // Cut and Lean Gain require a target weight (refined below). Maintain leaves
+    // it null and derives the target from the latest logged weight (or 180), like
+    // the background goal.
     targetWeightLbs: z.number().positive().nullable().optional(),
     startDate: z.string().regex(ISO_DATE),
   })
@@ -459,6 +459,10 @@ export const CreateGoalSchema = GoalSchema.omit({
   .refine((v) => v.endDate == null || v.endDate > v.startDate, {
     message: 'End date must be after start date',
     path: ['endDate'],
+  })
+  .refine((v) => v.mode === 'maintain' || (v.targetWeightLbs != null && v.targetWeightLbs > 0), {
+    message: 'Target weight is required for cut and lean gain goals',
+    path: ['targetWeightLbs'],
   });
 
 // Update input is partial; which fields are actually allowed depends on the

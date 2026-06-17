@@ -496,7 +496,9 @@ function AddOrEditGoal({
       name: name || null,
       description: description || null,
       mode,
-      targetWeightLbs: targetWeight ?? null,
+      // Maintain derives its target from the latest logged weight; Cut/Lean Gain
+      // require an explicit target.
+      targetWeightLbs: mode === 'maintain' ? (latestWeightLbs ?? null) : (targetWeight ?? null),
       macroFats: Math.round(fats ?? 0),
       macroCarbs: Math.round(carbs ?? 0),
       macroProtein: Math.round(protein ?? 0),
@@ -508,6 +510,10 @@ function AddOrEditGoal({
 
   async function submit(trim?: SubmitTrim) {
     setError(null);
+    if (mode !== 'maintain' && (targetWeight == null || targetWeight <= 0)) {
+      setError('Target weight is required for cut and lean gain goals.');
+      return;
+    }
     const macroFats = Math.round(fats ?? 0);
     const macroCarbs = Math.round(carbs ?? 0);
     const macroProtein = Math.round(protein ?? 0);
@@ -582,13 +588,12 @@ function AddOrEditGoal({
         ]}
         onChange={(v) => setMode(v)}
       />
-      <NumberInput
-        label="Target weight (lb, optional)"
-        value={targetWeight}
-        onChange={setTargetWeight}
-      />
+      {mode === 'maintain' ? null : (
+        <NumberInput label="Target weight (lb)" value={targetWeight} onChange={setTargetWeight} />
+      )}
       <HelperText>
-        Targets use your latest logged weight:{' '}
+        {mode === 'maintain' ? 'Maintain target tracks your latest logged weight: ' : null}
+        {mode === 'maintain' ? null : 'Targets use your latest logged weight: '}
         {latestWeightLbs != null ? `${latestWeightLbs} lb` : `${FALLBACK_WEIGHT_LBS} lb (none yet)`}
         .
       </HelperText>
