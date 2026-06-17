@@ -141,13 +141,13 @@ export function GoalsPage() {
                 </Button>
                 {!isLast ? (
                   <div
-                    className="w-6 shrink-0 border-t-2 border-dashed border-[var(--ll-line)]"
+                    className="min-w-6 flex-1 border-t-2 border-dashed border-[var(--ll-line)]"
                     aria-hidden
                   />
                 ) : seg.openEnd ? (
-                  <div className="flex shrink-0 items-center">
+                  <div className="flex min-w-6 flex-1 items-center">
                     <div
-                      className="w-6 border-t-2 border-dashed border-[var(--ll-line)]"
+                      className="flex-1 border-t-2 border-dashed border-[var(--ll-line)]"
                       aria-hidden
                     />
                     <Text as="span" variant="body">
@@ -229,7 +229,7 @@ function MaintenanceDetail({
   canAddGoal: boolean;
 }) {
   return (
-    <SectionCard title="Maintenance (fallback)">
+    <SectionCard title="Maintenance">
       <div className={cn(recipes.stack.md, 'items-center py-4 text-center')}>
         <Text variant="body">
           This stretch is covered by your background maintenance goal — targets come from your
