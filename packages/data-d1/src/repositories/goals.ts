@@ -169,7 +169,7 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
       if (!goal) throw new GoalNotEditableError('Goal not found');
       const lifecycle = goalLifecycle(goal, today);
 
-      assertEditAllowed(lifecycle, data);
+      assertEditAllowed(goal, lifecycle, data);
 
       // Future goals can never carry a non-zero delta (R21).
       if (lifecycle === 'future' && data.calorieDelta != null && data.calorieDelta !== 0) {
@@ -214,25 +214,51 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
   };
 }
 
-// Enforces which fields a lifecycle state may change (R47–R52).
-function assertEditAllowed(lifecycle: GoalLifecycle, data: UpdateGoal): void {
+// Enforces which fields a lifecycle state may change (R47–R52). For active goals
+// only *actual* changes to immutable fields are rejected — a save that echoes the
+// goal's existing values (e.g. the edit form re-sending unchanged meal slots while
+// the user only tweaks the name) is a no-op and is allowed. This keeps a benign
+// re-save from failing when the goal's lifecycle has shifted to active since the
+// edit form was opened.
+function assertEditAllowed(goal: Goal, lifecycle: GoalLifecycle, data: UpdateGoal): void {
   if (lifecycle === 'background')
     throw new GoalNotEditableError('The background goal is read-only');
   if (lifecycle === 'past') throw new GoalNotEditableError('Past goals are read-only');
   if (lifecycle === 'future' || lifecycle === 'today') return; // fully editable
+
   // Active (older than today): name, description, end date, and delta only.
-  const blocked: (keyof UpdateGoal)[] = [
-    'mode',
-    'targetWeightLbs',
-    'macroFats',
-    'macroCarbs',
-    'macroProtein',
-    'startDate',
-    'mealSlots',
+  const changes: { field: string; changed: boolean }[] = [
+    { field: 'mode', changed: data.mode !== undefined && data.mode !== goal.mode },
+    {
+      field: 'targetWeightLbs',
+      changed:
+        data.targetWeightLbs !== undefined &&
+        (data.targetWeightLbs ?? null) !== (goal.targetWeightLbs ?? null),
+    },
+    {
+      field: 'macroFats',
+      changed: data.macroFats !== undefined && data.macroFats !== goal.macroFats,
+    },
+    {
+      field: 'macroCarbs',
+      changed: data.macroCarbs !== undefined && data.macroCarbs !== goal.macroCarbs,
+    },
+    {
+      field: 'macroProtein',
+      changed: data.macroProtein !== undefined && data.macroProtein !== goal.macroProtein,
+    },
+    {
+      field: 'startDate',
+      changed:
+        data.startDate !== undefined && (data.startDate ?? null) !== (goal.startDate ?? null),
+    },
+    {
+      field: 'mealSlots',
+      changed:
+        data.mealSlots !== undefined &&
+        JSON.stringify(data.mealSlots) !== JSON.stringify(goal.mealSlots),
+    },
   ];
-  for (const field of blocked) {
-    if (data[field] !== undefined) {
-      throw new GoalNotEditableError(`Active goals cannot change ${String(field)}`);
-    }
-  }
+  const blocked = changes.find((c) => c.changed);
+  if (blocked) throw new GoalNotEditableError(`Active goals cannot change ${blocked.field}`);
 }
