@@ -33,7 +33,7 @@ export function QuickActionsCard({
         </Button>
 
         {activeGoal ? (
-          <Button variant="subtle" className="w-full" onClick={activeGoal.onOpen}>
+          <Button variant="subtle" fullWidth onClick={activeGoal.onOpen}>
             {activeGoal.summary}
           </Button>
         ) : null}
