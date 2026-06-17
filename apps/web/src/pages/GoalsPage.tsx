@@ -588,10 +588,8 @@ function AddOrEditGoal({
         onChange={setTargetWeight}
       />
       <HelperText>
-        Calories &amp; macros are calculated from your latest logged weight:{' '}
-        {latestWeightLbs != null
-          ? `${latestWeightLbs} lb`
-          : `${FALLBACK_WEIGHT_LBS} lb (default — log a weight to refine)`}
+        Targets use your latest logged weight:{' '}
+        {latestWeightLbs != null ? `${latestWeightLbs} lb` : `${FALLBACK_WEIGHT_LBS} lb (none yet)`}
         .
       </HelperText>
 
