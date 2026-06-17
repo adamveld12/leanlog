@@ -179,11 +179,13 @@ export type GoalOutcome = 'reached' | 'missed' | null;
 export function goalOutcome(goal: Goal, weightEntries: WeightEntry[], today: string): GoalOutcome {
   if (goal.isBackground) return null;
   if (goal.endDate == null || goal.endDate >= today) return null;
+  // A goal without a weight target is just a completed phase — nothing to miss.
+  if (goal.targetWeightLbs == null) return 'reached';
   const inWindow = weightEntries
     .filter((e) => (goal.startDate == null || e.date >= goal.startDate) && e.date <= goal.endDate!)
     .sort((a, b) => (a.date < b.date ? -1 : 1));
   const final = inWindow.at(-1);
-  if (!final || goal.targetWeightLbs == null) return 'missed';
+  if (!final) return 'missed';
   const t = goal.targetWeightLbs;
   const w = final.weightLbs;
   switch (goal.mode) {

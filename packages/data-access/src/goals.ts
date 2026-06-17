@@ -179,8 +179,13 @@ export function buildTimeline(goals: Goal[], today: string): TimelineSegment[] {
   }
 
   const segments: TimelineSegment[] = [];
-  // Leading open-start maintenance up to the day before the first goal.
-  segments.push(maintenanceSegment(null, shiftIsoDate(userGoals[0].startDate!, -1), today));
+  // Leading maintenance only when the first goal is still upcoming — i.e. it
+  // represents the *current* maintenance period before that goal. Once the first
+  // goal has started, the pre-history maintenance is noise and is dropped.
+  const firstStart = userGoals[0].startDate!;
+  if (firstStart > today) {
+    segments.push(maintenanceSegment(null, shiftIsoDate(firstStart, -1), today));
+  }
 
   userGoals.forEach((goal, i) => {
     segments.push({
@@ -200,8 +205,9 @@ export function buildTimeline(goals: Goal[], today: string): TimelineSegment[] {
       const gapStart = shiftIsoDate(goal.endDate, 1);
       const gapEnd = shiftIsoDate(next.startDate!, -1);
       if (gapStart <= gapEnd) segments.push(maintenanceSegment(gapStart, gapEnd, today));
-    } else {
-      // Trailing open-end maintenance after the last bounded goal.
+    } else if (goal.endDate < today) {
+      // Trailing maintenance only when the last goal has already ended, so it
+      // represents the current fallback. A future last goal gets no trailing node.
       segments.push(maintenanceSegment(shiftIsoDate(goal.endDate, 1), null, today));
     }
   });

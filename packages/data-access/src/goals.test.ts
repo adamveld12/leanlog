@@ -198,6 +198,18 @@ describe('buildTimeline', () => {
     expect(gap).toMatchObject({ endDate: '2026-07-14', status: 'generated', current: true });
   });
 
+  it('drops leading maintenance once the first goal has started, keeps it for a future first goal', () => {
+    const past = makeGoal({ id: 'p', startDate: '2026-05-01', endDate: '2026-05-31' });
+    const started = buildTimeline([background, past], '2026-06-16');
+    expect(started[0]).toMatchObject({ kind: 'goal', goalId: 'p' });
+    expect(started.some((s) => s.kind === 'maintenance' && s.current)).toBe(true);
+
+    const future = makeGoal({ id: 'f', startDate: '2026-07-01', endDate: '2026-07-31' });
+    const upcoming = buildTimeline([background, future], '2026-06-16');
+    expect(upcoming[0]).toMatchObject({ kind: 'maintenance', current: true, openStart: true });
+    expect(upcoming[1]).toMatchObject({ kind: 'goal', goalId: 'f' });
+  });
+
   it('tags goal lifecycle status and selects the current segment', () => {
     const past = makeGoal({ id: 'past', startDate: '2026-04-01', endDate: '2026-04-30' });
     const active = makeGoal({ id: 'active', startDate: '2026-06-01', endDate: '2026-06-30' });

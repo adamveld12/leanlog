@@ -9,7 +9,9 @@ type NavLinkRenderProps = { href: string; label: string; className: string };
 export type NavLink = { href: string; label: string };
 
 export type PageNavHeadingProps = {
-  title: ReactNode;
+  // Retained for API compatibility, but the h1 always shows the app name; the
+  // current page is indicated by the active (underlined) nav link instead (#56).
+  title?: ReactNode;
   subtitle?: ReactNode;
   backHref?: string;
   // Primary navigation links rendered to the right of the title (#56: Execute,
@@ -22,7 +24,6 @@ export type PageNavHeadingProps = {
 };
 
 export function PageNavHeading({
-  title,
   subtitle,
   backHref,
   navLinks,
@@ -52,7 +53,7 @@ export function PageNavHeading({
                 {renderNavLink({ href: backHref, label: backLabel, className: linkClassName })}
               </div>
             ) : null}
-            <PageTitle>{title}</PageTitle>
+            <PageTitle>LeanLog</PageTitle>
             {subtitle ? <div className="hidden px-4 min-[512px]:inline">{subtitle}</div> : null}
           </div>
           <div className={cn(recipes.stack.row, 'shrink-0')}>

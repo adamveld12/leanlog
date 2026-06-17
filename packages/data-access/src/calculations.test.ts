@@ -575,6 +575,15 @@ describe('goalOutcome', () => {
     expect(goalOutcome(goal, w, today)).toBe('missed');
   });
 
+  it('reaches a completed goal with no weight target (optional target)', () => {
+    const goal = makeGoalFor({
+      targetWeightLbs: null,
+      startDate: '2026-05-01',
+      endDate: '2026-05-31',
+    });
+    expect(goalOutcome(goal, [], today)).toBe('reached');
+  });
+
   it('returns null for an active (not-yet-completed) goal', () => {
     const goal = makeGoalFor({ endDate: '2026-07-31' });
     expect(goalOutcome(goal, [], today)).toBeNull();

@@ -445,7 +445,10 @@ export const CreateGoalSchema = GoalSchema.omit({
   updatedAt: true,
 })
   .extend({
-    targetWeightLbs: z.number().positive(),
+    // Optional: a goal can be a phase without an explicit weight target. When
+    // absent, targets derive from the latest logged weight (or 180) like the
+    // background goal, and the goal has no weight outcome.
+    targetWeightLbs: z.number().positive().nullable().optional(),
     startDate: z.string().regex(ISO_DATE),
   })
   .strict()

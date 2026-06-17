@@ -27,6 +27,8 @@ import {
   macrosFromPercentage,
   validateNewGoal,
   findTrimmableActiveGoal,
+  weightOnOrBefore,
+  FALLBACK_WEIGHT_LBS,
   DEFAULT_MEAL_SLOTS,
   GOAL_DEFAULTS,
   uuidv7,
@@ -115,6 +117,7 @@ export function GoalsPage() {
     (g) => !g.isBackground && g.startDate != null && g.startDate > today,
   ).length;
   const canAddGoal = futureCount < 2;
+  const basisWeight = weightOnOrBefore(weightEntries, today) ?? FALLBACK_WEIGHT_LBS;
 
   if (loading) return <Text variant="body">Loading your goals…</Text>;
 
@@ -204,6 +207,7 @@ export function GoalsPage() {
         <AddOrEditGoal
           goals={goals}
           today={today}
+          basisWeightLbs={basisWeight}
           onCancel={() => setAdding(false)}
           onSubmit={async (data, trim) => {
             if (trim) await updateGoal(trim.goalId, { endDate: trim.endDate });
@@ -296,15 +300,16 @@ function GoalDetail({
   // react-doctor-disable-next-line react-doctor/no-derived-useState
   const [delta, setDelta] = useState<number | null>(goal.calorieDelta);
 
-  // Derived display values for the read-only summary.
+  // Derived display values for the read-only summary. Without an explicit target
+  // weight, targets fall back to the latest logged weight (or 180), like the day
+  // derivation does.
   const deltaApplies = lifecycle === 'active' || lifecycle === 'today';
-  const calories = goal.targetWeightLbs
-    ? Math.max(
-        0,
-        Math.ceil(goal.targetWeightLbs * MODE_MULTIPLIER[goal.mode]) +
-          (deltaApplies ? goal.calorieDelta : 0),
-      )
-    : 0;
+  const basisWeight =
+    goal.targetWeightLbs ?? weightOnOrBefore(weightEntries, today) ?? FALLBACK_WEIGHT_LBS;
+  const calories = Math.max(
+    0,
+    Math.ceil(basisWeight * MODE_MULTIPLIER[goal.mode]) + (deltaApplies ? goal.calorieDelta : 0),
+  );
   const grams = macrosFromPercentage(calories, goal.macroFats, goal.macroCarbs, goal.macroProtein);
 
   // Full edit form for future / today-started goals.
@@ -313,6 +318,7 @@ function GoalDetail({
       <AddOrEditGoal
         goals={[]}
         today={today}
+        basisWeightLbs={weightOnOrBefore(weightEntries, today) ?? FALLBACK_WEIGHT_LBS}
         editingGoal={goal}
         onCancel={() => setEditing(false)}
         onSubmit={async (data) => {
@@ -421,12 +427,15 @@ type FormSlot = MealSlot & { id: string };
 function AddOrEditGoal({
   goals,
   today,
+  basisWeightLbs,
   editingGoal,
   onCancel,
   onSubmit,
 }: {
   goals: Goal[];
   today: string;
+  // Weight used for the live gram preview when no explicit target is set.
+  basisWeightLbs: number;
   editingGoal?: Goal;
   onCancel: () => void;
   onSubmit: (data: CreateGoal, trim?: SubmitTrim) => Promise<void>;
@@ -465,7 +474,7 @@ function AddOrEditGoal({
 
   // Live gram targets shown beside each macro %: calories = weight × mode
   // multiplier (delta is 0 for new/edited goals here), split by the percentages.
-  const estimatedCalories = targetWeight ? Math.ceil(targetWeight * MODE_MULTIPLIER[mode]) : 0;
+  const estimatedCalories = Math.ceil((targetWeight ?? basisWeightLbs) * MODE_MULTIPLIER[mode]);
   const gramTargets = macrosFromPercentage(
     estimatedCalories,
     Math.round(fats ?? 0),
@@ -478,7 +487,7 @@ function AddOrEditGoal({
       name: name || null,
       description: description || null,
       mode,
-      targetWeightLbs: targetWeight ?? 0,
+      targetWeightLbs: targetWeight ?? null,
       macroFats: Math.round(fats ?? 0),
       macroCarbs: Math.round(carbs ?? 0),
       macroProtein: Math.round(protein ?? 0),
@@ -490,10 +499,6 @@ function AddOrEditGoal({
 
   async function submit(trim?: SubmitTrim) {
     setError(null);
-    if (targetWeight == null || targetWeight <= 0) {
-      setError('Target weight is required.');
-      return;
-    }
     const macroFats = Math.round(fats ?? 0);
     const macroCarbs = Math.round(carbs ?? 0);
     const macroProtein = Math.round(protein ?? 0);
@@ -565,7 +570,11 @@ function AddOrEditGoal({
         ]}
         onChange={(v) => setMode(v)}
       />
-      <NumberInput label="Target weight (lb)" value={targetWeight} onChange={setTargetWeight} />
+      <NumberInput
+        label="Target weight (lb, optional)"
+        value={targetWeight}
+        onChange={setTargetWeight}
+      />
 
       <SectionHeading noMargin>Macros (must total 100%)</SectionHeading>
       <div className={recipes.grid.three}>

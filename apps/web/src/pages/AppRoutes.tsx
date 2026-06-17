@@ -15,7 +15,7 @@ import {
   SignedOut,
   UserButton,
 } from '@clerk/clerk-react';
-import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { NavLink, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { uuidv7 } from '@leanlog/data-access';
 import {
   AnalyticsScope,
@@ -137,9 +137,15 @@ const renderRouterNavLink = ({
   label: string;
   className: string;
 }) => (
-  <Link className={className} to={href}>
+  // NavLink underlines the link for the current page. `end` keeps "/track"
+  // (Execute) from matching its nested day/goal/nutrition routes.
+  <NavLink
+    to={href}
+    end={href === '/track'}
+    className={({ isActive }) => cn(className, isActive && 'underline underline-offset-4')}
+  >
     {label}
-  </Link>
+  </NavLink>
 );
 
 // Theme toggle (left) + Clerk user control (right), shown in every page header
