@@ -83,18 +83,18 @@ export function DailyTotalsCard({
 
         <div className={cn(recipes.stack.xs)}>
           <div className={cn(recipes.stack.row, recipes.stack.between)}>
-            <HelperText as="span">Net Carbs</HelperText>
+            <HelperText as="span">Carbs</HelperText>
             <HelperText as="span">
-              {netCarbs} net / {carbs} total / {macroTargets.carbs}
-              <UnitText>g</UnitText>
+              {carbs} / {macroTargets.carbs}
+              <UnitText>g</UnitText> · {netCarbs} net
             </HelperText>
           </div>
           <ProgressBar
-            value={netCarbs}
+            value={carbs}
             max={macroTargets.carbs || 1}
-            color={targetProgressColor(netCarbs, macroTargets.carbs)}
-            aria-label="Net carbs progress"
-            aria-valuetext={`${netCarbs} net of ${macroTargets.carbs}g`}
+            color={targetProgressColor(carbs, macroTargets.carbs)}
+            aria-label="Carbs progress"
+            aria-valuetext={`${carbs} of ${macroTargets.carbs}g`}
           />
         </div>
 

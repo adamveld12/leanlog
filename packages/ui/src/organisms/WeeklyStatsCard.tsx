@@ -58,7 +58,7 @@ export function WeeklyStatsCard({
             progress={hasDays ? stats.accuracyOverall : 0}
             detail={
               hasDays
-                ? `Cal ${stats.accuracyCalories}%  P ${stats.accuracyProtein}%  Net C ${stats.accuracyCarbs}%  F ${stats.accuracyFat}%`
+                ? `Cal ${stats.accuracyCalories}%  P ${stats.accuracyProtein}%  C ${stats.accuracyCarbs}%  F ${stats.accuracyFat}%`
                 : undefined
             }
             hint={
