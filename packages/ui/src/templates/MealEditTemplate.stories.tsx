@@ -24,7 +24,10 @@ const value = {
 
 const heading = {
   title: 'LUNCH',
-  profileHref: '/profile',
+  navLinks: [
+    { href: '/track', label: 'Execute' },
+    { href: '/track/goals', label: 'Goals' },
+  ],
   renderNavLink: ({
     href,
     label,

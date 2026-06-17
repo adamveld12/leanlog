@@ -10,7 +10,10 @@ import { MealTemplateEditTemplate } from './MealTemplateEditTemplate';
 const heading = {
   title: 'Breakfast',
   backHref: '/track/templates',
-  profileHref: '/profile',
+  navLinks: [
+    { href: '/track', label: 'Execute' },
+    { href: '/track/goals', label: 'Goals' },
+  ],
   renderNavLink: ({
     href,
     label,

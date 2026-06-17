@@ -294,6 +294,10 @@ export const CreateDailyMealLogSchema = DailyMealLogSchema.omit({
   weightLbs: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  // The goal that covers this date (#56). When present, the server materializes
+  // the day's meals from that goal's meal slots instead of the legacy templates.
+  goalId: z.string().optional(),
 });
 // Defined from profileFields (not UserProfileSchema) so .partial() keeps missing fields
 // as undefined — prevents Zod 4 defaults from overwriting existing DB values on partial updates.
@@ -343,3 +347,139 @@ export const DayTargetsSchema = z.object({
   mealCountTarget: z.number().min(0).optional(),
   weightLbs: z.number().positive().optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Goals (#56) — the target-planning authority that replaces Profile.
+// ---------------------------------------------------------------------------
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// One of the three planning phases. Cut/Maintain/Lean Gain map to fixed
+// latest-weight multipliers (10x/15x/16x) in calculations (R16).
+export const GoalModeSchema = z.enum(['cut', 'maintain', 'lean_gain']);
+
+// A meal slot is a named structure copied into each new day in the goal window
+// (R13/R57/R58). Slots may carry optional default ingredients that are snapshot
+// into the day's meal on creation (folds in the old meal-template seeding).
+export const MealSlotIngredientSchema = IngredientSchema.omit({
+  mealId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const MealSlotSchema = z.object({
+  name: z.string().min(1),
+  ingredients: z.array(MealSlotIngredientSchema).default([]),
+});
+
+// The default four slots applied to every new goal (R7/R14/R56).
+export const DEFAULT_MEAL_SLOTS: z.infer<typeof MealSlotSchema>[] = [
+  { name: 'Breakfast', ingredients: [] },
+  { name: 'Lunch', ingredients: [] },
+  { name: 'Dinner', ingredients: [] },
+  { name: 'Snack', ingredients: [] },
+];
+
+export const GOAL_DEFAULTS = {
+  mode: 'maintain' as const,
+  macroFats: 25,
+  macroCarbs: 35,
+  macroProtein: 40,
+  calorieDelta: 0,
+};
+
+// Resilient reader for the stored meal_slots_json column: tolerates malformed
+// JSON (falls back to the default four slots) and normalizes each slot through
+// MealSlotSchema so a bad row never crashes a goal read.
+export function parseMealSlotsJson(
+  json: string | null | undefined,
+): z.infer<typeof MealSlotSchema>[] {
+  if (json == null) return DEFAULT_MEAL_SLOTS;
+  try {
+    const parsed = z.array(MealSlotSchema).safeParse(JSON.parse(json));
+    return parsed.success ? parsed.data : DEFAULT_MEAL_SLOTS;
+  } catch {
+    return DEFAULT_MEAL_SLOTS;
+  }
+}
+
+export const GoalSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  // The background maintenance goal supplies fallback targets and is the only
+  // goal allowed null start/end dates (R6/R8/R24).
+  isBackground: z.boolean().default(false),
+  name: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  mode: GoalModeSchema,
+  // Required for user goals (R11); null for the background goal until a weight
+  // is known, where it resolves to the latest logged weight or 180 (R7/R63).
+  targetWeightLbs: z.number().positive().nullable(),
+  macroFats: z.number().min(0).max(100),
+  macroCarbs: z.number().min(0).max(100),
+  macroProtein: z.number().min(0).max(100),
+  startDate: z.string().regex(ISO_DATE).nullable(),
+  endDate: z.string().regex(ISO_DATE).nullable(),
+  // Active-goal-only calorie adjustment, default 0 (R20/R21).
+  calorieDelta: z.number().int().default(0),
+  mealSlots: z.array(MealSlotSchema).default(DEFAULT_MEAL_SLOTS),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+// Macro percentages must total 100 (R12). Shared by create/update refinements.
+const macrosSumTo100 = (v: { macroFats: number; macroCarbs: number; macroProtein: number }) =>
+  v.macroFats + v.macroCarbs + v.macroProtein === 100;
+
+// Create input: user goals require a target weight and a start date, macros must
+// sum to 100, and (when present) the end date must be after the start date
+// because the range is inclusive (R11/R12/R24/R26). The today/overlap/future-cap
+// rules need the user's existing goals + today, so they live in goal validation
+// (see goals.ts), not this structural schema.
+export const CreateGoalSchema = GoalSchema.omit({
+  id: true,
+  userId: true,
+  isBackground: true,
+  calorieDelta: true,
+  createdAt: true,
+  updatedAt: true,
+})
+  .extend({
+    // Cut and Lean Gain require a target weight (refined below). Maintain leaves
+    // it null and derives the target from the latest logged weight (or 180), like
+    // the background goal.
+    targetWeightLbs: z.number().positive().nullable().optional(),
+    startDate: z.string().regex(ISO_DATE),
+  })
+  .strict()
+  .refine(macrosSumTo100, {
+    message: 'Macro percentages must total 100',
+    path: ['macroProtein'],
+  })
+  .refine((v) => v.endDate == null || v.endDate > v.startDate, {
+    message: 'End date must be after start date',
+    path: ['endDate'],
+  })
+  .refine((v) => v.mode === 'maintain' || (v.targetWeightLbs != null && v.targetWeightLbs > 0), {
+    message: 'Target weight is required for cut and lean gain goals',
+    path: ['targetWeightLbs'],
+  });
+
+// Update input is partial; which fields are actually allowed depends on the
+// goal's lifecycle state (R47–R52) and is enforced in the repository.
+export const UpdateGoalSchema = GoalSchema.omit({
+  id: true,
+  userId: true,
+  isBackground: true,
+  createdAt: true,
+  updatedAt: true,
+})
+  .partial()
+  .strict()
+  .refine(
+    (v) =>
+      v.macroFats == null && v.macroCarbs == null && v.macroProtein == null
+        ? true
+        : (v.macroFats ?? 0) + (v.macroCarbs ?? 0) + (v.macroProtein ?? 0) === 100,
+    { message: 'Macro percentages must total 100', path: ['macroProtein'] },
+  );

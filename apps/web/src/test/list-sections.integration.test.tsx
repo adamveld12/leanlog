@@ -30,6 +30,7 @@ const mockProfile: UserProfile = {
 
 type StoreCtx = {
   days: DailyMealLog[];
+  goals: unknown[];
   profile: UserProfile;
   loading: boolean;
   error: null;
@@ -65,6 +66,7 @@ function FakeStateProvider({
 
   const store: StoreCtx = {
     days,
+    goals: [],
     profile: mockProfile,
     loading: false,
     error: null,

@@ -1,13 +1,15 @@
 import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
-import { dailyMealLogs, meals, ingredients } from '../schema';
+import { dailyMealLogs, meals, ingredients, goals } from '../schema';
 import { createMealTemplateRepository } from './mealTemplates';
+import { parseMealSlotsJson } from '@leanlog/data-access';
 import type {
   DayRepository,
   CreateDailyMealLog,
   DayTargets,
   MealTemplateIngredient,
+  MealSlotIngredient,
 } from '@leanlog/data-access';
 
 // Snapshot a template's default ingredient into a fresh meal ingredient row.
@@ -43,6 +45,77 @@ function copyTemplateIngredient(
     createdAt: ts,
     updatedAt: ts,
   };
+}
+
+// Snapshot a goal meal-slot's default ingredient into a fresh meal ingredient
+// row, minting a new id so the copy is independent of the goal (#56).
+function copySlotIngredient(
+  ing: MealSlotIngredient,
+  mealId: string,
+  ts: string,
+): typeof ingredients.$inferInsert {
+  return {
+    id: uuidv7(),
+    mealId,
+    name: ing.name,
+    weight: ing.weight,
+    calories: ing.calories,
+    fat: ing.fat,
+    saturatedFat: ing.saturatedFat,
+    carbs: ing.carbs,
+    fiber: ing.fiber,
+    protein: ing.protein,
+    unsaturatedFat: ing.unsaturatedFat ?? null,
+    monounsaturatedFat: ing.monounsaturatedFat ?? null,
+    polyunsaturatedFat: ing.polyunsaturatedFat ?? null,
+    transFat: ing.transFat ?? null,
+    sugar: ing.sugar ?? null,
+    sugarAlcohol: ing.sugarAlcohol ?? null,
+    allulose: ing.allulose ?? null,
+    alcohol: ing.alcohol ?? null,
+    calorieSource: ing.calorieSource,
+    estimatedCalories: ing.estimatedCalories,
+    micronutrientsJson: ing.micronutrients == null ? null : JSON.stringify(ing.micronutrients),
+    sourceDatabaseIngredientId: ing.sourceDatabaseIngredientId ?? null,
+    createdAt: ts,
+    updatedAt: ts,
+  };
+}
+
+// A meal to materialize on a new day: its name plus a factory producing the
+// ingredient insert rows for a given meal id. Sourced from a goal's slots when a
+// covering goal is supplied, otherwise from the legacy meal templates.
+type MealSource = {
+  name: string;
+  ingredients: (mealId: string, ts: string) => (typeof ingredients.$inferInsert)[];
+};
+
+async function resolveMealSources(
+  db: D1Database,
+  userId: string,
+  goalId: string | undefined,
+): Promise<MealSource[]> {
+  const d = drizzle(db);
+  if (goalId) {
+    const rows = await d.select().from(goals).where(eq(goals.id, goalId));
+    const goal = rows[0];
+    if (goal && goal.userId === userId) {
+      return parseMealSlotsJson(goal.mealSlotsJson).map((slot) => ({
+        name: slot.name,
+        ingredients: (mealId, ts) =>
+          slot.ingredients.map((ing) => copySlotIngredient(ing, mealId, ts)),
+      }));
+    }
+    return [];
+  }
+  const templateRepo = createMealTemplateRepository(db);
+  await templateRepo.ensureSeeded(userId);
+  const templates = await templateRepo.listByUser(userId);
+  return templates.map((template) => ({
+    name: template.name,
+    ingredients: (mealId, ts) =>
+      template.ingredients.map((ing) => copyTemplateIngredient(ing, mealId, ts)),
+  }));
 }
 
 export function createDayRepository(db: D1Database): DayRepository {
@@ -117,38 +190,31 @@ export function createDayRepository(db: D1Database): DayRepository {
       const id = uuidv7();
       const ts = now();
 
-      // Copy-on-create: snapshot the user's current templates into day-specific
-      // meals. Done here (server-side) so later template edits can never touch a
-      // day that already exists (R11–R14). Zero-template users get an empty,
-      // ad-hoc day (R33).
-      const templateRepo = createMealTemplateRepository(db);
-      await templateRepo.ensureSeeded(userId);
-      const templates = await templateRepo.listByUser(userId);
+      // The day's meal structure is snapshot on create so later goal/template
+      // edits can never touch a day that already exists (R59). When a covering
+      // goal is supplied (#56) its meal slots are the source of structure; we
+      // fall back to the legacy meal templates otherwise.
+      const slots = await resolveMealSources(db, userId, data.goalId);
 
-      // Build every copied meal + ingredient insert up front so the whole day —
-      // day row, meals, and ingredients — is written atomically via d.batch().
-      // A sequential set of awaits could leave a half-built day behind if any
-      // insert failed mid-loop, and the duplicate-date guard would then block
-      // recreating it.
-      const mealStatements = templates.flatMap((template) => {
+      // Build every meal + ingredient insert up front so the whole day — day row,
+      // meals, and ingredients — is written atomically via d.batch(). A sequential
+      // set of awaits could leave a half-built day behind if any insert failed
+      // mid-loop, and the duplicate-date guard would then block recreating it.
+      const mealStatements = slots.flatMap((slot) => {
         const mealId = uuidv7();
         // Every copied meal starts unlogged, even with default ingredients (R12).
         const mealInsert = d.insert(meals).values({
           id: mealId,
           dailyMealLogId: id,
-          name: template.name,
+          name: slot.name,
           origin: 'template',
           logged: false,
           createdAt: ts,
           updatedAt: ts,
         });
-        if (template.ingredients.length === 0) return [mealInsert];
-        return [
-          mealInsert,
-          d
-            .insert(ingredients)
-            .values(template.ingredients.map((ing) => copyTemplateIngredient(ing, mealId, ts))),
-        ];
+        const ingredientInserts = slot.ingredients(mealId, ts);
+        if (ingredientInserts.length === 0) return [mealInsert];
+        return [mealInsert, d.insert(ingredients).values(ingredientInserts)];
       });
 
       await d.batch([
@@ -160,9 +226,9 @@ export function createDayRepository(db: D1Database): DayRepository {
           targetFat: data.targetFat,
           targetCarbs: data.targetCarbs,
           targetProtein: data.targetProtein,
-          // Template-backed days derive coverage from copied meals; mealCountTarget
-          // is kept coherent (copied count, or 0 for ad-hoc days) for legacy display.
-          mealCountTarget: templates.length,
+          // Days derive coverage from their copied meals; mealCountTarget is kept
+          // coherent (slot count, or 0 for empty) for legacy display.
+          mealCountTarget: slots.length,
           createdAt: ts,
           updatedAt: ts,
         }),

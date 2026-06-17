@@ -16,6 +16,11 @@ const renderNavLink = ({
   </a>
 );
 
+const navLinks = [
+  { href: '/track', label: 'Execute' },
+  { href: '/track/goals', label: 'Goals' },
+];
+
 describe('PageNavHeading', () => {
   it('renders title, subtitle, and nav links', () => {
     render(
@@ -23,39 +28,41 @@ describe('PageNavHeading', () => {
         title="Meal"
         subtitle="400 kcal"
         backHref="/day/1"
-        profileHref="/profile"
+        navLinks={navLinks}
         renderNavLink={renderNavLink}
       />,
     );
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Meal' })).toBeInTheDocument();
+    // The h1 always shows the app name; the per-page title prop is ignored.
+    expect(screen.getByRole('heading', { level: 1, name: 'LeanLog' })).toBeInTheDocument();
     expect(screen.getAllByText('400 kcal')).toHaveLength(2);
     expect(screen.getByRole('link', { name: '← Back' })).toHaveAttribute('href', '/day/1');
-    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
+    expect(screen.getByRole('link', { name: 'Execute' })).toHaveAttribute('href', '/track');
+    expect(screen.getByRole('link', { name: 'Goals' })).toHaveAttribute('href', '/track/goals');
   });
 
   it('hides back link when backHref is not provided', () => {
     const { container } = render(
-      <PageNavHeading title="leanlog" profileHref="/profile" renderNavLink={renderNavLink} />,
+      <PageNavHeading title="leanlog" navLinks={navLinks} renderNavLink={renderNavLink} />,
     );
     const queries = within(container);
 
-    expect(queries.getByRole('link', { name: 'Profile' })).toBeInTheDocument();
+    expect(queries.getByRole('link', { name: 'Goals' })).toBeInTheDocument();
     expect(queries.queryByRole('link', { name: '← Back' })).toBeNull();
   });
 
-  it('renders right-side content next to profile link', () => {
+  it('renders right-side content next to nav links', () => {
     const { container } = render(
       <PageNavHeading
         title="leanlog"
-        profileHref="/profile"
+        navLinks={navLinks}
         rightContent={<button type="button">Auth</button>}
         renderNavLink={renderNavLink}
       />,
     );
     const queries = within(container);
 
-    expect(queries.getByRole('link', { name: 'Profile' })).toBeInTheDocument();
+    expect(queries.getByRole('link', { name: 'Goals' })).toBeInTheDocument();
     expect(queries.getByRole('button', { name: 'Auth' })).toBeInTheDocument();
   });
 });

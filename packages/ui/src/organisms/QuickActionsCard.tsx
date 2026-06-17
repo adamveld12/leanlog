@@ -12,6 +12,8 @@ export type QuickActionsCardProps = {
   week?: Omit<MacroProgressBlockProps, 'label'>;
   weekDayCount?: number;
   onAction: () => void;
+  // A shortcut to the goal covering today (mode + end date), linking to Goals.
+  activeGoal?: { summary: string; onOpen: () => void };
 };
 
 export function QuickActionsCard({
@@ -21,6 +23,7 @@ export function QuickActionsCard({
   week,
   weekDayCount,
   onAction,
+  activeGoal,
 }: QuickActionsCardProps) {
   return (
     <AnalyticsScope properties={{ organism: 'QuickActionsCard' }}>
@@ -28,6 +31,12 @@ export function QuickActionsCard({
         <Button onClick={onAction} className="w-full">
           Log a meal
         </Button>
+
+        {activeGoal ? (
+          <Button variant="subtle" fullWidth onClick={activeGoal.onOpen}>
+            {activeGoal.summary}
+          </Button>
+        ) : null}
 
         {!hasDays ? (
           <HelperText as="p" className="text-center">

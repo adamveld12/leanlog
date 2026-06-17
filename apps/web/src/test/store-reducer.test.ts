@@ -29,7 +29,7 @@ describe('storeReducer', () => {
     const fetched = { id: 'd1', date: 'y', meals: [] } as unknown as DailyMealLog;
     const next = storeReducer(
       { ...initialStoreState, days: [optimistic] },
-      { type: 'loaded', days: [fetched], profile: {} as never, templates: [] },
+      { type: 'loaded', days: [fetched], profile: {} as never, templates: [], goals: [] },
     );
     expect(next.days.map((d) => d.id)).toEqual(['d1', 'opt']);
   });

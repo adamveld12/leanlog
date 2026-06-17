@@ -1,6 +1,7 @@
 export * from './schemas';
 export * from './models';
 export * from './calculations';
+export * from './goals';
 export * from './validation';
 export * from './dailyValues';
 export * from './scan';

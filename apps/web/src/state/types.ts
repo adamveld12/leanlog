@@ -2,7 +2,6 @@ import type {
   DailyMealLog,
   Meal,
   UserProfile,
-  CreateDailyMealLog,
   UpdateProfile,
   UpsertIngredient,
   DayTargets,
@@ -13,6 +12,9 @@ import type {
   AddIngredientFromDatabase,
   MealTemplate,
   UpsertTemplateIngredient,
+  Goal,
+  CreateGoal,
+  UpdateGoal,
 } from '@leanlog/data-access';
 
 export type EnsureDayResult =
@@ -23,14 +25,14 @@ export type EnsureDayResult =
 export type Store = {
   days: DailyMealLog[];
   templates: MealTemplate[];
+  goals: Goal[];
   profile: UserProfile | null;
   loading: boolean;
   error: string | null;
   ensureDayLoaded(dayId: string): Promise<EnsureDayResult>;
-  addDay(
-    date: string,
-    opts: Omit<CreateDailyMealLog, 'date' | 'mealCountTarget'>,
-  ): Promise<DailyMealLog>;
+  // Creates a day for the date, deriving its targets and meal slots from the
+  // covering goal and the latest known weight (#56).
+  addDay(date: string): Promise<DailyMealLog>;
   removeDay(dayId: string): Promise<void>;
   addMeal(dayId: string, name: string): Promise<Meal | null>;
   removeMeal(dayId: string, mealId: string): Promise<void>;
@@ -72,4 +74,7 @@ export type Store = {
   updateDayWeight(dayId: string, weightLbs: number): Promise<void>;
   patchProfileLocal(data: Partial<UserProfile>): void;
   updateProfile(data: UpdateProfile): Promise<void>;
+  createGoal(data: CreateGoal): Promise<Goal>;
+  updateGoal(goalId: string, data: UpdateGoal): Promise<Goal>;
+  removeGoal(goalId: string): Promise<void>;
 };

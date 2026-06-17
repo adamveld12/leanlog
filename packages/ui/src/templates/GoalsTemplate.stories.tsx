@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { HelperText } from '../atoms/HelperText';
 import { SectionCard } from '../molecules/SectionCard';
-import { NutritionFactsDatabaseTemplate } from './NutritionFactsDatabaseTemplate';
+import { GoalsTemplate } from './GoalsTemplate';
 
 const heading = {
-  title: 'Nutrition Facts Database',
-  backHref: '/track',
+  title: 'Goals',
   navLinks: [
     { href: '/track', label: 'Execute' },
     { href: '/track/goals', label: 'Goals' },
@@ -25,19 +24,19 @@ const heading = {
   ),
 };
 
-const meta: Meta<typeof NutritionFactsDatabaseTemplate> = {
-  title: 'Design System/Templates/NutritionFactsDatabaseTemplate',
-  component: NutritionFactsDatabaseTemplate,
+const meta: Meta<typeof GoalsTemplate> = {
+  title: 'Design System/Templates/GoalsTemplate',
+  component: GoalsTemplate,
   args: {
     heading,
     children: (
-      <SectionCard title="Nutrition Facts Database">
-        <HelperText as="p">Browse, scan, and manage your saved nutrition labels.</HelperText>
+      <SectionCard title="Timeline">
+        <HelperText as="p">Plan cut, maintain, and lean-gain phases over time.</HelperText>
       </SectionCard>
     ),
   },
 };
 export default meta;
-type Story = StoryObj<typeof NutritionFactsDatabaseTemplate>;
+type Story = StoryObj<typeof GoalsTemplate>;
 
 export const Default: Story = {};

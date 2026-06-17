@@ -1,14 +1,15 @@
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
-import { PageNavHeading, type PageNavHeadingProps } from './PageNavHeading';
+import { APP_NAV_LINKS } from './appNav';
+import { PageNavHeading, type NavLink, type PageNavHeadingProps } from './PageNavHeading';
 
-export type AppPageHeadingProps = Omit<PageNavHeadingProps, 'profileHref'> & {
-  profileHref?: string;
+export type AppPageHeadingProps = Omit<PageNavHeadingProps, 'navLinks'> & {
+  navLinks?: NavLink[];
 };
 
-export function AppPageHeading({ profileHref = '/track/profile', ...props }: AppPageHeadingProps) {
+export function AppPageHeading({ navLinks = APP_NAV_LINKS, ...props }: AppPageHeadingProps) {
   return (
     <AnalyticsScope properties={{ organism: 'AppPageHeading' }}>
-      <PageNavHeading {...props} profileHref={profileHref} />
+      <PageNavHeading {...props} navLinks={navLinks} />
     </AnalyticsScope>
   );
 }

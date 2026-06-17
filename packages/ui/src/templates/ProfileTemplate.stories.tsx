@@ -8,7 +8,10 @@ const meta: Meta<typeof ProfileTemplate> = {
   args: {
     heading: {
       title: 'Profile',
-      profileHref: '/profile',
+      navLinks: [
+        { href: '/track', label: 'Execute' },
+        { href: '/track/goals', label: 'Goals' },
+      ],
       renderNavLink: ({ href, label, className }) => (
         <a className={className} href={href}>
           {label}
