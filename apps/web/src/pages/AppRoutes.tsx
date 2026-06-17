@@ -55,7 +55,9 @@ import {
   caloriesFromMode,
   deriveDayPlan,
   dayMealStructure,
+  resolveCoveringGoal,
   resolveScannedMicronutrients,
+  type GoalMode,
   type NutritionUnit,
   type ScanResolution,
   type NutritionDatabaseIngredient,
@@ -254,9 +256,25 @@ function LandingPage() {
   );
 }
 
+const GOAL_MODE_LABEL: Record<GoalMode, string> = {
+  cut: 'Cut',
+  maintain: 'Maintain',
+  lean_gain: 'Lean Gain',
+};
+
 function DayList() {
   const nav = useNavigate();
-  const { days, profile, loading, error, addDay } = useStore();
+  const { days, goals, profile, loading, error, addDay } = useStore();
+
+  // A shortcut to the goal covering today, shown in Quick Actions (#56).
+  const activeGoal = useMemo(() => {
+    const goal = resolveCoveringGoal(todayIso(), goals);
+    if (!goal) return undefined;
+    const summary = goal.isBackground
+      ? '🎯 Maintenance — set a goal'
+      : `🎯 ${GOAL_MODE_LABEL[goal.mode]} · ${goal.endDate ? `ends ${prettyDate(goal.endDate)}` : 'ongoing'}`;
+    return { summary, onOpen: () => nav('/track/goals') };
+  }, [goals, nav]);
 
   const maintenance = useMemo(
     () => (profile ? (caloriesFromMode(profile.weightLbs, 'maintenance') ?? 0) : 0),
@@ -356,6 +374,7 @@ function DayList() {
           }
           weekDayCount={weekDays.length}
           onAction={() => void handleAction()}
+          activeGoal={activeGoal}
         />
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
