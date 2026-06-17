@@ -226,6 +226,7 @@ export function GoalsPage() {
           today={today}
           weightEntries={weightEntries}
           onUpdate={(data) => updateGoal(selectedGoal.id, data)}
+          onSaved={setSavedMessage}
         />
       ) : null}
     </>
@@ -273,16 +274,20 @@ function GoalDetail({
   today,
   weightEntries,
   onUpdate,
+  onSaved,
 }: {
   goal: Goal;
   today: string;
   weightEntries: { date: string; weightLbs: number }[];
   onUpdate: (data: Parameters<ReturnType<typeof useStore>['updateGoal']>[1]) => Promise<Goal>;
+  onSaved: (message: string) => void;
 }) {
   const lifecycle = goalLifecycle(goal, today);
   const fullyEditable = lifecycle === 'future' || lifecycle === 'today';
+  const canEdit = fullyEditable || lifecycle === 'active';
   const slotNames = goal.mealSlots.map((s) => s.name).join(' · ');
 
+  const [editing, setEditing] = useState(false);
   const [name, setName] = useState(goal.name ?? '');
   const [description, setDescription] = useState(goal.description ?? '');
   // Seeded once from the goal; GoalDetail is remounted via key={goal.id} when the
@@ -290,13 +295,25 @@ function GoalDetail({
   // react-doctor-disable-next-line react-doctor/no-derived-useState
   const [delta, setDelta] = useState<number | null>(goal.calorieDelta);
 
-  if (fullyEditable) {
+  // Derived display values for the read-only summary.
+  const deltaApplies = lifecycle === 'active' || lifecycle === 'today';
+  const calories = goal.targetWeightLbs
+    ? Math.max(
+        0,
+        Math.ceil(goal.targetWeightLbs * MODE_MULTIPLIER[goal.mode]) +
+          (deltaApplies ? goal.calorieDelta : 0),
+      )
+    : 0;
+  const grams = macrosFromPercentage(calories, goal.macroFats, goal.macroCarbs, goal.macroProtein);
+
+  // Full edit form for future / today-started goals.
+  if (editing && fullyEditable) {
     return (
       <AddOrEditGoal
         goals={[]}
         today={today}
         editingGoal={goal}
-        onCancel={() => undefined}
+        onCancel={() => setEditing(false)}
         onSubmit={async (data) => {
           await onUpdate({
             name: data.name,
@@ -311,6 +328,8 @@ function GoalDetail({
             mealSlots: data.mealSlots,
           });
           posthog.capture('goal_edited', { mode: data.mode, lifecycle });
+          setEditing(false);
+          onSaved('Goal updated');
         }}
       />
     );
@@ -324,23 +343,29 @@ function GoalDetail({
           value={goalOutcome(goal, weightEntries, today) === 'reached' ? '✅ Reached' : '❌ Missed'}
         />
       ) : null}
+      {goal.name ? <SummaryRow label="Name" value={goal.name} /> : null}
+      {goal.description ? <SummaryRow label="Notes" value={goal.description} /> : null}
       <SummaryRow label="Dates" value={dateRangeLabel(goal.startDate, goal.endDate)} />
       <SummaryRow label="Target weight" value={`${goal.targetWeightLbs ?? '—'} lb`} />
       <SummaryRow
-        label="Calories"
-        value={`${MODE_MULTIPLIER[goal.mode]}× weight${goal.calorieDelta ? ` ${goal.calorieDelta > 0 ? '+' : ''}${goal.calorieDelta}` : ''}`}
+        label="Daily calories"
+        value={`${calories.toLocaleString()} kcal${
+          deltaApplies && goal.calorieDelta
+            ? ` (incl. ${goal.calorieDelta > 0 ? '+' : ''}${goal.calorieDelta})`
+            : ''
+        }`}
       />
       <SummaryRow
         label="Macros"
-        value={`${goal.macroProtein}/${goal.macroCarbs}/${goal.macroFats} (P/C/F)`}
+        value={`${goal.macroProtein}/${goal.macroCarbs}/${goal.macroFats} P/C/F · ${grams.targetProtein}/${grams.targetCarbs}/${grams.targetFat} g`}
       />
       <SummaryRow label="Meal slots" value={slotNames} />
 
       {/* Active (older-than-today) goals allow only name, description, end date and
           calorie delta edits (R50/R51). Past goals are fully read-only (R52). */}
-      {lifecycle === 'active' ? (
+      {editing && lifecycle === 'active' ? (
         <div className={recipes.stack.sm}>
-          <SectionHeading noMargin>Editable</SectionHeading>
+          <SectionHeading noMargin>Edit</SectionHeading>
           <Field label="Name">
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </Field>
@@ -348,23 +373,35 @@ function GoalDetail({
             <Input value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
           <NumberInput label="Calorie delta" value={delta} onChange={setDelta} />
-          <Button
-            variant="primary"
-            onClick={() => {
-              posthog.capture('calorie_delta_changed', { delta: delta ?? 0 });
-              void onUpdate({
-                name: name || null,
-                description: description || null,
-                calorieDelta: Math.round(delta ?? 0),
-              });
-            }}
-          >
-            Save changes
-          </Button>
+          <div className={cn(recipes.stack.row, 'flex-wrap')}>
+            <Button
+              variant="primary"
+              onClick={() => {
+                posthog.capture('calorie_delta_changed', { delta: delta ?? 0 });
+                void onUpdate({
+                  name: name || null,
+                  description: description || null,
+                  calorieDelta: Math.round(delta ?? 0),
+                }).then(() => {
+                  setEditing(false);
+                  onSaved('Goal updated');
+                });
+              }}
+            >
+              Save changes
+            </Button>
+            <Button variant="ghost" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+          </div>
           <HelperText>
             Changing the calorie delta updates today and future days; past days keep their targets.
           </HelperText>
         </div>
+      ) : canEdit ? (
+        <Button variant="secondary" onClick={() => setEditing(true)}>
+          Edit
+        </Button>
       ) : null}
     </SectionCard>
   );
