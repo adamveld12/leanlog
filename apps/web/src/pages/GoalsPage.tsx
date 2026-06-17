@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import posthog from 'posthog-js';
 import {
   Button,
@@ -92,7 +93,13 @@ export function GoalsPage() {
   const weightEntries = useMemo(() => selectWeightEntries(days), [days]);
   const segments = useMemo(() => buildTimeline(goals, today), [goals, today]);
 
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  // Deep link: ?goal=<id> selects that goal on open (e.g. from the Day List
+  // active-goal shortcut).
+  const [searchParams] = useSearchParams();
+  const requestedGoalId = searchParams.get('goal');
+  const [selectedKey, setSelectedKey] = useState<string | null>(
+    requestedGoalId ? `goal:${requestedGoalId}` : null,
+  );
   const [adding, setAdding] = useState(false);
   // Transient confirmation shown at the bottom of the timeline card after a save.
   const [savedMessage, setSavedMessage] = useState<string | null>(null);

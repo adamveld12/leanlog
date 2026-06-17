@@ -270,10 +270,14 @@ function DayList() {
   const activeGoal = useMemo(() => {
     const goal = resolveCoveringGoal(todayIso(), goals);
     if (!goal) return undefined;
-    const summary = goal.isBackground
-      ? '🎯 Maintenance — set a goal'
-      : `🎯 ${GOAL_MODE_LABEL[goal.mode]} · ${goal.endDate ? `ends ${prettyDate(goal.endDate)}` : 'ongoing'}`;
-    return { summary, onOpen: () => nav('/track/goals') };
+    if (goal.isBackground) {
+      return { summary: '🎯 Maintenance — set a goal', onOpen: () => nav('/track/goals') };
+    }
+    const namePart = goal.name?.trim() ? `${goal.name.trim()} · ` : '';
+    const endPart = goal.endDate ? `ends ${prettyDate(goal.endDate)}` : 'ongoing';
+    const summary = `🎯 ${namePart}${GOAL_MODE_LABEL[goal.mode]} · ${endPart}`;
+    // Deep-link to this specific goal on the Goals page.
+    return { summary, onOpen: () => nav(`/track/goals?goal=${goal.id}`) };
   }, [goals, nav]);
 
   const maintenance = useMemo(
