@@ -343,14 +343,14 @@ function GoalDetail({
   }
 
   return (
-    <SectionCard title={`${MODE_LABEL[goal.mode]} goal`}>
+    <SectionCard title={goal.name?.trim() || `${MODE_LABEL[goal.mode]} goal`}>
       {lifecycle === 'past' ? (
         <SummaryRow
           label="Outcome"
           value={goalOutcome(goal, weightEntries, today) === 'reached' ? '✅ Reached' : '❌ Missed'}
         />
       ) : null}
-      {goal.name ? <SummaryRow label="Name" value={goal.name} /> : null}
+      <SummaryRow label="Mode" value={MODE_LABEL[goal.mode]} />
       {goal.description ? <SummaryRow label="Notes" value={goal.description} /> : null}
       <SummaryRow label="Dates" value={dateRangeLabel(goal.startDate, goal.endDate)} />
       <SummaryRow label="Target weight" value={`${goal.targetWeightLbs ?? '—'} lb`} />
