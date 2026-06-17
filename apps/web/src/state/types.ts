@@ -9,6 +9,7 @@ import type {
   NutritionDatabaseIngredient,
   NutritionDatabaseIngredientSearchResult,
   CreateNutritionDatabaseIngredient,
+  UpdateNutritionDatabaseIngredient,
   AddIngredientFromDatabase,
   MealTemplate,
   UpsertTemplateIngredient,
@@ -55,9 +56,18 @@ export type Store = {
   searchNutritionDatabase(
     query: string,
   ): Promise<{ results: NutritionDatabaseIngredientSearchResult[]; total: number }>;
+  browseNutritionDatabase(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ results: NutritionDatabaseIngredientSearchResult[]; total: number }>;
   createNutritionDatabaseIngredient(
     input: CreateNutritionDatabaseIngredient,
   ): Promise<NutritionDatabaseIngredient>;
+  updateNutritionDatabaseIngredient(
+    id: string,
+    input: UpdateNutritionDatabaseIngredient,
+  ): Promise<NutritionDatabaseIngredient>;
+  deleteNutritionDatabaseIngredient(id: string): Promise<void>;
   updateDayTargets(dayId: string, targets: DayTargets): Promise<void>;
   updateDayWeight(dayId: string, weightLbs: number): Promise<void>;
   patchProfileLocal(data: Partial<UserProfile>): void;

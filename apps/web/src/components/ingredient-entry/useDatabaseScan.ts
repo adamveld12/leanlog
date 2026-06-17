@@ -12,7 +12,7 @@ export function useDatabaseScan({
   onResult,
   onError,
 }: {
-  analyticsContext: 'meal' | 'template';
+  analyticsContext: 'meal' | 'template' | 'database';
   onResult: (result: ScanResolution) => void;
   onError: (message: string) => void;
 }) {

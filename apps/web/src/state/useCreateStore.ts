@@ -147,8 +147,20 @@ export function useCreateStore(): Store {
       return withToken((t) => api.nutritionDatabase.search(t, query));
     },
 
+    async browseNutritionDatabase(opts) {
+      return withToken((t) => api.nutritionDatabase.list(t, opts));
+    },
+
     async createNutritionDatabaseIngredient(input) {
       return withToken((t) => api.nutritionDatabase.create(t, input));
+    },
+
+    async updateNutritionDatabaseIngredient(id, input) {
+      return withToken((t) => api.nutritionDatabase.update(t, id, input));
+    },
+
+    async deleteNutritionDatabaseIngredient(id) {
+      await withToken((t) => api.nutritionDatabase.delete(t, id));
     },
 
     async updateDayTargets(dayId, targets) {
