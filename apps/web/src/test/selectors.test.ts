@@ -310,6 +310,46 @@ describe('aggregateStats', () => {
     const result = aggregateStats([day], 2700);
     expect(result.totalNetCarbs).toBe(0);
   });
+
+  it('computes carb accuracy from total carbs, not net carbs', () => {
+    // carbs=50, fiber=40 → netCarbs=10, totalCarbs=50, target=50.
+    // Net-carb accuracy would be macroAccuracy(10, 50) = 0%; total-carb
+    // accuracy is macroAccuracy(50, 50) = 100%. Guards against a regression
+    // back to net carbs driving the accuracy metric.
+    const meal = {
+      id: 'm',
+      dailyMealLogId: 'd',
+      origin: 'adhoc' as const,
+      logged: false,
+      name: 'X',
+      createdAt: now,
+      updatedAt: now,
+      ingredients: [
+        {
+          id: '1',
+          mealId: 'm',
+          name: 'A',
+          weight: 100,
+          calories: 200,
+          estimatedCalories: 200,
+          calorieSource: 'estimated' as const,
+          fat: 5,
+          saturatedFat: 0,
+          carbs: 50,
+          fiber: 40,
+          protein: 10,
+          sugarAlcohol: null,
+          allulose: null,
+          alcohol: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+    };
+    const day = makeDay({ targetCarbs: 50, meals: [meal] });
+    const result = aggregateStats([day], 2700);
+    expect(result.accuracy.carbs).toBe(100);
+  });
 });
 
 describe('selectWeightEntries', () => {
