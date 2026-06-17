@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import posthog from 'posthog-js';
 import {
   Button,
@@ -14,6 +14,7 @@ import {
   RadioGroup,
   SectionCard,
   SectionHeading,
+  SuccessText,
   Text,
   WarningText,
 } from '@leanlog/ui';
@@ -90,6 +91,14 @@ export function GoalsPage() {
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  // Transient confirmation shown at the bottom of the timeline card after a save.
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!savedMessage) return;
+    const timer = setTimeout(() => setSavedMessage(null), 4000);
+    return () => clearTimeout(timer);
+  }, [savedMessage]);
 
   const defaultKey = useMemo(() => {
     const def = defaultSelectedSegment(segments);
@@ -187,6 +196,7 @@ export function GoalsPage() {
         {!canAddGoal ? (
           <HelperText>You can plan at most two future goals at a time.</HelperText>
         ) : null}
+        {savedMessage ? <SuccessText>{savedMessage}</SuccessText> : null}
       </SectionCard>
 
       {adding ? (
@@ -204,6 +214,7 @@ export function GoalsPage() {
             });
             setAdding(false);
             setSelectedKey(`goal:${created.id}`);
+            setSavedMessage('Goal created');
           }}
         />
       ) : selected?.kind === 'maintenance' ? (
@@ -471,7 +482,11 @@ function AddOrEditGoal({
         return;
       }
     }
-    await onSubmit(build(), trim);
+    try {
+      await onSubmit(build(), trim);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not save the goal. Please try again.');
+    }
   }
 
   return (

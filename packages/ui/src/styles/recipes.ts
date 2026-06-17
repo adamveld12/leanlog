@@ -25,6 +25,7 @@ export const recipes = {
     meta: 'text-xs leading-4 font-medium text-[var(--ll-text-muted)]',
     pageSubtitle: 'text-sm font-medium text-[var(--ll-text-muted)]',
     warn: 'text-xs font-medium text-[var(--ll-warn)]',
+    success: 'text-xs font-medium text-[var(--ll-saved)]',
     tracked: 'font-semibold text-[var(--ll-saved)]',
     missed: 'font-semibold text-[var(--ll-danger)]',
   },

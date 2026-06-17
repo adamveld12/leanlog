@@ -24,6 +24,7 @@ export * from './atoms/Select';
 export * from './atoms/Spinner';
 export * from './atoms/Text';
 export * from './atoms/UnitText';
+export * from './atoms/SuccessText';
 export * from './atoms/WarningText';
 export * from './molecules/ActionRow';
 export * from './molecules/DateSelect3';
