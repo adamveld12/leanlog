@@ -10,7 +10,14 @@ export function SuccessText({
   ...props
 }: PropsWithChildren<HTMLAttributes<HTMLElement>>) {
   return (
-    <small className={cn(recipes.text.success, className)} {...props}>
+    // Defaults announce transient confirmations to assistive tech; callers can
+    // override (e.g. role="alert") via props.
+    <small
+      role="status"
+      aria-live="polite"
+      className={cn(recipes.text.success, className)}
+      {...props}
+    >
       {children}
     </small>
   );
