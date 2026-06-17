@@ -117,7 +117,7 @@ export function GoalsPage() {
     (g) => !g.isBackground && g.startDate != null && g.startDate > today,
   ).length;
   const canAddGoal = futureCount < 2;
-  const basisWeight = weightOnOrBefore(weightEntries, today) ?? FALLBACK_WEIGHT_LBS;
+  const latestWeight = weightOnOrBefore(weightEntries, today);
 
   if (loading) return <Text variant="body">Loading your goals…</Text>;
 
@@ -207,7 +207,7 @@ export function GoalsPage() {
         <AddOrEditGoal
           goals={goals}
           today={today}
-          basisWeightLbs={basisWeight}
+          latestWeightLbs={latestWeight}
           onCancel={() => setAdding(false)}
           onSubmit={async (data, trim) => {
             if (trim) await updateGoal(trim.goalId, { endDate: trim.endDate });
@@ -304,8 +304,11 @@ function GoalDetail({
   // weight, targets fall back to the latest logged weight (or 180), like the day
   // derivation does.
   const deltaApplies = lifecycle === 'active' || lifecycle === 'today';
-  const basisWeight =
-    goal.targetWeightLbs ?? weightOnOrBefore(weightEntries, today) ?? FALLBACK_WEIGHT_LBS;
+  // Calories/macros derive from the latest logged weight (or 180 when none),
+  // exactly like day targets do — the target weight is the aspiration, not the
+  // basis.
+  const latestWeight = weightOnOrBefore(weightEntries, today);
+  const basisWeight = latestWeight ?? FALLBACK_WEIGHT_LBS;
   const calories = Math.max(
     0,
     Math.ceil(basisWeight * MODE_MULTIPLIER[goal.mode]) + (deltaApplies ? goal.calorieDelta : 0),
@@ -318,7 +321,7 @@ function GoalDetail({
       <AddOrEditGoal
         goals={[]}
         today={today}
-        basisWeightLbs={weightOnOrBefore(weightEntries, today) ?? FALLBACK_WEIGHT_LBS}
+        latestWeightLbs={latestWeight}
         editingGoal={goal}
         onCancel={() => setEditing(false)}
         onSubmit={async (data) => {
@@ -354,6 +357,10 @@ function GoalDetail({
       {goal.description ? <SummaryRow label="Notes" value={goal.description} /> : null}
       <SummaryRow label="Dates" value={dateRangeLabel(goal.startDate, goal.endDate)} />
       <SummaryRow label="Target weight" value={`${goal.targetWeightLbs ?? '—'} lb`} />
+      <SummaryRow
+        label="Latest weight logged"
+        value={latestWeight != null ? `${latestWeight} lb` : `${FALLBACK_WEIGHT_LBS} lb (default)`}
+      />
       <SummaryRow
         label="Macro split"
         value={`${goal.macroProtein}/${goal.macroCarbs}/${goal.macroFats} P/C/F`}
@@ -427,15 +434,16 @@ type FormSlot = MealSlot & { id: string };
 function AddOrEditGoal({
   goals,
   today,
-  basisWeightLbs,
+  latestWeightLbs,
   editingGoal,
   onCancel,
   onSubmit,
 }: {
   goals: Goal[];
   today: string;
-  // Weight used for the live gram preview when no explicit target is set.
-  basisWeightLbs: number;
+  // Latest logged weight on/before today (null if none) — the basis for the live
+  // calorie/macro preview, matching how day targets are derived.
+  latestWeightLbs: number | null;
   editingGoal?: Goal;
   onCancel: () => void;
   onSubmit: (data: CreateGoal, trim?: SubmitTrim) => Promise<void>;
@@ -474,7 +482,8 @@ function AddOrEditGoal({
 
   // Live gram targets shown beside each macro %: calories = weight × mode
   // multiplier (delta is 0 for new/edited goals here), split by the percentages.
-  const estimatedCalories = Math.ceil((targetWeight ?? basisWeightLbs) * MODE_MULTIPLIER[mode]);
+  const basisWeight = latestWeightLbs ?? FALLBACK_WEIGHT_LBS;
+  const estimatedCalories = Math.ceil(basisWeight * MODE_MULTIPLIER[mode]);
   const gramTargets = macrosFromPercentage(
     estimatedCalories,
     Math.round(fats ?? 0),
@@ -578,6 +587,13 @@ function AddOrEditGoal({
         value={targetWeight}
         onChange={setTargetWeight}
       />
+      <HelperText>
+        Calories &amp; macros are calculated from your latest logged weight:{' '}
+        {latestWeightLbs != null
+          ? `${latestWeightLbs} lb`
+          : `${FALLBACK_WEIGHT_LBS} lb (default — log a weight to refine)`}
+        .
+      </HelperText>
 
       <SectionHeading noMargin>Macros (must total 100%)</SectionHeading>
       <div className={recipes.grid.three}>
