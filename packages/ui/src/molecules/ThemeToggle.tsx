@@ -33,7 +33,7 @@ export function ThemeToggle({ value, onChange }: ThemeToggleProps) {
         size="sm"
         aria-label={label}
         title={label}
-        className={cn(recipes.radius.control, 'h-11 px-2 text-lg')}
+        className={cn(recipes.radius.control, 'h-11 min-w-[44px] px-2 text-lg')}
         onClick={() => onChange(next)}
       >
         {isDark ? '🌝' : '💡'}

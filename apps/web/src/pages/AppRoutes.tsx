@@ -20,8 +20,6 @@ import { uuidv7 } from '@leanlog/data-access';
 import {
   AnalyticsScope,
   APP_NAV_LINKS,
-  AppPageHeading,
-  AppShell,
   Button,
   CameraCaptureModal,
   cn,
@@ -30,6 +28,7 @@ import {
   ErrorTemplate,
   DayListTemplate,
   DayWeightCard,
+  GoalsTemplate,
   FileInput,
   HelperText,
   Input,
@@ -161,16 +160,18 @@ function HeaderControls() {
 // Add Goal, inside the standard app shell with Execute/Goals nav.
 function GoalsRoute() {
   return (
-    <AppShell>
-      <AppPageHeading
-        title="Goals"
-        renderNavLink={renderRouterNavLink}
-        rightContent={<HeaderControls />}
-      />
-      <AnalyticsScope properties={{ page: 'Goals' }}>
+    <AnalyticsScope properties={{ page: 'Goals' }}>
+      <GoalsTemplate
+        heading={{
+          title: 'Goals',
+          navLinks: APP_NAV_LINKS,
+          renderNavLink: renderRouterNavLink,
+          rightContent: <HeaderControls />,
+        }}
+      >
         <GoalsPage />
-      </AnalyticsScope>
-    </AppShell>
+      </GoalsTemplate>
+    </AnalyticsScope>
   );
 }
 

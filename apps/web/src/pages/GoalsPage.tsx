@@ -583,12 +583,13 @@ function AddOrEditGoal({
       </div>
 
       <SectionHeading noMargin>Meal slots</SectionHeading>
-      {slots.map((slot) => (
+      {slots.map((slot, i) => (
         <ListRow
           key={slot.id}
           title={
             <Input
               value={slot.name}
+              aria-label={`Meal slot ${i + 1} name`}
               onChange={(e) =>
                 setSlots((prev) =>
                   prev.map((s) => (s.id === slot.id ? { ...s, name: e.target.value } : s)),
