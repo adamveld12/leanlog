@@ -170,7 +170,7 @@ export function GoalsPage() {
         </div>
         <div className={cn(recipes.stack.row, 'flex-wrap')}>
           <Button
-            variant="secondary"
+            variant="primary"
             disabled={!canAddGoal}
             onClick={() => {
               setAdding(true);
@@ -399,7 +399,7 @@ function GoalDetail({
           </HelperText>
         </div>
       ) : canEdit ? (
-        <Button variant="secondary" onClick={() => setEditing(true)}>
+        <Button variant="primary" onClick={() => setEditing(true)}>
           Edit
         </Button>
       ) : null}
