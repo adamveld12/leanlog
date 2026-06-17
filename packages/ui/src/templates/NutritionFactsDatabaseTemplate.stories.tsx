@@ -6,7 +6,10 @@ import { NutritionFactsDatabaseTemplate } from './NutritionFactsDatabaseTemplate
 const heading = {
   title: 'Nutrition Facts Database',
   backHref: '/track',
-  profileHref: '/track/profile',
+  navLinks: [
+    { href: '/track', label: 'Execute' },
+    { href: '/track/goals', label: 'Goals' },
+  ],
   renderNavLink: ({
     href,
     label,

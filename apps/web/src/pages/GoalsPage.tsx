@@ -9,6 +9,7 @@ import {
   HelperText,
   Input,
   ListRow,
+  MacroSummaryLine,
   NumberInput,
   recipes,
   RadioGroup,
@@ -348,17 +349,21 @@ function GoalDetail({
       <SummaryRow label="Dates" value={dateRangeLabel(goal.startDate, goal.endDate)} />
       <SummaryRow label="Target weight" value={`${goal.targetWeightLbs ?? '—'} lb`} />
       <SummaryRow
-        label="Daily calories"
-        value={`${calories.toLocaleString()} kcal${
-          deltaApplies && goal.calorieDelta
-            ? ` (incl. ${goal.calorieDelta > 0 ? '+' : ''}${goal.calorieDelta})`
-            : ''
-        }`}
+        label="Macro split"
+        value={`${goal.macroProtein}/${goal.macroCarbs}/${goal.macroFats} P/C/F`}
       />
-      <SummaryRow
-        label="Macros"
-        value={`${goal.macroProtein}/${goal.macroCarbs}/${goal.macroFats} P/C/F · ${grams.targetProtein}/${grams.targetCarbs}/${grams.targetFat} g`}
+      <MacroSummaryLine
+        calories={calories}
+        protein={grams.targetProtein}
+        carbs={grams.targetCarbs}
+        fat={grams.targetFat}
       />
+      {deltaApplies && goal.calorieDelta ? (
+        <HelperText>
+          Includes a calorie delta of {goal.calorieDelta > 0 ? '+' : ''}
+          {goal.calorieDelta}.
+        </HelperText>
+      ) : null}
       <SummaryRow label="Meal slots" value={slotNames} />
 
       {/* Active (older-than-today) goals allow only name, description, end date and
@@ -595,6 +600,7 @@ function AddOrEditGoal({
             <Button
               variant="ghost"
               size="sm"
+              className="h-11"
               onClick={() => setSlots((prev) => prev.filter((s) => s.id !== slot.id))}
             >
               Remove
@@ -605,6 +611,7 @@ function AddOrEditGoal({
       <Button
         variant="subtle"
         size="sm"
+        className="h-11"
         onClick={() =>
           setSlots((prev) => [
             ...prev,

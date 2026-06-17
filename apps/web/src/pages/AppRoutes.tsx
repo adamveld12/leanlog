@@ -8,7 +8,6 @@ import {
   type PropsWithChildren,
 } from 'react';
 import {
-  useAuth,
   useUser,
   PricingTable,
   SignInButton,
@@ -23,9 +22,7 @@ import {
   APP_NAV_LINKS,
   AppPageHeading,
   AppShell,
-  BodyInfoCard,
   Button,
-  CalorieTargetCard,
   CameraCaptureModal,
   cn,
   DailyTotalsCard,
@@ -40,18 +37,13 @@ import {
   ListRow,
   LoadingState,
   MacroSummaryLine,
-  MacroTargetsCard,
   MealEditTemplate,
-  MealTemplatesTemplate,
-  MealTemplateEditTemplate,
   Modal,
   MonthCalendarCard,
   NutritionDatabaseSearchCard,
   NutritionFactsDatabaseTemplate,
-  ProfileTemplate,
   QuickActionsCard,
   recipes,
-  ReorderableList,
   SectionCard,
   Text,
   ThemeToggle,
@@ -92,7 +84,6 @@ import {
   selectWeightEntries,
 } from '../selectors';
 import { useStore } from '../state';
-import { api } from '../api';
 import type {
   UpsertIngredient,
   SaveSections,
@@ -927,9 +918,9 @@ function NutritionFactsDatabase() {
         heading={{
           title: 'Nutrition Facts Database',
           backHref: '/track',
-          profileHref: '/track/profile',
+          navLinks: APP_NAV_LINKS,
           renderNavLink: renderRouterNavLink,
-          rightContent: <HeaderAuthControl />,
+          rightContent: <HeaderControls />,
         }}
       >
         {state.error ? <WarningText role="alert">{state.error}</WarningText> : null}
