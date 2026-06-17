@@ -148,7 +148,7 @@ export function aggregateStats(days: DailyMealLog[], maintenanceCalories: number
 
   const calAcc = macroAccuracy(totalCalories, targetCalories);
   const protAcc = macroAccuracy(totalProtein, targetProtein);
-  const carbAcc = macroAccuracy(totalNetCarbs, targetCarbs);
+  const carbAcc = macroAccuracy(totalCarbs, targetCarbs);
   const fatAcc = macroAccuracy(totalFat, targetFat);
   const overall = days.length > 0 ? Math.round((calAcc + protAcc + carbAcc + fatAcc) / 4) : 0;
   const coverage = trackingCoverage(mealsTracked, mealsExpected);

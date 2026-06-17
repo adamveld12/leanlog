@@ -69,18 +69,18 @@ export function MacroProgressBlock({
 
       <div className={cn(recipes.stack.xs)}>
         <div className={cn(recipes.stack.row, recipes.stack.between)}>
-          <HelperText as="span">Net Carbs</HelperText>
+          <HelperText as="span">Carbs</HelperText>
           <HelperText as="span">
-            {netCarbs} net / {carbs} total / {carbsTarget}
-            <UnitText>g</UnitText>
+            {carbs} / {carbsTarget}
+            <UnitText>g</UnitText> · {netCarbs} net
           </HelperText>
         </div>
         <ProgressBar
-          value={netCarbs}
+          value={carbs}
           max={carbsTarget || 1}
-          color={targetProgressColor(netCarbs, carbsTarget)}
-          aria-label="Net carbs progress"
-          aria-valuetext={`${netCarbs} net of ${carbsTarget}g`}
+          color={targetProgressColor(carbs, carbsTarget)}
+          aria-label="Carbs progress"
+          aria-valuetext={`${carbs} of ${carbsTarget}g`}
         />
       </div>
 

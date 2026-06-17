@@ -21,11 +21,12 @@ describe('DailyTotalsCard', () => {
     expect(screen.getByText(/152 \/ 160/)).toBeInTheDocument();
   });
 
-  it('shows Net Carbs progress row with net/total/target', () => {
+  it('shows Carbs progress row with total/target and net as info', () => {
     render(<DailyTotalsCard {...defaultProps} />);
-    expect(screen.getByText('Net Carbs')).toBeInTheDocument();
-    // netCarbs = 200 - 25 = 175
-    expect(screen.getByText(/175 net \/ 200 total \/ 236/)).toBeInTheDocument();
+    expect(screen.getByText('Carbs')).toBeInTheDocument();
+    // progress uses total carbs (200) against target (236); netCarbs = 200 - 25 = 175 (informational)
+    expect(screen.getByText(/200 \/ 236/)).toBeInTheDocument();
+    expect(screen.getByText(/175 net/)).toBeInTheDocument();
   });
 
   it('shows Fat progress row', () => {
@@ -43,7 +44,8 @@ describe('DailyTotalsCard', () => {
 
   it('clamps net carbs to 0 when fiber exceeds carbs', () => {
     render(<DailyTotalsCard {...defaultProps} carbs={8} fiber={12} />);
-    expect(screen.getByText(/0 net \/ 8 total \/ 236/)).toBeInTheDocument();
+    expect(screen.getByText(/8 \/ 236/)).toBeInTheDocument();
+    expect(screen.getByText(/0 net/)).toBeInTheDocument();
   });
 
   it('still shows calorie row', () => {
