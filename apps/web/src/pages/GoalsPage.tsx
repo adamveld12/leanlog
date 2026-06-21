@@ -26,6 +26,9 @@ import {
   goalLifecycle,
   goalOutcome,
   macrosFromPercentage,
+  targetsFromGoal,
+  minCalorieDelta,
+  GOAL_MULTIPLIER,
   validateNewGoal,
   findTrimmableActiveGoal,
   weightOnOrBefore,
@@ -48,8 +51,6 @@ const MODE_LABEL: Record<GoalMode, string> = {
   maintain: 'Maintain',
   lean_gain: 'Lean Gain',
 };
-
-const MODE_MULTIPLIER: Record<GoalMode, number> = { cut: 10, maintain: 15, lean_gain: 16 };
 
 function isoToParts(iso: string) {
   const [year, month, day] = iso.split('-').map(Number);
@@ -316,11 +317,12 @@ function GoalDetail({
   // basis.
   const latestWeight = weightOnOrBefore(weightEntries, today);
   const basisWeight = latestWeight ?? FALLBACK_WEIGHT_LBS;
-  const calories = Math.max(
-    0,
-    Math.ceil(basisWeight * MODE_MULTIPLIER[goal.mode]) + (deltaApplies ? goal.calorieDelta : 0),
-  );
-  const grams = macrosFromPercentage(calories, goal.macroFats, goal.macroCarbs, goal.macroProtein);
+  const targets = targetsFromGoal(goal, basisWeight, { applyDelta: deltaApplies });
+
+  // The calorie delta is absorbed by carbs, so it cannot dip below the goal's
+  // carb-calorie budget without driving carbs negative.
+  const minDelta = minCalorieDelta(goal, basisWeight);
+  const carbsWouldGoNegative = Math.round(delta ?? 0) < minDelta;
 
   // Full edit form for future / today-started goals.
   if (editing && fullyEditable) {
@@ -373,10 +375,10 @@ function GoalDetail({
         value={`${goal.macroProtein}/${goal.macroCarbs}/${goal.macroFats} P/C/F`}
       />
       <MacroSummaryLine
-        calories={calories}
-        protein={grams.targetProtein}
-        carbs={grams.targetCarbs}
-        fat={grams.targetFat}
+        calories={targets.targetCalories}
+        protein={targets.targetProtein}
+        carbs={targets.targetCarbs}
+        fat={targets.targetFat}
       />
       {deltaApplies && goal.calorieDelta ? (
         <HelperText>
@@ -398,9 +400,15 @@ function GoalDetail({
             <Input value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
           <NumberInput label="Calorie delta" value={delta} onChange={setDelta} />
+          {carbsWouldGoNegative ? (
+            <WarningText>
+              That deficit would push carbs below 0 g. The lowest allowed delta is {minDelta}.
+            </WarningText>
+          ) : null}
           <div className={cn(recipes.stack.row, 'flex-wrap')}>
             <Button
               variant="primary"
+              disabled={carbsWouldGoNegative}
               onClick={() => {
                 posthog.capture('calorie_delta_changed', { delta: delta ?? 0 });
                 void onUpdate({
@@ -490,7 +498,7 @@ function AddOrEditGoal({
   // Live gram targets shown beside each macro %: calories = weight × mode
   // multiplier (delta is 0 for new/edited goals here), split by the percentages.
   const basisWeight = latestWeightLbs ?? FALLBACK_WEIGHT_LBS;
-  const estimatedCalories = Math.ceil(basisWeight * MODE_MULTIPLIER[mode]);
+  const estimatedCalories = Math.ceil(basisWeight * GOAL_MULTIPLIER[mode]);
   const gramTargets = macrosFromPercentage(
     estimatedCalories,
     Math.round(fats ?? 0),
