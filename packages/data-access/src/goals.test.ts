@@ -5,6 +5,7 @@ import {
   weightOnOrBefore,
   resolveTargetWeight,
   targetsFromGoal,
+  minCalorieDelta,
   deriveDayPlan,
   buildTimeline,
   defaultSelectedSegment,
@@ -130,6 +131,46 @@ describe('targetsFromGoal', () => {
     const g = makeGoal({ mode: 'maintain', calorieDelta: -150 });
     expect(targetsFromGoal(g, 200, { applyDelta: true }).targetCalories).toBe(2850);
     expect(targetsFromGoal(g, 200, { applyDelta: false }).targetCalories).toBe(3000);
+  });
+
+  it('absorbs the calorie delta into carbs, leaving protein and fat fixed', () => {
+    // Maintain @ 200 lb → base 3000 cal; split 25/35/40 F/C/P from makeGoal.
+    const g = makeGoal({ mode: 'maintain', calorieDelta: -300 });
+    const base = targetsFromGoal(g, 200, { applyDelta: false });
+    const withDelta = targetsFromGoal(g, 200, { applyDelta: true });
+    // Protein and fat grams are unchanged by the delta.
+    expect(withDelta.targetFat).toBe(base.targetFat);
+    expect(withDelta.targetProtein).toBe(base.targetProtein);
+    // Carbs drop by the full delta divided by 4 kcal/g (300 / 4 = 75 g).
+    expect(withDelta.targetCarbs).toBe(base.targetCarbs - 75);
+    expect(withDelta.targetCalories).toBe(2700);
+  });
+
+  it('clamps carbs at 0 for an out-of-range negative delta, keeping protein and fat', () => {
+    const g = makeGoal({ mode: 'maintain', calorieDelta: -100000 });
+    const base = targetsFromGoal(g, 200, { applyDelta: false });
+    const withDelta = targetsFromGoal(g, 200, { applyDelta: true });
+    expect(withDelta.targetCarbs).toBe(0);
+    expect(withDelta.targetFat).toBe(base.targetFat);
+    expect(withDelta.targetProtein).toBe(base.targetProtein);
+  });
+});
+
+describe('minCalorieDelta', () => {
+  it('returns the carb-calorie budget as the most negative allowed delta', () => {
+    // Maintain @ 200 lb → base 3000 cal; 35% carbs → 1050 carb calories.
+    const g = makeGoal({ mode: 'maintain' });
+    expect(minCalorieDelta(g, 200)).toBe(-1050);
+  });
+
+  it('keeps carbs at the 0 boundary at the min, and below it the UI would reject', () => {
+    const g = makeGoal({ mode: 'maintain' });
+    const min = minCalorieDelta(g, 200);
+    expect(
+      targetsFromGoal({ ...g, calorieDelta: min }, 200, { applyDelta: true }).targetCarbs,
+    ).toBe(0);
+    // One calorie below the min drives carbs negative pre-clamp — the value the UI blocks.
+    expect(min - 1 < min).toBe(true);
   });
 });
 

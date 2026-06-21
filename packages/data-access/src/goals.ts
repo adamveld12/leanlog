@@ -63,17 +63,39 @@ export type GoalDayTargets = {
 
 // Daily targets from a goal mode + a known body weight (R16–R18). The calorie
 // delta is applied only when the caller says to (active goal, today/forward).
+// Protein and fat are fixed by the macro split on the base calories; the calorie
+// delta is absorbed entirely by carbs (4 kcal/g) so the user keeps their protein
+// and fat targets whether cutting or surplusing.
 export function targetsFromGoal(
   goal: Goal,
   latestWeightLbs: number,
   opts: { applyDelta: boolean },
 ): GoalDayTargets {
   const base = Math.ceil(latestWeightLbs * GOAL_MULTIPLIER[goal.mode]);
-  const calories = Math.max(0, base + (opts.applyDelta ? goal.calorieDelta : 0));
+  const delta = opts.applyDelta ? goal.calorieDelta : 0;
+  const { targetFat, targetProtein } = macrosFromPercentage(
+    base,
+    goal.macroFats,
+    goal.macroCarbs,
+    goal.macroProtein,
+  );
+  // Carbs absorb the delta; clamp at 0 so an out-of-range delta can never emit
+  // negative carbs (the UI blocks that case up front, see minCalorieDelta).
+  const carbCalories = Math.max(0, base * (goal.macroCarbs / 100) + delta);
   return {
-    targetCalories: calories,
-    ...macrosFromPercentage(calories, goal.macroFats, goal.macroCarbs, goal.macroProtein),
+    targetCalories: Math.max(0, base + delta),
+    targetFat,
+    targetCarbs: Math.round(carbCalories / 4),
+    targetProtein,
   };
+}
+
+// Carbs absorb the calorie delta, so a delta below the goal's carb-calorie budget
+// would drive carbs negative. This is the most negative delta that still keeps
+// carbs ≥ 0 — the UI validates the user's entry against it.
+export function minCalorieDelta(goal: Goal, latestWeightLbs: number): number {
+  const base = Math.ceil(latestWeightLbs * GOAL_MULTIPLIER[goal.mode]);
+  return -Math.floor(base * (goal.macroCarbs / 100));
 }
 
 export type DerivedDayPlan = GoalDayTargets & {
