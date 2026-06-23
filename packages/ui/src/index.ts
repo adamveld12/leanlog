@@ -33,6 +33,7 @@ export * from './molecules/LoadingState';
 export * from './molecules/ReorderableList';
 export * from './molecules/MacroSummaryLine';
 export * from './molecules/Modal';
+export * from './molecules/PhotoSlot';
 export * from './molecules/RadioGroup';
 export * from './molecules/SectionCard';
 export * from './molecules/MacroProgressBlock';

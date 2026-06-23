@@ -9,6 +9,15 @@
 export const MAX_IMAGE_DIMENSION = 1600;
 export const JPEG_QUALITY = 0.8;
 
+// Public URL for a stored nutrition photo key (e.g. `nutrition/<sha>.jpg`).
+// Served by functions/images/nutrition/[key].ts, outside the /api Clerk guard,
+// so it works in plain <img> tags. Returns null for an empty/missing key so
+// callers can branch with a single nullish value.
+export function nutritionImageUrl(key: string | null | undefined): string | null {
+  if (!key) return null;
+  return `/images/${key}`;
+}
+
 export type Dimensions = { width: number; height: number };
 
 /**

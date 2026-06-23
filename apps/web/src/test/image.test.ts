@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { computeTargetSize } from '../image';
+import { computeTargetSize, nutritionImageUrl } from '../image';
+
+describe('nutritionImageUrl (#54)', () => {
+  it('builds a public /images path from a stored key', () => {
+    expect(nutritionImageUrl('nutrition/abc.jpg')).toBe('/images/nutrition/abc.jpg');
+  });
+
+  it('returns null for null/undefined/empty keys', () => {
+    expect(nutritionImageUrl(null)).toBeNull();
+    expect(nutritionImageUrl(undefined)).toBeNull();
+    expect(nutritionImageUrl('')).toBeNull();
+  });
+});
 
 describe('computeTargetSize (#54)', () => {
   const MAX = 1600;
