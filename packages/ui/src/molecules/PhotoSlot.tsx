@@ -31,7 +31,8 @@ export function PhotoSlot({ label, src, alt, hint, actions }: PhotoSlotProps) {
           className={cn(
             recipes.radius.control,
             recipes.surface.card,
-            'flex aspect-square w-full items-center justify-center overflow-hidden',
+            recipes.stack.centerBox,
+            'aspect-square w-full overflow-hidden',
           )}
         >
           {src ? (

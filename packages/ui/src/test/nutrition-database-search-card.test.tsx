@@ -297,4 +297,15 @@ describe('NutritionDatabaseSearchCard', () => {
     render(<Harness results={[]} />);
     expect(screen.getByText('Search ingredients')).toBeInTheDocument();
   });
+
+  it('renders a thumbnail image for a result that has one (R10)', () => {
+    render(<Harness results={[{ ...result1, thumbnailUrl: '/images/nutrition/abc.jpg' }]} />);
+    const img = screen.getByRole('img', { name: /CHICKEN BREAST/i });
+    expect(img).toHaveAttribute('src', '/images/nutrition/abc.jpg');
+  });
+
+  it('renders a neutral placeholder (no img) for a result without a photo (R10)', () => {
+    render(<Harness results={[result1]} />);
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
 });

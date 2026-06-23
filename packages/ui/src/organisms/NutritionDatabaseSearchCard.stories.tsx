@@ -114,6 +114,23 @@ export const WithTotalCount: Story = {
   },
 };
 
+// R10: entries with a photo show a thumbnail; entries without show the neutral
+// placeholder. Uses a data URI so the story is self-contained.
+const SAMPLE_THUMB =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="%23c9714a"/></svg>',
+  );
+
+export const WithThumbnails: Story = {
+  args: {
+    results: [
+      { ...baseResults[0], thumbnailUrl: SAMPLE_THUMB },
+      { ...baseResults[1], thumbnailUrl: null },
+    ],
+  },
+};
+
 // Management page (#49): rows show Edit/Delete instead of the add controls, and
 // only for labels the current user owns (here, ing-1).
 export const ManageMode: Story = {

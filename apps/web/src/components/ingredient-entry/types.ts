@@ -5,6 +5,7 @@ import type {
 } from '@leanlog/ui';
 import type { Ingredient, UpsertIngredient } from '@leanlog/data-access';
 import type { NutritionDatabaseIngredientSearchResult } from '../../types';
+import { nutritionImageUrl } from '../../image';
 
 // How a saved label is added to a meal (R22): by weight, servings, or package.
 export type AddFromDatabaseInput = { mode: AddFromDatabaseMode; amount?: number };
@@ -62,5 +63,8 @@ export function mapDbSearchResults(
     addedByName: r.addedByName,
     addedAtLabel: new Date(r.createdAt).toLocaleDateString(),
     creationSource: r.creationSource,
+    // Prefer the product photo for the list thumbnail, falling back to the
+    // label photo so scanned entries still show an image (R10).
+    thumbnailUrl: nutritionImageUrl(r.productPhotoKey ?? r.labelPhotoKey),
   }));
 }

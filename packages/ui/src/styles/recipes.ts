@@ -46,6 +46,9 @@ export const recipes = {
     between: 'justify-between',
     center: 'flex justify-center text-center',
     centerFull: 'flex items-center justify-center text-center',
+    // Centers content both axes without forcing text alignment; used by square
+    // media tiles (photo slots, search thumbnails) for their empty placeholder.
+    centerBox: 'flex items-center justify-center',
   },
   grid: {
     two: 'grid grid-cols-2 gap-2',

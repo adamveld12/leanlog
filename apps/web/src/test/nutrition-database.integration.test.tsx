@@ -543,6 +543,42 @@ describe('adding a saved label to a meal by mode', () => {
       });
     });
   });
+
+  it('adding a photographed entry to a meal carries no image (R12)', async () => {
+    const onAddIngredientFromDatabase = vi.fn().mockResolvedValue(undefined);
+    // The shared entry has both photos; the meal ingredient must still be
+    // numbers-only — the snapshot copies values, never image keys.
+    const onSearch = vi.fn().mockResolvedValue([
+      {
+        ...dbResultBase,
+        productPhotoKey: 'nutrition/prod.jpg',
+        labelPhotoKey: 'nutrition/label.jpg',
+      },
+    ]);
+
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()], {
+      onAddIngredientFromDatabase,
+      onSearch,
+    });
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Nutrition Facts Database' }));
+    const searchInput = await screen.findByPlaceholderText('e.g. Chicken breast');
+    await userEvent.type(searchInput, 'ch');
+    await waitFor(() => expect(screen.getByText('CHICKEN BREAST')).toBeInTheDocument());
+
+    // The search result shows a thumbnail (R10) for the photographed entry.
+    expect(screen.getByRole('img', { name: /CHICKEN BREAST/i })).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText('Add by'), 'package');
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+
+    // The stub ingredient lands in the meal's ingredient list.
+    await waitFor(() => expect(onAddIngredientFromDatabase).toHaveBeenCalled());
+    const dbIngredient = await screen.findByText('DB INGREDIENT');
+    const mealRow = dbIngredient.closest('li') ?? dbIngredient.parentElement;
+    // The added meal ingredient renders numbers only — no photo travels with it.
+    expect(mealRow?.querySelector('img')).toBeNull();
+  });
 });
 
 describe('editing a meal ingredient', () => {

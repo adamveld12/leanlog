@@ -31,6 +31,9 @@ export type NutritionDatabaseSearchResult = {
   addedByName: string;
   addedAtLabel: string;
   creationSource?: string;
+  /** Public URL of the entry's thumbnail photo (product preferred, else label),
+   *  or null when the entry has no photo (R10). */
+  thumbnailUrl?: string | null;
 };
 
 export type NutritionDatabaseSearchCardProps = {
@@ -73,6 +76,28 @@ const MODE_OPTIONS: { value: AddFromDatabaseMode; label: string }[] = [
   { value: 'servings', label: 'Servings' },
   { value: 'package', label: 'Entire package' },
 ];
+
+// Small square thumbnail shown beside each search result (R10). Renders the
+// entry's photo when present, else a neutral placeholder (no <img>) so users can
+// still scan the list without a broken-image flash.
+function SearchThumbnail({ url, name }: { url?: string | null; name: string }) {
+  return (
+    <div
+      className={cn(
+        recipes.radius.control,
+        recipes.surface.card,
+        'h-12 w-12 shrink-0 overflow-hidden',
+        url ? '' : recipes.stack.centerBox,
+      )}
+    >
+      {url ? (
+        <img src={url} alt={name} className="h-full w-full object-cover" />
+      ) : (
+        <HelperText as="span">—</HelperText>
+      )}
+    </div>
+  );
+}
 
 export function NutritionDatabaseSearchCard({
   query,
@@ -140,24 +165,30 @@ export function NutritionDatabaseSearchCard({
                   )}
                 >
                   <div className={cn(recipes.stack.row, recipes.stack.between)}>
-                    <div className={recipes.stack.xs}>
-                      <Text as="span" variant="subheading">
-                        {result.name}
-                      </Text>
-                      <HelperText as="span">
-                        {result.servingAmount}
-                        <UnitText> {result.servingSizeUnit === 'milliliter' ? 'ml' : 'g'}</UnitText>
-                        {result.servingsPerPackage != null
-                          ? ` · ${result.servingsPerPackage}/pkg`
-                          : ''}
-                        {' · '}Added by {result.addedByName} · {result.addedAtLabel}
-                      </HelperText>
-                      <MacroSummaryLine
-                        protein={result.protein}
-                        carbs={result.carbs}
-                        fat={result.fat}
-                        calories={result.calories}
-                      />
+                    <div className={cn(recipes.stack.row, 'min-w-0 items-start')}>
+                      <SearchThumbnail url={result.thumbnailUrl} name={result.name} />
+                      <div className={cn(recipes.stack.xs, 'min-w-0')}>
+                        <Text as="span" variant="subheading">
+                          {result.name}
+                        </Text>
+                        <HelperText as="span">
+                          {result.servingAmount}
+                          <UnitText>
+                            {' '}
+                            {result.servingSizeUnit === 'milliliter' ? 'ml' : 'g'}
+                          </UnitText>
+                          {result.servingsPerPackage != null
+                            ? ` · ${result.servingsPerPackage}/pkg`
+                            : ''}
+                          {' · '}Added by {result.addedByName} · {result.addedAtLabel}
+                        </HelperText>
+                        <MacroSummaryLine
+                          protein={result.protein}
+                          carbs={result.carbs}
+                          fat={result.fat}
+                          calories={result.calories}
+                        />
+                      </div>
                     </div>
                   </div>
                   {onAdd ? (
