@@ -131,6 +131,21 @@ export const WithThumbnails: Story = {
   },
 };
 
+// R11: a row with photos offers a "View photos" toggle that reveals both
+// photos at a readable size (read-only — no creator controls).
+export const WithPhotoExpand: Story = {
+  args: {
+    results: [
+      {
+        ...baseResults[0],
+        thumbnailUrl: SAMPLE_THUMB,
+        productPhotoUrl: SAMPLE_THUMB,
+        labelPhotoUrl: SAMPLE_THUMB,
+      },
+    ],
+  },
+};
+
 // Management page (#49): rows show Edit/Delete instead of the add controls, and
 // only for labels the current user owns (here, ing-1).
 export const ManageMode: Story = {

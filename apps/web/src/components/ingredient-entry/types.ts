@@ -66,5 +66,8 @@ export function mapDbSearchResults(
     // Prefer the product photo for the list thumbnail, falling back to the
     // label photo so scanned entries still show an image (R10).
     thumbnailUrl: nutritionImageUrl(r.productPhotoKey ?? r.labelPhotoKey),
+    // Full URLs for the read-only photo expand on the result row (R11).
+    productPhotoUrl: nutritionImageUrl(r.productPhotoKey),
+    labelPhotoUrl: nutritionImageUrl(r.labelPhotoKey),
   }));
 }
