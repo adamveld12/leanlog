@@ -134,6 +134,62 @@ function isValid(value: NutritionDatabaseEntryValue, hasEstimate: boolean): bool
   return missingFields(value, hasEstimate).length === 0 && labelContradictions(value).length === 0;
 }
 
+// One editable micronutrient row (name / amount / unit / remove). Named so React
+// preserves each row's identity across edits instead of remounting on re-render.
+function MicronutrientRow({
+  micro,
+  onUpdate,
+  onRemove,
+}: {
+  micro: NutritionDatabaseMicronutrientValue;
+  onUpdate: (patch: Partial<NutritionDatabaseMicronutrientValue>) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className={cn(recipes.stack.row, 'items-end')}>
+      <div className="flex-1">
+        <Field label="Name">
+          <Input
+            value={micro.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            placeholder="e.g. Vitamin C"
+          />
+        </Field>
+      </div>
+      <div className="w-20 shrink-0">
+        <NumberInput
+          label="Amount"
+          value={micro.amount ?? null}
+          onChange={(n) => onUpdate({ amount: n })}
+        />
+      </div>
+      <div className="w-24 shrink-0">
+        <Field label="Unit">
+          <Select
+            value={micro.unit ?? 'milligram'}
+            onChange={(e) => onUpdate({ unit: e.target.value })}
+          >
+            {NUTRITION_UNIT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onRemove}
+        type="button"
+        className="shrink-0 self-end"
+      >
+        Remove
+      </Button>
+    </div>
+  );
+}
+
 export function NutritionDatabaseEntryCard({
   value,
   estimatedCalories,
@@ -388,47 +444,12 @@ export function NutritionDatabaseEntryCard({
         {micronutrients.length > 0 ? (
           <div className={recipes.stack.sm}>
             {micronutrients.map((micro, idx) => (
-              <div key={rowKeys[idx]} className={cn(recipes.stack.row, 'items-end')}>
-                <div className="flex-1">
-                  <Field label="Name">
-                    <Input
-                      value={micro.name}
-                      onChange={(e) => updateMicro(idx, { name: e.target.value })}
-                      placeholder="e.g. Vitamin C"
-                    />
-                  </Field>
-                </div>
-                <div className="w-20 shrink-0">
-                  <NumberInput
-                    label="Amount"
-                    value={micro.amount ?? null}
-                    onChange={(n) => updateMicro(idx, { amount: n })}
-                  />
-                </div>
-                <div className="w-24 shrink-0">
-                  <Field label="Unit">
-                    <Select
-                      value={micro.unit ?? 'milligram'}
-                      onChange={(e) => updateMicro(idx, { unit: e.target.value })}
-                    >
-                      {NUTRITION_UNIT_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeMicro(idx)}
-                  type="button"
-                  className="shrink-0 self-end"
-                >
-                  Remove
-                </Button>
-              </div>
+              <MicronutrientRow
+                key={rowKeys[idx]}
+                micro={micro}
+                onUpdate={(patch) => updateMicro(idx, patch)}
+                onRemove={() => removeMicro(idx)}
+              />
             ))}
           </div>
         ) : null}

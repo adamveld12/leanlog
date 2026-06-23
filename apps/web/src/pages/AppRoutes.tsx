@@ -802,6 +802,35 @@ function MealEdit() {
   );
 }
 
+// Modal-confirmed delete for a database label (Q1: never window.confirm). Named
+// component so the page body stays small and React keeps its identity.
+function DeleteLabelModal({
+  open,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal open={open} title="Delete label?" onClose={onClose}>
+      <Text as="p">
+        This permanently removes the saved label from the database. Ingredients already logged from
+        it keep their values.
+      </Text>
+      <div className={recipes.stack.row}>
+        <Button variant="danger" onClick={onConfirm}>
+          Delete
+        </Button>
+        <Button variant="subtle" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
 function NutritionFactsDatabase() {
   const {
     browseNutritionDatabase,
@@ -1080,29 +1109,13 @@ function NutritionFactsDatabase() {
           onCapture={() => void capturePhoto()}
           onCancel={cancelCamera}
         />
-        <Modal
+        <DeleteLabelModal
           open={confirmDeleteId != null}
-          title="Delete label?"
+          onConfirm={() => {
+            if (confirmDeleteId) performDelete(confirmDeleteId);
+          }}
           onClose={() => setConfirmDeleteId(null)}
-        >
-          <Text as="p">
-            This permanently removes the saved label from the database. Ingredients already logged
-            from it keep their values.
-          </Text>
-          <div className={recipes.stack.row}>
-            <Button
-              variant="danger"
-              onClick={() => {
-                if (confirmDeleteId) performDelete(confirmDeleteId);
-              }}
-            >
-              Delete
-            </Button>
-            <Button variant="subtle" onClick={() => setConfirmDeleteId(null)}>
-              Cancel
-            </Button>
-          </div>
-        </Modal>
+        />
       </NutritionFactsDatabaseTemplate>
     </AnalyticsScope>
   );

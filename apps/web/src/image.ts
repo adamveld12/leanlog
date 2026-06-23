@@ -6,8 +6,8 @@
 // canvas API, but the sizing math is split out as a pure function so it can be
 // unit-tested without a DOM.
 
-export const MAX_IMAGE_DIMENSION = 1600;
-export const JPEG_QUALITY = 0.8;
+const MAX_IMAGE_DIMENSION = 1600;
+const JPEG_QUALITY = 0.8;
 
 // Public URL for a stored nutrition photo key (e.g. `nutrition/<sha>.jpg`).
 // Served by functions/images/nutrition/[key].ts, outside the /api Clerk guard,

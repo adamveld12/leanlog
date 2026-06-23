@@ -25,6 +25,60 @@ const SLOT_META: Record<EntryPhotoSlot, { label: string; alt: string; hint: stri
   },
 };
 
+// One photo slot tile: shows the stored image (or empty state) plus, when
+// editable, Add/Replace + Remove controls. Named (not an inline renderSlot()) so
+// React preserves its identity and the busy/upload state survives re-renders.
+function EntryPhotoSlotTile({
+  slot,
+  src,
+  editable,
+  disabled,
+  uploading,
+  onCapture,
+  onClear,
+}: {
+  slot: EntryPhotoSlot;
+  src: string | null;
+  editable: boolean;
+  disabled: boolean;
+  uploading: boolean;
+  onCapture: (slot: EntryPhotoSlot) => void;
+  onClear: (slot: EntryPhotoSlot) => void;
+}) {
+  const meta = SLOT_META[slot];
+  const actions = editable ? (
+    <>
+      <Button
+        size="sm"
+        variant="secondary"
+        disabled={disabled || uploading}
+        onClick={() => onCapture(slot)}
+      >
+        {src ? 'Replace' : uploading ? 'Uploading…' : 'Add photo'}
+      </Button>
+      {src ? (
+        <Button
+          size="sm"
+          variant="danger"
+          disabled={disabled || uploading}
+          onClick={() => onClear(slot)}
+        >
+          Remove
+        </Button>
+      ) : null}
+    </>
+  ) : undefined;
+  return (
+    <PhotoSlot
+      label={meta.label}
+      src={src}
+      alt={meta.alt}
+      hint={editable ? meta.hint : undefined}
+      actions={actions}
+    />
+  );
+}
+
 export type EntryPhotoEditorProps = {
   productPhotoKey: string | null;
   labelPhotoKey: string | null;
@@ -101,49 +155,28 @@ export function EntryPhotoEditor({
     label: labelPhotoKey,
   };
 
-  const renderSlot = (slot: EntryPhotoSlot) => {
-    const meta = SLOT_META[slot];
-    const key = keys[slot];
-    const src = nutritionImageUrl(key);
-    const actions = editable ? (
-      <>
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={disabled || uploading}
-          onClick={() => beginCapture(slot)}
-        >
-          {src ? 'Replace' : uploading ? 'Uploading…' : 'Add photo'}
-        </Button>
-        {src ? (
-          <Button
-            size="sm"
-            variant="danger"
-            disabled={disabled || uploading}
-            onClick={() => onChange(slot, null)}
-          >
-            Remove
-          </Button>
-        ) : null}
-      </>
-    ) : undefined;
-    return (
-      <PhotoSlot
-        label={meta.label}
-        src={src}
-        alt={meta.alt}
-        hint={editable ? meta.hint : undefined}
-        actions={actions}
-      />
-    );
-  };
-
   return (
     <div className={recipes.stack.sm}>
       {error ? <WarningText role="alert">{error}</WarningText> : null}
       <div className={recipes.grid.two}>
-        {renderSlot('label')}
-        {renderSlot('product')}
+        <EntryPhotoSlotTile
+          slot="label"
+          src={nutritionImageUrl(keys.label)}
+          editable={editable}
+          disabled={disabled ?? false}
+          uploading={uploading}
+          onCapture={(slot) => beginCapture(slot)}
+          onClear={(slot) => onChange(slot, null)}
+        />
+        <EntryPhotoSlotTile
+          slot="product"
+          src={nutritionImageUrl(keys.product)}
+          editable={editable}
+          disabled={disabled ?? false}
+          uploading={uploading}
+          onCapture={(slot) => beginCapture(slot)}
+          onClear={(slot) => onChange(slot, null)}
+        />
       </div>
       <FileInput
         ref={fileInputRef}
