@@ -11,6 +11,14 @@ import type { ScanResolution } from '@leanlog/data-access';
 
 vi.mock('react-chartjs-2', () => ({ Line: () => null }));
 
+// optimizeImage relies on canvas/createImageBitmap which jsdom lacks; stub it to
+// pass the blob through untouched while keeping the real nutritionImageUrl so
+// thumbnails/photo slots still resolve their src.
+vi.mock('../image', async (importActual) => {
+  const actual = await importActual<typeof import('../image')>();
+  return { ...actual, optimizeImage: vi.fn((blob: Blob) => Promise.resolve(blob)) };
+});
+
 function makeIngredient(
   overrides: Partial<Ingredient> &
     Pick<
@@ -747,5 +755,121 @@ describe('manual ingredient entry defaults', () => {
         }),
       );
     });
+  });
+});
+
+describe('scan-create photo in the embedded database tab (#54 R3/R4)', () => {
+  // A readable, save-ready label scan: prefills the create form and is a database
+  // candidate, so the create flow opens with the scanned values.
+  const readableScan: ScanResolution = {
+    canApply: true,
+    proposed: {
+      name: 'GRANOLA',
+      weight: 100,
+      fat: 6,
+      saturatedFat: 1,
+      carbs: 80,
+      fiber: 8,
+      protein: 12,
+      calories: 446,
+    },
+    databaseCandidate: {
+      name: 'GRANOLA',
+      servingAmount: 100,
+      servingSizeUnit: 'gram',
+      servingsPerPackage: 4,
+      calories: 446,
+      fat: 6,
+      carbs: 80,
+      protein: 12,
+    },
+    databaseBlockReason: undefined,
+    labelDraft: {
+      name: 'GRANOLA',
+      servingAmount: 100,
+      servingSizeUnit: 'gram',
+      servingsPerPackage: 4,
+      calories: 446,
+      fat: 6,
+      carbs: 80,
+      protein: 12,
+    },
+    notes: [],
+    warning: undefined,
+  };
+
+  it('auto-retains the scanned label frame as the entry label photo (R3)', async () => {
+    const apiMock = api as unknown as {
+      scanNutrition: ReturnType<typeof vi.fn>;
+      nutritionDatabase: { uploadImage: ReturnType<typeof vi.fn> };
+    };
+    apiMock.scanNutrition.mockResolvedValue(readableScan);
+
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()]);
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Nutrition Facts Database' }));
+    // The search card exposes a Scan Label button when create is allowed.
+    await userEvent.click(await screen.findByRole('button', { name: 'Scan to add' }));
+
+    // Capture falls back to the hidden file input in jsdom (no camera).
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).not.toBeNull();
+    const labelFile = new File(['nutritionlabel'], 'label.jpg', { type: 'image/jpeg' });
+    fireEvent.change(fileInput, { target: { files: [labelFile] } });
+
+    // The scanned frame is uploaded as the label photo (best-effort, in parallel
+    // with OCR), then the create form opens prefilled.
+    await waitFor(() => expect(apiMock.nutritionDatabase.uploadImage).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByText('Publish Ingredient')).toBeInTheDocument());
+
+    // The label slot now shows the uploaded photo (mock key -> /images/...).
+    await waitFor(() => {
+      const labelImg = screen.getByRole('img', { name: 'Nutrition facts label' });
+      expect(labelImg).toHaveAttribute('src', '/images/nutrition/test.jpg');
+    });
+    // The product slot stays empty (the front photo is an optional guided step).
+    expect(screen.queryByRole('img', { name: 'Front of product package' })).not.toBeInTheDocument();
+  });
+
+  it('does not retain a label photo when the scan is unreadable (R5)', async () => {
+    const unreadableScan: ScanResolution = {
+      canApply: false,
+      blockReason: 'Could not read the label.',
+      proposed: {
+        name: '',
+        weight: 0,
+        fat: 0,
+        saturatedFat: 0,
+        carbs: 0,
+        fiber: 0,
+        protein: 0,
+        calories: 0,
+      },
+      databaseCandidate: null,
+      databaseBlockReason: 'Could not read the label. Retake the photo and try again.',
+      labelDraft: null,
+      notes: [],
+      warning: undefined,
+    };
+    const apiMock = api as unknown as {
+      scanNutrition: ReturnType<typeof vi.fn>;
+      nutritionDatabase: { uploadImage: ReturnType<typeof vi.fn> };
+    };
+    apiMock.scanNutrition.mockResolvedValue(unreadableScan);
+
+    renderApp('/track/day/d1/meal/m1', [makeDayWithMeal()]);
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Nutrition Facts Database' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Scan to add' }));
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const labelFile = new File(['blurry'], 'label.jpg', { type: 'image/jpeg' });
+    fireEvent.change(fileInput, { target: { files: [labelFile] } });
+
+    // The unreadable scan surfaces an error and never opens the create form, so
+    // the buffered photo (if any) is dropped — no label slot is shown.
+    await waitFor(() => expect(screen.getByText(/Could not read the label/i)).toBeInTheDocument());
+    expect(screen.queryByText('Publish Ingredient')).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Nutrition facts label' })).not.toBeInTheDocument();
   });
 });

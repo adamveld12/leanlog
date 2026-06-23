@@ -58,6 +58,10 @@ export type NutritionFactsState = {
   entrySource: 'manual' | 'scan';
   submitting: boolean;
   deletingId: string | null;
+  // A scanned photo key that arrived before stageScan opened the form. The R2
+  // upload usually resolves before the slower OCR, so we buffer it here and
+  // merge it in when the form opens (R3); cleared if the scan is unreadable (R5).
+  pendingScanPhoto: { slot: 'product' | 'label'; key: string } | null;
 };
 
 export type NutritionFactsAction =
@@ -110,6 +114,7 @@ export const initialNutritionFactsState: NutritionFactsState = {
   entrySource: 'manual',
   submitting: false,
   deletingId: null,
+  pendingScanPhoto: null,
 };
 
 export function nutritionFactsReducer(
@@ -160,6 +165,7 @@ export function nutritionFactsReducer(
         editingId: null,
         entryValue: emptyDbEntryValue,
         entrySource: 'manual',
+        pendingScanPhoto: null,
         error: '',
       };
     case 'openEdit':
@@ -169,27 +175,50 @@ export function nutritionFactsReducer(
         editingId: action.id,
         entryValue: action.value,
         entrySource: 'manual',
+        pendingScanPhoto: null,
         error: '',
       };
     case 'closeForm':
-      return { ...state, formOpen: false, editingId: null, entryValue: emptyDbEntryValue };
+      return {
+        ...state,
+        formOpen: false,
+        editingId: null,
+        entryValue: emptyDbEntryValue,
+        pendingScanPhoto: null,
+      };
     // A scan always opens the create form (editing happens through openEdit), even
     // when not save-ready, so the user can fill gaps; the form flags what's missing.
-    case 'stageScan':
+    case 'stageScan': {
+      // Merge any photo that arrived before the form opened (R3 race), then clear
+      // the buffer.
+      const pending = state.pendingScanPhoto;
+      const entryValue = pending
+        ? {
+            ...action.value,
+            [pending.slot === 'product' ? 'productPhotoKey' : 'labelPhotoKey']: pending.key,
+          }
+        : action.value;
       return {
         ...state,
         formOpen: true,
         editingId: null,
         entrySource: 'scan',
-        entryValue: action.value,
+        entryValue,
+        pendingScanPhoto: null,
         error: '',
       };
+    }
     case 'scanUnreadable':
-      return { ...state, formOpen: false, error: action.error };
-    // Only stage the scanned photo while the create form is open and unsaved;
-    // if the scan was unreadable (form closed) the upload is discarded.
+      // The scan failed: drop the form and any buffered/staged photo (R5).
+      return { ...state, formOpen: false, pendingScanPhoto: null, error: action.error };
+    // Stage the scanned photo onto the open create form. If it arrives before
+    // stageScan opens the form (R2 upload beats OCR), buffer it so stageScan can
+    // merge it. Ignored entirely in edit mode (photos persist via PATCH there).
     case 'stageScanPhoto':
-      if (!state.formOpen || state.editingId) return state;
+      if (state.editingId) return state;
+      if (!state.formOpen) {
+        return { ...state, pendingScanPhoto: { slot: action.slot, key: action.key } };
+      }
       return {
         ...state,
         entryValue: {
