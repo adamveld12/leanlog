@@ -65,13 +65,15 @@ export function createNutritionDatabaseRepository(db: D1Database): NutritionData
   const now = () => new Date().toISOString();
 
   // Photo objects are content-addressed, so identical bytes from two entries
-  // dedupe to one R2 object key. Before deleting an object we must confirm no
-  // *other* entry still references it (R9 refcount). Given candidate keys and
-  // the entry id being mutated/removed, returns the subset safe to delete.
-  async function findOrphanedKeys(candidates: string[], excludeId: string): Promise<string[]> {
+  // (or even both slots of one entry) dedupe to a single R2 object key. Before
+  // deleting an object we must confirm no entry still references it (R9
+  // refcount). Both callers mutate the row first (update/delete) and then call
+  // this, so a plain query against the live DB is the source of truth: a key is
+  // orphaned iff no surviving row references it in either slot.
+  async function findOrphanedKeys(candidates: string[]): Promise<string[]> {
     const unique = [...new Set(candidates)];
     if (unique.length === 0) return [];
-    const survivors = new Set<string>();
+    const orphaned: string[] = [];
     for (const key of unique) {
       const rows = await d
         .select({ id: nutritionDatabaseIngredients.id })
@@ -82,9 +84,9 @@ export function createNutritionDatabaseRepository(db: D1Database): NutritionData
             eq(nutritionDatabaseIngredients.labelPhotoKey, key),
           ),
         );
-      if (rows.some((r) => r.id !== excludeId)) survivors.add(key);
+      if (rows.length === 0) orphaned.push(key);
     }
-    return unique.filter((k) => !survivors.has(k));
+    return orphaned;
   }
 
   return {
@@ -242,7 +244,7 @@ export function createNutritionDatabaseRepository(db: D1Database): NutritionData
         .where(eq(nutritionDatabaseIngredients.id, id));
 
       // Of the keys this entry dropped, only delete the ones no other entry uses.
-      const orphanedKeys = await findOrphanedKeys(releasedKeys, id);
+      const orphanedKeys = await findOrphanedKeys(releasedKeys);
 
       const rows = await d
         .select()
@@ -265,7 +267,7 @@ export function createNutritionDatabaseRepository(db: D1Database): NutritionData
       });
       await d.delete(nutritionDatabaseIngredients).where(eq(nutritionDatabaseIngredients.id, id));
       // After the row is gone, any held key not referenced elsewhere is orphaned.
-      const orphanedKeys = await findOrphanedKeys(heldKeys, id);
+      const orphanedKeys = await findOrphanedKeys(heldKeys);
       return { status: 'deleted', orphanedKeys };
     },
 
