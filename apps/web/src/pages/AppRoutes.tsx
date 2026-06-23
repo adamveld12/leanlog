@@ -819,6 +819,9 @@ function NutritionFactsDatabase() {
   const didInit = useRef(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [photosBusy, setPhotosBusy] = useState(false);
+  // Bumped after a readable scan to trigger the guided skippable front-photo
+  // capture in the create form (#54, Q4).
+  const [guidedFrontSignal, setGuidedFrontSignal] = useState(0);
 
   const currentUserId = user?.id ?? null;
   const currentUserName = user?.fullName ?? 'You';
@@ -919,6 +922,9 @@ function NutritionFactsDatabase() {
         reason: result.databaseBlockReason ?? 'incomplete',
       });
     }
+    // The label frame is being uploaded as the label photo (see onCapturedImage);
+    // now prompt the optional, skippable front-of-package photo (Q4).
+    setGuidedFrontSignal((n) => n + 1);
   };
 
   const {
@@ -1027,6 +1033,8 @@ function NutritionFactsDatabase() {
             source={state.entrySource}
             submitLabel={state.editingId ? 'Save' : 'Publish'}
             photosBusy={photosBusy}
+            // Guided front-photo prompt only applies to the scan-driven create flow.
+            guidedFrontPromptSignal={state.editingId ? undefined : guidedFrontSignal}
             // Edit mode persists photo changes immediately; create mode stages
             // them into the publish payload (#54).
             onPhotoChange={state.editingId ? persistPhoto : undefined}

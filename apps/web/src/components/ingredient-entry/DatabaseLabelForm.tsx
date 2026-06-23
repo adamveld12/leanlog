@@ -24,6 +24,9 @@ export type DatabaseLabelFormProps = {
   onPhotoChange?: (slot: EntryPhotoSlot, key: string | null) => void;
   /** Disables the photo controls (e.g. while a photo PATCH is in flight). */
   photosBusy?: boolean;
+  // Forwarded to EntryPhotoEditor: bump to trigger the guided skippable
+  // front-photo capture after a label scan (#54, Q4).
+  guidedFrontPromptSignal?: number;
 };
 
 // The Nutrition Facts label create form: wraps the card, computes the calorie
@@ -40,6 +43,7 @@ export function DatabaseLabelForm({
   onPhotoError,
   onPhotoChange,
   photosBusy,
+  guidedFrontPromptSignal,
 }: DatabaseLabelFormProps) {
   const estimatedCalories = estimateCalories({
     fat: value.fat ?? 0,
@@ -79,6 +83,7 @@ export function DatabaseLabelForm({
           disabled={submitting || photosBusy}
           error={photoError}
           onError={onPhotoError}
+          guidedFrontPromptSignal={guidedFrontPromptSignal}
         />
       }
       onSubmit={() => {

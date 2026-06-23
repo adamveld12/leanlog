@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   Button,
   CameraCaptureModal,
@@ -37,6 +37,10 @@ export type EntryPhotoEditorProps = {
   /** Error surfaced from a failed upload. */
   error?: string | null;
   onError?: (message: string) => void;
+  // Increment to trigger the guided front-photo prompt after a label scan (#54,
+  // Q4): a skippable camera step capturing the product photo. Each new value
+  // opens the prompt once; the user captures or skips.
+  guidedFrontPromptSignal?: number;
 };
 
 // Two photo slots (product + label) with camera/file capture, used by the create
@@ -51,11 +55,13 @@ export function EntryPhotoEditor({
   disabled,
   error,
   onError,
+  guidedFrontPromptSignal,
 }: EntryPhotoEditorProps) {
   const activeSlotRef = useRef<EntryPhotoSlot | null>(null);
   const {
     uploading,
     cameraOpen,
+    guided: guidedFront,
     fileInputRef,
     videoRef,
     startCapture,
@@ -74,6 +80,20 @@ export function EntryPhotoEditor({
   const beginCapture = (slot: EntryPhotoSlot) => {
     activeSlotRef.current = slot;
     void startCapture();
+  };
+
+  // After a label scan the page bumps guidedFrontPromptSignal; open the guided
+  // skippable front-photo step (Q4). startCapture is memoized so the effect runs
+  // only when the signal changes, not on every render.
+  useEffect(() => {
+    if (!editable || !guidedFrontPromptSignal) return;
+    activeSlotRef.current = 'product';
+    void startCapture({ isGuided: true });
+  }, [guidedFrontPromptSignal, editable, startCapture]);
+
+  const dismissGuided = () => {
+    activeSlotRef.current = null;
+    cancelCamera();
   };
 
   const keys: Record<EntryPhotoSlot, string | null> = {
@@ -138,9 +158,16 @@ export function EntryPhotoEditor({
       <CameraCaptureModal
         open={cameraOpen}
         videoRef={videoRef}
-        title="Take photo"
+        title={guidedFront ? 'Add a front-of-package photo?' : 'Take photo'}
+        instructions={
+          guidedFront
+            ? 'Optional: capture the front of the package, or skip to finish the label.'
+            : undefined
+        }
         onCapture={() => void capturePhoto()}
-        onCancel={cancelCamera}
+        onCancel={guidedFront ? dismissGuided : cancelCamera}
+        onSkip={guidedFront ? dismissGuided : undefined}
+        skipLabel="Skip"
       />
     </div>
   );

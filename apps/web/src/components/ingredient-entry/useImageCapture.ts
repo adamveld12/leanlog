@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useAnalytics } from '@leanlog/ui';
 import { api } from '../../api';
@@ -22,18 +22,30 @@ export function useImageCapture({
   const track = useAnalytics();
   const [uploading, setUploading] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+  // Tracks whether the open camera is the guided "front photo" step, so the modal
+  // can show a Skip action + front-of-package copy. Set inside startCapture (after
+  // the async getUserMedia), keeping callers' effects free of synchronous setState.
+  const [guided, setGuided] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // Latest onUploaded, read in the async upload path so the memoized callbacks
+  // below stay stable across renders.
+  const onUploadedRef = useRef(onUploaded);
+  const onErrorRef = useRef(onError);
+  useEffect(() => {
+    onUploadedRef.current = onUploaded;
+    onErrorRef.current = onError;
+  });
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
-  };
+  }, []);
 
   // Unmount-only safety net: stop a live stream if the component goes away.
-  // react-doctor-disable-next-line react-doctor/exhaustive-deps
-  useEffect(() => () => stopCamera(), []);
+  // stopCamera is stable (useCallback []), so this still runs only on unmount.
+  useEffect(() => () => stopCamera(), [stopCamera]);
 
   useEffect(() => {
     if (!cameraOpen || !videoRef.current || !streamRef.current) return;
@@ -47,27 +59,33 @@ export function useImageCapture({
     };
   }, [cameraOpen]);
 
-  const uploadBlob = async (blob: Blob) => {
-    setUploading(true);
-    try {
-      const optimized = await optimizeImage(blob);
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      const { key } = await api.nutritionDatabase.uploadImage(token, optimized);
-      track('nutrition_facts.photo.uploaded', {});
-      onUploaded(key);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Photo upload failed';
-      track('nutrition_facts.photo.upload.error', { error: message });
-      onError?.(message);
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
+  const uploadBlob = useCallback(
+    async (blob: Blob) => {
+      setUploading(true);
+      try {
+        const optimized = await optimizeImage(blob);
+        const token = await getToken();
+        if (!token) throw new Error('Not authenticated');
+        const { key } = await api.nutritionDatabase.uploadImage(token, optimized);
+        track('nutrition_facts.photo.uploaded', {});
+        onUploadedRef.current(key);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Photo upload failed';
+        track('nutrition_facts.photo.upload.error', { error: message });
+        onErrorRef.current?.(message);
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    },
+    [getToken, track],
+  );
 
-  const startCapture = async () => {
+  // Opens the camera (falling back to the file picker). `isGuided` flags the
+  // optional front-photo step. Memoized so callers can use it as an effect dep.
+  const startCapture = useCallback(async ({ isGuided = false } = {}) => {
     if (!navigator.mediaDevices?.getUserMedia) {
+      setGuided(isGuided);
       fileInputRef.current?.click();
       return;
     }
@@ -76,13 +94,15 @@ export function useImageCapture({
         video: { facingMode: { ideal: 'environment' } },
       });
       streamRef.current = stream;
+      setGuided(isGuided);
       setCameraOpen(true);
     } catch {
+      setGuided(isGuided);
       fileInputRef.current?.click();
     }
-  };
+  }, []);
 
-  const capturePhoto = async () => {
+  const capturePhoto = useCallback(async () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
@@ -98,22 +118,27 @@ export function useImageCapture({
     if (!blob) return;
     stopCamera();
     setCameraOpen(false);
+    setGuided(false);
     await uploadBlob(blob);
-  };
+  }, [stopCamera, uploadBlob]);
 
-  const cancelCamera = () => {
+  const cancelCamera = useCallback(() => {
     stopCamera();
     setCameraOpen(false);
-  };
+    setGuided(false);
+  }, [stopCamera]);
+
+  const onFileSelected = useCallback((file: File) => void uploadBlob(file), [uploadBlob]);
 
   return {
     uploading,
     cameraOpen,
+    guided,
     fileInputRef,
     videoRef,
     startCapture,
     capturePhoto,
     cancelCamera,
-    onFileSelected: (file: File) => void uploadBlob(file),
+    onFileSelected,
   };
 }
