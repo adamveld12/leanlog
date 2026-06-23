@@ -36,6 +36,8 @@ export function labelToEntryValue(
       amount: m.amount,
       unit: m.unit,
     })),
+    productPhotoKey: label.productPhotoKey ?? null,
+    labelPhotoKey: label.labelPhotoKey ?? null,
   };
 }
 
@@ -80,11 +82,15 @@ export type NutritionFactsAction =
   | { type: 'closeForm' }
   | { type: 'stageScan'; value: NutritionDatabaseEntryValue }
   | { type: 'scanUnreadable'; error: string }
+  // Sets a photo key on the in-progress create form (e.g. the scanned label
+  // frame uploaded as the label photo, #54). Ignored once the form is closed.
+  | { type: 'stageScanPhoto'; slot: 'product' | 'label'; key: string }
   | { type: 'setEntryValue'; value: NutritionDatabaseEntryValue }
   | { type: 'submitStart' }
   | { type: 'createSucceeded'; record: NutritionDatabaseIngredientSearchResult }
   | { type: 'updateSucceeded'; record: NutritionDatabaseIngredientSearchResult }
   | { type: 'submitFailed' }
+  | { type: 'photosUpdated'; record: NutritionDatabaseIngredientSearchResult }
   | { type: 'deleteStart'; id: string }
   | { type: 'deleteSucceeded'; id: string }
   | { type: 'deleteFailed' };
@@ -180,6 +186,17 @@ export function nutritionFactsReducer(
       };
     case 'scanUnreadable':
       return { ...state, formOpen: false, error: action.error };
+    // Only stage the scanned photo while the create form is open and unsaved;
+    // if the scan was unreadable (form closed) the upload is discarded.
+    case 'stageScanPhoto':
+      if (!state.formOpen || state.editingId) return state;
+      return {
+        ...state,
+        entryValue: {
+          ...state.entryValue,
+          [action.slot === 'product' ? 'productPhotoKey' : 'labelPhotoKey']: action.key,
+        },
+      };
     case 'setEntryValue':
       return { ...state, entryValue: action.value };
     case 'submitStart':
@@ -205,6 +222,22 @@ export function nutritionFactsReducer(
       };
     case 'submitFailed':
       return { ...state, submitting: false, error: 'Could not save the label. Please try again.' };
+    // A photo slot was set/cleared on an existing entry (#54). Mirror the new
+    // keys into both the record list and, when that entry is open for editing,
+    // the form value so the slots reflect the change immediately.
+    case 'photosUpdated':
+      return {
+        ...state,
+        records: state.records.map((r) => (r.id === action.record.id ? action.record : r)),
+        entryValue:
+          state.editingId === action.record.id
+            ? {
+                ...state.entryValue,
+                productPhotoKey: action.record.productPhotoKey ?? null,
+                labelPhotoKey: action.record.labelPhotoKey ?? null,
+              }
+            : state.entryValue,
+      };
     case 'deleteStart':
       return { ...state, deletingId: action.id, error: '' };
     case 'deleteSucceeded':

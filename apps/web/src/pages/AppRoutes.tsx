@@ -9,6 +9,7 @@ import {
 } from 'react';
 import {
   useUser,
+  useAuth,
   PricingTable,
   SignInButton,
   SignedIn,
@@ -68,6 +69,8 @@ import { IngredientEntry } from '../components/IngredientEntry';
 import { DatabaseLabelForm } from '../components/ingredient-entry/DatabaseLabelForm';
 import { useDatabaseScan } from '../components/ingredient-entry/useDatabaseScan';
 import { mapDbSearchResults } from '../components/ingredient-entry/types';
+import { api } from '../api';
+import { optimizeImage } from '../image';
 import {
   nutritionFactsReducer,
   initialNutritionFactsState,
@@ -805,14 +808,17 @@ function NutritionFactsDatabase() {
     searchNutritionDatabase,
     createNutritionDatabaseIngredient,
     updateNutritionDatabaseIngredient,
+    updateNutritionDatabasePhotos,
     deleteNutritionDatabaseIngredient,
   } = useStore();
   const { user } = useUser();
+  const { getToken } = useAuth();
   const track = useAnalytics();
   const [state, dispatch] = useReducer(nutritionFactsReducer, initialNutritionFactsState);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didInit = useRef(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [photosBusy, setPhotosBusy] = useState(false);
 
   const currentUserId = user?.id ?? null;
   const currentUserName = user?.fullName ?? 'You';
@@ -928,6 +934,22 @@ function NutritionFactsDatabase() {
     analyticsContext: 'database',
     onResult: stageScan,
     onError: (error) => dispatch({ type: 'scanUnreadable', error }),
+    // The scanned label frame also becomes the entry's label photo: optimize and
+    // upload it, then stage the key into the (create) form (#54). Fire-and-forget
+    // and best-effort — a failed photo upload must not block label creation.
+    onCapturedImage: (image) => {
+      void (async () => {
+        try {
+          const optimized = await optimizeImage(image);
+          const token = await getToken();
+          if (!token) return;
+          const { key } = await api.nutritionDatabase.uploadImage(token, optimized);
+          dispatch({ type: 'stageScanPhoto', slot: 'label', key });
+        } catch {
+          // Non-blocking: the user can still add the photo manually in the form.
+        }
+      })();
+    },
   });
 
   const performDelete = (id: string) => {
@@ -939,6 +961,22 @@ function NutritionFactsDatabase() {
         dispatch({ type: 'deleteSucceeded', id });
       })
       .catch(() => dispatch({ type: 'deleteFailed' }));
+  };
+
+  // Persist a photo slot change for the entry currently open in the edit form.
+  // The macro form's Save preserves photos, so capturing/removing a photo here
+  // commits immediately via the dedicated photos endpoint (#54).
+  const persistPhoto = (slot: 'product' | 'label', key: string | null) => {
+    if (!state.editingId) return;
+    setPhotosBusy(true);
+    const patch = slot === 'product' ? { productPhotoKey: key } : { labelPhotoKey: key };
+    void updateNutritionDatabasePhotos(state.editingId, patch)
+      .then((label) => {
+        track('nutrition_facts.photo.updated', { slot, cleared: key == null });
+        dispatch({ type: 'photosUpdated', record: toResult(label) });
+      })
+      .catch(() => dispatch({ type: 'submitFailed' }))
+      .finally(() => setPhotosBusy(false));
   };
 
   const ownedBy = (id: string) =>
@@ -987,6 +1025,12 @@ function NutritionFactsDatabase() {
             value={state.entryValue}
             submitting={state.submitting}
             source={state.entrySource}
+            submitLabel={state.editingId ? 'Save' : 'Publish'}
+            photosBusy={photosBusy}
+            // Edit mode persists photo changes immediately; create mode stages
+            // them into the publish payload (#54).
+            onPhotoChange={state.editingId ? persistPhoto : undefined}
+            onPhotoError={(error) => dispatch({ type: 'scanUnreadable', error })}
             onChange={(value) => dispatch({ type: 'setEntryValue', value })}
             onPublish={(payload) => {
               dispatch({ type: 'submitStart' });

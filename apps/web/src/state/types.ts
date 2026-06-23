@@ -69,6 +69,11 @@ export type Store = {
     id: string,
     input: UpdateNutritionDatabaseIngredient,
   ): Promise<NutritionDatabaseIngredient>;
+  // Sets/replaces/clears an entry's photo slots; omit a field to keep it (#54).
+  updateNutritionDatabasePhotos(
+    id: string,
+    patch: { productPhotoKey?: string | null; labelPhotoKey?: string | null },
+  ): Promise<NutritionDatabaseIngredient>;
   deleteNutritionDatabaseIngredient(id: string): Promise<void>;
   updateDayTargets(dayId: string, targets: DayTargets): Promise<void>;
   updateDayWeight(dayId: string, weightLbs: number): Promise<void>;

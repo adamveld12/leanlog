@@ -11,10 +11,15 @@ export function useDatabaseScan({
   analyticsContext,
   onResult,
   onError,
+  onCapturedImage,
 }: {
   analyticsContext: 'meal' | 'template' | 'database';
   onResult: (result: ScanResolution) => void;
   onError: (message: string) => void;
+  // When provided, the raw captured/selected image is also handed back so the
+  // caller can store it (e.g. as the entry's label photo, #54). Independent of
+  // the OCR scan: the same frame feeds both the scanner and the photo upload.
+  onCapturedImage?: (image: Blob) => void;
 }) {
   const { getToken } = useAuth();
   const track = useAnalytics();
@@ -48,6 +53,9 @@ export function useDatabaseScan({
 
   const scanFile = async (file: File) => {
     setScanning(true);
+    // Hand the raw frame to the caller for optional photo storage (#54), in
+    // parallel with the OCR scan below.
+    onCapturedImage?.(file);
     try {
       const formData = new FormData();
       formData.append('photo', file);

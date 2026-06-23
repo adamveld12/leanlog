@@ -208,6 +208,10 @@ export function useCreateStore(): Store {
       return withToken((t) => api.nutritionDatabase.update(t, id, input));
     },
 
+    async updateNutritionDatabasePhotos(id, patch) {
+      return withToken((t) => api.nutritionDatabase.updatePhotos(t, id, patch));
+    },
+
     async deleteNutritionDatabaseIngredient(id) {
       await withToken((t) => api.nutritionDatabase.delete(t, id));
     },
