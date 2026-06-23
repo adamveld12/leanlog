@@ -18,6 +18,7 @@ import type {
   CreateGoal,
   UpdateGoal,
 } from './models';
+import type { PhotoUpdatePatch } from './nutritionPhotos';
 
 export interface DayRepository {
   listByUser(userId: string): Promise<DailyMealLog[]>;
@@ -176,8 +177,24 @@ export interface NutritionDatabaseRepository {
     id: string,
     data: UpdateNutritionDatabaseIngredient,
   ): Promise<NutritionDatabaseIngredient | null>;
+  // Sets/replaces/clears the entry's photo slots (#54). Returns the updated label
+  // plus any old object keys this entry no longer references and that no other
+  // entry references either, so the caller can delete those R2 objects (R9).
+  // Returns null when no label has that id; throws NutritionLabelOwnershipError
+  // when the label belongs to another user (R13).
+  setPhotos(
+    userId: string,
+    id: string,
+    patch: PhotoUpdatePatch,
+  ): Promise<{ label: NutritionDatabaseIngredient; orphanedKeys: string[] } | null>;
   // Returns 'deleted' on success, 'not_found' when no label has that id. Throws
   // NutritionLabelOwnershipError when the label belongs to another user.
-  delete(userId: string, id: string): Promise<'deleted' | 'not_found'>;
+  delete(userId: string, id: string): Promise<DeleteNutritionResult>;
   count(): Promise<number>;
 }
+
+// Deleting an entry also reports which of its photo object keys are now orphaned
+// (referenced by no remaining entry) so the API route can remove them from R2 (R9/AE8).
+export type DeleteNutritionResult =
+  | { status: 'not_found' }
+  | { status: 'deleted'; orphanedKeys: string[] };

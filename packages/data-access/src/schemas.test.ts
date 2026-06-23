@@ -288,6 +288,33 @@ describe('CreateNutritionDatabaseIngredientSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('accepts optional product and label photo keys (#54)', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      productPhotoKey: 'nutrition/abc123.jpg',
+      labelPhotoKey: 'nutrition/def456.jpg',
+    });
+    expect(result.success).toBe(true);
+    expect(result.data!.productPhotoKey).toBe('nutrition/abc123.jpg');
+    expect(result.data!.labelPhotoKey).toBe('nutrition/def456.jpg');
+  });
+
+  it('accepts a null photo key to clear a slot (#54)', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      productPhotoKey: null,
+    });
+    expect(result.success).toBe(true);
+    expect(result.data!.productPhotoKey).toBeNull();
+  });
+
+  it('defaults photo keys to undefined when omitted (#54)', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse(validCreateDbIngredient);
+    expect(result.success).toBe(true);
+    expect(result.data!.productPhotoKey).toBeUndefined();
+    expect(result.data!.labelPhotoKey).toBeUndefined();
+  });
 });
 
 describe('UpdateNutritionDatabaseIngredientSchema', () => {

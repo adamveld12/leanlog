@@ -5,4 +5,6 @@ export interface Env {
   VITE_POSTHOG_API_KEY: string;
   VITE_POSTHOG_HOST: string;
   DB: D1Database;
+  // Stored user images for nutrition database entries (product + label photos, #54).
+  IMAGES: R2Bucket;
 }

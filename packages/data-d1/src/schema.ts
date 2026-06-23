@@ -217,6 +217,10 @@ export const nutritionDatabaseIngredients = sqliteTable(
     allulose: real('allulose'),
     alcohol: real('alcohol'),
     micronutrientsJson: text('micronutrients_json'),
+    // R2 object keys for the entry's photos (#54). Both optional. The label
+    // photo is auto-kept from a scan; the product photo is user-supplied.
+    productPhotoKey: text('product_photo_key'),
+    labelPhotoKey: text('label_photo_key'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },

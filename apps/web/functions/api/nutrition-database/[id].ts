@@ -6,6 +6,7 @@ import {
 } from '@leanlog/data-access';
 import type { Env } from '../_env';
 import { getUserDisplayNames } from '../_clerk';
+import { deleteImages } from './_images';
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { id } = context.params as { id: string };
@@ -61,7 +62,9 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
   const repo = createNutritionDatabaseRepository(context.env.DB);
   try {
     const result = await repo.delete(userId, id);
-    if (result === 'not_found') return new Response('Not found', { status: 404 });
+    if (result.status === 'not_found') return new Response('Not found', { status: 404 });
+    // Remove photo objects that no remaining entry references (R9/AE8).
+    await deleteImages(context.env.IMAGES, result.orphanedKeys);
     return new Response(null, { status: 204 });
   } catch (err) {
     if (err instanceof NutritionLabelOwnershipError) {
