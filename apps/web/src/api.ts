@@ -12,6 +12,7 @@ import type {
   NutritionDatabaseIngredientSearchResult,
   CreateNutritionDatabaseIngredient,
   UpdateNutritionDatabaseIngredient,
+  PhotoUpdatePatch as NutritionPhotoPatch,
   AddIngredientFromDatabase,
   MealTemplate,
   MealTemplateIngredient,
@@ -367,6 +368,21 @@ export const api = {
         token,
         method: 'PATCH',
         body: JSON.stringify(data),
+      }),
+    // Uploads an already-optimized JPEG and returns its content-addressed R2 key (#54).
+    uploadImage: (token: string, image: Blob) =>
+      apiFetch<{ key: string; contentType: string }>('/api/nutrition-database/images', {
+        token,
+        method: 'POST',
+        headers: { 'Content-Type': 'image/jpeg' },
+        body: image,
+      }),
+    // Sets/replaces/clears photo slots: omit a field to keep it, null to clear (#54).
+    updatePhotos: (token: string, id: string, patch: NutritionPhotoPatch) =>
+      apiFetch<NutritionDatabaseIngredient>(`/api/nutrition-database/${id}/photos`, {
+        token,
+        method: 'PATCH',
+        body: JSON.stringify(patch),
       }),
     delete: (token: string, id: string) =>
       apiFetch<void>(`/api/nutrition-database/${id}`, { token, method: 'DELETE' }),

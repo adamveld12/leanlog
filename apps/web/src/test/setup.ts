@@ -101,6 +101,10 @@ vi.mock('../api', () => ({
       list: vi.fn(() => Promise.resolve({ results: [], total: 0 })),
       create: vi.fn(),
       update: vi.fn(),
+      uploadImage: vi.fn(() =>
+        Promise.resolve({ key: 'nutrition/test.jpg', contentType: 'image/jpeg' }),
+      ),
+      updatePhotos: vi.fn(),
       delete: vi.fn(),
     },
     profile: {
