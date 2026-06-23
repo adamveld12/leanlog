@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
@@ -56,6 +56,10 @@ export type NutritionDatabaseEntryValue = {
   allulose?: number | null;
   alcohol?: number | null;
   micronutrients?: NutritionDatabaseMicronutrientValue[];
+  // R2 object keys for the entry's two optional photos (#54). Staged here while
+  // creating; persisted via the create payload / photos PATCH.
+  productPhotoKey?: string | null;
+  labelPhotoKey?: string | null;
 };
 
 type NutritionDatabaseEntryCardProps = {
@@ -64,6 +68,10 @@ type NutritionDatabaseEntryCardProps = {
   onChange: (next: NutritionDatabaseEntryValue) => void;
   onSubmit: () => void;
   submitting?: boolean;
+  /** Photo capture controls (two PhotoSlots), composed by the app layer (#54). */
+  photosSlot?: ReactNode;
+  /** Submit button label; defaults to "Publish". Edit flows pass "Save". */
+  submitLabel?: string;
 };
 
 let microRowSeq = 0;
@@ -132,10 +140,18 @@ export function NutritionDatabaseEntryCard({
   onChange,
   onSubmit,
   submitting,
+  photosSlot,
+  submitLabel = 'Publish',
 }: NutritionDatabaseEntryCardProps) {
   type NumericKey = Exclude<
     keyof NutritionDatabaseEntryValue,
-    'name' | 'calories' | 'micronutrients' | 'servingSizeUnit' | 'servingSizeDisplayText'
+    | 'name'
+    | 'calories'
+    | 'micronutrients'
+    | 'servingSizeUnit'
+    | 'servingSizeDisplayText'
+    | 'productPhotoKey'
+    | 'labelPhotoKey'
   >;
 
   const setNum = (key: NumericKey, n: number | null) => onChange({ ...value, [key]: sanitize(n) });
@@ -206,7 +222,7 @@ export function NutritionDatabaseEntryCard({
         <div className={cn(recipes.stack.row, recipes.stack.between)}>
           <SectionHeading noMargin>Publish Ingredient</SectionHeading>
           <Button size="sm" onClick={onSubmit} disabled={!valid || submitting}>
-            {submitting ? 'Publishing…' : 'Publish'}
+            {submitting ? `${submitLabel}…` : submitLabel}
           </Button>
         </div>
 
@@ -419,6 +435,13 @@ export function NutritionDatabaseEntryCard({
         <HelperText as="p">
           % DV uses FDA Daily Values (21 CFR 101.9, 2016 Nutrition Facts label).
         </HelperText>
+
+        {photosSlot ? (
+          <>
+            <SectionHeading noMargin>Photos (optional)</SectionHeading>
+            {photosSlot}
+          </>
+        ) : null}
       </SectionCard>
     </AnalyticsScope>
   );

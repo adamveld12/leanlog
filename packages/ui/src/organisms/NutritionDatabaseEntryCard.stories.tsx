@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { NutritionDatabaseEntryCard } from './NutritionDatabaseEntryCard';
+import { PhotoSlot } from '../molecules/PhotoSlot';
+import { Button } from '../atoms/Button';
 
 const base = {
   name: '',
@@ -98,5 +100,17 @@ export const WithMicronutrients: Story = {
         { name: 'Iron', amount: 2.7, unit: 'milligram' },
       ],
     },
+  },
+};
+
+export const WithPhotos: Story = {
+  args: {
+    value: filled,
+    photosSlot: (
+      <div className="grid grid-cols-2 gap-2">
+        <PhotoSlot label="Product photo" actions={<Button size="sm">Add photo</Button>} />
+        <PhotoSlot label="Nutrition label" actions={<Button size="sm">Add photo</Button>} />
+      </div>
+    ),
   },
 };
