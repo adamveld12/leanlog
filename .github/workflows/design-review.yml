@@ -2,11 +2,11 @@ name: Design Review
 
 on:
   pull_request:
-    # Only run when a .tsx file is edited — this is a UI/design-system review,
-    # so non-component changes (package.json, lockfiles, docs) should not trigger it.
+    # Only run when a .tsx file is edited anywhere in the repo — this is a
+    # UI/design-system review, so non-component changes (package.json,
+    # lockfiles, docs) should not trigger it.
     paths:
-      - 'apps/web/**/*.tsx'
-      - 'packages/ui/**/*.tsx'
+      - '**/*.tsx'
 
 concurrency:
   group: design-review-${{ github.ref }}
