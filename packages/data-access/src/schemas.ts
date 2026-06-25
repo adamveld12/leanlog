@@ -101,7 +101,11 @@ export const NutritionDatabaseIngredientSchema = z.object({
   servingSizeDisplayText: z.string().nullable().optional(),
   servingsPerPackage: z.number().gt(0),
   addedByUserId: z.string(),
-  creationSource: z.enum(['manual', 'scan']),
+  // `usda` marks a row seeded from the curated USDA whole-foods CSV (#72). It is
+  // read-only to users: the API never accepts it on create (see the override on
+  // CreateNutritionDatabaseIngredientSchema below), so only the seed pipeline can
+  // mint it, and the owner-only edit/delete gate keeps users from changing it.
+  creationSource: z.enum(['manual', 'scan', 'usda']),
   fat: z.number().min(0),
   carbs: z.number().min(0),
   protein: z.number().min(0),
@@ -130,7 +134,11 @@ export const CreateNutritionDatabaseIngredientSchema = NutritionDatabaseIngredie
   addedByUserId: true,
   createdAt: true,
   updatedAt: true,
-}).strict();
+})
+  // Users may only create `manual` or `scan` entries; `usda` is reserved for the
+  // seed pipeline so the read-only provenance can't be forged through the API (#72).
+  .extend({ creationSource: z.enum(['manual', 'scan']) })
+  .strict();
 
 // Editing an existing label (#49). Same shape as create minus the immutable
 // fields: `creationSource` is fixed at capture time (it records whether the

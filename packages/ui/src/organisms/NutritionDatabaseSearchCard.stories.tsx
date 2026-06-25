@@ -114,6 +114,29 @@ export const WithTotalCount: Story = {
   },
 };
 
+// Seeded USDA foods (#72) are attributed to the dataset ("From USDA") instead of
+// the "Added by {name} · {date}" line used for user-created entries.
+export const UsdaSeeded: Story = {
+  args: {
+    results: [
+      {
+        id: 'usda-1',
+        name: 'Beef, grass-fed, ground, raw',
+        servingAmount: 100,
+        fat: 12.73,
+        carbs: 0,
+        protein: 19.42,
+        fiber: null,
+        calories: 198,
+        addedByName: 'USDA',
+        addedAtLabel: 'Jan 1, 2024',
+        creationSource: 'usda',
+      },
+      baseResults[0],
+    ],
+  },
+};
+
 // R10: entries with a photo show a thumbnail; entries without show the neutral
 // placeholder. Uses a data URI so the story is self-contained.
 const SAMPLE_THUMB =

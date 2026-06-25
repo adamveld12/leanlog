@@ -16,8 +16,9 @@
     "dev:vite": "vite --host localhost --port 5173 --strictPort",
     "dev:api": "node scripts/dev-api.mjs",
     "dev:db:migrate": "CI=1 wrangler d1 migrations apply DB --local --persist-to .wrangler/state",
-    "dev:db:reset": "wrangler d1 execute DB --local --persist-to .wrangler/state --yes --file scripts/reset-local-d1.sql && pnpm dev:db:migrate",
-    "dev:reset": "rm -rf .wrangler/state && pnpm dev:db:migrate"
+    "dev:db:seed": "pnpm --filter @leanlog/data-d1 db:seed:build && wrangler d1 execute DB --local --persist-to .wrangler/state --yes --file ../../packages/data-d1/seed/usda-whole-foods.sql",
+    "dev:db:reset": "wrangler d1 execute DB --local --persist-to .wrangler/state --yes --file scripts/reset-local-d1.sql && pnpm dev:db:migrate && pnpm dev:db:seed",
+    "dev:reset": "rm -rf .wrangler/state && pnpm dev:db:migrate && pnpm dev:db:seed"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.3",

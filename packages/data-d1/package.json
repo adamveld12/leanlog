@@ -9,6 +9,7 @@
   "scripts": {
     "lint": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
+    "db:seed:build": "node --experimental-strip-types scripts/build-usda-seed.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

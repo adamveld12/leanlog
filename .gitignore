@@ -16,3 +16,7 @@ storybook-static
 # Generated eval artifact
 packages/nutrition-evals/eval-report.md
 .worktrees
+
+# Generated USDA seed SQL (#72) — the CSV is the source of truth; the .sql is
+# rebuilt from it by `db:seed:build` on every seed run.
+packages/data-d1/seed/usda-whole-foods.sql
