@@ -172,6 +172,31 @@ describe('createDayRepository', () => {
       expect(ingredientCount).toBe(120);
     });
 
+    test('returns day with empty meals array when day has no meals', async () => {
+      await seedUser(env.DB, userId);
+      const dayId = await seedDay(env.DB, userId, '2026-01-01');
+
+      const repo = createDayRepository(env.DB);
+      const days = await repo.listByUser(userId);
+
+      expect(days).toHaveLength(1);
+      expect(days[0].id).toBe(dayId);
+      expect(days[0].meals).toEqual([]);
+    });
+
+    test('returns meal with empty ingredients array when meal has no ingredients', async () => {
+      await seedUser(env.DB, userId);
+      const dayId = await seedDay(env.DB, userId, '2026-01-01');
+      await seedMeals(env.DB, dayId, 1);
+
+      const repo = createDayRepository(env.DB);
+      const days = await repo.listByUser(userId);
+
+      expect(days).toHaveLength(1);
+      expect(days[0].meals).toHaveLength(1);
+      expect(days[0].meals[0].ingredients).toEqual([]);
+    });
+
     test('does not return days belonging to another user', async () => {
       const otherUserId = `other-user-${uuidv7()}`;
       await seedUser(env.DB, userId);
