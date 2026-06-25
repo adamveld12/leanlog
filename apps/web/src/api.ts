@@ -21,6 +21,7 @@ import type {
   Goal,
   CreateGoal,
   UpdateGoal,
+  UpdateBackgroundGoal,
 } from '@leanlog/data-access';
 import { todayIso } from './lib';
 
@@ -332,6 +333,13 @@ export const api = {
       apiFetch<Goal>('/api/goals', { token, method: 'POST', body: JSON.stringify(data) }),
     update: (token: string, goalId: string, data: UpdateGoal) =>
       apiFetch<Goal>(`/api/goals/${goalId}`, {
+        token,
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    // Configure the background maintenance goal's calorie basis + body comp (#63).
+    updateBackground: (token: string, data: UpdateBackgroundGoal) =>
+      apiFetch<Goal>('/api/goals/background', {
         token,
         method: 'PATCH',
         body: JSON.stringify(data),

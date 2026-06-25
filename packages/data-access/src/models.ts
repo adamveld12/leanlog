@@ -24,10 +24,13 @@ import type {
   NutritionDatabaseIngredientSearchResult,
   GoalSchema,
   GoalModeSchema,
+  CalorieBasisSchema,
+  ActivityLevelSchema,
   MealSlotSchema,
   MealSlotIngredientSchema,
   CreateGoalSchema,
   UpdateGoalSchema,
+  UpdateBackgroundGoalSchema,
 } from './schemas';
 
 export type Ingredient = z.infer<typeof IngredientSchema>;
@@ -61,7 +64,10 @@ export type WeightEntry = { date: string; weightLbs: number };
 
 export type Goal = z.infer<typeof GoalSchema>;
 export type GoalMode = z.infer<typeof GoalModeSchema>;
+export type CalorieBasis = z.infer<typeof CalorieBasisSchema>;
+export type ActivityLevel = z.infer<typeof ActivityLevelSchema>;
 export type MealSlot = z.infer<typeof MealSlotSchema>;
 export type MealSlotIngredient = z.infer<typeof MealSlotIngredientSchema>;
 export type CreateGoal = z.infer<typeof CreateGoalSchema>;
 export type UpdateGoal = z.infer<typeof UpdateGoalSchema>;
+export type UpdateBackgroundGoal = z.infer<typeof UpdateBackgroundGoalSchema>;

@@ -52,6 +52,19 @@ export const goals = sqliteTable(
     startDate: text('start_date'),
     endDate: text('end_date'),
     calorieDelta: integer('calorie_delta').notNull().default(0),
+    // Calorie basis (#63). `bodyweight` keeps the flat multiplier; `katch` derives
+    // calories from lean body mass + activity. Defaults to bodyweight so existing
+    // goals and the background goal are unchanged until a user opts in.
+    calorieBasis: text('calorie_basis', { enum: ['bodyweight', 'katch'] })
+      .notNull()
+      .default('bodyweight'),
+    // Body-composition snapshot, set only on a Katch goal. Body fat is one of the
+    // fixed 10/15/20/25 options; activity is one of five tiers. Both null on a
+    // bodyweight goal.
+    bodyFatPct: real('body_fat_pct'),
+    activityLevel: text('activity_level', {
+      enum: ['sedentary', 'light', 'moderate', 'very_active', 'athlete'],
+    }),
     mealSlotsJson: text('meal_slots_json')
       .notNull()
       .default(

@@ -16,6 +16,7 @@ import {
   RadioGroup,
   SectionCard,
   SectionHeading,
+  Select,
   SuccessText,
   Text,
   WarningText,
@@ -27,8 +28,13 @@ import {
   goalOutcome,
   macrosFromPercentage,
   targetsFromGoal,
+  baseCaloriesFromGoal,
+  katchBreakdown,
   minCalorieDelta,
   GOAL_MULTIPLIER,
+  ACTIVITY_LABEL,
+  ACTIVITY_MULTIPLIER,
+  BODY_FAT_OPTIONS,
   validateNewGoal,
   findTrimmableActiveGoal,
   weightOnOrBefore,
@@ -36,11 +42,14 @@ import {
   DEFAULT_MEAL_SLOTS,
   GOAL_DEFAULTS,
   uuidv7,
+  type ActivityLevel,
+  type CalorieBasis,
   type CreateGoal,
   type Goal,
   type GoalMode,
   type MealSlot,
   type TimelineSegment,
+  type UpdateBackgroundGoal,
 } from '@leanlog/data-access';
 import { todayIso, prettyDate } from '../lib';
 import { selectWeightEntries } from '../selectors';
@@ -51,6 +60,93 @@ const MODE_LABEL: Record<GoalMode, string> = {
   maintain: 'Maintain',
   lean_gain: 'Lean Gain',
 };
+
+// Activity tiers in ascending order for the Katch activity selector (#63 R5/R26).
+const ACTIVITY_ORDER: ActivityLevel[] = [
+  'sedentary',
+  'light',
+  'moderate',
+  'very_active',
+  'athlete',
+];
+
+// Body-composition inputs for a Katch goal: a coarse body-fat dropdown and the
+// five activity tiers (#63 R26). Both required; values bubble up to the form.
+function BodyCompFields({
+  bodyFatPct,
+  activityLevel,
+  onBodyFatChange,
+  onActivityChange,
+}: {
+  bodyFatPct: number | null;
+  activityLevel: ActivityLevel | null;
+  onBodyFatChange: (next: number | null) => void;
+  onActivityChange: (next: ActivityLevel) => void;
+}) {
+  return (
+    <div className={recipes.grid.two}>
+      <Field label="Body fat %">
+        <Select
+          name="goal-body-fat"
+          value={bodyFatPct ?? ''}
+          onChange={(e) => onBodyFatChange(e.target.value === '' ? null : Number(e.target.value))}
+        >
+          <option value="">Select…</option>
+          {BODY_FAT_OPTIONS.map((pct) => (
+            <option key={pct} value={pct}>
+              {pct}%
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <Field label="Activity level">
+        <Select
+          name="goal-activity"
+          value={activityLevel ?? ''}
+          onChange={(e) => onActivityChange(e.target.value as ActivityLevel)}
+        >
+          <option value="">Select…</option>
+          {ACTIVITY_ORDER.map((level) => (
+            <option key={level} value={level}>
+              {ACTIVITY_LABEL[level]} (×{ACTIVITY_MULTIPLIER[level]})
+            </option>
+          ))}
+        </Select>
+      </Field>
+    </div>
+  );
+}
+
+// Live LBM → BMR → TDEE → final-target breakdown for a Katch goal (#63 R27/R29).
+// Renders nothing until both body-comp inputs are present. `modeLabel` annotates
+// the final adjusted line so the percentage adjustment is explicit.
+function KatchBreakdownPanel({
+  weightLbs,
+  bodyFatPct,
+  activityLevel,
+  mode,
+  finalCalories,
+}: {
+  weightLbs: number;
+  bodyFatPct: number;
+  activityLevel: ActivityLevel;
+  mode: GoalMode;
+  finalCalories: number;
+}) {
+  const b = katchBreakdown(weightLbs, bodyFatPct, activityLevel, mode);
+  return (
+    <div className={recipes.stack.sm}>
+      <SectionHeading noMargin>Katch-McArdle breakdown</SectionHeading>
+      <SummaryRow label="Lean body mass" value={`${b.lbmKg.toFixed(1)} kg`} />
+      <SummaryRow label="BMR" value={`${Math.round(b.bmr)} kcal`} />
+      <SummaryRow
+        label={`TDEE (${ACTIVITY_LABEL[activityLevel]})`}
+        value={`${Math.round(b.tdee)} kcal`}
+      />
+      <SummaryRow label={`Target (${MODE_LABEL[mode]})`} value={`${finalCalories} kcal`} />
+    </div>
+  );
+}
 
 function isoToParts(iso: string) {
   const [year, month, day] = iso.split('-').map(Number);
@@ -89,10 +185,12 @@ function dateRangeLabel(start: string | null, end: string | null): string {
 }
 
 export function GoalsPage() {
-  const { goals, days, loading, createGoal, updateGoal, removeGoal } = useStore();
+  const { goals, days, loading, createGoal, updateGoal, removeGoal, configureBackgroundGoal } =
+    useStore();
   const today = todayIso();
   const weightEntries = useMemo(() => selectWeightEntries(days), [days]);
   const segments = useMemo(() => buildTimeline(goals, today), [goals, today]);
+  const backgroundGoal = useMemo(() => goals.find((g) => g.isBackground) ?? null, [goals]);
 
   // Deep link: ?goal=<id> selects that goal on open (e.g. from the Day List
   // active-goal shortcut).
@@ -231,7 +329,17 @@ export function GoalsPage() {
           }}
         />
       ) : selected?.kind === 'maintenance' ? (
-        <MaintenanceDetail onCreate={() => setAdding(true)} canAddGoal={canAddGoal} />
+        <MaintenanceDetail
+          backgroundGoal={backgroundGoal}
+          latestWeightLbs={latestWeight}
+          onCreate={() => setAdding(true)}
+          canAddGoal={canAddGoal}
+          onConfigure={async (data) => {
+            await configureBackgroundGoal(data);
+            posthog.capture('background_goal_configured', { basis: data.calorieBasis });
+            setSavedMessage('Maintenance basis updated');
+          }}
+        />
       ) : selectedGoal ? (
         <GoalDetail
           key={selectedGoal.id}
@@ -247,22 +355,118 @@ export function GoalsPage() {
 }
 
 function MaintenanceDetail({
+  backgroundGoal,
+  latestWeightLbs,
   onCreate,
   canAddGoal,
+  onConfigure,
 }: {
+  backgroundGoal: Goal | null;
+  // Latest logged weight on/before today (null if none) — the basis for the live
+  // Katch breakdown, matching how fallback day targets are derived.
+  latestWeightLbs: number | null;
   onCreate: () => void;
   canAddGoal: boolean;
+  onConfigure: (data: UpdateBackgroundGoal) => Promise<void>;
+  // The basis + two body-comp inputs plus error/saving flags are independent form
+  // state; a useReducer migration is tracked with the goal form's (#50).
+  // react-doctor-disable-next-line react-doctor/prefer-useReducer
 }) {
+  // The background goal's basis is user-editable at any time (#63 R21), so this is
+  // a live form, not a read-only summary. Seeded from the current background goal.
+  const [calorieBasis, setCalorieBasis] = useState<CalorieBasis>(
+    backgroundGoal?.calorieBasis ?? 'bodyweight',
+  );
+  const [bodyFatPct, setBodyFatPct] = useState<number | null>(backgroundGoal?.bodyFatPct ?? null);
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel | null>(
+    backgroundGoal?.activityLevel ?? null,
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const basisWeight = latestWeightLbs ?? FALLBACK_WEIGHT_LBS;
+  const katchReady = calorieBasis === 'katch' && bodyFatPct != null && activityLevel != null;
+  // The background goal always maintains (R22), so the breakdown uses Maintain.
+  const finalCalories = katchReady
+    ? baseCaloriesFromGoal(
+        { calorieBasis: 'katch', bodyFatPct, activityLevel, mode: 'maintain' } as Goal,
+        basisWeight,
+      )
+    : Math.ceil(basisWeight * GOAL_MULTIPLIER.maintain);
+
+  async function save() {
+    setError(null);
+    if (calorieBasis === 'katch' && (bodyFatPct == null || activityLevel == null)) {
+      setError('Body fat and activity level are required for the Katch-McArdle basis.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await onConfigure({
+        calorieBasis,
+        bodyFatPct: calorieBasis === 'katch' ? bodyFatPct : null,
+        activityLevel: calorieBasis === 'katch' ? activityLevel : null,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not update the maintenance basis.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <SectionCard title="Maintenance">
-      <div className={cn(recipes.stack.md, 'items-center py-4 text-center')}>
-        <Text variant="body">
-          This stretch is covered by your background maintenance goal — targets come from your
-          latest logged weight at 15× calories.
-        </Text>
-        <Text variant="body">Interested in cutting or lean gaining? Create a goal.</Text>
+      <Text variant="body">
+        This stretch is covered by your background maintenance goal. Choose how its fallback
+        calories are estimated; this also covers gaps between your goals.
+      </Text>
+
+      <RadioGroup
+        name="maintenance-calorie-basis"
+        label="Calorie basis"
+        value={calorieBasis}
+        options={[
+          { value: 'bodyweight', label: 'Bodyweight multiplier (15×)' },
+          { value: 'katch', label: 'Katch-McArdle (body composition)' },
+        ]}
+        onChange={(v) => setCalorieBasis(v)}
+      />
+      {calorieBasis === 'katch' ? (
+        <>
+          <BodyCompFields
+            bodyFatPct={bodyFatPct}
+            activityLevel={activityLevel}
+            onBodyFatChange={setBodyFatPct}
+            onActivityChange={setActivityLevel}
+          />
+          {katchReady && bodyFatPct != null && activityLevel != null ? (
+            <KatchBreakdownPanel
+              weightLbs={basisWeight}
+              bodyFatPct={bodyFatPct}
+              activityLevel={activityLevel}
+              mode="maintain"
+              finalCalories={finalCalories}
+            />
+          ) : (
+            <HelperText>
+              Pick a body fat % and activity level to see the maintenance breakdown.
+            </HelperText>
+          )}
+        </>
+      ) : (
+        <HelperText>
+          Targets come from your latest logged weight at 15× calories ({basisWeight} lb →{' '}
+          {finalCalories} kcal).
+        </HelperText>
+      )}
+
+      {error ? <WarningText>{error}</WarningText> : null}
+      <div className={cn(recipes.stack.row, 'flex-wrap')}>
+        <Button variant="primary" disabled={saving} onClick={() => void save()}>
+          Save maintenance basis
+        </Button>
         {canAddGoal ? (
-          <Button variant="primary" onClick={onCreate}>
+          <Button variant="ghost" onClick={onCreate}>
             + Create a goal
           </Button>
         ) : null}
@@ -344,6 +548,10 @@ function GoalDetail({
             macroProtein: data.macroProtein,
             startDate: data.startDate,
             endDate: data.endDate,
+            // Body-comp basis is editable only while future/today (#63 R17).
+            calorieBasis: data.calorieBasis,
+            bodyFatPct: data.bodyFatPct,
+            activityLevel: data.activityLevel,
             mealSlots: data.mealSlots,
           });
           posthog.capture('goal_edited', { mode: data.mode, lifecycle });
@@ -370,6 +578,16 @@ function GoalDetail({
         label="Latest weight logged"
         value={latestWeight != null ? `${latestWeight} lb` : `${FALLBACK_WEIGHT_LBS} lb (default)`}
       />
+      <SummaryRow
+        label="Calorie basis"
+        value={goal.calorieBasis === 'katch' ? 'Katch-McArdle' : 'Bodyweight multiplier'}
+      />
+      {goal.calorieBasis === 'katch' && goal.bodyFatPct != null && goal.activityLevel != null ? (
+        <>
+          <SummaryRow label="Body fat" value={`${goal.bodyFatPct}%`} />
+          <SummaryRow label="Activity" value={ACTIVITY_LABEL[goal.activityLevel]} />
+        </>
+      ) : null}
       <SummaryRow
         label="Macro split"
         value={`${goal.macroProtein}/${goal.macroCarbs}/${goal.macroFats} P/C/F`}
@@ -445,7 +663,12 @@ type SubmitTrim = { goalId: string; endDate: string };
 type FormSlot = MealSlot & { id: string };
 
 // Inline Add Goal / Edit-future-goal form (R54/R55). Mode is chosen first; the
-// rest prefill from standard defaults.
+// rest prefill from standard defaults. The form is long because it composes the
+// full goal model (dates, mode, calorie basis + Katch body-comp, macros, meal
+// slots) in one card; the reusable Katch pieces are already extracted
+// (BodyCompFields, KatchBreakdownPanel). A further split is tracked with the
+// useReducer migration (#50).
+// react-doctor-disable-next-line react-doctor/no-giant-component
 function AddOrEditGoal({
   goals,
   today,
@@ -484,6 +707,15 @@ function AddOrEditGoal({
   const [protein, setProtein] = useState<number | null>(
     editingGoal?.macroProtein ?? GOAL_DEFAULTS.macroProtein,
   );
+  // Calorie basis + body-composition snapshot (#63). Default to today's behavior
+  // (bodyweight); body-comp inputs are seeded from an editing Katch goal.
+  const [calorieBasis, setCalorieBasis] = useState<CalorieBasis>(
+    editingGoal?.calorieBasis ?? 'bodyweight',
+  );
+  const [bodyFatPct, setBodyFatPct] = useState<number | null>(editingGoal?.bodyFatPct ?? null);
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel | null>(
+    editingGoal?.activityLevel ?? null,
+  );
   // Form slots carry a stable local id so the editable list keys never fall back
   // to the array index.
   const [slots, setSlots] = useState<FormSlot[]>(() =>
@@ -495,10 +727,21 @@ function AddOrEditGoal({
   const startIso = partsToIso(start);
   const endIso = hasEnd ? partsToIso(end) : null;
 
-  // Live gram targets shown beside each macro %: calories = weight × mode
-  // multiplier (delta is 0 for new/edited goals here), split by the percentages.
+  // A Katch goal needs both body-comp inputs before it can compute calories; until
+  // then the preview falls back to the bodyweight multiplier so the macro grams
+  // still render. The whole preview recomputes live as basis/body-fat/activity/mode
+  // change (#63 R27/R29).
+  const katchReady = calorieBasis === 'katch' && bodyFatPct != null && activityLevel != null;
+
+  // Live gram targets shown beside each macro %. Base calories come from the
+  // chosen basis: Katch mode-adjusted TDEE when ready, else the weight multiplier.
   const basisWeight = latestWeightLbs ?? FALLBACK_WEIGHT_LBS;
-  const estimatedCalories = Math.ceil(basisWeight * GOAL_MULTIPLIER[mode]);
+  const estimatedCalories = katchReady
+    ? baseCaloriesFromGoal(
+        { calorieBasis: 'katch', bodyFatPct, activityLevel, mode } as Goal,
+        basisWeight,
+      )
+    : Math.ceil(basisWeight * GOAL_MULTIPLIER[mode]);
   const gramTargets = macrosFromPercentage(
     estimatedCalories,
     Math.round(fats ?? 0),
@@ -519,6 +762,10 @@ function AddOrEditGoal({
       macroProtein: Math.round(protein ?? 0),
       startDate: startIso,
       endDate: endIso,
+      // Body-comp is sent only for a Katch goal; a bodyweight goal clears both (R6).
+      calorieBasis,
+      bodyFatPct: calorieBasis === 'katch' ? bodyFatPct : null,
+      activityLevel: calorieBasis === 'katch' ? activityLevel : null,
       mealSlots: slots.map(({ name: slotName, ingredients }) => ({ name: slotName, ingredients })),
     };
   }
@@ -527,6 +774,11 @@ function AddOrEditGoal({
     setError(null);
     if (mode !== 'maintain' && (targetWeight == null || targetWeight <= 0)) {
       setError('Target weight is required for cut and lean gain goals.');
+      return;
+    }
+    // R6/AE4: a Katch goal must carry both body-comp inputs before it can save.
+    if (calorieBasis === 'katch' && (bodyFatPct == null || activityLevel == null)) {
+      setError('Body fat and activity level are required for the Katch-McArdle basis.');
       return;
     }
     const macroFats = Math.round(fats ?? 0);
@@ -612,6 +864,42 @@ function AddOrEditGoal({
         {latestWeightLbs != null ? `${latestWeightLbs} lb` : `${FALLBACK_WEIGHT_LBS} lb (none yet)`}
         .
       </HelperText>
+
+      {/* Calorie basis (#63 R25). Bodyweight keeps the multiplier; Katch reveals the
+          body-comp inputs and live breakdown below. */}
+      <RadioGroup
+        name="goal-calorie-basis"
+        label="Calorie basis"
+        value={calorieBasis}
+        options={[
+          { value: 'bodyweight', label: 'Bodyweight multiplier' },
+          { value: 'katch', label: 'Katch-McArdle (body composition)' },
+        ]}
+        onChange={(v) => setCalorieBasis(v)}
+      />
+      {calorieBasis === 'katch' ? (
+        <>
+          <BodyCompFields
+            bodyFatPct={bodyFatPct}
+            activityLevel={activityLevel}
+            onBodyFatChange={setBodyFatPct}
+            onActivityChange={setActivityLevel}
+          />
+          {katchReady && bodyFatPct != null && activityLevel != null ? (
+            <KatchBreakdownPanel
+              weightLbs={basisWeight}
+              bodyFatPct={bodyFatPct}
+              activityLevel={activityLevel}
+              mode={mode}
+              finalCalories={estimatedCalories}
+            />
+          ) : (
+            <HelperText>
+              Pick a body fat % and activity level to see the calorie breakdown.
+            </HelperText>
+          )}
+        </>
+      ) : null}
 
       <SectionHeading noMargin>Macros (must total 100%)</SectionHeading>
       <div className={recipes.grid.three}>

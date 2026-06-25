@@ -8,6 +8,9 @@ import {
   CreateNutritionDatabaseIngredientSchema,
   UpdateNutritionDatabaseIngredientSchema,
   UpsertIngredientSchema,
+  CreateGoalSchema,
+  UpdateGoalSchema,
+  UpdateBackgroundGoalSchema,
   normalizeMicronutrients,
   parseMicronutrientsJson,
 } from './schemas';
@@ -530,5 +533,103 @@ describe('UpsertTemplateIngredientSchema', () => {
 
   it('rejects a blank name (same validity as meal ingredients)', () => {
     expect(UpsertTemplateIngredientSchema.safeParse({ ...valid, name: '' }).success).toBe(false);
+  });
+});
+
+describe('CreateGoalSchema — calorie basis (#63)', () => {
+  const base = {
+    mode: 'cut' as const,
+    targetWeightLbs: 180,
+    macroFats: 25,
+    macroCarbs: 35,
+    macroProtein: 40,
+    startDate: '2026-07-01',
+    endDate: null,
+  };
+
+  it('defaults to the bodyweight basis with null body-comp (R1/R31)', () => {
+    const parsed = CreateGoalSchema.parse(base);
+    expect(parsed.calorieBasis).toBe('bodyweight');
+    expect(parsed.bodyFatPct).toBeNull();
+    expect(parsed.activityLevel).toBeNull();
+  });
+
+  it('accepts a Katch goal with valid body fat + activity (R3/R6)', () => {
+    const parsed = CreateGoalSchema.parse({
+      ...base,
+      calorieBasis: 'katch',
+      bodyFatPct: 15,
+      activityLevel: 'moderate',
+    });
+    expect(parsed.calorieBasis).toBe('katch');
+    expect(parsed.bodyFatPct).toBe(15);
+    expect(parsed.activityLevel).toBe('moderate');
+  });
+
+  it('rejects a Katch goal missing body fat or activity (AE4/R6)', () => {
+    expect(CreateGoalSchema.safeParse({ ...base, calorieBasis: 'katch' }).success).toBe(false);
+    expect(
+      CreateGoalSchema.safeParse({ ...base, calorieBasis: 'katch', bodyFatPct: 15 }).success,
+    ).toBe(false);
+    expect(
+      CreateGoalSchema.safeParse({ ...base, calorieBasis: 'katch', activityLevel: 'light' })
+        .success,
+    ).toBe(false);
+  });
+
+  it('rejects a Katch body fat outside the 10/15/20/25 set (R4/R15/AE5)', () => {
+    expect(
+      CreateGoalSchema.safeParse({
+        ...base,
+        calorieBasis: 'katch',
+        bodyFatPct: 12,
+        activityLevel: 'moderate',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejects body-comp fields on a bodyweight goal (R6)', () => {
+    expect(
+      CreateGoalSchema.safeParse({ ...base, calorieBasis: 'bodyweight', bodyFatPct: 15 }).success,
+    ).toBe(false);
+  });
+});
+
+describe('UpdateGoalSchema — calorie basis (#63)', () => {
+  it('allows a non-basis patch without body-comp checks', () => {
+    expect(UpdateGoalSchema.safeParse({ name: 'Cut hard' }).success).toBe(true);
+  });
+
+  it('requires coherent body-comp when the patch sets the basis (R6)', () => {
+    expect(UpdateGoalSchema.safeParse({ calorieBasis: 'katch' }).success).toBe(false);
+    expect(
+      UpdateGoalSchema.safeParse({
+        calorieBasis: 'katch',
+        bodyFatPct: 20,
+        activityLevel: 'athlete',
+      }).success,
+    ).toBe(true);
+  });
+});
+
+describe('UpdateBackgroundGoalSchema (#63 R19/R21)', () => {
+  it('accepts switching the background goal to Katch', () => {
+    expect(
+      UpdateBackgroundGoalSchema.safeParse({
+        calorieBasis: 'katch',
+        bodyFatPct: 20,
+        activityLevel: 'sedentary',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('accepts resetting the background goal to bodyweight', () => {
+    const parsed = UpdateBackgroundGoalSchema.parse({ calorieBasis: 'bodyweight' });
+    expect(parsed.bodyFatPct).toBeNull();
+    expect(parsed.activityLevel).toBeNull();
+  });
+
+  it('rejects Katch without body-comp (R6)', () => {
+    expect(UpdateBackgroundGoalSchema.safeParse({ calorieBasis: 'katch' }).success).toBe(false);
   });
 });

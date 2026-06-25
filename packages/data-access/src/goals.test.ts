@@ -13,6 +13,8 @@ import {
   findTrimmableActiveGoal,
   goalLifecycle,
   shiftIsoDate,
+  katchBreakdown,
+  baseCaloriesFromGoal,
   FALLBACK_WEIGHT_LBS,
 } from './goals';
 import type { Goal, WeightEntry } from './models';
@@ -32,6 +34,9 @@ function makeGoal(overrides: Partial<Goal> = {}): Goal {
     startDate: '2026-06-01',
     endDate: '2026-06-30',
     calorieDelta: 0,
+    calorieBasis: 'bodyweight',
+    bodyFatPct: null,
+    activityLevel: null,
     mealSlots: [
       { name: 'Breakfast', ingredients: [] },
       { name: 'Lunch', ingredients: [] },
@@ -171,6 +176,85 @@ describe('minCalorieDelta', () => {
     ).toBe(0);
     // One calorie below the min drives carbs negative pre-clamp — the value the UI blocks.
     expect(min - 1 < min).toBe(true);
+  });
+});
+
+describe('katchBreakdown (#63)', () => {
+  it('derives LBM, BMR, TDEE and the mode-adjusted target (AE2)', () => {
+    // 200 lb, 15% body fat, Moderate (1.55), Cut (×0.80) — the spec's example.
+    const b = katchBreakdown(200, 15, 'moderate', 'cut');
+    expect(b.lbmKg).toBeCloseTo(77.1, 1);
+    expect(Math.round(b.bmr)).toBe(2036);
+    expect(Math.round(b.tdee)).toBe(3155);
+    // adjustedTdee = TDEE × 0.80 → ~2524 once rounded.
+    expect(Math.round(b.adjustedTdee)).toBe(2524);
+  });
+
+  it('adjusts a fixed TDEE by mode percentage (R11)', () => {
+    // Athlete at a body fat that yields a known-ish chain isn't needed: assert the
+    // mode factor directly by holding everything but mode constant.
+    const cut = katchBreakdown(200, 20, 'sedentary', 'cut');
+    const maintain = katchBreakdown(200, 20, 'sedentary', 'maintain');
+    const gain = katchBreakdown(200, 20, 'sedentary', 'lean_gain');
+    expect(cut.tdee).toBeCloseTo(maintain.tdee, 6);
+    expect(cut.adjustedTdee).toBeCloseTo(maintain.tdee * 0.8, 6);
+    expect(gain.adjustedTdee).toBeCloseTo(maintain.tdee * 1.1, 6);
+  });
+});
+
+describe('baseCaloriesFromGoal (#63)', () => {
+  it('uses the bodyweight multiplier for a bodyweight goal (R2)', () => {
+    expect(baseCaloriesFromGoal(makeGoal({ mode: 'maintain' }), 200)).toBe(3000);
+  });
+
+  it('uses Katch mode-adjusted TDEE for a katch goal (AE2)', () => {
+    const g = makeGoal({
+      mode: 'cut',
+      calorieBasis: 'katch',
+      bodyFatPct: 15,
+      activityLevel: 'moderate',
+    });
+    expect(baseCaloriesFromGoal(g, 200)).toBe(2524);
+  });
+
+  it('falls back to the bodyweight multiplier if a katch goal is missing body-comp', () => {
+    const g = makeGoal({ mode: 'maintain', calorieBasis: 'katch' });
+    expect(baseCaloriesFromGoal(g, 200)).toBe(3000);
+  });
+});
+
+describe('targetsFromGoal — Katch basis (#63)', () => {
+  it('derives macros from the Katch calorie target unchanged (AE10/R14)', () => {
+    const g = makeGoal({
+      mode: 'cut',
+      calorieBasis: 'katch',
+      bodyFatPct: 15,
+      activityLevel: 'moderate',
+      macroFats: 25,
+      macroCarbs: 35,
+      macroProtein: 40,
+    });
+    const t = targetsFromGoal(g, 200, { applyDelta: false });
+    expect(t.targetCalories).toBe(2524);
+    expect(t.targetFat).toBe(Math.round((2524 * 0.25) / 9));
+    expect(t.targetCarbs).toBe(Math.round((2524 * 0.35) / 4));
+    expect(t.targetProtein).toBe(Math.round((2524 * 0.4) / 4));
+  });
+
+  it('background Katch maintenance uses TDEE with no adjustment (AE3/R22)', () => {
+    // 200 lb, 20% body fat, Sedentary (1.2), Maintain — the spec's gap-day example.
+    const bg = makeGoal({
+      isBackground: true,
+      mode: 'maintain',
+      calorieBasis: 'katch',
+      bodyFatPct: 20,
+      activityLevel: 'sedentary',
+      startDate: null,
+      endDate: null,
+      targetWeightLbs: null,
+    });
+    const t = targetsFromGoal(bg, 200, { applyDelta: false });
+    expect(t.targetCalories).toBe(2325);
   });
 });
 

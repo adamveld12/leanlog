@@ -147,6 +147,9 @@ vi.mock('../api', () => ({
               startDate: null,
               endDate: null,
               calorieDelta: 0,
+              calorieBasis: 'bodyweight' as const,
+              bodyFatPct: null,
+              activityLevel: null,
               mealSlots: [
                 { name: 'Breakfast', ingredients: [] },
                 { name: 'Lunch', ingredients: [] },
@@ -161,6 +164,7 @@ vi.mock('../api', () => ({
       ),
       create: vi.fn(),
       update: vi.fn(),
+      updateBackground: vi.fn(),
       delete: vi.fn(),
     },
     scanNutrition: vi.fn(),

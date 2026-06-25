@@ -1,4 +1,4 @@
-import type { Goal, GoalMode, MealSlot, WeightEntry } from './models';
+import type { ActivityLevel, Goal, GoalMode, MealSlot, WeightEntry } from './models';
 import { macrosFromPercentage } from './calculations';
 
 // Cut/Maintain/Lean Gain map to fixed latest-weight calorie multipliers (R16).
@@ -10,6 +10,82 @@ export const GOAL_MULTIPLIER: Record<GoalMode, number> = {
 
 // When no weight has ever been logged, targets fall back to 180 lb (R7/R63).
 export const FALLBACK_WEIGHT_LBS = 180;
+
+// ---------------------------------------------------------------------------
+// Katch-McArdle calorie basis (#63)
+// ---------------------------------------------------------------------------
+
+// Pounds per kilogram for the LBM conversion (1 lb = 0.45359237 kg → 2.20462).
+export const LBS_PER_KG = 2.20462;
+
+// Activity multipliers applied to BMR to estimate TDEE (#63 R5).
+export const ACTIVITY_MULTIPLIER: Record<ActivityLevel, number> = {
+  sedentary: 1.2,
+  light: 1.375,
+  moderate: 1.55,
+  very_active: 1.725,
+  athlete: 1.9,
+};
+
+// Mode adjustment applied to TDEE for a Katch goal (#63 R11). Cut trims 20%,
+// Lean Gain adds 10%, Maintain is unadjusted.
+export const KATCH_MODE_FACTOR: Record<GoalMode, number> = {
+  cut: 0.8,
+  maintain: 1.0,
+  lean_gain: 1.1,
+};
+
+// Human-readable labels for the five activity tiers (#63 R5/R26). Shared by the
+// goal form and any summary surface so the wording stays consistent.
+export const ACTIVITY_LABEL: Record<ActivityLevel, string> = {
+  sedentary: 'Sedentary',
+  light: 'Light',
+  moderate: 'Moderate',
+  very_active: 'Very Active',
+  athlete: 'Athlete',
+};
+
+export type KatchBreakdown = {
+  // Lean body mass in kilograms (R8).
+  lbmKg: number;
+  // Basal metabolic rate from LBM (R9).
+  bmr: number;
+  // Total daily energy expenditure: BMR × activity multiplier (R10).
+  tdee: number;
+  // TDEE after the mode percentage adjustment, before any calorie delta (R11).
+  adjustedTdee: number;
+};
+
+// The Katch-McArdle chain from a known weight + body composition (#63 R8–R11).
+// Returns the unrounded intermediate values so the goal form can render the full
+// LBM → BMR → TDEE → adjusted breakdown live (R27). `mode` drives the final
+// percentage adjustment; the calorie delta is applied by the caller.
+export function katchBreakdown(
+  weightLbs: number,
+  bodyFatPct: number,
+  activityLevel: ActivityLevel,
+  mode: GoalMode,
+): KatchBreakdown {
+  const lbmKg = (weightLbs / LBS_PER_KG) * (1 - bodyFatPct / 100);
+  const bmr = 370 + 21.6 * lbmKg;
+  const tdee = bmr * ACTIVITY_MULTIPLIER[activityLevel];
+  const adjustedTdee = tdee * KATCH_MODE_FACTOR[mode];
+  return { lbmKg, bmr, tdee, adjustedTdee };
+}
+
+// The base calorie target a goal produces from a known weight, before the
+// calorie delta (#63 R2/R12). Bodyweight uses the flat multiplier; Katch uses
+// the mode-adjusted TDEE rounded to the nearest calorie. A Katch goal missing
+// its body-comp snapshot (should not happen — the schema enforces R6) safely
+// falls back to the bodyweight multiplier so a malformed row never throws.
+export function baseCaloriesFromGoal(goal: Goal, latestWeightLbs: number): number {
+  if (goal.calorieBasis === 'katch' && goal.bodyFatPct != null && goal.activityLevel != null) {
+    return Math.round(
+      katchBreakdown(latestWeightLbs, goal.bodyFatPct, goal.activityLevel, goal.mode).adjustedTdee,
+    );
+  }
+  return Math.ceil(latestWeightLbs * GOAL_MULTIPLIER[goal.mode]);
+}
 
 // Shift an ISO date (YYYY-MM-DD) by whole days in UTC. ISO date strings also
 // compare correctly lexicographically, which the range helpers rely on.
@@ -61,17 +137,18 @@ export type GoalDayTargets = {
   targetProtein: number;
 };
 
-// Daily targets from a goal mode + a known body weight (R16–R18). The calorie
-// delta is applied only when the caller says to (active goal, today/forward).
-// Protein and fat are fixed by the macro split on the base calories; the calorie
-// delta is absorbed entirely by carbs (4 kcal/g) so the user keeps their protein
-// and fat targets whether cutting or surplusing.
+// Daily targets from a goal + a known body weight (#56 R16–R18, #63 R2/R12). The
+// base calories come from the goal's calorie basis (bodyweight multiplier or
+// Katch-McArdle TDEE); the calorie delta is applied only when the caller says to
+// (active goal, today/forward). Protein and fat are fixed by the macro split on
+// the base calories; the calorie delta is absorbed entirely by carbs (4 kcal/g)
+// so the user keeps their protein and fat targets whether cutting or surplusing.
 export function targetsFromGoal(
   goal: Goal,
   latestWeightLbs: number,
   opts: { applyDelta: boolean },
 ): GoalDayTargets {
-  const base = Math.ceil(latestWeightLbs * GOAL_MULTIPLIER[goal.mode]);
+  const base = baseCaloriesFromGoal(goal, latestWeightLbs);
   const delta = opts.applyDelta ? goal.calorieDelta : 0;
   const { targetFat, targetProtein } = macrosFromPercentage(
     base,
@@ -94,7 +171,7 @@ export function targetsFromGoal(
 // would drive carbs negative. This is the most negative delta that still keeps
 // carbs ≥ 0 — the UI validates the user's entry against it.
 export function minCalorieDelta(goal: Goal, latestWeightLbs: number): number {
-  const base = Math.ceil(latestWeightLbs * GOAL_MULTIPLIER[goal.mode]);
+  const base = baseCaloriesFromGoal(goal, latestWeightLbs);
   return -Math.floor(base * (goal.macroCarbs / 100));
 }
 

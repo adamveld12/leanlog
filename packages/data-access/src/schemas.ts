@@ -361,6 +361,26 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 // latest-weight multipliers (10x/15x/16x) in calculations (R16).
 export const GoalModeSchema = z.enum(['cut', 'maintain', 'lean_gain']);
 
+// A goal's calorie basis (#63). `bodyweight` keeps the flat latest-weight
+// multiplier (today's behavior); `katch` estimates calories from lean body mass
+// and activity level. Defaults to bodyweight; existing goals are unchanged (R1).
+export const CalorieBasisSchema = z.enum(['bodyweight', 'katch']);
+
+// The five activity tiers for the Katch-McArdle TDEE multiplier (R5). Stored as
+// a stable key; the multipliers live in goals.ts (ACTIVITY_MULTIPLIER).
+export const ActivityLevelSchema = z.enum([
+  'sedentary',
+  'light',
+  'moderate',
+  'very_active',
+  'athlete',
+]);
+
+// Body fat is a coarse dropdown by design — Katch-McArdle is only reasonably
+// accurate in the 10-25% range, so users outside it use the bodyweight basis
+// (R4/R15). Deliberately limited to discourage false precision.
+export const BODY_FAT_OPTIONS = [10, 15, 20, 25] as const;
+
 // A meal slot is a named structure copied into each new day in the goal window
 // (R13/R57/R58). Slots may carry optional default ingredients that are snapshot
 // into the day's meal on creation (folds in the old meal-template seeding).
@@ -425,6 +445,15 @@ export const GoalSchema = z.object({
   endDate: z.string().regex(ISO_DATE).nullable(),
   // Active-goal-only calorie adjustment, default 0 (R20/R21).
   calorieDelta: z.number().int().default(0),
+  // Calorie basis (#63). `bodyweight` keeps the flat multiplier; `katch` derives
+  // calories from lean body mass + activity, requiring the two snapshot fields
+  // below (R1/R3/R6). Defaults to bodyweight so existing goals are unchanged.
+  calorieBasis: CalorieBasisSchema.default('bodyweight'),
+  // Body-composition snapshot, present only on a Katch goal (R3/R6). Body fat is
+  // one of the fixed BODY_FAT_OPTIONS percentages (R4); activity is one of five
+  // tiers (R5). Both null on a bodyweight goal.
+  bodyFatPct: z.number().nullable().default(null),
+  activityLevel: ActivityLevelSchema.nullable().default(null),
   mealSlots: z.array(MealSlotSchema).default(DEFAULT_MEAL_SLOTS),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -433,6 +462,28 @@ export const GoalSchema = z.object({
 // Macro percentages must total 100 (R12). Shared by create/update refinements.
 const macrosSumTo100 = (v: { macroFats: number; macroCarbs: number; macroProtein: number }) =>
   v.macroFats + v.macroCarbs + v.macroProtein === 100;
+
+// R6: body-composition fields must be consistent with the basis. A katch goal
+// requires a valid body fat (one of BODY_FAT_OPTIONS) and an activity level; a
+// bodyweight goal must carry neither. Returns true when the triple is coherent.
+function bodyCompConsistent(v: {
+  calorieBasis?: z.infer<typeof CalorieBasisSchema>;
+  bodyFatPct?: number | null;
+  activityLevel?: z.infer<typeof ActivityLevelSchema> | null;
+}): boolean {
+  if (v.calorieBasis === 'katch') {
+    return (
+      v.bodyFatPct != null &&
+      (BODY_FAT_OPTIONS as readonly number[]).includes(v.bodyFatPct) &&
+      v.activityLevel != null
+    );
+  }
+  // bodyweight (or unspecified, which defaults to bodyweight): no body-comp.
+  return v.bodyFatPct == null && v.activityLevel == null;
+}
+
+const BODY_COMP_MESSAGE =
+  'Katch goals require a body fat percentage (10, 15, 20, or 25) and an activity level';
 
 // Create input: user goals require a target weight and a start date, macros must
 // sum to 100, and (when present) the end date must be after the start date
@@ -466,7 +517,9 @@ export const CreateGoalSchema = GoalSchema.omit({
   .refine((v) => v.mode === 'maintain' || (v.targetWeightLbs != null && v.targetWeightLbs > 0), {
     message: 'Target weight is required for cut and lean gain goals',
     path: ['targetWeightLbs'],
-  });
+  })
+  // R6: body-comp must match the basis (basis resolves to its bodyweight default).
+  .refine(bodyCompConsistent, { message: BODY_COMP_MESSAGE, path: ['bodyFatPct'] });
 
 // Update input is partial; which fields are actually allowed depends on the
 // goal's lifecycle state (R47–R52) and is enforced in the repository.
@@ -485,4 +538,23 @@ export const UpdateGoalSchema = GoalSchema.omit({
         ? true
         : (v.macroFats ?? 0) + (v.macroCarbs ?? 0) + (v.macroProtein ?? 0) === 100,
     { message: 'Macro percentages must total 100', path: ['macroProtein'] },
-  );
+  )
+  // R6: when an update sets the basis it must also carry coherent body-comp; a
+  // patch that omits calorieBasis (e.g. just a name change) skips this check.
+  .refine((v) => v.calorieBasis === undefined || bodyCompConsistent(v), {
+    message: BODY_COMP_MESSAGE,
+    path: ['bodyFatPct'],
+  });
+
+// The background maintenance goal is read-only except for its calorie basis and
+// body-composition inputs, which are user-editable at any time (#63 R19/R21). A
+// dedicated input keeps that exception narrow: only these three fields, and they
+// must be mutually consistent (R6). Mode stays Maintain regardless (R22).
+export const UpdateBackgroundGoalSchema = z
+  .object({
+    calorieBasis: CalorieBasisSchema,
+    bodyFatPct: z.number().nullable().default(null),
+    activityLevel: ActivityLevelSchema.nullable().default(null),
+  })
+  .strict()
+  .refine(bodyCompConsistent, { message: BODY_COMP_MESSAGE, path: ['bodyFatPct'] });
