@@ -6,4 +6,5 @@ export * from './validation';
 export * from './dailyValues';
 export * from './scan';
 export * from './repositories';
+export * from './nutritionPhotos';
 export { uuidv7 } from 'uuidv7';

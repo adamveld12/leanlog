@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
@@ -56,6 +56,10 @@ export type NutritionDatabaseEntryValue = {
   allulose?: number | null;
   alcohol?: number | null;
   micronutrients?: NutritionDatabaseMicronutrientValue[];
+  // R2 object keys for the entry's two optional photos (#54). Staged here while
+  // creating; persisted via the create payload / photos PATCH.
+  productPhotoKey?: string | null;
+  labelPhotoKey?: string | null;
 };
 
 type NutritionDatabaseEntryCardProps = {
@@ -64,6 +68,10 @@ type NutritionDatabaseEntryCardProps = {
   onChange: (next: NutritionDatabaseEntryValue) => void;
   onSubmit: () => void;
   submitting?: boolean;
+  /** Photo capture controls (two PhotoSlots), composed by the app layer (#54). */
+  photosSlot?: ReactNode;
+  /** Submit button label; defaults to "Publish". Edit flows pass "Save". */
+  submitLabel?: string;
 };
 
 let microRowSeq = 0;
@@ -126,16 +134,80 @@ function isValid(value: NutritionDatabaseEntryValue, hasEstimate: boolean): bool
   return missingFields(value, hasEstimate).length === 0 && labelContradictions(value).length === 0;
 }
 
+// One editable micronutrient row (name / amount / unit / remove). Named so React
+// preserves each row's identity across edits instead of remounting on re-render.
+function MicronutrientRow({
+  micro,
+  onUpdate,
+  onRemove,
+}: {
+  micro: NutritionDatabaseMicronutrientValue;
+  onUpdate: (patch: Partial<NutritionDatabaseMicronutrientValue>) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className={cn(recipes.stack.row, 'items-end')}>
+      <div className="flex-1">
+        <Field label="Name">
+          <Input
+            value={micro.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            placeholder="e.g. Vitamin C"
+          />
+        </Field>
+      </div>
+      <div className="w-20 shrink-0">
+        <NumberInput
+          label="Amount"
+          value={micro.amount ?? null}
+          onChange={(n) => onUpdate({ amount: n })}
+        />
+      </div>
+      <div className="w-24 shrink-0">
+        <Field label="Unit">
+          <Select
+            value={micro.unit ?? 'milligram'}
+            onChange={(e) => onUpdate({ unit: e.target.value })}
+          >
+            {NUTRITION_UNIT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onRemove}
+        type="button"
+        className="shrink-0 self-end"
+      >
+        Remove
+      </Button>
+    </div>
+  );
+}
+
 export function NutritionDatabaseEntryCard({
   value,
   estimatedCalories,
   onChange,
   onSubmit,
   submitting,
+  photosSlot,
+  submitLabel = 'Publish',
 }: NutritionDatabaseEntryCardProps) {
   type NumericKey = Exclude<
     keyof NutritionDatabaseEntryValue,
-    'name' | 'calories' | 'micronutrients' | 'servingSizeUnit' | 'servingSizeDisplayText'
+    | 'name'
+    | 'calories'
+    | 'micronutrients'
+    | 'servingSizeUnit'
+    | 'servingSizeDisplayText'
+    | 'productPhotoKey'
+    | 'labelPhotoKey'
   >;
 
   const setNum = (key: NumericKey, n: number | null) => onChange({ ...value, [key]: sanitize(n) });
@@ -206,7 +278,7 @@ export function NutritionDatabaseEntryCard({
         <div className={cn(recipes.stack.row, recipes.stack.between)}>
           <SectionHeading noMargin>Publish Ingredient</SectionHeading>
           <Button size="sm" onClick={onSubmit} disabled={!valid || submitting}>
-            {submitting ? 'Publishing…' : 'Publish'}
+            {submitting ? `${submitLabel}…` : submitLabel}
           </Button>
         </div>
 
@@ -372,53 +444,25 @@ export function NutritionDatabaseEntryCard({
         {micronutrients.length > 0 ? (
           <div className={recipes.stack.sm}>
             {micronutrients.map((micro, idx) => (
-              <div key={rowKeys[idx]} className={cn(recipes.stack.row, 'items-end')}>
-                <div className="flex-1">
-                  <Field label="Name">
-                    <Input
-                      value={micro.name}
-                      onChange={(e) => updateMicro(idx, { name: e.target.value })}
-                      placeholder="e.g. Vitamin C"
-                    />
-                  </Field>
-                </div>
-                <div className="w-20 shrink-0">
-                  <NumberInput
-                    label="Amount"
-                    value={micro.amount ?? null}
-                    onChange={(n) => updateMicro(idx, { amount: n })}
-                  />
-                </div>
-                <div className="w-24 shrink-0">
-                  <Field label="Unit">
-                    <Select
-                      value={micro.unit ?? 'milligram'}
-                      onChange={(e) => updateMicro(idx, { unit: e.target.value })}
-                    >
-                      {NUTRITION_UNIT_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeMicro(idx)}
-                  type="button"
-                  className="shrink-0 self-end"
-                >
-                  Remove
-                </Button>
-              </div>
+              <MicronutrientRow
+                key={rowKeys[idx]}
+                micro={micro}
+                onUpdate={(patch) => updateMicro(idx, patch)}
+                onRemove={() => removeMicro(idx)}
+              />
             ))}
           </div>
         ) : null}
         <HelperText as="p">
           % DV uses FDA Daily Values (21 CFR 101.9, 2016 Nutrition Facts label).
         </HelperText>
+
+        {photosSlot ? (
+          <>
+            <SectionHeading noMargin>Photos (optional)</SectionHeading>
+            {photosSlot}
+          </>
+        ) : null}
       </SectionCard>
     </AnalyticsScope>
   );

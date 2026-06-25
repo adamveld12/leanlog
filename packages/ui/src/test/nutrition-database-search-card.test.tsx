@@ -297,4 +297,49 @@ describe('NutritionDatabaseSearchCard', () => {
     render(<Harness results={[]} />);
     expect(screen.getByText('Search ingredients')).toBeInTheDocument();
   });
+
+  it('renders a thumbnail image for a result that has one (R10)', () => {
+    render(<Harness results={[{ ...result1, thumbnailUrl: '/images/nutrition/abc.jpg' }]} />);
+    const img = screen.getByRole('img', { name: /CHICKEN BREAST/i });
+    expect(img).toHaveAttribute('src', '/images/nutrition/abc.jpg');
+  });
+
+  it('renders a neutral placeholder (no img) for a result without a photo (R10)', () => {
+    render(<Harness results={[result1]} />);
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('expands a row to show both photos at a readable size, no edit controls (R11/AE7)', async () => {
+    render(
+      <Harness
+        results={[
+          {
+            ...result1,
+            thumbnailUrl: '/images/nutrition/prod.jpg',
+            productPhotoUrl: '/images/nutrition/prod.jpg',
+            labelPhotoUrl: '/images/nutrition/label.jpg',
+          },
+        ]}
+      />,
+    );
+    // Photos are not shown until the row is expanded.
+    expect(screen.queryByRole('img', { name: /front of/i })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /view photos/i }));
+    expect(screen.getByRole('img', { name: /front of/i })).toHaveAttribute(
+      'src',
+      '/images/nutrition/prod.jpg',
+    );
+    expect(screen.getByRole('img', { name: /nutrition facts label/i })).toHaveAttribute(
+      'src',
+      '/images/nutrition/label.jpg',
+    );
+    // Read-only expand: no creator controls leak in (AE7).
+    expect(screen.queryByRole('button', { name: 'Replace' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument();
+  });
+
+  it('does not offer a View photos toggle for an entry with no photos', () => {
+    render(<Harness results={[result1]} />);
+    expect(screen.queryByRole('button', { name: /view photos/i })).not.toBeInTheDocument();
+  });
 });

@@ -36,6 +36,8 @@ export function labelToEntryValue(
       amount: m.amount,
       unit: m.unit,
     })),
+    productPhotoKey: label.productPhotoKey ?? null,
+    labelPhotoKey: label.labelPhotoKey ?? null,
   };
 }
 
@@ -56,6 +58,10 @@ export type NutritionFactsState = {
   entrySource: 'manual' | 'scan';
   submitting: boolean;
   deletingId: string | null;
+  // A scanned photo key that arrived before stageScan opened the form. The R2
+  // upload usually resolves before the slower OCR, so we buffer it here and
+  // merge it in when the form opens (R3); cleared if the scan is unreadable (R5).
+  pendingScanPhoto: { slot: 'product' | 'label'; key: string } | null;
 };
 
 export type NutritionFactsAction =
@@ -80,11 +86,15 @@ export type NutritionFactsAction =
   | { type: 'closeForm' }
   | { type: 'stageScan'; value: NutritionDatabaseEntryValue }
   | { type: 'scanUnreadable'; error: string }
+  // Sets a photo key on the in-progress create form (e.g. the scanned label
+  // frame uploaded as the label photo, #54). Ignored once the form is closed.
+  | { type: 'stageScanPhoto'; slot: 'product' | 'label'; key: string }
   | { type: 'setEntryValue'; value: NutritionDatabaseEntryValue }
   | { type: 'submitStart' }
   | { type: 'createSucceeded'; record: NutritionDatabaseIngredientSearchResult }
   | { type: 'updateSucceeded'; record: NutritionDatabaseIngredientSearchResult }
   | { type: 'submitFailed' }
+  | { type: 'photosUpdated'; record: NutritionDatabaseIngredientSearchResult }
   | { type: 'deleteStart'; id: string }
   | { type: 'deleteSucceeded'; id: string }
   | { type: 'deleteFailed' };
@@ -104,6 +114,7 @@ export const initialNutritionFactsState: NutritionFactsState = {
   entrySource: 'manual',
   submitting: false,
   deletingId: null,
+  pendingScanPhoto: null,
 };
 
 export function nutritionFactsReducer(
@@ -154,6 +165,7 @@ export function nutritionFactsReducer(
         editingId: null,
         entryValue: emptyDbEntryValue,
         entrySource: 'manual',
+        pendingScanPhoto: null,
         error: '',
       };
     case 'openEdit':
@@ -163,23 +175,57 @@ export function nutritionFactsReducer(
         editingId: action.id,
         entryValue: action.value,
         entrySource: 'manual',
+        pendingScanPhoto: null,
         error: '',
       };
     case 'closeForm':
-      return { ...state, formOpen: false, editingId: null, entryValue: emptyDbEntryValue };
+      return {
+        ...state,
+        formOpen: false,
+        editingId: null,
+        entryValue: emptyDbEntryValue,
+        pendingScanPhoto: null,
+      };
     // A scan always opens the create form (editing happens through openEdit), even
     // when not save-ready, so the user can fill gaps; the form flags what's missing.
-    case 'stageScan':
+    case 'stageScan': {
+      // Merge any photo that arrived before the form opened (R3 race), then clear
+      // the buffer.
+      const pending = state.pendingScanPhoto;
+      const entryValue = pending
+        ? {
+            ...action.value,
+            [pending.slot === 'product' ? 'productPhotoKey' : 'labelPhotoKey']: pending.key,
+          }
+        : action.value;
       return {
         ...state,
         formOpen: true,
         editingId: null,
         entrySource: 'scan',
-        entryValue: action.value,
+        entryValue,
+        pendingScanPhoto: null,
         error: '',
       };
+    }
     case 'scanUnreadable':
-      return { ...state, formOpen: false, error: action.error };
+      // The scan failed: drop the form and any buffered/staged photo (R5).
+      return { ...state, formOpen: false, pendingScanPhoto: null, error: action.error };
+    // Stage the scanned photo onto the open create form. If it arrives before
+    // stageScan opens the form (R2 upload beats OCR), buffer it so stageScan can
+    // merge it. Ignored entirely in edit mode (photos persist via PATCH there).
+    case 'stageScanPhoto':
+      if (state.editingId) return state;
+      if (!state.formOpen) {
+        return { ...state, pendingScanPhoto: { slot: action.slot, key: action.key } };
+      }
+      return {
+        ...state,
+        entryValue: {
+          ...state.entryValue,
+          [action.slot === 'product' ? 'productPhotoKey' : 'labelPhotoKey']: action.key,
+        },
+      };
     case 'setEntryValue':
       return { ...state, entryValue: action.value };
     case 'submitStart':
@@ -205,6 +251,22 @@ export function nutritionFactsReducer(
       };
     case 'submitFailed':
       return { ...state, submitting: false, error: 'Could not save the label. Please try again.' };
+    // A photo slot was set/cleared on an existing entry (#54). Mirror the new
+    // keys into both the record list and, when that entry is open for editing,
+    // the form value so the slots reflect the change immediately.
+    case 'photosUpdated':
+      return {
+        ...state,
+        records: state.records.map((r) => (r.id === action.record.id ? action.record : r)),
+        entryValue:
+          state.editingId === action.record.id
+            ? {
+                ...state.entryValue,
+                productPhotoKey: action.record.productPhotoKey ?? null,
+                labelPhotoKey: action.record.labelPhotoKey ?? null,
+              }
+            : state.entryValue,
+      };
     case 'deleteStart':
       return { ...state, deletingId: action.id, error: '' };
     case 'deleteSucceeded':

@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import {
   CameraCaptureModal,
   FileInput,
@@ -9,6 +10,8 @@ import {
 } from '@leanlog/ui';
 import type { ScanResolution } from '@leanlog/data-access';
 import { useStore } from '../../state';
+import { api } from '../../api';
+import { optimizeImage } from '../../image';
 import { dbReducer, initialDbState } from './dbReducer';
 import { DatabaseLabelForm } from './DatabaseLabelForm';
 import { useDatabaseScan } from './useDatabaseScan';
@@ -30,12 +33,19 @@ export function DatabaseTab({
   setDbTotal,
 }: DatabaseTabProps) {
   const { searchNutritionDatabase, createNutritionDatabaseIngredient } = useStore();
+  const { getToken } = useAuth();
   const track = useAnalytics();
   const [db, dispatch] = useReducer(dbReducer, initialDbState);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Whether the open label form was populated by a scan or typed manually; drives
   // the published label's creationSource and is read during render to set it.
   const [entrySource, setEntrySource] = useState<'manual' | 'scan'>('manual');
+  // Surfaced photo upload error (kept separate from db.error so a failed photo
+  // upload doesn't tear down the open create form, #54).
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  // Bumped after a label scan to trigger the guided, skippable front-photo
+  // capture step in the create form (Q4).
+  const [guidedFrontSignal, setGuidedFrontSignal] = useState(0);
 
   // Seed the database ingredient count the first time the tab is shown. dbTotal lives in the
   // parent so it survives tab switches, mirroring the original guard.
@@ -108,6 +118,9 @@ export function DatabaseTab({
         reason: result.databaseBlockReason ?? 'incomplete',
       });
     }
+    // The label frame is being uploaded as the label photo (see onCapturedImage);
+    // now prompt the optional, skippable front-of-package photo (Q4).
+    setGuidedFrontSignal((n) => n + 1);
   };
 
   const {
@@ -123,6 +136,22 @@ export function DatabaseTab({
     analyticsContext,
     onResult: stageScan,
     onError: (error) => dispatch({ type: 'scanUnreadable', error }),
+    // The scanned label frame also becomes the entry's label photo: optimize and
+    // upload it, then stage the key into the (create) form (#54). Fire-and-forget
+    // and best-effort — a failed photo upload must not block label creation.
+    onCapturedImage: (image) => {
+      void (async () => {
+        try {
+          const optimized = await optimizeImage(image);
+          const token = await getToken();
+          if (!token) return;
+          const { key } = await api.nutritionDatabase.uploadImage(token, optimized);
+          dispatch({ type: 'stageScanPhoto', slot: 'label', key });
+        } catch {
+          // Non-blocking: the user can still add the photo manually in the form.
+        }
+      })();
+    },
   });
 
   return (
@@ -166,6 +195,7 @@ export function DatabaseTab({
             ? () => {
                 // Close any open manual form immediately; the result re-opens it.
                 dispatch({ type: 'closeCreate' });
+                setPhotoError(null);
                 void openCamera();
               }
             : undefined
@@ -174,6 +204,7 @@ export function DatabaseTab({
           showDatabaseCreate
             ? () => {
                 setEntrySource('manual');
+                setPhotoError(null);
                 dispatch({ type: 'toggleCreate' });
               }
             : undefined
@@ -186,6 +217,12 @@ export function DatabaseTab({
           value={db.entryValue}
           submitting={db.creating}
           source={entrySource}
+          photoError={photoError}
+          onPhotoError={setPhotoError}
+          // The embedded create flow never edits an existing entry, so photo
+          // changes always stage into the publish payload (#54). The guided
+          // front-photo prompt fires after each label scan (Q4).
+          guidedFrontPromptSignal={guidedFrontSignal}
           onChange={(value) => dispatch({ type: 'setEntryValue', value })}
           onPublish={(payload) => {
             const source = payload.creationSource;
@@ -195,6 +232,7 @@ export function DatabaseTab({
                 track('nutrition_facts.label.published', { source });
                 dispatch({ type: 'createSucceeded' });
                 setEntrySource('manual');
+                setPhotoError(null);
                 setDbTotal((t) => (t == null ? t : t + 1));
                 if (db.query.length >= 2) runSearch(db.query);
               })

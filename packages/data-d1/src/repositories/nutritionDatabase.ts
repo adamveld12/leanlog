@@ -1,13 +1,20 @@
-import { count, desc, eq, like } from 'drizzle-orm';
+import { count, desc, eq, like, or } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { nutritionDatabaseIngredients } from '../schema';
-import { parseMicronutrientsJson, NutritionLabelOwnershipError } from '@leanlog/data-access';
+import {
+  parseMicronutrientsJson,
+  NutritionLabelOwnershipError,
+  resolvePhotoUpdate,
+  entryPhotoKeys,
+} from '@leanlog/data-access';
 import type {
   NutritionDatabaseRepository,
   NutritionDatabaseIngredient,
   CreateNutritionDatabaseIngredient,
   UpdateNutritionDatabaseIngredient,
+  DeleteNutritionResult,
+  PhotoUpdatePatch,
   Micronutrient,
 } from '@leanlog/data-access';
 
@@ -46,6 +53,8 @@ function rowToDomain(
     allulose: row.allulose ?? null,
     alcohol: row.alcohol ?? null,
     micronutrients: parseMicronutrientsJson(row.micronutrientsJson),
+    productPhotoKey: row.productPhotoKey ?? null,
+    labelPhotoKey: row.labelPhotoKey ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -54,6 +63,31 @@ function rowToDomain(
 export function createNutritionDatabaseRepository(db: D1Database): NutritionDatabaseRepository {
   const d = drizzle(db);
   const now = () => new Date().toISOString();
+
+  // Photo objects are content-addressed, so identical bytes from two entries
+  // (or even both slots of one entry) dedupe to a single R2 object key. Before
+  // deleting an object we must confirm no entry still references it (R9
+  // refcount). Both callers mutate the row first (update/delete) and then call
+  // this, so a plain query against the live DB is the source of truth: a key is
+  // orphaned iff no surviving row references it in either slot.
+  async function findOrphanedKeys(candidates: string[]): Promise<string[]> {
+    const unique = [...new Set(candidates)];
+    if (unique.length === 0) return [];
+    const orphaned: string[] = [];
+    for (const key of unique) {
+      const rows = await d
+        .select({ id: nutritionDatabaseIngredients.id })
+        .from(nutritionDatabaseIngredients)
+        .where(
+          or(
+            eq(nutritionDatabaseIngredients.productPhotoKey, key),
+            eq(nutritionDatabaseIngredients.labelPhotoKey, key),
+          ),
+        );
+      if (rows.length === 0) orphaned.push(key);
+    }
+    return orphaned;
+  }
 
   return {
     async create(
@@ -87,6 +121,8 @@ export function createNutritionDatabaseRepository(db: D1Database): NutritionData
         allulose: data.allulose ?? null,
         alcohol: data.alcohol ?? null,
         micronutrientsJson: serializeMicronutrients(data.micronutrients ?? null),
+        productPhotoKey: data.productPhotoKey ?? null,
+        labelPhotoKey: data.labelPhotoKey ?? null,
         createdAt: ts,
         updatedAt: ts,
       });
@@ -177,15 +213,62 @@ export function createNutritionDatabaseRepository(db: D1Database): NutritionData
       return rowToDomain(rows[0]!);
     },
 
-    async delete(userId: string, id: string): Promise<'deleted' | 'not_found'> {
+    async setPhotos(
+      userId: string,
+      id: string,
+      patch: PhotoUpdatePatch,
+    ): Promise<{ label: NutritionDatabaseIngredient; orphanedKeys: string[] } | null> {
       const existing = await d
         .select()
         .from(nutritionDatabaseIngredients)
         .where(eq(nutritionDatabaseIngredients.id, id));
-      if (!existing[0]) return 'not_found';
+      if (!existing[0]) return null;
+      // Photos are part of the shared entry, so only the creator may change them (R13).
       if (existing[0].addedByUserId !== userId) throw new NutritionLabelOwnershipError();
+
+      const { next, releasedKeys } = resolvePhotoUpdate(
+        {
+          productPhotoKey: existing[0].productPhotoKey ?? null,
+          labelPhotoKey: existing[0].labelPhotoKey ?? null,
+        },
+        patch,
+      );
+
+      await d
+        .update(nutritionDatabaseIngredients)
+        .set({
+          productPhotoKey: next.productPhotoKey,
+          labelPhotoKey: next.labelPhotoKey,
+          updatedAt: now(),
+        })
+        .where(eq(nutritionDatabaseIngredients.id, id));
+
+      // Of the keys this entry dropped, only delete the ones no other entry uses.
+      const orphanedKeys = await findOrphanedKeys(releasedKeys);
+
+      const rows = await d
+        .select()
+        .from(nutritionDatabaseIngredients)
+        .where(eq(nutritionDatabaseIngredients.id, id));
+      return { label: rowToDomain(rows[0]!), orphanedKeys };
+    },
+
+    async delete(userId: string, id: string): Promise<DeleteNutritionResult> {
+      const existing = await d
+        .select()
+        .from(nutritionDatabaseIngredients)
+        .where(eq(nutritionDatabaseIngredients.id, id));
+      if (!existing[0]) return { status: 'not_found' };
+      if (existing[0].addedByUserId !== userId) throw new NutritionLabelOwnershipError();
+
+      const heldKeys = entryPhotoKeys({
+        productPhotoKey: existing[0].productPhotoKey ?? null,
+        labelPhotoKey: existing[0].labelPhotoKey ?? null,
+      });
       await d.delete(nutritionDatabaseIngredients).where(eq(nutritionDatabaseIngredients.id, id));
-      return 'deleted';
+      // After the row is gone, any held key not referenced elsewhere is orphaned.
+      const orphanedKeys = await findOrphanedKeys(heldKeys);
+      return { status: 'deleted', orphanedKeys };
     },
 
     async count(): Promise<number> {

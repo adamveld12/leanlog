@@ -10,7 +10,9 @@ import {
 function makeRecord(
   overrides: Partial<NutritionDatabaseIngredientSearchResult> & { id: string },
 ): NutritionDatabaseIngredientSearchResult {
-  const now = new Date().toISOString();
+  // A single fixed timestamp so two makeRecord() calls (e.g. an input and its
+  // toEqual expectation) never differ by a millisecond rollover.
+  const now = '2025-01-01T00:00:00.000Z';
   return {
     name: 'OATS',
     servingAmount: 40,
@@ -117,6 +119,36 @@ describe('nutritionFactsReducer', () => {
     expect(staged.editingId).toBeNull();
     expect(staged.entrySource).toBe('scan');
     expect(staged.error).toBe('');
+  });
+
+  it('retains a scanned label photo that arrives before the form opens (R3 race)', () => {
+    // The R2 upload usually resolves before the slower OCR scan, so
+    // stageScanPhoto can fire before stageScan opens the form. The label photo
+    // must still be staged once the form opens.
+    const earlyPhoto = nutritionFactsReducer(initialNutritionFactsState, {
+      type: 'stageScanPhoto',
+      slot: 'label',
+      key: 'nutrition/abc.jpg',
+    });
+    const opened = nutritionFactsReducer(earlyPhoto, {
+      type: 'stageScan',
+      value: labelToEntryValue(makeRecord({ id: 'r1', name: 'SCANNED' })),
+    });
+    expect(opened.entryValue.labelPhotoKey).toBe('nutrition/abc.jpg');
+  });
+
+  it('discards a staged scan photo if the scan turns out unreadable (R5)', () => {
+    const earlyPhoto = nutritionFactsReducer(initialNutritionFactsState, {
+      type: 'stageScanPhoto',
+      slot: 'label',
+      key: 'nutrition/abc.jpg',
+    });
+    const unreadable = nutritionFactsReducer(earlyPhoto, {
+      type: 'scanUnreadable',
+      error: 'Could not read the label.',
+    });
+    expect(unreadable.formOpen).toBe(false);
+    expect(unreadable.entryValue.labelPhotoKey ?? null).toBeNull();
   });
 
   it('createSucceeded prepends the record and bumps the total', () => {

@@ -118,6 +118,9 @@ export const NutritionDatabaseIngredientSchema = z.object({
   allulose: z.number().min(0).nullable().optional(),
   alcohol: z.number().min(0).nullable().optional(),
   micronutrients: z.array(MicronutrientSchema).nullable().optional(),
+  // R2 object keys for the entry's photos (#54). Both optional; null clears a slot.
+  productPhotoKey: z.string().nullable().optional(),
+  labelPhotoKey: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

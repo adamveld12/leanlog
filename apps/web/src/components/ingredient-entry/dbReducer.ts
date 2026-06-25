@@ -29,6 +29,10 @@ export type DbState = {
   entryValue: NutritionDatabaseEntryValue;
   creating: boolean;
   error: string;
+  // A scanned photo key that arrived before stageScan opened the create form.
+  // The R2 upload usually resolves before the slower OCR, so we buffer it here
+  // and merge it when the form opens (R3); cleared on close/unreadable (R5).
+  pendingScanPhoto: { slot: 'product' | 'label'; key: string } | null;
 };
 
 export type DbAction =
@@ -45,6 +49,7 @@ export type DbAction =
   | { type: 'toggleCreate' }
   | { type: 'closeCreate' }
   | { type: 'stageScan'; value: NutritionDatabaseEntryValue }
+  | { type: 'stageScanPhoto'; slot: 'product' | 'label'; key: string }
   | { type: 'scanUnreadable'; error: string }
   | { type: 'setEntryValue'; value: NutritionDatabaseEntryValue }
   | { type: 'createStart' }
@@ -63,6 +68,7 @@ export const initialDbState: DbState = {
   entryValue: emptyDbEntryValue,
   creating: false,
   error: '',
+  pendingScanPhoto: null,
 };
 
 export function dbReducer(state: DbState, action: DbAction): DbState {
@@ -96,15 +102,41 @@ export function dbReducer(state: DbState, action: DbAction): DbState {
     case 'addFailed':
       return { ...state, addingId: null, error: 'Failed to add ingredient. Please try again.' };
     case 'toggleCreate':
-      return { ...state, showCreate: !state.showCreate };
+      // Opening fresh clears any buffered scan photo from a prior aborted scan.
+      return { ...state, showCreate: !state.showCreate, pendingScanPhoto: null };
     case 'closeCreate':
-      return { ...state, showCreate: false };
+      return { ...state, showCreate: false, pendingScanPhoto: null };
     // A scan prefills the create form (even when not save-ready, so the user can
     // fill gaps); the form's required-field highlighting flags what's missing.
-    case 'stageScan':
-      return { ...state, entryValue: action.value, showCreate: true, error: '' };
+    case 'stageScan': {
+      // Merge any photo that arrived before the form opened (R3 race), then clear
+      // the buffer.
+      const pending = state.pendingScanPhoto;
+      const entryValue = pending
+        ? {
+            ...action.value,
+            [pending.slot === 'product' ? 'productPhotoKey' : 'labelPhotoKey']: pending.key,
+          }
+        : action.value;
+      return { ...state, entryValue, showCreate: true, pendingScanPhoto: null, error: '' };
+    }
+    // Stage the scanned label frame as the entry's label photo (R3). If it
+    // arrives before stageScan opens the form (R2 upload beats OCR), buffer it so
+    // stageScan can merge it; a discarded/unreadable scan keeps nothing (R5).
+    case 'stageScanPhoto':
+      if (!state.showCreate) {
+        return { ...state, pendingScanPhoto: { slot: action.slot, key: action.key } };
+      }
+      return {
+        ...state,
+        entryValue: {
+          ...state.entryValue,
+          [action.slot === 'product' ? 'productPhotoKey' : 'labelPhotoKey']: action.key,
+        },
+      };
     case 'scanUnreadable':
-      return { ...state, showCreate: false, error: action.error };
+      // The scan failed: drop the form and any buffered/staged photo (R5).
+      return { ...state, showCreate: false, pendingScanPhoto: null, error: action.error };
     case 'setEntryValue':
       return { ...state, entryValue: action.value };
     case 'createStart':

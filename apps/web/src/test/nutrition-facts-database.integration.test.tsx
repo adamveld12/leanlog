@@ -151,7 +151,8 @@ describe('Nutrition Facts Database page', () => {
     expect(nameInput).toHaveValue('MY OATS');
     await userEvent.clear(nameInput);
     await userEvent.type(nameInput, 'ROLLED OATS');
-    await userEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    // Edit mode labels the submit "Save" (create uses "Publish").
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() =>
       expect(apiMock.nutritionDatabase.update).toHaveBeenCalledWith(

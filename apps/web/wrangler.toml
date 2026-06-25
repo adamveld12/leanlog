@@ -15,6 +15,13 @@ database_id = "3747f59b-37ac-452f-93cd-8965e704a063"
 preview_database_id = "DB"
 migrations_dir = "../../packages/data-d1/drizzle"
 
+# Stored user images for nutrition database entries (product + label photos, #54).
+# Content-addressed objects served with long-lived immutable cache headers.
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "leanlog-images"
+preview_bucket_name = "leanlog-images-dev"
+
 [env.preview]
 [env.preview.vars]
 VITE_CLERK_PUBLISHABLE_KEY = "pk_test_bmV3LXdpbGRjYXQtMzkuY2xlcmsuYWNjb3VudHMuZGV2JA"
@@ -27,3 +34,8 @@ database_name = "leanlog-db-dev"
 database_id = "2bb90936-0975-43b5-bf32-fa28f4b1fb59"
 preview_database_id = "DB"
 migrations_dir = "../../packages/data-d1/drizzle"
+
+[[env.preview.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "leanlog-images-dev"
+preview_bucket_name = "leanlog-images-dev"
