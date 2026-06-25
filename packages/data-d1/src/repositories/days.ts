@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { dailyMealLogs, meals, ingredients, goals } from '../schema';
@@ -132,14 +132,24 @@ export function createDayRepository(db: D1Database): DayRepository {
 
       if (dayRows.length === 0) return [];
 
-      const dayIds = dayRows.map((r) => r.id);
-      const mealRows = await d.select().from(meals).where(inArray(meals.dailyMealLogId, dayIds));
+      // Use JOINs instead of inArray so queries stay within D1's 100-bound-param
+      // cap regardless of how many days/meals the user has accumulated.
+      const mealRows = (
+        await d
+          .select()
+          .from(meals)
+          .innerJoin(dailyMealLogs, eq(meals.dailyMealLogId, dailyMealLogs.id))
+          .where(eq(dailyMealLogs.userId, userId))
+      ).map((r) => r.meals);
 
-      const mealIds = mealRows.map((r) => r.id);
-      const ingredientRows =
-        mealIds.length > 0
-          ? await d.select().from(ingredients).where(inArray(ingredients.mealId, mealIds))
-          : [];
+      const ingredientRows = (
+        await d
+          .select()
+          .from(ingredients)
+          .innerJoin(meals, eq(ingredients.mealId, meals.id))
+          .innerJoin(dailyMealLogs, eq(meals.dailyMealLogId, dailyMealLogs.id))
+          .where(eq(dailyMealLogs.userId, userId))
+      ).map((r) => r.ingredients);
 
       return dayRows.map((day) => ({
         ...day,
@@ -163,18 +173,15 @@ export function createDayRepository(db: D1Database): DayRepository {
       if (!day || day.userId !== userId) return null;
 
       const mealRows = await d.select().from(meals).where(eq(meals.dailyMealLogId, dayId));
-      const ingredientRows =
-        mealRows.length > 0
-          ? await d
-              .select()
-              .from(ingredients)
-              .where(
-                inArray(
-                  ingredients.mealId,
-                  mealRows.map((m) => m.id),
-                ),
-              )
-          : [];
+      // Join on dayId (1 param) instead of inArray(mealIds) which would hit D1's
+      // 100-param cap on a single day with >100 meals.
+      const ingredientRows = (
+        await d
+          .select()
+          .from(ingredients)
+          .innerJoin(meals, eq(ingredients.mealId, meals.id))
+          .where(eq(meals.dailyMealLogId, dayId))
+      ).map((r) => r.ingredients);
 
       return {
         ...day,

@@ -8,16 +8,21 @@
   },
   "scripts": {
     "lint": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "drizzle-orm": "^0.45.2",
     "@leanlog/data-access": "workspace:*",
+    "drizzle-orm": "^0.45.2",
     "uuidv7": "^1.0.2"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.31.0",
+    "@cloudflare/vitest-pool-workers": "^0.16.19",
     "@cloudflare/workers-types": "^4.0.0",
-    "typescript": "^6.0.0"
+    "drizzle-kit": "^0.31.0",
+    "typescript": "^6.0.0",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.98.0"
   }
 }
