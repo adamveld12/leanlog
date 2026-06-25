@@ -15,3 +15,4 @@ storybook-static
 
 # Generated eval artifact
 packages/nutrition-evals/eval-report.md
+.worktrees
