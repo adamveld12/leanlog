@@ -1,0 +1,560 @@
+FOOD_CATEGORY,FOOD_DESCRIPTION,CALORIES_KCAL,PROTEIN_G,TOTAL_FAT_G,SATURATED_FAT_G,TRANS_FAT_G,CHOLESTEROL_MG,SODIUM_MG,TOTAL_CARBOHYDRATES_G,DIETARY_FIBER_G,TOTAL_SUGARS_G,ADDED_SUGARS_G,CALCIUM_MG,IRON_MG,POTASSIUM_MG,VITAMIN_A_MCG_RAE,VITAMIN_C_MG,VITAMIN_D_MCG,FDC_ID
+Beef,"Beef, grass-fed, ground, raw",198,19.42,12.73,5.335,0.751,62,68,0,0,0,,12,1.99,289,0,0,,168608
+Beef,"Beef, ground, 70% lean meat / 30% fat, raw",332,14.35,30,11.754,1.82,78,66,0,0,0,,24,1.64,218,4,0,0.1,168652
+Beef,"Beef, ground, 75% lean meat / 25% fat, raw",293,15.76,25,9.568,1.5,75,66,0,0,0,,21,1.79,244,4,0,0.1,174037
+Beef,"Beef, ground, 80% lean meat / 20% fat, raw",254,17.17,20,7.581,1.18,71,66,0,0,0,,18,1.94,270,4,0,0.1,174036
+Beef,"Beef, ground, 85% lean meat / 15% fat, crumbles, cooked, pan-browned",256,27.73,15.3,5.806,0.556,89,89,0,0,0,,22,2.93,407,3,0,0,174034
+Beef,"Beef, ground, 90% lean meat / 10% fat, raw",176,20,10,3.927,0.54,65,66,0,0,0,,12,2.24,321,4,0,0.1,174030
+Beef,"Beef, ground, 93% lean meat / 7% fat, raw",152,20.85,7,2.878,0.348,63,66,0,0,0,,10,2.33,336,4,0,0.1,173110
+Beef,"Beef, ground, 95% lean meat / 5% fat, raw",137,21.41,5,2.182,0.22,62,66,0,0,0,,9,2.38,346,4,0,0.1,171790
+Beef,"Beef, ground, 97% lean meat / 3% fat, raw",121,21.98,3,1.48,0.092,60,66,0,0,0,,8,2.44,357,4,0,0.1,173111
+Beef,"Beef, ground, unspecified fat content, cooked",240,25.07,14.53,5.6,,84,85,0.62,0,0,,25,2.67,353,7,0,0.2,172161
+Dairy & Eggs,"Butter, salted",717,0.85,81.11,51.368,3.278,215,643,0.06,0,0.06,,24,0.02,24,684,0,0,173410
+Dairy & Eggs,"Butter, without salt",717,0.85,81.11,50.489,,215,11,0.06,0,0.06,,24,0.02,24,684,0,0,173430
+Dairy & Eggs,"Cheese, blue",353,21.4,28.74,18.669,,75,1146,2.34,0,0.5,,528,0.31,256,198,0,0.5,172175
+Dairy & Eggs,"Cheese, brie",334,20.75,27.68,17.41,,100,629,0.45,0,0.45,,184,0.5,152,174,0,0.5,172177
+Dairy & Eggs,"Cheese, cheddar",408,23.3,34,19.2,1.14,100,654,2.44,,,,707,0.16,77,316,,,328637
+Dairy & Eggs,"Cheese, colby",394,23.76,32.11,20.218,,95,604,2.57,0,0.52,,685,0.76,127,264,0,0.6,173416
+Dairy & Eggs,"Cheese, cottage, creamed, large or small curd",98,11.12,4.3,1.718,,17,315,3.38,0,2.67,,83,0.07,104,37,0,0.1,172179
+Dairy & Eggs,"Cheese, cottage, creamed, with fruit",97,10.69,3.85,2.311,,13,344,4.61,0.2,2.38,,53,0.16,90,38,1.4,0,172180
+Dairy & Eggs,"Cheese, cottage, lowfat, 1% milkfat",72,12.39,1.02,0.645,,4,406,2.72,0,2.72,,61,0.14,86,11,0,0,173417
+Dairy & Eggs,"Cheese, cottage, lowfat, 1% milkfat, lactose reduced",74,12.4,1,0.64,,4,220,3.2,0.6,2.6,,53,0.14,86,11,0,0,167703
+Dairy & Eggs,"Cheese, cottage, lowfat, 1% milkfat, no sodium added",72,12.4,1,0.632,,4,13,2.7,0,2.7,,61,0.14,86,11,0,0,168114
+Dairy & Eggs,"Cheese, cottage, lowfat, 1% milkfat, with vegetables",67,10.9,1,0.619,,3,403,3,0,3,,56,0.1,86,13,4,0,167716
+Dairy & Eggs,"Cheese, cottage, lowfat, 2% milkfat",84,11,2.3,1.26,0.069,12,321,4.31,,,,103,0.13,120,69,,,328841
+Dairy & Eggs,"Cheese, cottage, lowfat, 2% milkfat",81,10.45,2.27,1.235,0.067,12,308,4.76,0,4,,111,0.13,125,68,0,0,172182
+Dairy & Eggs,"Cheese, cottage, nonfat, uncreamed, dry, large or small curd",72,10.34,0.29,0.169,,7,372,6.66,0,1.85,,86,0.15,137,2,0,0,172181
+Dairy & Eggs,"Cheese, cottage, with vegetables",95,10.9,4.2,2.646,,14,403,3,0.1,0.37,,56,0.1,86,53,4,0,169078
+Dairy & Eggs,"Cheese, cream",350,6.15,34.44,20.213,1.173,101,314,5.52,0,3.76,,97,0.11,132,308,0,0,173418
+Dairy & Eggs,"Cheese, feta",265,14.21,21.49,13.3,,89,1139,3.88,0,0,,493,0.65,62,125,0,0.4,173420
+Dairy & Eggs,"Cheese, goat, hard type",452,30.52,35.59,24.609,,105,423,2.17,0,2.17,,895,1.88,48,486,0,0.7,172197
+Dairy & Eggs,"Cheese, goat, semisoft type",364,21.58,29.84,20.639,,79,415,0.12,0,0.12,,298,1.62,158,407,0,0.5,173433
+Dairy & Eggs,"Cheese, goat, soft type",264,18.52,21.08,14.575,,46,459,0,0,0,,140,1.9,26,288,0,0.4,173435
+Dairy & Eggs,"Cheese, gouda",356,24.94,27.44,17.614,,114,819,2.22,0,2.22,,700,0.24,121,165,0,0.5,171241
+Dairy & Eggs,"Cheese, gruyere",413,29.81,32.34,18.913,,110,714,0.36,0,0.36,,1011,0.17,81,271,0,0.6,171242
+Dairy & Eggs,"Cheese, monterey",373,24.48,30.28,19.066,,89,600,0.68,0,0.5,,746,0.72,81,198,0,0.6,170844
+Dairy & Eggs,"Cheese, mozzarella, part skim milk",254,24.26,15.92,10.114,,64,619,2.77,0,1.13,,782,0.22,84,127,0,0.3,170847
+Dairy & Eggs,"Cheese, mozzarella, whole milk",299,22.17,22.14,13.9,,79,486,2.4,0,0,,505,0.44,76,179,0,0.4,170845
+Dairy & Eggs,"Cheese, parmesan, dry grated, reduced fat",265,20,20,13.317,,88,1529,1.37,0,0,,1109,0.9,125,160,0,0.4,173452
+Dairy & Eggs,"Cheese, parmesan, grated",421,29.6,28,15.5,0.896,87,1750,12.4,,,,884,0.45,184,228,,,325036
+Dairy & Eggs,"Cheese, parmesan, grated",420,28.42,27.84,15.371,0.876,86,1804,13.91,0,0.07,,853,0.49,180,262,0,0.5,171247
+Dairy & Eggs,"Cheese, parmesan, hard",392,35.75,25,14.85,,68,1175,3.22,0,0.11,,1184,0.82,92,207,0,0.5,170848
+Dairy & Eggs,"Cheese, parmesan, low sodium",451,41.6,29.99,19.051,,79,63,3.7,0,0.85,,800,0.95,107,125,0,0.6,167705
+Dairy & Eggs,"Cheese, parmesan, shredded",415,37.86,27.34,17.37,,72,1696,3.41,0,0.9,,1253,0.87,97,229,0,0.5,173431
+Dairy & Eggs,"Cheese, provolone",351,25.58,26.62,17.078,,69,727,2.14,0,0.56,,756,0.52,138,236,0,0.5,170850
+Dairy & Eggs,"Cheese, ricotta, part skim milk",138,11.39,7.91,4.927,,31,99,5.14,0,0.31,,272,0.44,125,107,0,0.1,171248
+Dairy & Eggs,"Cheese, ricotta, whole milk",157,7.81,11,6.97,0.351,48,105,6.86,,,,224,0.1,230,127,,,323444
+Dairy & Eggs,"Cheese, ricotta, whole milk",157,7.81,11,6.97,0.351,48,105,6.86,,,,224,0.1,230,127,,,746766
+Dairy & Eggs,"Cheese, ricotta, whole milk",150,7.54,10.18,6.42,0.333,49,110,7.27,0,0.27,,206,0.13,219,120,0,0.2,170851
+Dairy & Eggs,"Cheese, swiss",393,27,31,18.2,0.993,93,185,1.44,,,,890,0.13,71,292,,0,326135
+Dairy & Eggs,"Cheese, swiss",393,27,31,18.2,0.993,93,185,1.44,,,,890,0.13,71,292,,0,746767
+Dairy & Eggs,"Cheese, swiss",393,26.96,30.99,18.227,0.987,93,187,1.44,0,0,,890,0.13,72,288,0,0,171251
+Dairy & Eggs,"Cream, sour, cultured",198,2.44,19.35,10.14,0.796,59,31,4.63,0,3.41,,101,0.07,125,124,0.9,0,171257
+Dairy & Eggs,"Cream, sour, reduced fat, cultured",135,2.94,12,7.47,,39,89,4.26,0,0.16,,104,0.07,129,102,0.9,0.2,171256
+Dairy & Eggs,"Egg, white, raw, fresh",52,10.9,0.17,0,,0,166,0.73,0,0.71,,7,0.08,163,0,0,0,172183
+Dairy & Eggs,"Egg, whole, cooked, fried",196,13.61,14.84,4.323,0.041,401,207,0.83,0,0.4,,62,1.89,152,219,0,2.2,173423
+Dairy & Eggs,"Egg, whole, cooked, hard-boiled",155,12.58,10.61,3.267,,373,124,1.12,0,1.12,,50,1.19,126,149,0,2.2,173424
+Dairy & Eggs,"Egg, whole, cooked, omelet",154,10.57,11.66,3.319,0.709,313,155,0.64,0,0.31,,48,1.48,117,172,0,1.7,172185
+Dairy & Eggs,"Egg, whole, cooked, poached",143,12.51,9.47,3.113,0.038,370,297,0.71,0,0.37,,56,1.75,138,160,0,2,172186
+Dairy & Eggs,"Egg, whole, cooked, scrambled",149,9.99,10.98,3.331,0.624,277,145,1.61,0,1.39,,66,1.31,132,161,0,1.8,172187
+Dairy & Eggs,"Egg, whole, raw, fresh",143,12.56,9.51,3.126,0.038,372,142,0.72,0,0.37,,56,1.75,138,160,0,2,171287
+Dairy & Eggs,"Egg, yolk, raw, fresh",322,15.86,26.54,9.551,,1085,48,3.59,0,0.56,,129,2.73,109,381,0,5.4,172184
+Dairy & Eggs,"Eggs, Grade A, Large, egg white",55,10.7,0,,,,,2.36,,,,,,,,,,747997
+Dairy & Eggs,"Eggs, Grade A, Large, egg whole",148,12.4,9.96,3.2,,411,129,0.96,0,,,48,1.67,132,180,,2.46,748967
+Dairy & Eggs,"Eggs, Grade A, Large, egg yolk",334,16.2,28.8,,,,,1.02,,,,,,,,,,748236
+Dairy & Eggs,"Milk, goat, fluid, with added vitamin D",69,3.56,4.14,2.667,,11,50,4.45,0,4.45,,134,0.05,204,57,1.3,1.3,171278
+Dairy & Eggs,"Milk, lowfat, fluid, 1% milkfat, protein fortified, with added vitamin A and vitamin D",48,3.93,1.17,0.728,,4,58,5.52,0,,,142,0.06,180,61,1.2,1,171268
+Dairy & Eggs,"Milk, lowfat, fluid, 1% milkfat, with added nonfat milk solids, vitamin A and vitamin D",43,3.48,0.97,0.604,,4,52,4.97,0,,,128,0.05,162,59,1,1,170873
+Dairy & Eggs,"Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",43,3.38,0.95,0.568,0.036,5,39,5.19,,,,126,0,159,58,,1.1,322228
+Dairy & Eggs,"Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",43,3.38,0.95,0.568,0.036,5,39,5.18,,,,126,0,159,58,,1.06,746772
+Dairy & Eggs,"Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",42,3.37,0.97,0.633,,5,44,4.99,0,5.2,,125,0.03,150,58,0,1.2,170872
+Dairy & Eggs,"Milk, nonfat, fluid, protein fortified, with added vitamin A and vitamin D (fat free and skim)",41,3.96,0.25,0.162,,2,59,5.56,0,,,143,0.06,182,61,1.1,1,171271
+Dairy & Eggs,"Milk, nonfat, fluid, with added nonfat milk solids, vitamin A and vitamin D (fat free or skim)",37,3.57,0.25,0.162,,2,53,5.02,0,5.02,,129,0.05,171,64,1,1.2,171270
+Dairy & Eggs,"Milk, nonfat, fluid, with added vitamin A and vitamin D (fat free or skim)",34,3.43,0.08,0.049,0,3,41,4.89,,,,132,0,167,64,,1.1,322559
+Dairy & Eggs,"Milk, nonfat, fluid, with added vitamin A and vitamin D (fat free or skim)",34,3.43,0.08,0.049,0,3,41,4.92,,,,132,0,167,64,,1.1,746776
+Dairy & Eggs,"Milk, nonfat, fluid, with added vitamin A and vitamin D (fat free or skim)",34,3.37,0.08,0.056,,2,42,4.96,0,5.09,,122,0.03,156,61,0,1.2,171269
+Dairy & Eggs,"Milk, nonfat, fluid, without added vitamin A and vitamin D (fat free or skim)",35,3.37,0.18,0.117,,2,42,4.86,0,5.09,,122,0.03,156,2,0,0,173432
+Dairy & Eggs,"Milk, reduced fat, fluid, 2% milkfat, protein fortified, with added vitamin A and vitamin D",56,3.95,1.98,1.232,,8,59,5.49,0,5.26,,143,0.06,182,0,1.1,1,170871
+Dairy & Eggs,"Milk, reduced fat, fluid, 2% milkfat, with added nonfat milk solids and vitamin A and vitamin D",51,3.48,1.92,1.195,,8,52,4.97,0,,,128,0.05,162,56,1,1,170870
+Dairy & Eggs,"Milk, reduced fat, fluid, 2% milkfat, with added nonfat milk solids, without added vitamin A",56,3.95,1.98,1.232,,8,59,5.49,0,,,143,0.06,182,17,1.1,,172193
+Dairy & Eggs,"Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D",50,3.3,1.98,1.257,0.085,8,47,4.8,0,5.06,,120,0.02,140,55,0.2,1.2,171267
+Dairy & Eggs,"Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D",50,3.35,1.9,1.11,0.07,8,39,4.91,,,,126,0,159,83,,1.1,321359
+Dairy & Eggs,"Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D",50,3.36,1.9,1.11,0.07,8,39,4.9,,,,126,0,159,83,,1.13,746778
+Dairy & Eggs,"Milk, reduced fat, fluid, 2% milkfat, without added vitamin A and vitamin D",50,3.3,1.98,1.257,0.085,8,47,4.8,0,5.06,,120,0.02,140,28,0.2,0,172205
+Dairy & Eggs,"Milk, whole, 3.25% milkfat, with added vitamin D",60,3.28,3.2,1.86,0.112,12,38,4.67,,,,123,0,150,32,,1,322892
+Dairy & Eggs,"Milk, whole, 3.25% milkfat, with added vitamin D",61,3.15,3.25,1.865,,10,43,4.8,0,5.05,,113,0.03,132,46,0,1.3,171265
+Dairy & Eggs,"Milk, whole, 3.25% milkfat, with added vitamin D",60,3.27,3.2,1.86,0.112,12,38,4.63,,,,123,0,150,32,,0.96,746782
+Dairy & Eggs,"Milk, whole, 3.25% milkfat, without added vitamin A and vitamin D",61,3.15,3.27,1.865,,10,43,4.78,0,5.05,,113,0.03,132,46,0,0.1,172217
+Dairy & Eggs,"Yogurt, Greek, 2% fat, apricot, CHOBANI",93,7.22,1.71,1.03,0.07,4,40,12.15,0.6,,,87,0.03,,25,0,,170864
+Dairy & Eggs,"Yogurt, Greek, 2% fat, key lime blend, CHOBANI",92,7.75,1.47,0.87,0.07,7,40,11.91,0.5,,,92,0.03,,15,0.7,,173434
+Dairy & Eggs,"Yogurt, Greek, 2% fat, mango, CHOBANI",93,7.64,1.69,1.02,0.07,5,30,11.84,0.5,,,89,0.03,,27,0,,172199
+Dairy & Eggs,"Yogurt, Greek, 2% fat, pineapple, CHOBANI",94,7.05,1.82,1.12,0.07,9,33,12.27,0.7,,,92,0.03,,21,2.2,,170909
+Dairy & Eggs,"Yogurt, Greek, 2% fat, strawberry banana, CHOBANI",88,8,1.71,1.03,0.07,9,32,10.24,0.7,,,88,0.2,,15,1.1,,170912
+Dairy & Eggs,"Yogurt, Greek, 2% fat,mixed berry blend, CHOBANI",93,8.26,1.83,1.1,0.08,7,41,10.94,0.6,,,94,0.03,,24,0,,170891
+Dairy & Eggs,"Yogurt, Greek, 2%fat, coconut blend, CHOBANI",92,8.11,1.71,,,,33,11.04,0.5,,,93,0.03,,19,0.6,,171260
+Dairy & Eggs,"Yogurt, Greek, Blueberry, CHOBANI",82,7.23,0.24,0.037,0.007,4,32,12.78,0.5,10.3,,90,0.15,128,3,0.3,0,170914
+Dairy & Eggs,"Yogurt, Greek, fruit, whole milk",106,7.33,3,1.599,0,10,37,12.29,0,12,,100,0,113,46,0,0,170905
+Dairy & Eggs,"Yogurt, Greek, nonfat, Fruit on Bottom, Blackberry, CHOBANI",95,7.54,0.37,0.19,0.01,4,0,15.43,0.4,14.93,,94,0,0,3,0.4,,170916
+Dairy & Eggs,"Yogurt, Greek, nonfat, Fruit on Bottom, Pomegranate, CHOBANI",80,7.45,0.18,0.1,0.074,4,31,12.13,0.8,,,93,0.15,128,3,0.3,,170913
+Dairy & Eggs,"Yogurt, Greek, nonfat, Fruit on Bottom, Strawberry, CHOBANI",79,7.28,0.23,0.15,0.007,4,31,11.86,0.4,10.41,,93,0.15,132,3,0.6,0,170915
+Dairy & Eggs,"Yogurt, Greek, nonfat, lemon blend, CHOBANI",78,8.62,0.15,0.09,0.007,2,44,10.66,0.5,,,96,0.03,,0,0,,171310
+Dairy & Eggs,"Yogurt, Greek, nonfat, peach, CHOBANI",80,7.76,0.11,0.06,0.007,5,32,11.9,0.7,,,89,0.03,,54,10.7,,171311
+Dairy & Eggs,"Yogurt, Greek, nonfat, plain, CHOBANI",54,9.53,0.24,0.145,0.009,6,37,3.43,0.2,,,112,0.03,,0,0.3,,171312
+Dairy & Eggs,"Yogurt, Greek, nonfat, raspberry, CHOBANI",81,7.65,0.22,0.13,0.007,4,30,11.98,0.5,,,98,0.03,,0,0.6,,171313
+Dairy & Eggs,"Yogurt, Greek, nonfat, strawberry, DANNON OIKOS",84,8.03,0.22,0.11,0,,33,12.53,0.4,11.63,,94,0.06,145,,0.2,1,171299
+Dairy & Eggs,"Yogurt, Greek, nonfat, vanilla, CHOBANI",71,9.07,0.22,0.178,0.007,,36,8.09,0.3,7.61,,106,0.05,130,,,,171296
+Dairy & Eggs,"Yogurt, Greek, nonfat, vanilla, DANNON OIKOS",85,8.12,0.14,0.09,0,,32,12.72,0.5,11.4,,89,0.04,115,,,0.9,171298
+Dairy & Eggs,"Yogurt, Greek, plain, lowfat",73,9.95,1.92,1.23,0.06,10,34,3.94,0,3.56,,115,0.04,141,90,0.8,0,170903
+Dairy & Eggs,"Yogurt, Greek, plain, nonfat",61,10.3,0.37,0.108,0.005,5,36,3.64,,,,111,0.07,141,1,,0,330137
+Dairy & Eggs,"Yogurt, Greek, plain, whole milk",97,9,5,2.395,0,13,35,3.98,0,4,,100,0,141,2,0,0,171304
+Dairy & Eggs,"Yogurt, Greek, strawberry, DANNON OIKOS",106,8.25,2.92,1.832,0.085,13,34,11.67,1,11,,86,0.07,131,1,,0,171297
+Dairy & Eggs,"Yogurt, Greek, strawberry, lowfat",105,8.17,2.57,1.599,0.074,12,33,12.29,1,11.23,,88,0.07,129,31,0.7,0,171300
+Dairy & Eggs,"Yogurt, Greek, strawberry, nonfat",82,8.05,0.15,0.105,0.001,4,33,12.07,0.6,11.27,,97,0.09,132,0,0.3,1,170901
+Dairy & Eggs,"Yogurt, Greek, strawberry, nonfat",83,8.06,0.15,0.103,0.002,4,32,12.2,0.6,,,97,0.09,133,0,0.2,1,330415
+Dairy & Eggs,"Yogurt, Greek, vanilla, lowfat",95,8.64,2.5,1.465,0,5,40,9.54,0,9.54,,100,0.04,123,110,0,0.9,170907
+Dairy & Eggs,"Yogurt, Greek, vanilla, nonfat",78,8.64,0.18,0.133,0.004,3,34,10.37,0.5,9.54,,99,0.04,123,0,0,0.9,170902
+Dairy & Eggs,"Yogurt, Greek, whole, plain, CHOBANI",82,8.24,4.01,2.46,0.17,15,35,3.24,0.8,,,111,0.03,,58,0.6,,171309
+Dairy & Eggs,"Yogurt, chocolate, nonfat milk",112,3.53,0,0,,1,135,23.53,1.2,14.97,,88,0.42,339,0,0,0,172208
+Dairy & Eggs,"Yogurt, chocolate, nonfat milk, fortified with vitamin D",112,3.53,0,0,,1,135,23.53,1.2,14.97,,88,0.42,339,0,0,1.2,172221
+Dairy & Eggs,"Yogurt, frozen, flavors not chocolate, nonfat milk, with low-calorie sweetener",104,4.4,0.8,0.488,,4,81,19.7,2,12.61,,159,0.04,339,2,0.7,0,173464
+Dairy & Eggs,"Yogurt, frozen, flavors other than chocolate, lowfat",139,8,2.5,1.509,0,45,45,21,0,21,,200,0,108,34,0,0,170908
+Dairy & Eggs,"Yogurt, fruit variety, nonfat",95,4.4,0.2,0.119,,2,58,19,0,19,,152,0.07,194,2,0.7,0,169898
+Dairy & Eggs,"Yogurt, fruit variety, nonfat, fortified with vitamin D",95,4.4,0.2,0.119,,2,58,19,0,19,,152,0.07,194,2,0.7,1.3,173458
+Dairy & Eggs,"Yogurt, fruit, low fat, 10 grams protein per 8 ounce",102,4.37,1.08,0.697,,4,58,19.05,0,19.05,,152,0.07,195,10,0.7,0,171285
+Dairy & Eggs,"Yogurt, fruit, low fat, 10 grams protein per 8 ounce, fortified with vitamin D",102,4.37,1.08,0.697,,4,58,19.05,0,19.05,,152,0.07,195,10,0.7,1.3,173457
+Dairy & Eggs,"Yogurt, fruit, low fat, 11g protein/8 oz",105,4.86,1.41,0.909,,6,65,18.6,0,,,169,0.07,216,,0.7,,171286
+Dairy & Eggs,"Yogurt, fruit, low fat, 9 grams protein per 8 ounce, fortified with vitamin D",99,3.98,1.15,0.742,,5,53,18.64,0,18.64,,138,0.06,177,11,0.6,1.3,173456
+Dairy & Eggs,"Yogurt, fruit, low fat,9 g protein/8 oz",99,3.98,1.15,0.742,,5,53,18.64,0,18.64,,138,0.06,177,11,0.6,0,170889
+Dairy & Eggs,"Yogurt, fruit, lowfat, with low calorie sweetener",105,4.86,1.41,0.909,,6,58,18.6,0,2.9,,152,0.07,194,131,0.7,0,173451
+Dairy & Eggs,"Yogurt, fruit, lowfat, with low calorie sweetener, fortified with vitamin D",105,4.86,1.41,0.909,,6,58,18.6,0,2.9,,152,0.07,194,131,0.7,1.3,172218
+Dairy & Eggs,"Yogurt, plain, low fat",63,5.25,1.55,1,,6,70,7.04,0,7.04,,183,0.08,234,14,0.8,0,170886
+Dairy & Eggs,"Yogurt, plain, skim milk",56,5.73,0.18,0.116,,2,77,7.68,0,7.68,,199,0.09,255,2,0.9,0,170887
+Dairy & Eggs,"Yogurt, plain, whole milk",61,3.47,3.25,2.096,,13,46,4.66,0,4.66,,121,0.05,155,27,0.5,0.1,171284
+Dairy & Eggs,"Yogurt, vanilla flavor, lowfat milk, sweetened with low calorie sweetener",86,4.93,1.25,0.752,,5,66,13.8,0,5.43,,171,0.07,219,12,0.8,0,173463
+Dairy & Eggs,"Yogurt, vanilla or lemon flavor, nonfat milk, sweetened with low-calorie sweetener",43,3.86,0.18,0.116,,2,59,7.5,0,7.5,,143,0.12,177,2,1.1,0,173445
+Dairy & Eggs,"Yogurt, vanilla or lemon flavor, nonfat milk, sweetened with low-calorie sweetener, fortified with vitamin D",43,3.86,0.18,0.116,,2,59,7.5,0,7.5,,143,0.12,177,2,1.1,1.2,172220
+Dairy & Eggs,"Yogurt, vanilla, low fat, fortified with vitamin D",85,4.93,1.25,0.806,,5,66,13.8,0,13.8,,171,0.07,219,12,0.8,1.2,172219
+Dairy & Eggs,"Yogurt, vanilla, low fat.",85,4.93,1.25,0.806,,5,66,13.8,0,13.8,,171,0.07,219,12,0.8,0,170888
+Dairy & Eggs,"Yogurt, vanilla, non-fat",78,2.94,0,0,,3,47,17.04,0,5.88,,118,0,141,61,0,0.9,170906
+Fish & Seafood,"Crustaceans, crab, alaska king, cooked, moist heat",97,19.35,1.54,0.133,,53,1072,0,0,,,59,0.76,262,9,7.6,,174202
+Fish & Seafood,"Crustaceans, crab, alaska king, raw",84,18.29,0.6,0.09,,42,836,0,0,,,46,0.59,204,7,7,,175164
+Fish & Seafood,"Crustaceans, crab, blue, canned",83,17.88,0.74,0.201,0.014,97,563,0,0,0,,91,0.5,259,1,3.3,0,171966
+Fish & Seafood,"Crustaceans, crab, blue, cooked, moist heat",83,17.88,0.74,0.201,0.014,97,395,0,0,0,,91,0.5,259,1,3.3,0,174205
+Fish & Seafood,"Crustaceans, crab, blue, crab cakes, home recipe",155,20.21,7.52,1.483,,150,330,0.48,0,,,105,1.08,324,57,2.8,,171967
+Fish & Seafood,"Crustaceans, crab, blue, raw",87,18.06,1.08,0.222,,78,293,0.04,0,,,89,0.74,329,2,3,,174204
+Fish & Seafood,"Crustaceans, crab, dungeness, cooked, moist heat",110,22.32,1.24,0.168,,76,378,0.95,0,,,59,0.43,408,31,3.6,,172007
+Fish & Seafood,"Crustaceans, crab, dungeness, raw",86,17.41,0.97,0.132,,59,295,0.74,0,,,46,0.37,354,27,3.5,,171968
+Fish & Seafood,"Crustaceans, crab, queen, cooked, moist heat",115,23.72,1.51,0.183,,71,691,0,0,,,33,2.88,200,52,7.2,,172008
+Fish & Seafood,"Crustaceans, crab, queen, raw",90,18.5,1.18,0.143,,55,539,0,0,,,26,2.5,173,45,7,,171969
+Fish & Seafood,"Crustaceans, lobster, northern, cooked, moist heat",89,19,0.86,0.208,0.013,146,486,0,0,0,,96,0.29,230,1,0,0,174209
+Fish & Seafood,"Crustaceans, lobster, northern, raw",77,16.52,0.75,0.181,0.011,127,423,0,0,0,,84,0.26,200,1,0,0,174208
+Fish & Seafood,"Crustaceans, shrimp, cooked",99,23.98,0.28,0.056,0.002,189,111,0.2,,,,70,0.51,259,,,,175180
+Fish & Seafood,"Crustaceans, shrimp, mixed species, canned",100,20.42,1.36,0.188,,252,870,0,0,0,,145,2.13,80,0,4.1,0,171972
+Fish & Seafood,"Crustaceans, shrimp, mixed species, cooked, breaded and fried",242,21.39,12.28,2.087,,138,344,11.47,0.4,0.8,,67,1.26,225,56,1.5,0.1,171970
+Fish & Seafood,"Crustaceans, shrimp, mixed species, cooked, moist heat (may contain additives to retain moisture)",119,22.78,1.7,0.521,0.035,211,947,1.52,0,0,,91,0.32,170,90,0,0.1,171971
+Fish & Seafood,"Crustaceans, shrimp, mixed species, raw (may contain additives to retain moisture)",71,13.61,1.01,0.261,0.018,126,566,0.91,0,0,,54,0.21,113,54,0,0.1,174210
+Fish & Seafood,"Crustaceans, shrimp, raw",85,20.1,0.51,0.101,0.004,161,119,0,,,,64,0.52,264,,,,175179
+Fish & Seafood,"Fish, bass, fresh water, mixed species, raw",114,18.86,3.69,0.78,,68,70,0,0,,,80,1.49,356,30,2,,174184
+Fish & Seafood,"Fish, bass, freshwater, mixed species, cooked, dry heat",146,24.18,4.73,1.001,,87,90,0,0,,,103,1.91,456,35,2.1,,171989
+Fish & Seafood,"Fish, bass, striped, cooked, dry heat",124,22.73,2.99,0.65,,103,88,0,0,,,19,1.08,328,31,0,,174228
+Fish & Seafood,"Fish, bass, striped, raw",97,17.73,2.33,0.507,,80,69,0,0,,,15,0.84,256,27,0,,171948
+Fish & Seafood,"Fish, catfish, channel, cooked, breaded and fried",229,18.09,13.33,3.288,,71,280,8.04,0.7,,,44,1.43,340,8,0,,174187
+Fish & Seafood,"Fish, catfish, channel, farmed, cooked, dry heat",144,18.44,7.19,1.586,0.063,66,119,0,0,0,,9,0.28,366,1,0,0.3,175166
+Fish & Seafood,"Fish, catfish, channel, farmed, raw",119,15.23,5.94,1.31,0.052,55,98,0,0,0,,8,0.23,302,0,0,0.2,175165
+Fish & Seafood,"Fish, catfish, channel, wild, cooked, dry heat",105,18.47,2.85,0.744,,72,50,0,0,,,11,0.35,419,15,0.8,,173714
+Fish & Seafood,"Fish, catfish, channel, wild, raw",95,16.38,2.82,0.722,,58,43,0,0,,,14,0.3,358,15,0.7,12.5,174186
+Fish & Seafood,"Fish, cod, Atlantic, canned, solids and liquid",105,22.76,0.86,0.167,,55,218,0,0,0,,21,0.49,528,14,1,1.2,174189
+Fish & Seafood,"Fish, cod, Atlantic, cooked, dry heat",105,22.83,0.86,0.168,,55,78,0,0,0,,14,0.49,244,14,1,1.2,171956
+Fish & Seafood,"Fish, cod, Atlantic, dried and salted",290,62.82,2.37,0.462,,152,7027,0,0,0,,160,2.5,1458,42,3.5,4,174190
+Fish & Seafood,"Fish, cod, Atlantic, raw",82,17.81,0.67,0.131,,43,54,0,0,0,,16,0.38,413,12,1,0.9,171955
+Fish & Seafood,"Fish, cod, Pacific, cooked",84,20.42,0.25,0.048,0.001,61,134,0,,,,17,0.16,372,,,,175178
+Fish & Seafood,"Fish, cod, Pacific, cooked, dry heat (may contain additives to retain moisture)",85,18.73,0.5,0.105,0.006,57,372,0,0,0,,10,0.2,289,2,0,0.6,171990
+Fish & Seafood,"Fish, cod, Pacific, raw (may have been previously frozen)",69,15.27,0.41,0.085,0.005,47,303,0,0,0,,8,0.16,235,2,0,0.5,174191
+Fish & Seafood,"Fish, halibut, Atlantic and Pacific, cooked, dry heat",111,22.54,1.61,0.354,0.028,60,82,0,0,0,,9,0.2,528,24,0,5.8,174201
+Fish & Seafood,"Fish, halibut, Atlantic and Pacific, raw",91,18.56,1.33,0.292,,49,68,0,0,0,,7,0.16,435,20,0,4.7,174200
+Fish & Seafood,"Fish, halibut, Greenland, raw",186,14.37,13.84,2.419,,46,80,0,0,0,,3,0.66,268,14,0,27.4,171965
+Fish & Seafood,"Fish, halibut, greenland, cooked, dry heat",239,18.42,17.74,3.102,,59,103,0,0,,,4,0.85,344,18,0,,174232
+Fish & Seafood,"Fish, herring, Atlantic, cooked, dry heat",203,23.03,11.59,2.615,,77,115,0,0,0,,74,1.41,419,36,0.7,5.4,175117
+Fish & Seafood,"Fish, herring, Atlantic, kippered",217,24.58,12.37,2.791,,82,918,0,0,0,,84,1.51,447,40,1,2.2,173668
+Fish & Seafood,"Fish, herring, Atlantic, pickled",262,14.19,18,2.381,,13,870,9.64,0,7.71,,77,1.22,69,258,0,2.8,175118
+Fish & Seafood,"Fish, herring, Atlantic, raw",158,17.96,9.04,2.04,,60,90,0,0,0,,57,1.1,327,28,0.7,4.2,175116
+Fish & Seafood,"Fish, herring, Pacific, cooked, dry heat",250,21.01,17.79,4.174,,99,95,0,0,,,106,1.44,542,35,0,,174233
+Fish & Seafood,"Fish, herring, Pacific, raw",195,16.39,13.88,3.257,,77,74,0,0,,,83,1.12,423,32,0,,173669
+Fish & Seafood,"Fish, mackerel, Atlantic, cooked, dry heat",262,23.85,17.81,4.176,,75,83,0,0,,,15,1.57,401,54,0.4,,175120
+Fish & Seafood,"Fish, mackerel, Atlantic, raw",205,18.6,13.89,3.257,,70,90,0,0,0,,12,1.63,314,50,0.4,16.1,175119
+Fish & Seafood,"Fish, mackerel, Pacific and jack, mixed species, cooked, dry heat",201,25.73,10.12,2.881,,60,110,0,0,0,,29,1.49,521,23,2.1,11.4,171994
+Fish & Seafood,"Fish, mackerel, Pacific and jack, mixed species, raw",158,20.07,7.89,2.247,,47,86,0,0,0,,23,1.16,406,19,2,9.1,173672
+Fish & Seafood,"Fish, mackerel, jack, canned, drained solids",156,23.19,6.3,1.857,,79,379,0,0,0,,241,2.04,194,130,0.9,7.3,175121
+Fish & Seafood,"Fish, mackerel, king, cooked, dry heat",134,26,2.56,0.465,,68,203,0,0,,,40,2.28,558,252,1.6,,174236
+Fish & Seafood,"Fish, mackerel, king, raw",105,20.28,2,0.363,,53,158,0,0,,,31,1.78,435,218,1.6,,175122
+Fish & Seafood,"Fish, mackerel, salted",305,18.5,25.1,7.148,,95,4450,0,0,0,,66,1.4,520,47,0,25.2,168149
+Fish & Seafood,"Fish, mackerel, spanish, cooked, dry heat",158,23.59,6.32,1.801,,73,66,0,0,,,13,0.74,554,33,1.6,,173674
+Fish & Seafood,"Fish, mackerel, spanish, raw",139,19.29,6.3,1.828,,76,59,0,0,0,,11,0.44,446,39,1.6,7.3,173673
+Fish & Seafood,"Fish, salmon, Atlantic, farmed, cooked, dry heat",206,22.1,12.35,2.397,,63,61,0,0,0,,15,0.34,384,69,3.7,13.1,175168
+Fish & Seafood,"Fish, salmon, Atlantic, farmed, raw",208,20.42,13.42,3.05,,55,59,0,0,0,,9,0.34,363,58,3.9,11,175167
+Fish & Seafood,"Fish, salmon, Atlantic, wild, cooked, dry heat",182,25.44,8.13,1.257,,71,56,0,0,,,15,1.03,628,13,0,,171998
+Fish & Seafood,"Fish, salmon, Atlantic, wild, raw",142,19.84,6.34,0.981,,55,44,0,0,,,12,0.8,490,12,0,,173686
+Fish & Seafood,"Fish, salmon, chinook, cooked, dry heat",231,25.72,13.38,3.214,,85,60,0,0,,,28,0.91,505,149,4.1,,171999
+Fish & Seafood,"Fish, salmon, chinook, raw",179,19.93,10.43,3.1,,50,47,0,0,0,,26,0.25,394,136,4,,173688
+Fish & Seafood,"Fish, salmon, chinook, smoked",117,18.28,4.32,0.929,,23,672,0,0,0,,11,0.85,175,26,0,17.1,173687
+Fish & Seafood,"Fish, salmon, chinook, smoked, (lox), regular",117,18.28,4.32,0.929,,23,2000,0,0,,,11,0.85,175,26,0,,171985
+Fish & Seafood,"Fish, salmon, chum, canned, drained solids with bone",141,21.43,5.5,1.486,,39,391,0,0,0,,249,0.7,300,18,0,9.6,175135
+Fish & Seafood,"Fish, salmon, chum, canned, without salt, drained solids with bone",141,21.43,5.5,1.486,,39,75,0,0,,,249,0.7,300,18,0,,174224
+Fish & Seafood,"Fish, salmon, chum, cooked, dry heat",154,25.82,4.83,1.077,,95,64,0,0,,,14,0.71,550,34,0,,172000
+Fish & Seafood,"Fish, salmon, chum, raw",120,20.14,3.77,0.84,,74,50,0,0,,,11,0.55,429,30,0,,173689
+Fish & Seafood,"Fish, salmon, coho, farmed, cooked, dry heat",178,24.3,8.23,1.944,,63,52,0,0,,,12,0.39,460,59,1.5,,173716
+Fish & Seafood,"Fish, salmon, coho, farmed, raw",160,21.27,7.67,1.816,,51,47,0,0,,,12,0.34,450,56,1.1,,173715
+Fish & Seafood,"Fish, salmon, coho, wild, cooked, dry heat",139,23.45,4.3,1.054,,55,58,0,0,0,,45,0.61,434,51,1.4,11.3,173719
+Fish & Seafood,"Fish, salmon, coho, wild, cooked, moist heat",184,27.36,7.5,1.595,,57,53,0,0,,,46,0.71,455,32,1,,175137
+Fish & Seafood,"Fish, salmon, coho, wild, raw",146,21.62,5.93,1.26,,45,46,0,0,0,,36,0.56,423,40,1,9,175136
+Fish & Seafood,"Fish, salmon, pink, canned, drained solids",138,23.1,5.02,0.895,0.027,83,381,0,0,0,,283,0.77,333,20,0,14.5,175175
+Fish & Seafood,"Fish, salmon, pink, canned, total can contents",129,19.68,4.97,0.862,0.026,55,403,0,0,0,,215,0.64,344,17,0,13.7,173690
+Fish & Seafood,"Fish, salmon, pink, canned, without salt, solids with bone and liquid",139,19.78,6.05,1.535,,55,75,0,0,,,213,0.84,326,17,0,,174225
+Fish & Seafood,"Fish, salmon, pink, cooked, dry heat",153,24.58,5.28,0.971,0.041,55,90,0,0,0,,8,0.45,439,42,0,13,172001
+Fish & Seafood,"Fish, salmon, pink, raw",127,20.5,4.4,0.81,0.034,46,75,0,0,0,,7,0.38,366,35,0,10.9,175138
+Fish & Seafood,"Fish, salmon, sockeye, canned, drained solids",167,23.59,7.39,1.44,0.04,79,408,0,0,0,,232,0.65,314,55,0,21,173693
+Fish & Seafood,"Fish, salmon, sockeye, canned, without salt, drained solids with bone",153,20.47,7.31,1.644,,44,75,0,0,,,239,1.06,377,53,0,,174226
+Fish & Seafood,"Fish, salmon, sockeye, cooked, dry heat",156,26.48,5.57,0.969,0.023,61,92,0,0,0,,11,0.52,436,58,0,16.7,173692
+Fish & Seafood,"Fish, salmon, sockeye, raw",131,22.25,4.69,0.814,0.019,51,78,0,0,0,,9,0.43,367,49,0,14.1,173691
+Fish & Seafood,"Fish, sardine, Atlantic, canned in oil, drained solids with bone",208,24.62,11.45,1.528,,142,307,0,0,0,,382,2.92,397,32,0,4.8,175139
+Fish & Seafood,"Fish, sardine, Pacific, canned in tomato sauce, drained solids with bone",185,20.86,10.45,2.684,,61,414,0.54,0.1,0.43,,240,2.3,341,34,1,4.8,175140
+Fish & Seafood,"Fish, swordfish, cooked, dry heat",172,23.45,7.93,1.911,0.056,78,97,0,0,0,,6,0.45,499,43,0,16.6,173704
+Fish & Seafood,"Fish, swordfish, raw",144,19.66,6.65,1.614,0.047,66,81,0,0,0,,5,0.38,418,36,0,13.9,173703
+Fish & Seafood,"Fish, tilapia, cooked, dry heat",128,26.15,2.65,0.94,,57,56,0,0,0,,14,0.69,380,0,0,3.7,175177
+Fish & Seafood,"Fish, tilapia, raw",96,20.08,1.7,0.585,,50,52,0,0,0,,10,0.56,302,0,0,3.1,175176
+Fish & Seafood,"Fish, trout, brook, raw, New York State",110,21.23,2.73,0.595,0.019,60,45,0,,,,25,0.38,417,,,,175181
+Fish & Seafood,"Fish, trout, mixed species, cooked, dry heat",190,26.63,8.47,1.474,,74,67,0,0,,,55,1.92,463,19,0.5,,172004
+Fish & Seafood,"Fish, trout, mixed species, raw",148,20.77,6.61,1.149,,58,52,0,0,0,,43,1.5,361,17,0.5,3.9,175153
+Fish & Seafood,"Fish, trout, rainbow, farmed, cooked, dry heat",168,23.8,7.38,1.651,0.056,70,61,0,0,0,,30,0.36,450,100,2.9,19,173718
+Fish & Seafood,"Fish, trout, rainbow, farmed, raw",141,19.94,6.18,1.383,0.047,59,51,0,0,0,,25,0.31,377,84,2.9,15.9,173717
+Fish & Seafood,"Fish, trout, rainbow, wild, cooked, dry heat",150,22.92,5.82,1.619,,69,56,0,0,,,86,0.38,448,15,2,,175155
+Fish & Seafood,"Fish, trout, rainbow, wild, raw",119,20.48,3.46,0.722,,59,31,0,0,,,67,0.7,481,19,2.4,,175154
+Fish & Seafood,"Fish, tuna salad",187,16.04,9.26,1.544,,13,402,9.41,0,,,17,1,178,24,2.2,,175160
+Fish & Seafood,"Fish, tuna, fresh, bluefin, cooked, dry heat",184,29.91,6.28,1.612,,49,50,0,0,,,10,1.31,323,757,0,,173707
+Fish & Seafood,"Fish, tuna, fresh, bluefin, raw",144,23.33,4.9,1.257,,38,39,0,0,0,,8,1.02,252,655,0,5.7,173706
+Fish & Seafood,"Fish, tuna, fresh, skipjack, raw",103,22,1.01,0.328,,47,37,0,0,,,29,1.25,407,16,1,,175156
+Fish & Seafood,"Fish, tuna, fresh, yellowfin, raw",109,24.4,0.49,0.172,0.016,39,45,0,0,0,,4,0.77,441,18,0,1.7,175159
+Fish & Seafood,"Fish, tuna, light, canned in oil, drained solids",198,29.13,8.21,1.534,,18,416,0,0,0,,13,1.39,207,23,0,6.7,173708
+Fish & Seafood,"Fish, tuna, light, canned in oil, without salt, drained solids",198,29.13,8.21,1.534,,18,50,0,0,,,13,1.39,207,,0,,174227
+Fish & Seafood,"Fish, tuna, light, canned in water, drained solids",90,19,0.94,0.224,0.002,36,219,0.08,,,,18,1.67,176,,,1.2,334194
+Fish & Seafood,"Fish, tuna, light, canned in water, without salt, drained solids",116,25.51,0.82,0.234,,30,50,0,0,0,,11,1.53,237,,0,,171986
+Fish & Seafood,"Fish, tuna, skipjack, fresh, cooked, dry heat",132,28.21,1.29,0.42,,60,47,0,0,,,37,1.6,522,18,1,,172005
+Fish & Seafood,"Fish, tuna, white, canned in oil, drained solids",186,26.53,8.08,1.28,,31,396,0,0,0,,4,0.65,333,5,0,,175157
+Fish & Seafood,"Fish, tuna, white, canned in oil, without salt, drained solids",186,26.53,8.08,1.65,,31,50,0,0,,,4,0.65,333,,0,,171987
+Fish & Seafood,"Fish, tuna, white, canned in water, drained solids",128,23.62,2.97,0.792,,42,377,0,0,0,,14,0.97,237,6,0,2,175158
+Fish & Seafood,"Fish, tuna, white, canned in water, without salt, drained solids",128,23.62,2.97,0.792,,42,50,0,0,,,14,0.97,237,6,0,,171988
+Fish & Seafood,"Fish, tuna, yellowfin, fresh, cooked, dry heat",130,29.15,0.59,0.205,0.02,47,54,0,0,0,,4,0.92,527,22,0,2,172006
+Fish & Seafood,"Mollusks, clam, mixed species, canned, drained solids",142,24.25,1.59,0.309,0.024,50,112,5.9,0,0,,65,2.68,628,149,0,0.1,171976
+Fish & Seafood,"Mollusks, clam, mixed species, canned, liquid",2,0.4,0.02,0.002,,3,215,0.1,0,0,,13,0.3,149,9,1,0,171977
+Fish & Seafood,"Mollusks, clam, mixed species, cooked, breaded and fried",202,14.24,11.15,2.683,,61,364,10.33,,,,63,13.91,326,91,10,,171974
+Fish & Seafood,"Mollusks, clam, mixed species, cooked, moist heat",148,25.55,1.95,0.188,,67,1202,5.13,0,,,92,2.81,628,171,22.1,,171975
+Fish & Seafood,"Mollusks, clam, mixed species, raw",86,14.67,0.96,0.187,0.015,30,601,3.57,0,0,,39,1.62,46,90,0,0,174214
+Fish & Seafood,"Mollusks, mussel, blue, cooked, moist heat",172,23.8,4.48,0.85,,56,369,7.39,0,,,33,6.72,268,91,13.6,,174217
+Fish & Seafood,"Mollusks, mussel, blue, raw",86,11.9,2.24,0.425,,28,286,3.69,0,0,,26,3.95,320,48,8,0,174216
+Fish & Seafood,"Mollusks, oyster, Pacific, cooked, moist heat",163,18.9,4.6,1.02,,100,212,9.9,0,0,,16,9.2,302,146,12.8,,174250
+Fish & Seafood,"Mollusks, oyster, Pacific, raw",81,9.45,2.3,0.51,,50,106,4.95,0,,,8,5.11,168,81,8,,174219
+Fish & Seafood,"Mollusks, oyster, eastern, canned",68,7.06,2.47,0.631,,55,112,3.91,0,0,,45,6.7,229,90,5,0,171981
+Fish & Seafood,"Mollusks, oyster, eastern, cooked, breaded and fried",199,8.77,12.58,3.197,,71,417,11.62,,,,62,6.95,244,90,3.8,,171979
+Fish & Seafood,"Mollusks, oyster, eastern, farmed, cooked, dry heat",79,7,2.12,0.683,,38,163,7.28,0,,,56,7.77,152,19,6,,175173
+Fish & Seafood,"Mollusks, oyster, eastern, farmed, raw",59,5.22,1.55,0.443,,25,178,5.53,0,,,44,5.78,124,8,4.7,,175172
+Fish & Seafood,"Mollusks, oyster, eastern, wild, cooked, dry heat",79,8.87,2.65,0.736,0.053,62,132,4.23,0,0.96,,92,7.16,242,20,0,0,175171
+Fish & Seafood,"Mollusks, oyster, eastern, wild, cooked, moist heat",102,11.42,3.42,0.948,0.068,79,166,5.45,0,1.23,,116,9.21,139,26,0,0,171980
+Fish & Seafood,"Mollusks, oyster, eastern, wild, raw",51,5.71,1.71,0.474,0.034,40,85,2.72,0,0.62,,59,4.61,156,13,0,0,171978
+Fish & Seafood,"Mollusks, scallop, (bay and sea), cooked, steamed",111,20.54,0.84,0.218,0.009,41,667,5.41,0,0,,10,0.58,314,2,0,0,167742
+Fish & Seafood,"Mollusks, scallop, mixed species, cooked, breaded and fried",216,18.07,10.94,2.669,,54,464,10.13,,,,42,0.82,333,22,2.3,,174221
+Fish & Seafood,"Mollusks, scallop, mixed species, raw",69,12.06,0.49,0.128,0.005,24,392,3.18,0,0,,6,0.38,205,1,0,0,174220
+Fruits,"Apples, raw, without skin",48,0.27,0.13,0.021,0,0,0,12.76,1.3,10.1,,5,0.07,90,2,4,0,171689
+Fruits,"Apricots, raw",48,1.4,0.39,0.027,0,0,1,11.12,2,9.24,,13,0.39,259,96,10,0,171697
+Fruits,"Avocados, raw, California",167,1.96,15.41,2.126,0,0,8,8.64,6.8,0.3,,13,0.61,507,7,8.8,0,171706
+Fruits,"Avocados, raw, all commercial varieties",160,2,14.66,2.126,0,0,7,8.53,6.7,0.66,,12,0.55,485,7,10,0,171705
+Fruits,"Bananas, overripe, raw",85,0.73,0.22,,,,,20.1,1.7,,,,,,1,9.7,,790774
+Fruits,"Bananas, overripe, raw",85,0.73,0.22,,,,,20.1,1.7,,,,,,1,9.7,,1105073
+Fruits,"Bananas, raw",89,1.09,0.33,0.112,0,0,1,22.84,2.6,12.23,,5,0.26,358,3,8.7,0,173944
+Fruits,"Blackberries, raw",43,1.39,0.49,0.014,0,0,1,9.61,5.3,4.88,,29,0.62,162,11,21,0,173946
+Fruits,"Blueberries, raw",57,0.74,0.33,0.028,0,0,1,14.49,2.4,9.96,,6,0.28,77,3,9.7,0,171711
+Fruits,"Cherries, sweet, raw",63,1.06,0.2,0.038,0,0,0,16.01,2.1,12.82,,13,0.36,222,3,7,0,171719
+Fruits,"Clementines, raw",47,0.85,0.15,,0,,1,12.02,1.7,9.18,,30,0.14,177,,48.8,0,168195
+Fruits,"Cranberries, raw",46,0.46,0.13,0.008,0,0,2,11.97,3.6,4.27,,8,0.23,80,3,14,0,171722
+Fruits,"Dates, deglet noor",282,2.45,0.39,0.032,0,0,2,75.03,8,63.35,,39,1.02,656,0,0.4,0,171726
+Fruits,"Dates, medjool",277,1.81,0.15,,0,,1,74.97,6.7,66.47,,64,0.9,696,7,0,0,168191
+Fruits,"Figs, raw",74,0.75,0.3,0.06,0,0,1,19.18,2.9,16.26,,35,0.37,232,7,2,0,173021
+Fruits,"Grapefruit, raw, pink and red, all areas",42,0.77,0.14,0.021,0,0,0,10.66,1.6,6.89,,22,0.08,135,58,31.2,0,174673
+Fruits,"Grapes, red or green (European type, such as Thompson seedless), raw",69,0.72,0.16,0.054,0,0,2,18.1,0.9,15.48,,10,0.36,191,3,3.2,0,174683
+Fruits,"Guavas, common, raw",68,2.55,0.95,0.272,0,0,2,14.32,5.4,8.92,,18,0.26,417,31,228.3,0,173044
+Fruits,"Kiwifruit, green, raw",61,1.14,0.52,0.029,0,0,3,14.66,3,8.99,,34,0.31,312,4,92.7,0,168153
+Fruits,"Kiwifruit, green, raw",58,1.06,0.44,,,,5,14,3,,,35,0.24,198,4,74.7,,327046
+Fruits,"Lemons, raw, without peel",29,1.1,0.3,0.039,0,0,2,9.32,2.8,2.5,,26,0.6,138,1,53,0,167746
+Fruits,"Limes, raw",30,0.7,0.2,0.022,0,0,2,10.54,2.8,1.69,,33,0.6,102,2,29.1,0,168155
+Fruits,"Mangos, raw",60,0.82,0.38,0.092,0,0,1,14.98,1.6,13.66,,11,0.16,168,54,36.4,0,169910
+Fruits,"Nectarines, raw",44,1.06,0.32,0.025,0,0,0,10.55,1.7,7.89,,6,0.28,201,17,5.4,0,169914
+Fruits,"Nectarines, raw",39,1.06,0.28,0,,,13,9.18,1.5,,,2,0.3,131,21,2.9,,327357
+Fruits,"Oranges, raw, all commercial varieties",47,0.94,0.12,0.015,0,0,0,11.75,2.4,9.35,,40,0.1,181,11,53.2,0,169097
+Fruits,"Oranges, raw, navels",47,0.91,0.15,,,,9,11.8,2,,,43,0.33,166,,59.1,,746771
+Fruits,"Passion-fruit, (granadilla), purple, raw",97,2.2,0.7,0.059,0,0,28,23.38,10.4,11.2,,12,1.6,348,64,30,0,169108
+Fruits,"Pears, raw",57,0.36,0.14,0.022,0,0,1,15.23,3.1,9.75,,9,0.18,116,1,4.3,0,169118
+Fruits,"Pears, raw, bartlett",57,0.38,0.16,,,,7,15.1,3.1,,,8,0.17,87,1,4.4,,746773
+Fruits,"Pineapple, raw, all varieties",50,0.54,0.12,0.009,0,0,1,13.12,1.4,9.85,,13,0.29,109,3,47.8,0,169124
+Fruits,"Plums, raw",46,0.7,0.28,0.017,0,0,0,11.42,1.4,9.92,,6,0.17,157,17,9.5,0,169949
+Fruits,"Pomegranates, raw",83,1.67,1.17,0.12,0,0,3,18.7,4,13.67,,10,0.3,236,0,10.2,0,169134
+Fruits,"Raspberries, raw",52,1.2,0.65,0.019,0,0,1,11.94,6.5,4.42,,25,0.69,151,2,26.2,0,167755
+Fruits,"Strawberries, raw",31,0.64,0.22,0,,,10,7.63,1.8,,,12,0.28,89,1,36.3,,327699
+Fruits,"Strawberries, raw",31,0.64,0.22,0,,,10,7.63,1.8,,,12,0.28,89,1,56,,747448
+Fruits,"Strawberries, raw",32,0.67,0.3,0.015,0,0,1,7.68,2,4.89,,16,0.41,153,1,58.8,0,167762
+Fruits,"Tangerines, (mandarin oranges), raw",53,0.81,0.31,0.039,0,0,2,13.34,1.8,10.58,,37,0.15,166,34,26.7,0,169105
+Fruits,"Watermelon, raw",30,0.61,0.15,0.016,0,0,1,7.55,0.4,6.2,,7,0.24,112,28,8.1,0,167765
+Game Meats,"Bison, ground, grass-fed, cooked",179,25.45,8.62,3.489,,71,76,0,0,0,,14,3.19,353,0,0,0,173847
+Game Meats,"Bison, ground, grass-fed, raw",146,20.23,7.21,2.917,,55,70,0.05,0,0,,11,2.78,328,0,0,0,175293
+Game Meats,"Game meat, bison, chuck, shoulder clod, separable lean only, cooked, braised",193,33.78,5.43,2.32,,111,57,0,0,0,,7,4.86,316,0,0,,174424
+Game Meats,"Game meat, bison, chuck, shoulder clod, separable lean only, raw",119,21.12,3.15,1.345,,64,62,0,0,0,,5,2.88,353,0,0,,172598
+Game Meats,"Game meat, bison, ground, cooked, pan-broiled",238,23.77,15.13,6.461,,83,73,0,0,0,,13,3.08,341,0,0,,174422
+Game Meats,"Game meat, bison, ribeye, separable lean only, 1"" steak, cooked, broiled",177,29.45,5.67,2.419,,79,52,0,0,0,,7,2.88,371,0,0,,172599
+Game Meats,"Game meat, bison, ribeye, separable lean only, trimmed to 0"" fat, raw",116,22.1,2.4,0.898,,62,48,0,,,,6,2.8,344,1,0,,172565
+Game Meats,"Game meat, bison, separable lean only, cooked, roasted",143,28.44,2.42,0.91,,82,57,0,0,0,,8,3.42,361,0,0,0,173852
+Game Meats,"Game meat, bison, separable lean only, raw",109,21.62,1.84,0.69,,62,54,0,0,,,6,2.6,343,0,0,,173851
+Game Meats,"Game meat, bison, shoulder clod, separable lean only, trimmed to 0"" fat, raw",109,21.1,2.1,0.749,,66,59,0,,,,4,3,322,1,0,,172566
+Game Meats,"Game meat, bison, top round, separable lean only, 1"" steak, cooked, broiled",174,30.18,4.96,1.957,,85,41,0,0,0,,5,3.52,382,0,0,,172600
+Game Meats,"Game meat, bison, top round, separable lean only, 1"" steak, raw",122,23.32,2.43,1.039,,65,47,0,0,0,,5,2.66,390,0,0,,172601
+Game Meats,"Game meat, bison, top sirloin, separable lean only, trimmed to 0"" fat, raw",113,21.4,2.4,0.885,,71,51,0,,,,5,3,335,1,0,,172564
+Game Meats,"Game meat, deer, cooked, roasted",158,30.21,3.19,1.25,,112,54,0,0,,,7,4.47,335,0,0,,175085
+Game Meats,"Game meat, deer, ground, cooked, pan-broiled",187,26.45,8.22,3.993,,98,78,0,0,0,,14,3.35,364,0,0,0,172603
+Game Meats,"Game meat, deer, ground, raw",157,21.78,7.13,3.361,,80,75,0,0,0,,11,2.92,330,0,0,0,172602
+Game Meats,"Game meat, deer, loin, separable lean only, 1"" steak, cooked, broiled",150,30.2,2.38,1.351,,79,57,0,0,0,,6,4.09,398,0,0,0,172604
+Game Meats,"Game meat, deer, raw",120,22.96,2.42,0.95,,85,51,0,0,0,,5,3.4,318,0,0,,173855
+Game Meats,"Game meat, deer, shoulder clod, separable lean only, cooked, braised",191,36.28,3.95,2.239,,113,52,0,0,0,,6,5.01,313,0,0,0,172605
+Game Meats,"Game meat, deer, tenderloin, separable lean only, cooked, broiled",149,29.9,2.35,1.142,,88,57,0,0,0,,5,4.25,434,0,0,,174430
+Game Meats,"Game meat, deer, top round, separable lean only, 1"" steak, cooked, broiled",152,31.47,1.92,1.03,,85,45,0,0,0,,4,4.23,377,0,0,,174431
+Grains & Legumes,"Barley, hulled",354,12.48,2.3,0.482,,0,12,73.48,17.3,0.8,,33,3.6,452,1,0,0,170283
+Grains & Legumes,"Barley, pearled, cooked",123,2.26,0.44,0.093,,0,3,28.22,3.8,0.28,,11,1.33,93,0,0,0,170285
+Grains & Legumes,"Barley, pearled, raw",352,9.91,1.16,0.244,,0,9,77.72,15.6,0.8,,29,2.5,280,1,0,0,170284
+Grains & Legumes,Buckwheat,343,13.25,3.4,0.741,,0,1,71.5,10,,,18,2.2,460,0,0,0,170286
+Grains & Legumes,"Buckwheat flour, whole-groat",335,12.62,3.1,0.677,,0,11,70.59,10,2.6,,41,4.06,577,0,0,0,170687
+Grains & Legumes,"Buckwheat groats, roasted, cooked",92,3.38,0.62,0.134,,0,4,19.94,2.7,0.9,,7,0.8,88,0,0,0,170686
+Grains & Legumes,"Buckwheat groats, roasted, dry",346,11.73,2.71,0.591,,0,11,74.95,10.3,,,17,2.47,320,0,0,0,170685
+Grains & Legumes,"Millet, cooked",119,3.51,1,0.172,,0,2,23.67,1.3,0.13,,3,0.63,62,0,0,0,168871
+Grains & Legumes,"Millet, raw",378,11.02,4.22,0.723,,0,5,72.85,8.5,,,8,3.01,195,0,0,0,169702
+Grains & Legumes,"Pasta, cooked, enriched, with added salt",157,5.8,0.93,0.176,0,0,131,30.59,1.8,0.56,,7,1.28,44,0,0,0,169751
+Grains & Legumes,"Pasta, cooked, enriched, without added salt",158,5.8,0.93,0.176,0,0,1,30.86,1.8,0.56,,7,1.28,44,0,0,0,169737
+Grains & Legumes,"Pasta, cooked, unenriched, with added salt",157,5.8,0.93,0.176,0,0,131,30.59,1.8,0.56,,7,0.5,44,,0,0,172014
+Grains & Legumes,"Pasta, cooked, unenriched, without added salt",158,5.8,0.93,0.176,0,0,1,30.86,1.8,0.56,,7,0.5,44,0,0,0,168928
+Grains & Legumes,"Pasta, dry, enriched",371,13.04,1.51,0.277,0,0,6,74.67,3.2,2.67,,21,3.3,223,0,0,0,169736
+Grains & Legumes,"Pasta, dry, unenriched",371,13.04,1.51,0.277,0,0,6,74.67,3.2,2.67,,21,1.3,223,0,0,0,168927
+Grains & Legumes,"Pasta, fresh-refrigerated, plain, as purchased",288,11.31,2.3,0.328,,73,26,54.73,,,,15,3.35,179,14,0,,169727
+Grains & Legumes,"Pasta, fresh-refrigerated, plain, cooked",131,5.15,1.05,0.15,,33,6,24.93,,,,6,1.14,24,6,0,,169728
+Grains & Legumes,"Pasta, fresh-refrigerated, spinach, as purchased",289,11.26,2.1,0.483,,73,27,55.72,,,,43,3.3,272,25,0,,169729
+Grains & Legumes,"Pasta, fresh-refrigerated, spinach, cooked",130,5.06,0.94,0.217,,33,6,25.04,,,,18,1.11,37,10,0,,169730
+Grains & Legumes,"Pasta, gluten-free, brown rice flour, cooked, TINKYADA",138,3.46,1.67,0.203,0.002,0,4,32.2,1.7,0,,5,0.53,25,0,0,0,172026
+Grains & Legumes,"Pasta, gluten-free, corn and rice flour, cooked",179,3.2,1,0.15,0.004,0,4,38.05,1.4,0,,2,0.22,24,4,0,0,173265
+Grains & Legumes,"Pasta, gluten-free, corn flour and quinoa flour, cooked, ANCIENT HARVEST",152,3.23,2.07,0.152,0.006,0,4,31.11,3.3,0.3,,7,0.72,63,1,0,0,172027
+Grains & Legumes,"Pasta, gluten-free, corn, cooked",126,2.63,0.73,0.102,,0,0,27.91,4.8,,,1,0.25,31,3,0,,168900
+Grains & Legumes,"Pasta, gluten-free, corn, dry",357,7.46,2.08,0.29,,0,3,79.26,11,,,4,0.93,294,9,0,,168899
+Grains & Legumes,"Pasta, gluten-free, rice flour and rice bran extract, cooked, DE BOLES",200,4.21,1.7,,,0,4,40.75,1.9,0,,21,0.62,55,,0,,173264
+Grains & Legumes,"Pasta, homemade, made with egg, cooked",130,5.28,1.74,0.408,,41,83,23.54,,,,10,1.16,21,17,0,,168901
+Grains & Legumes,"Pasta, homemade, made without egg, cooked",124,4.37,0.98,0.14,,0,74,25.12,,,,6,1.13,19,0,0,,168902
+Grains & Legumes,"Pasta, whole grain, 51% whole wheat, remaining unenriched semolina, cooked",159,5.82,1.5,0.239,0,,6,31.51,4.6,0.85,,12,1.65,77,,,,168916
+Grains & Legumes,"Pasta, whole grain, 51% whole wheat, remaining unenriched semolina, dry",362,13.51,2.68,0.351,0.002,,11,73.1,10.1,2.6,,27,3.33,366,,,,168915
+Grains & Legumes,"Quinoa, cooked",120,4.4,1.92,0.231,,0,7,21.3,2.8,0.87,,17,1.49,172,0,0,0,168917
+Grains & Legumes,"Quinoa, uncooked",368,14.12,6.07,0.706,,0,5,64.16,7,,,47,4.57,563,1,,0,168874
+Grains & Legumes,"Rice, brown, parboiled, cooked, UNCLE BENS",147,3.09,0.85,0.213,0,,4,31.33,1.7,0.15,,3,0.53,61,,,,173263
+Grains & Legumes,"Rice, brown, parboiled, dry, UNCLE BEN'S",370,7.6,2.75,0.481,0.001,0,6,78.68,3.5,0.5,,8,1.16,219,0,0,0,168876
+Grains & Legumes,"Rice, white, glutinous, unenriched, cooked",97,2.02,0.19,0.039,,0,5,21.09,1,0.05,,2,0.14,10,0,0,0,169711
+Grains & Legumes,"Rice, white, glutinous, unenriched, uncooked",370,6.81,0.55,0.111,,0,7,81.68,2.8,,,11,1.6,77,0,0,0,168883
+Grains & Legumes,"Rice, white, long-grain, parboiled, enriched, cooked",123,2.91,0.37,0.074,,0,2,26.05,0.9,0.11,,19,1.81,56,0,0,0,169708
+Grains & Legumes,"Rice, white, long-grain, parboiled, enriched, dry",374,7.51,1.03,0.294,,0,2,80.89,1.8,0.33,,71,3.33,174,0,0,0,169707
+Grains & Legumes,"Rice, white, long-grain, parboiled, unenriched, cooked",123,2.91,0.37,0.074,,0,2,26.05,0.9,0.11,,19,0.24,56,,0,0,169759
+Grains & Legumes,"Rice, white, long-grain, parboiled, unenriched, dry",374,7.51,1.03,0.294,,0,2,80.89,1.8,0.33,,71,0.74,174,,0,0,169758
+Grains & Legumes,"Rice, white, long-grain, precooked or instant, enriched, dry",380,7.82,0.94,0.152,,0,10,82.32,1.9,0.05,,22,6.3,27,0,0,0,169709
+Grains & Legumes,"Rice, white, long-grain, precooked or instant, enriched, prepared",124,2.18,0.5,0.017,,0,4,26.76,0.6,0,,8,1.77,9,0,0,0,169710
+Grains & Legumes,"Rice, white, long-grain, regular, enriched, cooked",130,2.69,0.28,0.077,,0,1,28.17,0.4,0.05,,10,1.2,35,0,0,0,168878
+Grains & Legumes,"Rice, white, long-grain, regular, raw, enriched",365,7.13,0.66,0.18,,0,5,79.95,1.3,0.12,,28,4.31,115,0,0,0,168877
+Grains & Legumes,"Rice, white, long-grain, regular, raw, unenriched",365,7.13,0.66,0.18,,0,5,79.95,1.3,0.12,,28,0.8,115,0,0,0,169756
+Grains & Legumes,"Rice, white, long-grain, regular, unenriched, cooked without salt",130,2.69,0.28,0.077,,0,1,28.17,0.4,0.05,,10,0.2,35,0,0,0,169757
+Grains & Legumes,"Rice, white, medium-grain, cooked, unenriched",130,2.38,0.21,0.057,,0,0,28.59,,,,3,0.2,29,0,0,0,168930
+Grains & Legumes,"Rice, white, medium-grain, enriched, cooked",130,2.38,0.21,0.057,,0,0,28.59,0.3,,,3,1.49,29,0,0,0,168880
+Grains & Legumes,"Rice, white, medium-grain, raw, enriched",360,6.61,0.58,0.158,,0,1,79.34,1.4,,,9,4.36,86,0,0,0,168879
+Grains & Legumes,"Rice, white, medium-grain, raw, unenriched",360,6.61,0.58,0.158,,0,1,79.34,,,,9,0.8,86,,0,0,169760
+Grains & Legumes,"Rice, white, short-grain, cooked, unenriched",130,2.36,0.19,0.051,,0,0,28.73,,,,1,0.2,26,,0,0,168932
+Grains & Legumes,"Rice, white, short-grain, enriched, cooked",130,2.36,0.19,0.051,,0,0,28.73,,,,1,1.46,26,0,0,0,168882
+Grains & Legumes,"Rice, white, short-grain, enriched, uncooked",358,6.5,0.52,0.14,,0,1,79.15,2.8,,,3,4.23,76,0,0,0,168881
+Grains & Legumes,"Rice, white, short-grain, raw, unenriched",358,6.5,0.52,0.14,,0,1,79.15,,,,3,0.8,76,,0,0,168931
+Grains & Legumes,"Rice, white, steamed, Chinese restaurant",151,3.2,0.27,,,,5,33.88,0.9,,,5,0.39,20,,,,169712
+Grains & Legumes,"Wheat flour, white (industrial), 10% protein, bleached, enriched",366,9.71,1.48,0.302,,0,2,76.22,2.4,0.49,,20,5.06,149,0,0,0,172018
+Grains & Legumes,"Wheat flour, white (industrial), 10% protein, bleached, unenriched",366,9.71,1.48,0.302,,0,2,76.22,2.4,0.49,,20,1.26,149,0,0,0,172019
+Grains & Legumes,"Wheat flour, white (industrial), 10% protein, unbleached, enriched",366,9.71,1.48,0.302,,,2,76.22,2.4,0.49,,20,5.06,149,0,0,0,168938
+Grains & Legumes,"Wheat flour, white (industrial), 11.5% protein, bleached, enriched",363,11.5,1.45,0.268,,0,2,73.81,2.4,1.12,,20,5.06,138,0,0,0,168939
+Grains & Legumes,"Wheat flour, white (industrial), 11.5% protein, bleached, unenriched",363,11.5,1.45,0.268,,0,2,73.81,2.4,1.12,,20,1.26,138,0,0,0,168940
+Grains & Legumes,"Wheat flour, white (industrial), 11.5% protein, unbleached, enriched",363,11.5,1.45,0.268,,,2,73.81,2.4,1.12,,20,5.06,138,0,0,0,168941
+Grains & Legumes,"Wheat flour, white (industrial), 13% protein, bleached, enriched",362,13.07,1.38,0.189,,0,2,72.2,2.4,1.1,,24,5.06,128,0,0,0,168942
+Grains & Legumes,"Wheat flour, white (industrial), 13% protein, bleached, unenriched",362,13.07,1.38,0.189,,0,2,72.2,2.4,1.1,,24,1.26,128,0,0,0,172020
+Grains & Legumes,"Wheat flour, white (industrial), 15% protein, bleached, enriched",362,15.33,1.41,0.272,,0,2,69.88,2.4,0.92,,17,5.06,120,0,0,0,172021
+Grains & Legumes,"Wheat flour, white (industrial), 15% protein, bleached, unenriched",362,15.33,1.41,0.272,,0,2,69.88,2.4,0.92,,17,1.26,120,0,0,0,172022
+Grains & Legumes,"Wheat flour, white (industrial), 9% protein, bleached, enriched",367,8.89,1.43,0.34,,0,2,77.32,,0.54,,20,5.06,131,0,0,0,172016
+Grains & Legumes,"Wheat flour, white (industrial), 9% protein, bleached, unenriched",367,8.89,1.43,0.34,,0,2,77.32,2.4,0.54,,20,1.26,131,0,0,0,172017
+Grains & Legumes,"Wheat flour, white, all-purpose, enriched, bleached",364,10.33,0.98,0.155,,0,2,76.31,2.7,0.27,,15,4.64,107,0,0,0,168894
+Grains & Legumes,"Wheat flour, white, all-purpose, enriched, calcium-fortified",364,10.33,0.98,0.155,,0,2,76.31,2.7,,,252,4.64,107,0,0,0,169754
+Grains & Legumes,"Wheat flour, white, all-purpose, enriched, unbleached",364,10.33,0.98,0.155,,0,2,76.31,2.7,0.27,,15,4.64,107,0,0,0,168936
+Grains & Legumes,"Wheat flour, white, all-purpose, self-rising, enriched",354,9.89,0.97,0.154,,0,1193,74.22,2.7,0.22,,338,4.67,124,0,0,0,168895
+Grains & Legumes,"Wheat flour, white, all-purpose, unenriched",364,10.33,0.98,0.155,,0,2,76.31,2.7,0.27,,15,1.17,107,0,0,0,169761
+Grains & Legumes,"Wheat flour, white, bread, enriched",361,11.98,1.66,0.244,,0,2,72.53,2.4,0.31,,15,4.41,100,0,0,0,168896
+Grains & Legumes,"Wheat flour, white, cake, enriched",362,8.2,0.86,0.127,,0,2,78.03,1.7,0.31,,14,7.32,105,0,0,0,169723
+Grains & Legumes,"Wheat flour, white, tortilla mix, enriched",405,9.66,10.63,4.1,,0,677,67.14,,,,205,7.05,100,,0,0,169724
+Grains & Legumes,"Wheat flour, whole-grain, soft wheat",332,9.61,1.95,0.43,,0,3,74.48,13.1,1.02,,33,3.71,394,0,0,0,168944
+Grains & Legumes,"Wheat flours, bread, unenriched",361,11.98,1.66,0.244,,0,2,72.53,2.4,0.31,,15,0.9,100,0,0,0,168913
+Nuts & Seeds,"Nuts, almond butter, plain, without salt added",614,20.96,55.5,4.152,,0,7,18.82,10.3,4.43,,347,3.49,748,0,0,0,168588
+Nuts & Seeds,"Nuts, almonds",579,21.15,49.93,3.802,0.015,0,1,21.55,12.5,4.35,,269,3.71,733,0,0,0,170567
+Nuts & Seeds,"Nuts, almonds, dry roasted, without salt added",598,20.96,52.54,4.092,0.007,0,3,21.01,10.9,4.86,,268,3.73,713,0,0,0,170158
+Nuts & Seeds,"Nuts, brazilnuts, dried, unblanched",659,14.32,67.1,16.134,,0,3,11.74,7.5,2.33,,160,2.43,659,0,0.7,0,170569
+Nuts & Seeds,"Nuts, cashew butter, plain, without salt added",587,17.56,49.41,9.763,,0,15,27.57,2,,,43,5.03,546,0,0,0,170163
+Nuts & Seeds,"Nuts, cashew nuts, dry roasted, without salt added",574,15.31,46.35,9.157,,0,16,32.69,3,5.01,,45,6,565,0,0,0,170571
+Nuts & Seeds,"Nuts, cashew nuts, raw",553,18.22,43.85,7.783,,0,12,30.19,3.3,5.91,,37,6.68,660,0,0.5,0,170162
+Nuts & Seeds,"Nuts, coconut meat, dried (desiccated), not sweetened",660,6.88,64.53,57.218,,0,37,23.65,16.3,7.35,,26,3.32,543,0,1.5,0,170170
+Nuts & Seeds,"Nuts, coconut meat, raw",354,3.33,33.49,29.698,,0,20,15.23,9,6.23,,14,2.43,356,0,3.3,0,170169
+Nuts & Seeds,"Nuts, hazelnuts or filberts",628,14.95,60.75,4.464,,0,0,16.7,9.7,4.34,,114,4.7,680,1,6.3,0,170581
+Nuts & Seeds,"Nuts, macadamia nuts, raw",718,7.91,75.77,12.061,,0,5,13.82,8.6,4.57,,85,3.69,368,0,1.2,0,170178
+Nuts & Seeds,"Nuts, pecans",691,9.17,71.97,6.18,,0,0,13.86,9.6,3.97,,70,2.53,410,3,1.1,0,170182
+Nuts & Seeds,"Nuts, pine nuts, dried",673,13.69,68.37,4.899,,0,2,13.08,3.7,3.59,,16,5.53,597,1,0.8,0,170591
+Nuts & Seeds,"Nuts, pistachio nuts, dry roasted, without salt added",572,21.05,45.82,5.645,0,0,6,28.28,10.3,7.74,,107,4.03,1007,13,3,0,170185
+Nuts & Seeds,"Nuts, pistachio nuts, raw",560,20.16,45.32,5.907,0,0,1,27.17,10.6,7.66,,105,3.92,1025,26,5.6,0,170184
+Nuts & Seeds,"Nuts, walnuts, black, dried",619,24.06,59.33,3.483,,0,2,9.58,6.8,1.1,,61,3.12,523,2,1.7,0,170186
+Nuts & Seeds,"Nuts, walnuts, english",654,15.23,65.21,6.126,,0,2,13.71,6.7,2.61,,98,2.91,441,1,1.3,0,170187
+Nuts & Seeds,"Seeds, chia seeds, dried",486,16.54,30.74,3.33,0.14,0,16,42.12,34.4,,,631,7.72,407,,1.6,,170554
+Nuts & Seeds,"Seeds, flaxseed",534,18.29,42.16,3.663,,0,30,28.88,27.3,1.55,,255,5.73,813,0,0.6,0,169414
+Nuts & Seeds,"Seeds, hemp seed, hulled",553,31.56,48.75,4.6,0,0,5,8.67,4,1.5,,70,7.95,1200,1,0.5,,170148
+Nuts & Seeds,"Seeds, pumpkin and squash seed kernels, dried",559,30.23,49.05,8.659,0.064,0,7,10.71,6,1.4,,46,8.82,809,1,1.9,0,170556
+Nuts & Seeds,"Seeds, sunflower seed kernels, dried",584,20.78,51.46,4.455,,0,9,20,8.6,2.62,,78,5.25,645,3,1.4,0,170562
+Nuts & Seeds,"Seeds, sunflower seed kernels, dry roasted, without salt",582,19.33,49.8,5.219,,0,3,24.07,11.1,2.73,,70,3.8,850,0,1.4,0,170563
+Pork,"Bacon, pre-sliced, reduced/low sodium, unprepared",407,12.53,39.27,,,,470,0.83,0,0.83,,4,0.42,506,0,0,,168382
+Pork,"Ham, sliced, restaurant",121,19.6,3.68,1.25,0.017,,1030,2.36,,,,6,0.86,484,,,,746952
+Pork,"Pork, ground, 72% lean / 28% fat, cooked, crumbles",393,22.83,32.93,11.345,0.229,100,94,1.39,0,0,,20,1.15,280,0,0,0.8,169191
+Pork,"Pork, ground, 72% lean / 28% fat, cooked, pan-broiled",377,22.59,31.42,10.804,0.229,99,91,1.08,0,0,,20,1.21,275,0,0,0.8,168373
+Pork,"Pork, ground, 84% lean / 16% fat, cooked, crumbles",289,26.69,20.04,6.631,0.15,89,89,0.58,0,0,,20,1.1,354,0,0,0.5,169192
+Pork,"Pork, ground, 84% lean / 16% fat, cooked, pan-broiled",301,27.14,21.39,7.453,0.192,97,89,0,0,0,,20,1.16,345,0,0,0.5,168374
+Pork,"Pork, ground, 84% lean / 16% fat, raw",218,17.99,16,4.93,0.124,68,68,0.44,0,0,,15,0.88,244,0,0,0.4,168372
+Pork,"Pork, ground, 96% lean / 4% fat, cooked, crumbles",187,30.55,7.15,1.951,0.07,78,84,0,0,0,,19,1.05,428,0,0,0.2,169193
+Pork,"Pork, ground, 96% lean / 4% fat, cooked, pan-broiled",185,31.69,6.2,1.86,0.068,85,88,0.57,0,0,,20,1.11,415,0,0,0.2,168375
+Pork,"Pork, ground, 96% lean / 4% fat, raw",121,21.1,4,1.42,0.032,59,67,0.21,0,0,,15,0.86,310,0,0,0.1,169190
+Poultry,"Chicken, ground, crumbles, cooked, pan-browned",189,23.28,10.92,3.11,0.087,107,75,0,0,0,,8,0.93,677,0,0,,171117
+Poultry,"Chicken, ground, raw",143,17.44,8.1,2.301,0.065,86,60,0.04,0,0,,6,0.82,522,0,0,,171116
+Poultry,"Chicken, liver, all classes, cooked, pan-fried",172,25.78,6.43,2.033,0.098,564,92,1.11,0,0,,10,12.88,315,4296,2.7,,174491
+Poultry,"Chicken, liver, all classes, cooked, simmered",167,24.46,6.51,2.06,0.09,563,76,0.87,0,0,,11,11.63,263,3981,27.9,0,171061
+Poultry,"Chicken, liver, all classes, raw",119,16.92,4.83,1.563,0.065,345,71,0.73,0,0,,8,8.99,230,3296,17.9,0,171060
+Poultry,"Chicken, wing, frozen, glazed, barbecue flavored",211,19.67,12.67,3.321,,126,615,3.34,0.6,2.04,,28,2.41,190,17,0,,171111
+Poultry,"Chicken, wing, frozen, glazed, barbecue flavored, heated (conventional oven)",242,22.24,14.87,3.966,,136,559,3.36,0.5,1.94,,28,1.97,218,21,0,,171115
+Poultry,"Chicken, wing, frozen, glazed, barbecue flavored, heated (microwave)",248,25.34,13.9,3.655,,156,837,3.84,0.9,2.1,,38,2.74,254,20,0.5,,171508
+Poultry,"Duck, domesticated, liver, raw",136,18.74,4.64,1.44,,515,140,3.53,0,,,11,30.53,230,11984,4.5,,174467
+Poultry,"Duck, domesticated, meat and skin, cooked, roasted",337,18.99,28.35,9.67,,84,59,0,0,0,,11,2.7,204,63,0,0.1,172409
+Poultry,"Duck, domesticated, meat and skin, raw",404,11.49,39.34,13.22,,76,63,0,0,0,,11,2.4,209,50,2.8,0.7,172408
+Poultry,"Duck, domesticated, meat only, cooked, roasted",201,23.48,11.2,3.951,,89,65,0,0,0,,12,2.7,252,23,0,0.1,172411
+Poultry,"Duck, domesticated, meat only, raw",135,18.28,5.95,2.32,,77,74,0.94,0,0,,11,2.4,271,24,5.8,0.1,172410
+Poultry,"Turkey, breast, from whole bird, meat only, with added solution, raw",102,21.54,1.66,0.536,0.024,54,206,0.14,0,0.05,,14,0.54,242,6,0,0.1,172876
+Poultry,"Turkey, breast, from whole bird, meat only, with added solution, roasted",127,26.97,2.08,0.593,0.024,69,238,0,0,0,,13,0.55,249,3,0,0.3,174519
+Poultry,"Turkey, drumstick, from whole bird, meat only, raw",109,23.66,1.48,0.289,0.013,57,113,0.14,0,0.05,,11,0.73,242,6,0,0.1,171136
+Poultry,"Turkey, drumstick, from whole bird, meat only, roasted",139,30.13,2.08,0.593,0.024,80,99,0,0,0,,9,0.71,249,3,0,0.3,171530
+Poultry,"Turkey, drumstick, from whole bird, meat only, with added solution, raw",115,19.27,4.12,1.124,0.052,79,167,0.15,0,0.1,,15,0.9,226,13,0,0.3,171525
+Poultry,"Turkey, drumstick, from whole bird, meat only, with added solution, roasted",158,26.1,6,1.807,0.08,105,201,0,0,0,,16,1.07,227,5,0,0.3,171128
+Poultry,"Turkey, drumstick, smoked, cooked, with skin, bone removed",200,27.9,9.8,3.054,,85,996,0,0,0,,32,2.3,280,0,0,0.1,167710
+Poultry,"Turkey, ground, 85% lean, 15% fat, pan-broiled crumbles",258,25.11,17.45,4.572,0.243,106,85,0,0,0,,49,1.98,276,35,0,0.2,174494
+Poultry,"Turkey, ground, 85% lean, 15% fat, patties, broiled",249,25.88,16.2,4.127,0.224,105,81,0,0,0,,48,2.04,242,29,0,0.2,174495
+Poultry,"Turkey, ground, 85% lean, 15% fat, raw",180,16.9,12.54,3.414,0.181,78,54,0,0,0,,33,1.32,202,30,0,0.4,174493
+Poultry,"Turkey, ground, 93% lean, 7% fat, pan-broiled crumbles",213,27.1,11.6,2.966,0.144,104,90,0,0,0,,31,1.56,304,30,0,0.2,172851
+Poultry,"Turkey, ground, 93% lean, 7% fat, pan-broiled crumbles",220,27.1,11.6,2.97,0.144,104,90,0,,,,31,1.56,304,30,,,330869
+Poultry,"Turkey, ground, 93% lean, 7% fat, pan-broiled crumbles",220,27.1,11.6,2.97,0.144,104,90,0,,,,31,1.56,304,30,,,746785
+Poultry,"Turkey, ground, 93% lean, 7% fat, patties, broiled",207,25.86,11.45,2.958,0.143,106,91,0,0,0,,29,1.73,247,31,0,0.2,174492
+Poultry,"Turkey, ground, 93% lean, 7% fat, raw",150,18.73,8.34,2.17,0.112,74,69,0,0,0,,21,1.17,213,22,0,0.4,172850
+Poultry,"Turkey, ground, fat free, pan-broiled crumbles",151,31.69,2.71,0.717,0.024,71,61,0,0,0,,6,1.02,357,9,0,0.2,172848
+Poultry,"Turkey, ground, fat free, patties, broiled",138,28.99,2.48,0.673,0.023,65,59,0,0,0,,6,0.78,339,8,0,0.2,172849
+Poultry,"Turkey, ground, fat free, raw",112,23.57,1.95,0.487,0.017,55,51,0,0,0,,3,0.77,295,7,0,0.4,172847
+Poultry,"Turkey, thigh, from whole bird, meat only, raw",108,21.28,2.5,0.683,,79,124,0.15,0,0.1,,11,1.04,226,13,0,0.3,171531
+Poultry,"Turkey, thigh, from whole bird, meat only, roasted",165,27.71,6.04,1.807,0.08,128,104,0,0,0,,17,1.43,227,5,0,0.3,171532
+Poultry,"Turkey, thigh, from whole bird, meat only, with added solution, raw",115,19.27,4.12,1.124,0.052,79,167,0.15,0,0.1,,15,0.9,226,13,0,0.3,171129
+Poultry,"Turkey, thigh, from whole bird, meat only, with added solution, roasted",158,26.1,6,1.807,0.08,105,201,0,0,0,,16,1.07,227,5,0,0.3,171131
+Vegetables,"Asparagus, cooked, boiled, drained",22,2.4,0.22,0.048,0,0,14,4.11,2,1.3,,23,0.91,224,50,7.7,0,168390
+Vegetables,"Asparagus, raw",20,2.2,0.12,0.04,0,0,2,3.88,2.1,1.88,,24,2.14,202,38,5.6,0,168389
+Vegetables,"Beans, snap, green, cooked, boiled, drained, without salt",35,1.89,0.28,0.064,0,0,1,7.88,3.2,3.63,,44,0.65,146,32,9.7,0,169141
+Vegetables,"Beans, snap, green, raw",31,1.83,0.22,0.05,0,0,6,6.97,2.7,3.26,,37,1.03,211,35,12.2,0,169961
+Vegetables,"Beets, cooked, boiled, drained",44,1.68,0.18,0.028,0,0,77,9.96,2,7.96,,16,0.79,305,2,3.6,0,169146
+Vegetables,"Beets, raw",43,1.61,0.17,0.027,0,0,78,9.56,2.8,6.76,,16,0.8,325,2,4.9,0,169145
+Vegetables,"Broccoli, cooked, boiled, drained, without salt",35,2.38,0.41,0.079,0,0,41,7.18,3.3,1.39,,40,0.67,293,77,64.9,0,169967
+Vegetables,"Broccoli, raw",32,2.57,0.34,0.039,,,36,6.29,2.4,,,46,0.69,303,8,53.3,,321900
+Vegetables,"Broccoli, raw",31,2.57,0.34,0.039,,,36,6.27,2.4,,,46,0.69,303,8,91.3,,747447
+Vegetables,"Broccoli, raw",34,2.82,0.37,0.114,0,0,33,6.64,2.6,1.7,,47,0.73,316,31,89.2,0,170379
+Vegetables,"Brussels sprouts, cooked, boiled, drained, without salt",36,2.55,0.5,0.102,0,0,21,7.1,2.6,1.74,,36,1.2,317,39,62,0,169971
+Vegetables,"Brussels sprouts, raw",43,3.38,0.3,0.062,0,0,25,8.95,3.8,2.2,,42,1.4,389,38,85,0,170383
+Vegetables,"Cabbage, raw",25,1.28,0.1,0.034,0,0,18,5.8,2.5,3.2,,40,0.47,170,5,36.6,0,169975
+Vegetables,"Carrots, cooked, boiled, drained, without salt",35,0.76,0.18,0.03,0,0,58,8.22,3,3.45,,30,0.34,235,852,3.6,0,170394
+Vegetables,"Carrots, raw",41,0.93,0.24,0.032,0,0,69,9.58,2.8,4.74,,33,0.3,320,835,5.9,0,170393
+Vegetables,"Cauliflower, cooked, boiled, drained, without salt",23,1.84,0.45,0.07,0,0,15,4.11,2.3,2.08,,16,0.32,142,1,44.3,0,170397
+Vegetables,"Cauliflower, raw",25,1.92,0.28,0.13,0,0,30,4.97,2,1.91,,22,0.42,299,0,48.2,0,169986
+Vegetables,"Celery, raw",14,0.69,0.17,0.042,0,0,80,2.97,1.6,1.34,,40,0.2,260,22,3.1,0,169988
+Vegetables,"Corn, sweet, white, cooked, boiled, drained, without salt",97,3.34,1.41,0.197,0,0,3,21.71,2.7,7.73,,2,0.55,252,0,6.2,0,168539
+Vegetables,"Corn, sweet, white, frozen, kernels on cob, cooked, boiled, drained, without salt",94,3.11,0.74,0.114,0,0,4,22.33,2.1,,,3,0.61,251,0,4.8,0,169366
+Vegetables,"Corn, sweet, white, raw",86,3.22,1.18,0.182,0,0,15,19.02,2.7,3.22,,2,0.52,270,0,6.8,0,168538
+Vegetables,"Corn, sweet, yellow, cooked, boiled, drained, without salt",96,3.41,1.5,0.197,0,0,1,20.98,2.4,4.54,,3,0.45,218,13,5.5,0,169999
+Vegetables,"Corn, sweet, yellow, frozen, kernels on cob, cooked, boiled, drained, without salt",94,3.11,0.74,0.114,0,0,4,22.33,2.8,3.59,,3,0.61,251,12,4.8,0,168401
+Vegetables,"Corn, sweet, yellow, raw",86,3.27,1.35,0.325,0,0,15,18.7,2,6.26,,2,0.52,270,9,6.8,0,169998
+Vegetables,"Cucumber, peeled, raw",10,0.59,0.16,0.078,0,0,2,2.16,0.7,1.38,,14,0.22,136,4,3.2,0,169225
+Vegetables,"Cucumber, with peel, raw",15,0.65,0.11,0.037,0,0,2,3.63,0.5,1.67,,16,0.28,147,5,2.8,0,168409
+Vegetables,"Edamame, frozen, prepared",121,11.91,5.2,0.62,0.009,0,6,8.91,5.2,2.18,,63,2.27,436,15,6.1,0,168411
+Vegetables,"Edamame, frozen, unprepared",109,11.22,4.73,,0,,6,7.61,4.8,2.48,,60,2.11,482,,9.7,,168410
+Vegetables,"Eggplant, raw",25,0.98,0.18,0.034,0,0,2,5.88,3,3.53,,9,0.23,229,1,2.2,0,169228
+Vegetables,"Garlic, raw",143,6.62,0.38,,,,,28.2,2.7,,,,,,,10,,1104647
+Vegetables,"Garlic, raw",149,6.36,0.5,0.089,0,0,17,33.06,2.1,1,,181,1.7,401,0,31.2,0,169230
+Vegetables,"Kale, cooked, boiled, drained, without salt",36,2.94,1.21,0.175,0,0,16,5.3,4,1.21,,150,0.84,144,146,17.8,0,169238
+Vegetables,"Kale, raw",35,2.92,1.49,0.178,0,0,53,4.42,4.1,0.99,,254,1.6,348,241,93.4,0,168421
+Vegetables,"Kale, raw",35,2.92,1.49,,,,53,4.42,4.1,,,254,1.6,348,241,93.4,,323505
+Vegetables,"Lettuce, butterhead (includes boston and bibb types), raw",13,1.35,0.22,0.029,0,0,5,2.23,1.1,0.94,,35,1.24,238,166,3.7,0,168429
+Vegetables,"Lettuce, cos or romaine, raw",17,1.24,0.26,,,,,3.24,1.8,,,35,0.95,253,436,4.6,,327923
+Vegetables,"Lettuce, cos or romaine, raw",17,1.23,0.3,0.039,0,0,8,3.29,2.1,1.19,,33,0.97,247,436,4,0,169247
+Vegetables,"Lettuce, cos or romaine, raw",17,1.24,0.26,,,,,3.24,1.8,,,35,0.95,253,436,4.6,,746769
+Vegetables,"Lettuce, green leaf, raw",15,1.36,0.15,0.02,0,0,28,2.87,1.3,0.78,,36,0.86,194,370,9.2,0,169249
+Vegetables,"Lettuce, iceberg (includes crisphead types), raw",14,0.9,0.14,0.018,0,0,10,2.97,1.2,1.97,,18,0.41,141,25,2.8,0,169248
+Vegetables,"Lettuce, red leaf, raw",13,1.33,0.22,0.028,0,0,25,2.26,0.9,0.48,,33,1.2,187,375,3.7,0,168431
+Vegetables,"Mushrooms, Chanterelle, raw",32,1.49,0.53,,0,,9,6.86,3.8,1.16,,15,3.47,506,,,5.3,168422
+Vegetables,"Mushrooms, brown, italian, or crimini, exposed to ultraviolet light, raw",22,2.5,0.1,0.014,,0,6,4.3,0.6,1.72,,18,0.4,448,0,0,31.9,168557
+Vegetables,"Mushrooms, brown, italian, or crimini, raw",22,2.5,0.1,0.014,0,0,6,4.3,0.6,1.72,,18,0.4,448,0,0,0.1,168434
+Vegetables,"Mushrooms, enoki, raw",37,2.66,0.29,0.027,0,0,3,7.81,2.7,0.22,,0,1.15,359,,0,0.1,169382
+Vegetables,"Mushrooms, maitake, raw",31,1.94,0.19,0.03,0,0,1,6.97,2.7,2.07,,1,0.3,204,0,0,28.1,169403
+Vegetables,"Mushrooms, morel, raw",31,3.12,0.57,0.065,0,,21,5.1,2.8,0.6,,43,12.18,411,0,,5.1,168423
+Vegetables,"Mushrooms, oyster, raw",33,3.31,0.41,0.062,0,0,18,6.09,2.3,1.11,,3,1.33,420,2,0,0.7,168580
+Vegetables,"Mushrooms, portabella, exposed to ultraviolet light, raw",22,2.11,0.35,0.06,0.004,0,9,3.87,1.3,2.5,,3,0.31,364,0,0,28.4,170143
+Vegetables,"Mushrooms, portabella, raw",22,2.11,0.35,0.01,0,0,9,3.87,1.3,2.5,,3,0.31,364,0,0,0.3,169255
+Vegetables,"Mushrooms, shiitake, raw",34,2.24,0.49,,0,,9,6.79,2.5,2.38,,2,0.41,304,,,0.4,169242
+Vegetables,"Mushrooms, white, raw",22,3.09,0.34,0.05,0,0,5,3.26,1,1.98,,3,0.5,318,0,2.1,0.2,169251
+Vegetables,"Onions, raw",40,1.1,0.1,0.042,0,0,4,9.34,1.7,4.24,,23,0.21,146,0,7.4,0,170000
+Vegetables,"Onions, red, raw",44,0.94,0.1,,,,1,9.93,2.2,,,17,0.24,197,,8.1,,790577
+Vegetables,"Onions, spring or scallions (includes tops and bulb), raw",32,1.83,0.19,0.032,0,0,16,7.34,2.6,2.33,,72,1.48,276,50,18.8,0,170005
+Vegetables,"Onions, sweet, raw",32,0.8,0.08,,0,0,8,7.55,0.9,5.02,,20,0.26,119,0,4.8,0,170008
+Vegetables,"Onions, welsh, raw",34,1.9,0.4,0.067,0,0,17,6.5,2.4,2.18,,18,1.22,212,,27,0,170007
+Vegetables,"Onions, white, raw",35,0.89,0.13,,,,2,7.68,1.2,,,21,0.15,141,,,,1104962
+Vegetables,"Onions, yellow, raw",38,0.83,0.05,,,,1,8.61,1.9,,,15,0.28,182,,8.2,,790646
+Vegetables,"Peas, green, cooked, boiled, drained, without salt",84,5.36,0.22,0.039,0,0,3,15.63,5.5,5.93,,27,1.54,271,40,14.2,0,170420
+Vegetables,"Peas, green, raw",81,5.42,0.4,0.071,0,0,5,14.45,5.7,5.67,,25,1.47,244,38,40,0,170419
+Vegetables,"Peppers, sweet, green, raw",20,0.86,0.17,0.058,0,0,3,4.64,1.7,2.4,,10,0.34,175,18,80.4,0,170427
+Vegetables,"Peppers, sweet, red, raw",26,0.99,0.3,0.059,0,0,4,6.03,2.1,4.2,,7,0.43,211,157,127.7,0,170108
+Vegetables,"Peppers, sweet, yellow, raw",27,1,0.21,0.031,0,0,2,6.32,0.9,,,11,0.46,212,10,183.5,0,169383
+Vegetables,"Potatoes, baked, flesh and skin, without salt",93,2.5,0.13,0.034,0,0,10,21.15,2.2,1.18,,15,1.08,535,1,9.6,0,170093
+Vegetables,"Potatoes, baked, flesh, without salt",93,1.96,0.1,0.026,0,0,5,21.55,1.5,1.7,,5,0.35,391,0,12.8,0,170033
+Vegetables,"Potatoes, baked, skin, without salt",198,4.29,0.1,0.026,0,0,21,46.06,7.9,1.4,,34,7.04,573,1,13.5,0,170034
+Vegetables,"Potatoes, flesh and skin, raw",77,2.05,0.09,0.025,0,0,6,17.49,2.1,0.82,,12,0.81,425,0,19.7,0,170026
+Vegetables,"Potatoes, raw, skin",58,2.57,0.1,0.026,0,0,10,12.44,2.5,,,30,3.24,413,0,11.4,0,170032
+Vegetables,"Potatoes, red, flesh and skin, raw",70,1.89,0.14,0.035,0,0,18,15.9,1.7,1.29,,10,0.73,455,0,8.6,0,170029
+Vegetables,"Potatoes, white, flesh and skin, raw",69,1.68,0.1,0.026,0,0,16,15.71,2.4,1.15,,9,0.52,407,0,9.1,0,170028
+Vegetables,"Spinach, cooked, boiled, drained, without salt",23,2.97,0.26,0.043,0,0,70,3.75,2.4,0.43,,136,3.57,466,524,9.8,0,168463
+Vegetables,"Spinach, raw",23,2.86,0.39,0.063,0,0,79,3.63,2.2,0.42,,99,2.71,558,469,28.1,0,168462
+Vegetables,"Squash, summer, all varieties, raw",16,1.21,0.18,0.044,0,0,2,3.35,1.1,2.2,,15,0.35,262,10,17,0,170487
+Vegetables,"Squash, summer, crookneck and straightneck, raw",19,1.01,0.27,0.093,0,0,2,3.88,1,2.88,,21,0.44,222,8,19.3,0,168464
+Vegetables,"Squash, summer, scallop, raw",18,1.2,0.2,0.041,0,0,1,3.84,1.2,2.39,,19,0.4,182,11,18,0,169289
+Vegetables,"Squash, summer, zucchini, includes skin, raw",17,1.21,0.32,0.084,0,0,8,3.11,1,2.5,,16,0.37,261,10,17.9,0,169291
+Vegetables,"Squash, winter, acorn, raw",40,0.8,0.1,0.021,0,0,3,10.42,1.5,,,33,0.7,347,18,11,0,168472
+Vegetables,"Squash, winter, all varieties, raw",34,0.95,0.13,0.027,0,0,4,8.59,1.5,2.2,,28,0.58,350,68,12.3,0,170489
+Vegetables,"Squash, winter, butternut, raw",45,1,0.1,0.021,0,0,4,11.69,2,2.2,,48,0.7,352,532,21,0,169295
+Vegetables,"Squash, winter, hubbard, raw",40,2,0.5,0.103,0,0,7,8.7,3.9,3.95,,14,0.4,320,68,11,0,168475
+Vegetables,"Squash, winter, spaghetti, raw",31,0.64,0.57,0.117,0,0,17,6.91,1.5,2.76,,23,0.31,108,6,2.1,0,169298
+Vegetables,"Squash, zucchini, baby, raw",21,2.71,0.4,0.083,0,0,3,3.11,1.1,,,21,0.79,459,25,34.1,0,168565
+Vegetables,"Sweet potato leaves, raw",42,2.49,0.51,0.111,0,0,6,8.82,5.3,,,78,0.97,508,189,11,0,169303
+Vegetables,"Sweet potato, cooked, baked in skin, flesh, without salt",90,2.01,0.15,0.052,0,0,36,20.71,3.3,6.48,,38,0.69,475,961,19.6,0,168483
+Vegetables,"Sweet potato, frozen, cooked, baked, without salt",100,1.71,0.12,0.025,0,0,8,23.4,1.8,9.17,,35,0.54,377,1043,9.1,0,169307
+Vegetables,"Tomatoes, grape, raw",27,0.83,0.63,,,,6,5.51,2.1,,,11,0.33,260,,27.2,,321360
+Vegetables,"Tomatoes, green, raw",23,1.2,0.2,0.028,0,0,13,5.1,1.1,4,,13,0.51,204,32,23.4,0,170456
+Vegetables,"Tomatoes, orange, raw",16,1.16,0.19,0.025,0,0,42,3.18,0.9,,,5,0.47,212,75,16,0,170502
+Vegetables,"Tomatoes, red, ripe, raw, year round average",18,0.88,0.2,0.028,0,0,5,3.89,1.2,2.63,,10,0.27,237,42,13.7,0,170457
+Vegetables,"Tomatoes, yellow, raw",15,0.98,0.26,0.036,0,0,23,2.98,0.7,,,11,0.49,258,0,9,0,170096
