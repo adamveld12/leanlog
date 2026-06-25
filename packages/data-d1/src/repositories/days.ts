@@ -3,13 +3,14 @@ import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { dailyMealLogs, meals, ingredients, goals } from '../schema';
 import { createMealTemplateRepository } from './mealTemplates';
-import { parseMealSlotsJson } from '@leanlog/data-access';
+import { parseMealSlotsJson, POSE_TO_KEY, setDayPhoto } from '@leanlog/data-access';
 import type {
   DayRepository,
   CreateDailyMealLog,
   DayTargets,
   MealTemplateIngredient,
   MealSlotIngredient,
+  ProgressPose,
 } from '@leanlog/data-access';
 
 // Snapshot a template's default ingredient into a fresh meal ingredient row.
@@ -255,6 +256,32 @@ export function createDayRepository(db: D1Database): DayRepository {
         .where(and(eq(dailyMealLogs.id, dayId), eq(dailyMealLogs.userId, userId)));
       const updated = await this.getById(userId, dayId);
       return updated!;
+    },
+
+    async setProgressPhoto(userId, dayId, pose: ProgressPose, key) {
+      const day = await this.getById(userId, dayId);
+      if (!day) return null;
+
+      const { releasedKey } = setDayPhoto(
+        {
+          frontPhotoKey: day.frontPhotoKey,
+          sidePhotoKey: day.sidePhotoKey,
+          backPhotoKey: day.backPhotoKey,
+        },
+        pose,
+        key,
+      );
+
+      const column = POSE_TO_KEY[pose];
+      const set: Partial<typeof dailyMealLogs.$inferInsert> = { updatedAt: now() };
+      set[column] = key;
+      await d
+        .update(dailyMealLogs)
+        .set(set)
+        .where(and(eq(dailyMealLogs.id, dayId), eq(dailyMealLogs.userId, userId)));
+
+      const updated = await this.getById(userId, dayId);
+      return { day: updated!, releasedKey };
     },
 
     async getMostRecentWeightDate(userId) {
