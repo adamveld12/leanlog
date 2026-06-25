@@ -181,9 +181,13 @@ export function DatabaseTab({
           if (mode !== 'package' && amount <= 0) return;
           const input: AddFromDatabaseInput = mode === 'package' ? { mode } : { mode, amount };
           dispatch({ type: 'addStart', id });
+          // Distinguish seeded USDA foods from user-created entries so we can
+          // measure whether the preseed actually gets used (#72).
+          const provenance =
+            db.results.find((r) => r.id === id)?.creationSource === 'usda' ? 'usda' : 'user';
           void onAddFromDatabase(id, input)
             .then(() => {
-              track(`${analyticsContext}.ingredient.added`, { source: 'label', mode });
+              track(`${analyticsContext}.ingredient.added`, { source: 'label', mode, provenance });
               dispatch({ type: 'addSucceeded', id });
             })
             .catch(() => dispatch({ type: 'addFailed' }));
