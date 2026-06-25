@@ -106,8 +106,7 @@ describe('Goals: Katch-McArdle calorie basis (#63)', () => {
     expect(screen.getByText('Lean body mass')).toBeInTheDocument();
     expect(screen.getByText('BMR')).toBeInTheDocument();
 
-    // Cut requires a target weight.
-    await user.type(screen.getByLabelText('Target weight (lb)'), '180');
+    // Target weight is optional for a Katch cut goal — save without one (#63).
     await user.click(screen.getByRole('button', { name: 'Create goal' }));
 
     await waitFor(() => expect(apiMock.goals.create).toHaveBeenCalledTimes(1));
@@ -134,6 +133,22 @@ describe('Goals: Katch-McArdle calorie basis (#63)', () => {
       await screen.findByText(/Body fat and activity level are required/i),
     ).toBeInTheDocument();
     expect(apiMock.goals.create).not.toHaveBeenCalled();
+  });
+
+  it('shows a bodyweight breakdown on the default (bodyweight) basis (#63)', async () => {
+    const user = userEvent.setup();
+    renderGoals();
+    await user.click(await screen.findByRole('button', { name: '+ Add Goal' }));
+
+    // Bodyweight is the default basis; its breakdown is visible immediately.
+    expect(screen.getByText('Bodyweight breakdown')).toBeInTheDocument();
+    expect(screen.getByText('Latest weight')).toBeInTheDocument();
+    // Maintain at the 180 lb fallback → 15× = 2700 kcal.
+    expect(screen.getByText('2700 kcal')).toBeInTheDocument();
+
+    // Switching to Cut updates the multiplier line live (10×).
+    await user.click(screen.getByLabelText('Cut (10×)'));
+    expect(screen.getByText('10×')).toBeInTheDocument();
   });
 
   it('configures the background maintenance goal to Katch (F4/AE8)', async () => {

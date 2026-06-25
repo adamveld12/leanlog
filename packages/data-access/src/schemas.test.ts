@@ -566,6 +566,35 @@ describe('CreateGoalSchema — calorie basis (#63)', () => {
     expect(parsed.activityLevel).toBe('moderate');
   });
 
+  it('does not require a target weight for a Katch cut/lean-gain goal (#63)', () => {
+    const parsed = CreateGoalSchema.parse({
+      mode: 'cut' as const,
+      // No targetWeightLbs — Katch derives its basis weight from logged weight.
+      macroFats: 25,
+      macroCarbs: 35,
+      macroProtein: 40,
+      startDate: '2026-07-01',
+      endDate: null,
+      calorieBasis: 'katch',
+      bodyFatPct: 15,
+      activityLevel: 'moderate',
+    });
+    expect(parsed.targetWeightLbs).toBeUndefined();
+  });
+
+  it('still requires a target weight for a bodyweight cut/lean-gain goal', () => {
+    expect(
+      CreateGoalSchema.safeParse({
+        mode: 'lean_gain' as const,
+        macroFats: 25,
+        macroCarbs: 35,
+        macroProtein: 40,
+        startDate: '2026-07-01',
+        endDate: null,
+      }).success,
+    ).toBe(false);
+  });
+
   it('rejects a Katch goal missing body fat or activity (AE4/R6)', () => {
     expect(CreateGoalSchema.safeParse({ ...base, calorieBasis: 'katch' }).success).toBe(false);
     expect(

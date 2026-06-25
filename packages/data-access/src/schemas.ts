@@ -514,10 +514,19 @@ export const CreateGoalSchema = GoalSchema.omit({
     message: 'End date must be after start date',
     path: ['endDate'],
   })
-  .refine((v) => v.mode === 'maintain' || (v.targetWeightLbs != null && v.targetWeightLbs > 0), {
-    message: 'Target weight is required for cut and lean gain goals',
-    path: ['targetWeightLbs'],
-  })
+  // Target weight is required only for a bodyweight Cut/Lean Gain goal. Maintain
+  // and any Katch goal derive their basis weight from the latest logged weight,
+  // so they leave it null (#63).
+  .refine(
+    (v) =>
+      v.mode === 'maintain' ||
+      v.calorieBasis === 'katch' ||
+      (v.targetWeightLbs != null && v.targetWeightLbs > 0),
+    {
+      message: 'Target weight is required for cut and lean gain goals',
+      path: ['targetWeightLbs'],
+    },
+  )
   // R6: body-comp must match the basis (basis resolves to its bodyweight default).
   .refine(bodyCompConsistent, { message: BODY_COMP_MESSAGE, path: ['bodyFatPct'] });
 

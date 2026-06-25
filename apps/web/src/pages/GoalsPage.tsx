@@ -148,6 +148,33 @@ function KatchBreakdownPanel({
   );
 }
 
+// Weight → multiplier → target breakdown for a bodyweight goal, mirroring the
+// Katch panel so both bases explain how the calorie target is reached (#63 R28).
+function BodyweightBreakdownPanel({
+  weightLbs,
+  hasLoggedWeight,
+  mode,
+  finalCalories,
+}: {
+  weightLbs: number;
+  // Whether weightLbs is a real logged weight or the 180 lb fallback.
+  hasLoggedWeight: boolean;
+  mode: GoalMode;
+  finalCalories: number;
+}) {
+  return (
+    <div className={recipes.stack.sm}>
+      <SectionHeading noMargin>Bodyweight breakdown</SectionHeading>
+      <SummaryRow
+        label="Latest weight"
+        value={hasLoggedWeight ? `${weightLbs} lb` : `${weightLbs} lb (default)`}
+      />
+      <SummaryRow label={`Multiplier (${MODE_LABEL[mode]})`} value={`${GOAL_MULTIPLIER[mode]}×`} />
+      <SummaryRow label="Target" value={`${finalCalories} kcal`} />
+    </div>
+  );
+}
+
 function isoToParts(iso: string) {
   const [year, month, day] = iso.split('-').map(Number);
   return { year, month, day };
@@ -750,13 +777,15 @@ function AddOrEditGoal({
   );
 
   function build(): CreateGoal {
+    // A target weight is only meaningful for a bodyweight Cut/Lean Gain goal.
+    // Maintain and any Katch goal derive their basis weight from the latest
+    // logged weight, so they carry no explicit target weight (#63).
+    const needsTargetWeight = mode !== 'maintain' && calorieBasis === 'bodyweight';
     return {
       name: name || null,
       description: description || null,
       mode,
-      // Maintain derives its target from the latest logged weight; Cut/Lean Gain
-      // require an explicit target.
-      targetWeightLbs: mode === 'maintain' ? (latestWeightLbs ?? null) : (targetWeight ?? null),
+      targetWeightLbs: needsTargetWeight ? (targetWeight ?? null) : (latestWeightLbs ?? null),
       macroFats: Math.round(fats ?? 0),
       macroCarbs: Math.round(carbs ?? 0),
       macroProtein: Math.round(protein ?? 0),
@@ -772,7 +801,13 @@ function AddOrEditGoal({
 
   async function submit(trim?: SubmitTrim) {
     setError(null);
-    if (mode !== 'maintain' && (targetWeight == null || targetWeight <= 0)) {
+    // Target weight is required only for a bodyweight Cut/Lean Gain goal; Katch
+    // derives its weight from the latest logged weight, so it stays optional (#63).
+    if (
+      mode !== 'maintain' &&
+      calorieBasis === 'bodyweight' &&
+      (targetWeight == null || targetWeight <= 0)
+    ) {
       setError('Target weight is required for cut and lean gain goals.');
       return;
     }
@@ -856,7 +891,11 @@ function AddOrEditGoal({
         onChange={(v) => setMode(v)}
       />
       {mode === 'maintain' ? null : (
-        <NumberInput label="Target weight (lb)" value={targetWeight} onChange={setTargetWeight} />
+        <NumberInput
+          label={calorieBasis === 'katch' ? 'Target weight (lb, optional)' : 'Target weight (lb)'}
+          value={targetWeight}
+          onChange={setTargetWeight}
+        />
       )}
       <HelperText>
         {mode === 'maintain' ? 'Maintain target tracks your latest logged weight: ' : null}
@@ -866,7 +905,7 @@ function AddOrEditGoal({
       </HelperText>
 
       {/* Calorie basis (#63 R25). Bodyweight keeps the multiplier; Katch reveals the
-          body-comp inputs and live breakdown below. */}
+          body-comp inputs. Both bases show a live breakdown below (R27/R28). */}
       <RadioGroup
         name="goal-calorie-basis"
         label="Calorie basis"
@@ -899,7 +938,14 @@ function AddOrEditGoal({
             </HelperText>
           )}
         </>
-      ) : null}
+      ) : (
+        <BodyweightBreakdownPanel
+          weightLbs={basisWeight}
+          hasLoggedWeight={latestWeightLbs != null}
+          mode={mode}
+          finalCalories={estimatedCalories}
+        />
+      )}
 
       <SectionHeading noMargin>Macros (must total 100%)</SectionHeading>
       <div className={recipes.grid.three}>
