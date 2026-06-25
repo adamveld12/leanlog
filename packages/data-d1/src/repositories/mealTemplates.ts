@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { mealTemplates, mealTemplateIngredients, userProfiles } from '../schema';
@@ -126,11 +126,13 @@ export function createMealTemplateRepository(db: D1Database): MealTemplateReposi
         .orderBy(mealTemplates.position);
       if (templateRows.length === 0) return [];
 
-      const ids = templateRows.map((t) => t.id);
-      const ingredientRows = await d
-        .select()
-        .from(mealTemplateIngredients)
-        .where(inArray(mealTemplateIngredients.templateId, ids));
+      const ingredientRows = (
+        await d
+          .select()
+          .from(mealTemplateIngredients)
+          .innerJoin(mealTemplates, eq(mealTemplateIngredients.templateId, mealTemplates.id))
+          .where(eq(mealTemplates.userId, userId))
+      ).map((r) => r.meal_template_ingredients);
 
       return templateRows.map((t) => ({
         ...t,
