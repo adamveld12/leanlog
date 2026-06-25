@@ -296,6 +296,39 @@ describe('deriveDayPlan', () => {
     expect(plan?.targetCalories).toBe(Math.ceil(180 * 15));
     expect(plan?.targetWeightLbs).toBe(180);
   });
+
+  it('feeds the 180 lb fallback into a Katch goal when no weight is logged (AE6/R13)', () => {
+    const katchCut = makeGoal({
+      mode: 'cut',
+      calorieBasis: 'katch',
+      bodyFatPct: 20,
+      activityLevel: 'moderate',
+      startDate: '2026-06-01',
+      endDate: '2026-06-30',
+    });
+    const plan = deriveDayPlan('2026-06-15', [background, katchCut], [], '2026-06-16');
+    // No logged weight → 180 lb fallback drives the Katch chain (not the multiplier).
+    expect(plan?.goalId).toBe('g1');
+    expect(plan?.targetCalories).toBe(baseCaloriesFromGoal(katchCut, FALLBACK_WEIGHT_LBS));
+  });
+
+  it('uses the Katch-configured background goal for gap days (AE3/AE8/R23)', () => {
+    const katchBg = makeGoal({
+      id: 'bg',
+      isBackground: true,
+      mode: 'maintain',
+      calorieBasis: 'katch',
+      bodyFatPct: 20,
+      activityLevel: 'sedentary',
+      startDate: null,
+      endDate: null,
+      targetWeightLbs: null,
+    });
+    const w: WeightEntry[] = [{ date: '2026-06-01', weightLbs: 200 }];
+    const plan = deriveDayPlan('2026-08-01', [katchBg], w, '2026-06-16');
+    // Katch maintenance at 200 lb / 20% / Sedentary ≈ 2325, not the 3000 a 15x gives.
+    expect(plan?.targetCalories).toBe(2325);
+  });
 });
 
 describe('buildTimeline', () => {
