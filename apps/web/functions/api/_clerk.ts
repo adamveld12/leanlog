@@ -1,4 +1,9 @@
+import { USDA_SYSTEM_USER_ID } from '@leanlog/data-access';
 import type { Env } from './_env';
+
+// Seeded USDA rows are owned by a sentinel id, not a real Clerk user. They always
+// attribute to "USDA" and must never trigger a Clerk lookup (#72).
+const USDA_DISPLAY_NAME = 'USDA';
 
 interface ClerkEmailAddress {
   id: string;
@@ -36,13 +41,19 @@ export async function getUserDisplayNames(
   const unique = [...new Set(userIds)];
   const results = new Map<string, string>();
 
-  if (!env.CLERK_SECRET_KEY || unique.length === 0) {
-    for (const id of unique) results.set(id, 'LeanLog user');
+  // The USDA sentinel resolves locally to "USDA" — never fetched from Clerk.
+  for (const id of unique) {
+    if (id === USDA_SYSTEM_USER_ID) results.set(id, USDA_DISPLAY_NAME);
+  }
+  const toLookup = unique.filter((id) => id !== USDA_SYSTEM_USER_ID);
+
+  if (!env.CLERK_SECRET_KEY || toLookup.length === 0) {
+    for (const id of toLookup) results.set(id, 'LeanLog user');
     return results;
   }
 
   const settled = await Promise.allSettled(
-    unique.map(async (userId) => {
+    toLookup.map(async (userId) => {
       const res = await fetch(`https://api.clerk.com/v1/users/${userId}`, {
         headers: { Authorization: `Bearer ${env.CLERK_SECRET_KEY}` },
       });

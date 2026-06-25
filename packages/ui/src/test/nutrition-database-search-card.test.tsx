@@ -74,6 +74,19 @@ describe('NutritionDatabaseSearchCard', () => {
     expect(screen.getByText(/Jun 1, 2026/)).toBeInTheDocument();
   });
 
+  it('attributes a USDA-seeded result to "From USDA" instead of a user (#72)', () => {
+    const usdaResult: NutritionDatabaseSearchResult = {
+      ...result1,
+      id: 'usda-1',
+      addedByName: 'USDA',
+      creationSource: 'usda',
+    };
+    render(<Harness results={[usdaResult]} />);
+    expect(screen.getByText(/From USDA/)).toBeInTheDocument();
+    // The user-attribution line is suppressed for seeded foods.
+    expect(screen.queryByText(/Added by/)).not.toBeInTheDocument();
+  });
+
   it('renders duplicate results as separate rows', () => {
     // Same ingredient id appears twice (e.g. two search result entries)
     render(<Harness results={[result1, result1]} />);

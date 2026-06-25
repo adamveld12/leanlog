@@ -155,7 +155,10 @@ function SearchResultRow({
               {result.servingAmount}
               <UnitText> {result.servingSizeUnit === 'milliliter' ? 'ml' : 'g'}</UnitText>
               {result.servingsPerPackage != null ? ` · ${result.servingsPerPackage}/pkg` : ''}
-              {' · '}Added by {result.addedByName} · {result.addedAtLabel}
+              {/* Seeded USDA foods are attributed to the dataset, not a user (#72). */}
+              {result.creationSource === 'usda'
+                ? ' · From USDA'
+                : ` · Added by ${result.addedByName} · ${result.addedAtLabel}`}
             </HelperText>
             <MacroSummaryLine
               protein={result.protein}
