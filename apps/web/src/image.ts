@@ -18,6 +18,18 @@ export function nutritionImageUrl(key: string | null | undefined): string | null
   return `/images/${key}`;
 }
 
+// Authenticated proxy path for a private progress photo key (#69), e.g.
+// `progress/<userId>/<uuid>.jpg` → `/api/progress-photos/object/<userId>/<uuid>.jpg`.
+// Unlike nutrition photos this is NOT usable directly in an <img> tag: the route
+// is behind the Clerk guard, so the bytes must be fetched with a bearer token and
+// turned into an object URL (see useProgressPhotoUrl). Returns null for an
+// empty/missing key.
+export function progressPhotoObjectPath(key: string | null | undefined): string | null {
+  if (!key) return null;
+  const rest = key.startsWith('progress/') ? key.slice('progress/'.length) : key;
+  return `/api/progress-photos/object/${rest}`;
+}
+
 export type Dimensions = { width: number; height: number };
 
 /**

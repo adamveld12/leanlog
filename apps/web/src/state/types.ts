@@ -16,6 +16,7 @@ import type {
   CreateGoal,
   UpdateGoal,
   UpdateBackgroundGoal,
+  ProgressPose,
 } from '@leanlog/data-access';
 
 export type EnsureDayResult =
@@ -78,6 +79,10 @@ export type Store = {
   deleteNutritionDatabaseIngredient(id: string): Promise<void>;
   updateDayTargets(dayId: string, targets: DayTargets): Promise<void>;
   updateDayWeight(dayId: string, weightLbs: number): Promise<void>;
+  // Pins (key) or clears (null) one pose's progress photo for a day (#69).
+  setDayProgressPhoto(dayId: string, pose: ProgressPose, key: string | null): Promise<void>;
+  // Re-picks (date) or resets (null) the per-pose comparison baseline (R15).
+  setProgressBaseline(pose: ProgressPose, date: string | null): Promise<void>;
   patchProfileLocal(data: Partial<UserProfile>): void;
   updateProfile(data: UpdateProfile): Promise<void>;
   createGoal(data: CreateGoal): Promise<Goal>;

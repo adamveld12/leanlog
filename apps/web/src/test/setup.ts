@@ -107,6 +107,17 @@ vi.mock('../api', () => ({
       updatePhotos: vi.fn(),
       delete: vi.fn(),
     },
+    progressPhotos: {
+      uploadImage: vi.fn(() =>
+        Promise.resolve({
+          key: 'progress/user_test/2f1c8a3b-4d5e-4f6a-8b9c-0d1e2f3a4b5c.jpg',
+          contentType: 'image/jpeg',
+        }),
+      ),
+      setDayPhoto: vi.fn(),
+      setBaseline: vi.fn(),
+      fetchBlob: vi.fn(() => Promise.resolve(new Blob([], { type: 'image/jpeg' }))),
+    },
     profile: {
       get: () =>
         Promise.resolve({
