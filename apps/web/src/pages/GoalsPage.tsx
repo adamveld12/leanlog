@@ -81,7 +81,7 @@ function BodyCompFields({
   bodyFatPct: number | null;
   activityLevel: ActivityLevel | null;
   onBodyFatChange: (next: number | null) => void;
-  onActivityChange: (next: ActivityLevel) => void;
+  onActivityChange: (next: ActivityLevel | null) => void;
 }) {
   return (
     <div className={recipes.grid.two}>
@@ -103,7 +103,12 @@ function BodyCompFields({
         <Select
           name="goal-activity"
           value={activityLevel ?? ''}
-          onChange={(e) => onActivityChange(e.target.value as ActivityLevel)}
+          // Map the "Select…" placeholder back to null so the empty string never
+          // slips the != null guards (which would yield NaN in the breakdown and a
+          // rejected API call).
+          onChange={(e) =>
+            onActivityChange(e.target.value === '' ? null : (e.target.value as ActivityLevel))
+          }
         >
           <option value="">Select…</option>
           {ACTIVITY_ORDER.map((level) => (
@@ -777,15 +782,23 @@ function AddOrEditGoal({
   );
 
   function build(): CreateGoal {
-    // A target weight is only meaningful for a bodyweight Cut/Lean Gain goal.
-    // Maintain and any Katch goal derive their basis weight from the latest
-    // logged weight, so they carry no explicit target weight (#63).
-    const needsTargetWeight = mode !== 'maintain' && calorieBasis === 'bodyweight';
+    // Target weight semantics by mode/basis (#63):
+    //  - Cut/Lean Gain: the user's entered target (required for bodyweight,
+    //    optional for Katch — kept for goal-outcome tracking when provided).
+    //  - Maintain: bodyweight tracks the latest logged weight; Katch has no target
+    //    weight at all (the live weight drives the calculation), so it stores null
+    //    instead of a snapshot that would surface as a confusing "Target weight".
+    const targetWeightLbs =
+      mode !== 'maintain'
+        ? (targetWeight ?? null)
+        : calorieBasis === 'katch'
+          ? null
+          : (latestWeightLbs ?? null);
     return {
       name: name || null,
       description: description || null,
       mode,
-      targetWeightLbs: needsTargetWeight ? (targetWeight ?? null) : (latestWeightLbs ?? null),
+      targetWeightLbs,
       macroFats: Math.round(fats ?? 0),
       macroCarbs: Math.round(carbs ?? 0),
       macroProtein: Math.round(protein ?? 0),

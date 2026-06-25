@@ -119,6 +119,26 @@ describe('Goals: Katch-McArdle calorie basis (#63)', () => {
     });
   });
 
+  it('reverting the activity level to the placeholder hides the breakdown (no NaN)', async () => {
+    const user = userEvent.setup();
+    renderGoals();
+    await user.click(await screen.findByRole('button', { name: '+ Add Goal' }));
+
+    await user.click(screen.getByLabelText('Katch-McArdle (body composition)'));
+    await user.selectOptions(screen.getByLabelText('Body fat %'), '15');
+    await user.selectOptions(screen.getByLabelText('Activity level'), 'moderate');
+    expect(screen.getByText('Katch-McArdle breakdown')).toBeInTheDocument();
+
+    // Revert to the "Select…" placeholder — the empty option value.
+    await user.selectOptions(screen.getByLabelText('Activity level'), '');
+
+    // The breakdown is hidden again (the empty string must map to null, not slip
+    // the guard and render NaN values).
+    expect(screen.queryByText('Katch-McArdle breakdown')).not.toBeInTheDocument();
+    expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Pick a body fat % and activity level/i)).toBeInTheDocument();
+  });
+
   it('blocks saving a Katch goal without body composition (AE4)', async () => {
     const user = userEvent.setup();
     renderGoals();

@@ -179,7 +179,16 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
       if (data.calorieDelta !== undefined) patch.calorieDelta = data.calorieDelta;
       // Body-comp fields move together (#63 R6); the schema rejects an incoherent
       // triple before we get here, and assertEditAllowed locks them once active.
-      if (data.calorieBasis !== undefined) patch.calorieBasis = data.calorieBasis;
+      // When the basis switches to bodyweight, force the body-comp columns to null
+      // even if the patch omits them, so a partial PATCH can never leave a
+      // bodyweight row carrying stale Katch body-comp.
+      if (data.calorieBasis !== undefined) {
+        patch.calorieBasis = data.calorieBasis;
+        if (data.calorieBasis === 'bodyweight') {
+          patch.bodyFatPct = null;
+          patch.activityLevel = null;
+        }
+      }
       if (data.bodyFatPct !== undefined) patch.bodyFatPct = data.bodyFatPct ?? null;
       if (data.activityLevel !== undefined) patch.activityLevel = data.activityLevel ?? null;
       if (data.mealSlots !== undefined) patch.mealSlotsJson = JSON.stringify(data.mealSlots);
