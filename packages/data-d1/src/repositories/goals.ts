@@ -19,6 +19,7 @@ import type {
   Goal,
   CreateGoal,
   UpdateGoal,
+  UpdateBackgroundGoal,
   GoalLifecycle,
 } from '@leanlog/data-access';
 
@@ -41,6 +42,9 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
       startDate: row.startDate ?? null,
       endDate: row.endDate ?? null,
       calorieDelta: row.calorieDelta,
+      calorieBasis: row.calorieBasis,
+      bodyFatPct: row.bodyFatPct ?? null,
+      activityLevel: row.activityLevel ?? null,
       mealSlots: parseMealSlotsJson(row.mealSlotsJson),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -73,32 +77,7 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
 
   return {
     async ensureBackground(userId) {
-      const existing = await selectByUser(userId);
-      const bg = existing.find((g) => g.isBackground);
-      if (bg) return bg;
-
-      const id = uuidv7();
-      const ts = now();
-      await d.insert(goals).values({
-        id,
-        userId,
-        isBackground: true,
-        name: 'Maintenance',
-        description: null,
-        mode: GOAL_DEFAULTS.mode,
-        targetWeightLbs: null,
-        macroFats: GOAL_DEFAULTS.macroFats,
-        macroCarbs: GOAL_DEFAULTS.macroCarbs,
-        macroProtein: GOAL_DEFAULTS.macroProtein,
-        startDate: null,
-        endDate: null,
-        calorieDelta: 0,
-        mealSlotsJson: JSON.stringify(DEFAULT_MEAL_SLOTS),
-        createdAt: ts,
-        updatedAt: ts,
-      });
-      const created = await getOwned(userId, id);
-      return created!;
+      return ensureBackgroundFor(userId);
     },
 
     async listByUser(userId) {
@@ -156,6 +135,10 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
         endDate: data.endDate ?? null,
         // New goals always start with no delta (R20/R21).
         calorieDelta: 0,
+        // Calorie basis + body-comp snapshot (#63). Schema enforces R6 coherence.
+        calorieBasis: data.calorieBasis,
+        bodyFatPct: data.bodyFatPct ?? null,
+        activityLevel: data.activityLevel ?? null,
         mealSlotsJson: JSON.stringify(data.mealSlots ?? DEFAULT_MEAL_SLOTS),
         createdAt: ts,
         updatedAt: ts,
@@ -194,6 +177,20 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
       if (data.startDate !== undefined) patch.startDate = data.startDate ?? null;
       if (data.endDate !== undefined) patch.endDate = data.endDate ?? null;
       if (data.calorieDelta !== undefined) patch.calorieDelta = data.calorieDelta;
+      // Body-comp fields move together (#63 R6); the schema rejects an incoherent
+      // triple before we get here, and assertEditAllowed locks them once active.
+      // When the basis switches to bodyweight, force the body-comp columns to null
+      // even if the patch omits them, so a partial PATCH can never leave a
+      // bodyweight row carrying stale Katch body-comp.
+      if (data.calorieBasis !== undefined) {
+        patch.calorieBasis = data.calorieBasis;
+        if (data.calorieBasis === 'bodyweight') {
+          patch.bodyFatPct = null;
+          patch.activityLevel = null;
+        }
+      }
+      if (data.bodyFatPct !== undefined) patch.bodyFatPct = data.bodyFatPct ?? null;
+      if (data.activityLevel !== undefined) patch.activityLevel = data.activityLevel ?? null;
       if (data.mealSlots !== undefined) patch.mealSlotsJson = JSON.stringify(data.mealSlots);
 
       await d
@@ -211,7 +208,60 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
       if (lifecycle !== 'future' && lifecycle !== 'today') throw new GoalNotDeletableError();
       await d.delete(goals).where(and(eq(goals.id, goalId), eq(goals.userId, userId)));
     },
+
+    async updateBackground(userId, data: UpdateBackgroundGoal) {
+      // The background goal is otherwise read-only; only its basis + body-comp are
+      // user-editable (#63 R19/R21). Ensure it exists, then patch just those three
+      // fields. Mode stays Maintain (R22) and dates remain open.
+      const bg = await ensureBackgroundFor(userId);
+      const ts = now();
+      await d
+        .update(goals)
+        .set({
+          calorieBasis: data.calorieBasis,
+          bodyFatPct: data.bodyFatPct ?? null,
+          activityLevel: data.activityLevel ?? null,
+          updatedAt: ts,
+        })
+        .where(and(eq(goals.id, bg.id), eq(goals.userId, userId)));
+      const updated = await getOwned(userId, bg.id);
+      return updated!;
+    },
   };
+
+  // Shared by ensureBackground (public) and updateBackground so the latter always
+  // has a row to patch even on first configuration.
+  async function ensureBackgroundFor(userId: string): Promise<Goal> {
+    const existing = await selectByUser(userId);
+    const bg = existing.find((g) => g.isBackground);
+    if (bg) return bg;
+
+    const id = uuidv7();
+    const ts = now();
+    await d.insert(goals).values({
+      id,
+      userId,
+      isBackground: true,
+      name: 'Maintenance',
+      description: null,
+      mode: GOAL_DEFAULTS.mode,
+      targetWeightLbs: null,
+      macroFats: GOAL_DEFAULTS.macroFats,
+      macroCarbs: GOAL_DEFAULTS.macroCarbs,
+      macroProtein: GOAL_DEFAULTS.macroProtein,
+      startDate: null,
+      endDate: null,
+      calorieDelta: 0,
+      calorieBasis: 'bodyweight',
+      bodyFatPct: null,
+      activityLevel: null,
+      mealSlotsJson: JSON.stringify(DEFAULT_MEAL_SLOTS),
+      createdAt: ts,
+      updatedAt: ts,
+    });
+    const created = await getOwned(userId, id);
+    return created!;
+  }
 }
 
 // Enforces which fields a lifecycle state may change (R47–R52). For active goals
@@ -251,6 +301,21 @@ function assertEditAllowed(goal: Goal, lifecycle: GoalLifecycle, data: UpdateGoa
       field: 'startDate',
       changed:
         data.startDate !== undefined && (data.startDate ?? null) !== (goal.startDate ?? null),
+    },
+    {
+      field: 'calorieBasis',
+      changed: data.calorieBasis !== undefined && data.calorieBasis !== goal.calorieBasis,
+    },
+    {
+      field: 'bodyFatPct',
+      changed:
+        data.bodyFatPct !== undefined && (data.bodyFatPct ?? null) !== (goal.bodyFatPct ?? null),
+    },
+    {
+      field: 'activityLevel',
+      changed:
+        data.activityLevel !== undefined &&
+        (data.activityLevel ?? null) !== (goal.activityLevel ?? null),
     },
     {
       field: 'mealSlots',

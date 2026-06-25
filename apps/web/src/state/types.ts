@@ -15,6 +15,7 @@ import type {
   Goal,
   CreateGoal,
   UpdateGoal,
+  UpdateBackgroundGoal,
 } from '@leanlog/data-access';
 
 export type EnsureDayResult =
@@ -82,4 +83,6 @@ export type Store = {
   createGoal(data: CreateGoal): Promise<Goal>;
   updateGoal(goalId: string, data: UpdateGoal): Promise<Goal>;
   removeGoal(goalId: string): Promise<void>;
+  // Configure the background maintenance goal's calorie basis + body comp (#63).
+  configureBackgroundGoal(data: UpdateBackgroundGoal): Promise<Goal>;
 };

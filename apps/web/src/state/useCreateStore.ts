@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { deriveDayPlan, goalCoversDate, type DailyMealLog, type Goal } from '@leanlog/data-access';
+import {
+  deriveDayPlan,
+  goalCoversDate,
+  resolveCoveringGoal,
+  type DailyMealLog,
+  type Goal,
+} from '@leanlog/data-access';
 import { api, ApiError } from '../api';
 import { todayIso } from '../lib';
 import { selectWeightEntries } from '../selectors';
@@ -323,6 +329,31 @@ export function useCreateStore(): Store {
     async removeGoal(goalId) {
       await withToken((t) => api.goals.delete(t, goalId));
       dispatch({ type: 'goalRemoved', goalId });
+    },
+
+    async configureBackgroundGoal(data) {
+      const updated = await withToken((t) => api.goals.updateBackground(t, data));
+      dispatch({ type: 'goalReplaced', goal: updated });
+      // R23/R24: the background goal supplies fallback/gap-day targets, so changing
+      // its basis must recompute every covered day from today forward whose plan
+      // resolves to the background goal. Past days keep their snapshots.
+      const goals = goalsRef.current.map((g) => (g.id === updated.id ? updated : g));
+      const today = todayIso();
+      const recomputes: { dayId: string; targets: DayTargetsPatch }[] = [];
+      for (const day of daysRef.current) {
+        if (day.date < today) continue;
+        const covering = resolveCoveringGoal(day.date, goals);
+        if (covering?.id !== updated.id) continue;
+        const targets = deriveTargetsForDay(day.date, daysRef.current, goals);
+        if (targets) recomputes.push({ dayId: day.id, targets });
+      }
+      const recomputed = await Promise.all(
+        recomputes.map(({ dayId, targets }) =>
+          withToken((t) => api.days.updateTargets(t, dayId, targets)),
+        ),
+      );
+      for (const day of recomputed) dispatch({ type: 'dayReplaced', day });
+      return updated;
     },
   };
 }

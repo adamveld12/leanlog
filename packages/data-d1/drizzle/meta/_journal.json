@@ -57,6 +57,13 @@
       "when": 1782242608802,
       "tag": "0007_blue_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1782348637550,
+      "tag": "0008_clammy_nextwave",
+      "breakpoints": true
     }
   ]
 }

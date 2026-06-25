@@ -17,6 +17,7 @@ import type {
   Goal,
   CreateGoal,
   UpdateGoal,
+  UpdateBackgroundGoal,
 } from './models';
 import type { PhotoUpdatePatch } from './nutritionPhotos';
 
@@ -114,6 +115,10 @@ export interface GoalsRepository {
   // applied: the UI patches the active goal's end to the day before a new goal.
   update(userId: string, goalId: string, data: UpdateGoal, today: string): Promise<Goal>;
   delete(userId: string, goalId: string, today: string): Promise<void>;
+  // Configure the background maintenance goal's calorie basis + body composition
+  // (#63 R19/R21). Unlike the otherwise read-only background goal, these fields
+  // are user-editable at any time. Ensures the background goal exists first.
+  updateBackground(userId: string, data: UpdateBackgroundGoal): Promise<Goal>;
 }
 
 // A new/edited goal would overlap an existing user goal (R27). `conflictingGoalId`
