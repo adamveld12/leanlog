@@ -211,8 +211,11 @@ export const nutritionDatabaseIngredients = sqliteTable(
     servingSizeDisplayText: text('serving_size_display_text'),
     servingsPerPackage: real('servings_per_package').notNull().default(1),
     addedByUserId: text('added_by_user_id').notNull(),
+    // `usda` rows are seeded from the curated whole-foods CSV (#72). The column is
+    // plain text with no CHECK constraint, so widening this enum is a type-only
+    // change — no SQL migration is required.
     creationSource: text('creation_source', {
-      enum: ['manual', 'scan'],
+      enum: ['manual', 'scan', 'usda'],
     }).notNull(),
     fat: real('fat').notNull(),
     carbs: real('carbs').notNull(),

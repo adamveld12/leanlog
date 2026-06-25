@@ -5,6 +5,7 @@ import {
   UpdateProfileSchema,
   UserProfileSchema,
   PROFILE_DEFAULTS,
+  NutritionDatabaseIngredientSchema,
   CreateNutritionDatabaseIngredientSchema,
   UpdateNutritionDatabaseIngredientSchema,
   UpsertIngredientSchema,
@@ -317,6 +318,50 @@ describe('CreateNutritionDatabaseIngredientSchema', () => {
     expect(result.success).toBe(true);
     expect(result.data!.productPhotoKey).toBeUndefined();
     expect(result.data!.labelPhotoKey).toBeUndefined();
+  });
+});
+
+describe('creationSource usda provenance (#72)', () => {
+  it('the read schema round-trips a usda creationSource', () => {
+    const result = NutritionDatabaseIngredientSchema.safeParse({
+      id: '00000000-0000-5000-8000-000000000000',
+      name: 'Brown rice',
+      servingAmount: 100,
+      servingsPerPackage: 1,
+      addedByUserId: 'usda',
+      creationSource: 'usda',
+      fat: 0.9,
+      carbs: 23,
+      protein: 2.6,
+      calories: 110,
+      createdAt: '2026-06-25T00:00:00.000Z',
+      updatedAt: '2026-06-25T00:00:00.000Z',
+    });
+    expect(result.success).toBe(true);
+    expect(result.data!.creationSource).toBe('usda');
+  });
+
+  it('the create schema rejects a forged usda creationSource', () => {
+    const result = CreateNutritionDatabaseIngredientSchema.safeParse({
+      ...validCreateDbIngredient,
+      creationSource: 'usda',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('the create schema still accepts manual and scan', () => {
+    expect(
+      CreateNutritionDatabaseIngredientSchema.safeParse({
+        ...validCreateDbIngredient,
+        creationSource: 'scan',
+      }).success,
+    ).toBe(true);
+    expect(
+      CreateNutritionDatabaseIngredientSchema.safeParse({
+        ...validCreateDbIngredient,
+        creationSource: 'manual',
+      }).success,
+    ).toBe(true);
   });
 });
 

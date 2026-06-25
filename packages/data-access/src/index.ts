@@ -7,4 +7,5 @@ export * from './dailyValues';
 export * from './scan';
 export * from './repositories';
 export * from './nutritionPhotos';
+export * from './seed';
 export { uuidv7 } from 'uuidv7';
