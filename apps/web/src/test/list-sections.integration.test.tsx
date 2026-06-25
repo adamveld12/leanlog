@@ -242,7 +242,8 @@ describe('list section behaviors', () => {
     await waitFor(() => {
       expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/d1');
     });
-    expect(screen.getByText('Daily totals')).toBeInTheDocument();
+    // DayDetail is a lazy route; await its chunk after the redirect settles.
+    expect(await screen.findByText('Daily totals')).toBeInTheDocument();
   });
 
   it('ingredient list row opens ingredient editor and supports delete', async () => {
@@ -285,6 +286,8 @@ describe('list section behaviors', () => {
 
     renderApp('/track/day/d1/meal/m1', initialDays);
 
+    // MealEdit is a lazy route; await its chunk before synchronous assertions.
+    await screen.findByRole('button', { name: /CHICKEN/i });
     expect(
       screen.getAllByText((_content, element) => (element?.textContent ?? '').includes('220 kcal'))
         .length,
@@ -320,8 +323,8 @@ describe('list section behaviors', () => {
 
     renderApp('/track/day/d1', initialDays, onAddMeal);
 
-    // Unnamed meal row falls back to "Meal"
-    expect(screen.getByText('Meal')).toBeInTheDocument();
+    // DayDetail is a lazy route; await its chunk, then check the "Meal" fallback.
+    expect(await screen.findByText('Meal')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Add meal' }));
     expect(onAddMeal).toHaveBeenCalledWith('d1', '');
@@ -347,7 +350,8 @@ describe('list section behaviors', () => {
 
     renderApp('/track/day/d1/meal/m1', initialDays);
 
-    const nameInput = screen.getByPlaceholderText('Meal Name');
+    // MealEdit is a lazy route; await its chunk before reading the input.
+    const nameInput = await screen.findByPlaceholderText('Meal Name');
     expect(nameInput).toHaveValue('');
   });
 });

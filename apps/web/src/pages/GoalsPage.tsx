@@ -2,11 +2,14 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import posthog from 'posthog-js';
 import {
+  AnalyticsScope,
+  APP_NAV_LINKS,
   Button,
   Checkbox,
   cn,
   DateSelect3,
   Field,
+  GoalsTemplate,
   HelperText,
   Input,
   ListRow,
@@ -54,6 +57,7 @@ import {
 import { todayIso, prettyDate } from '../lib';
 import { selectWeightEntries } from '../selectors';
 import { useStore } from '../state';
+import { HeaderControls, renderRouterNavLink } from './_shared';
 
 const MODE_LABEL: Record<GoalMode, string> = {
   cut: 'Cut',
@@ -216,7 +220,7 @@ function dateRangeLabel(start: string | null, end: string | null): string {
   return `${from} → ${to}`;
 }
 
-export function GoalsPage() {
+function GoalsPlanner() {
   const { goals, days, loading, createGoal, updateGoal, removeGoal, configureBackgroundGoal } =
     useStore();
   const today = todayIso();
@@ -1069,4 +1073,23 @@ function violationMessage(code: string): string {
     default:
       return 'Macro percentages must total 100.';
   }
+}
+
+// Goals command center (#56): timeline planner + selected-goal detail / inline
+// Add Goal, inside the standard app shell with Execute/Goals nav.
+export default function GoalsPage() {
+  return (
+    <AnalyticsScope properties={{ page: 'Goals' }}>
+      <GoalsTemplate
+        heading={{
+          title: 'Goals',
+          navLinks: APP_NAV_LINKS,
+          renderNavLink: renderRouterNavLink,
+          rightContent: <HeaderControls />,
+        }}
+      >
+        <GoalsPlanner />
+      </GoalsTemplate>
+    </AnalyticsScope>
+  );
 }
