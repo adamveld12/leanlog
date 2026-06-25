@@ -9,6 +9,15 @@ afterEach(() => {
   cleanup();
 });
 
+// jsdom has no object-URL implementation; progress-photo tiles create one from
+// the proxied blob (#69). Stub it so those components render in tests.
+if (typeof URL.createObjectURL !== 'function') {
+  URL.createObjectURL = () => 'blob:mock';
+}
+if (typeof URL.revokeObjectURL !== 'function') {
+  URL.revokeObjectURL = () => {};
+}
+
 let signedIn = true;
 
 // Stable identity across renders. The store's load effect depends on getToken;
