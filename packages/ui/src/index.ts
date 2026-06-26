@@ -27,6 +27,7 @@ export * from './atoms/UnitText';
 export * from './atoms/SuccessText';
 export * from './atoms/WarningText';
 export * from './molecules/ActionRow';
+export * from './molecules/Collapsible';
 export * from './molecules/DateSelect3';
 export * from './molecules/ListRow';
 export * from './molecules/LoadingState';
