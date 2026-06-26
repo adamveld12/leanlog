@@ -27,7 +27,6 @@ import {
   RouteErrorState,
   RouteLoadingState,
   type RouteLoadState,
-  useSavedSections,
 } from './_shared';
 
 export default function DayDetailPage() {
@@ -43,7 +42,6 @@ export default function DayDetailPage() {
     updateDayTargets,
     updateDayWeight,
   } = useStore();
-  const { saved, markDirty, markSaved } = useSavedSections();
   const [savingWeight, setSavingWeight] = useState(false);
   const [savingMeasurements, setSavingMeasurements] = useState(false);
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
@@ -105,13 +103,9 @@ export default function DayDetailPage() {
             key={`bodytracking-${day.id}`}
             weightLbs={day.weightLbs}
             savingWeight={savingWeight}
-            savedWeight={saved.dayWeight}
             onSaveWeight={(next) => {
-              markDirty('dayWeight');
               setSavingWeight(true);
-              void updateDayWeight(day.id, next)
-                .then(() => markSaved('dayWeight'))
-                .finally(() => setSavingWeight(false));
+              void updateDayWeight(day.id, next).finally(() => setSavingWeight(false));
             }}
             measurementsToday={{
               shoulderInches: day.shoulderInches,
@@ -122,13 +116,9 @@ export default function DayDetailPage() {
             latestMeasurements={latestMeasurements}
             measurementsDue={measurementsDue}
             savingMeasurements={savingMeasurements}
-            savedMeasurements={saved.dayMeasurements}
             onSaveMeasurements={(patch) => {
-              markDirty('dayMeasurements');
               setSavingMeasurements(true);
-              void updateDayTargets(day.id, patch)
-                .then(() => markSaved('dayMeasurements'))
-                .finally(() => setSavingMeasurements(false));
+              void updateDayTargets(day.id, patch).finally(() => setSavingMeasurements(false));
             }}
           />
         )

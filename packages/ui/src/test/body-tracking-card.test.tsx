@@ -27,45 +27,39 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof BodyTrackingC
 }
 
 describe('BodyTrackingCard (#68)', () => {
-  it('renders the combined "Measurements" card with both sub-sections', () => {
-    renderCard();
+  it('renders the combined "Measurements" card', () => {
+    renderCard({ weightLbs: 182, latestMeasurements: LATEST });
     expect(screen.getByText('Measurements')).toBeInTheDocument();
-    expect(screen.getByText('Weight · daily')).toBeInTheDocument();
-    expect(screen.getByText('Measurements · weekly')).toBeInTheDocument();
   });
 
-  it('collapses weight to a summary once logged today; Edit re-expands it', () => {
+  it('auto-collapses weight to a summary once logged — no editor, no toggle', () => {
     renderCard({ weightLbs: 182, latestMeasurements: LATEST });
     expect(screen.getByText('182 lbs')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('e.g. 180')).not.toBeInTheDocument();
-    // First Collapsible is weight; click its Edit to expand.
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+    expect(screen.queryByRole('button', { name: /edit|collapse/i })).not.toBeInTheDocument();
+  });
+
+  it('hard-blocks weight when not logged: required prompt + editor shown', () => {
+    renderCard({ weightLbs: null, latestMeasurements: LATEST });
+    expect(screen.getByText(/Required — log today’s weight/)).toBeInTheDocument();
     expect(screen.getByPlaceholderText('e.g. 180')).toBeInTheDocument();
   });
 
-  it('prompts (expanded) for weight when not logged today', () => {
-    renderCard({ weightLbs: null });
-    expect(screen.getByPlaceholderText('e.g. 180')).toBeInTheDocument();
-  });
-
-  it('weekly measurements summary uses the most-recent values, not today nulls', () => {
+  it('auto-collapses measurements to the most-recent summary when not due', () => {
     renderCard({ weightLbs: 182, measurementsToday: NO_TODAY, latestMeasurements: LATEST });
     expect(screen.getByText(/Last measured/)).toBeInTheDocument();
     expect(screen.getByText('1.56')).toBeInTheDocument();
-    // The four-site editor is collapsed (today is blank), so no shoulder input shows.
     expect(screen.queryByPlaceholderText('e.g. 50')).not.toBeInTheDocument();
   });
 
-  it('hard-blocks overdue measurements: required banner, no toggle, Save gated on all four', () => {
+  it('hard-blocks overdue measurements: required-all-four prompt, no toggle, Save gated', () => {
     renderCard({ weightLbs: 182, measurementsDue: true, measurementsToday: NO_TODAY });
     expect(screen.getByText(/Required — log all four/)).toBeInTheDocument();
-    // Measurements section is locked → it has no Edit/Collapse toggle of its own.
-    expect(screen.queryByRole('button', { name: 'Collapse' })).not.toBeInTheDocument();
-    // Save disabled until all four are present.
+    expect(screen.queryByRole('button', { name: /edit|collapse/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
-  it('overdue Save enables and emits all four when the set is complete; shows live v-taper', () => {
+  it('overdue Save enables with a complete set and emits all four; shows live v-taper', () => {
     const onSaveMeasurements = vi.fn();
     renderCard({
       weightLbs: 182,
@@ -73,7 +67,7 @@ describe('BodyTrackingCard (#68)', () => {
       measurementsToday: { shoulderInches: 50, waistInches: 32, bicepInches: 15, thighInches: 23 },
       onSaveMeasurements,
     });
-    expect(screen.getByText('1.56')).toBeInTheDocument(); // live v-taper from 50/32
+    expect(screen.getByText('1.56')).toBeInTheDocument();
     const save = screen.getByRole('button', { name: 'Save' });
     expect(save).toBeEnabled();
     fireEvent.click(save);
@@ -85,9 +79,14 @@ describe('BodyTrackingCard (#68)', () => {
     });
   });
 
-  it('saves weight via onSaveWeight when a new value is entered', () => {
+  it('saves weight via onSaveWeight when a value is entered', () => {
     const onSaveWeight = vi.fn();
-    renderCard({ weightLbs: null, onSaveWeight });
+    renderCard({
+      weightLbs: null,
+      measurementsDue: false,
+      latestMeasurements: LATEST,
+      onSaveWeight,
+    });
     fireEvent.change(screen.getByPlaceholderText('e.g. 180'), { target: { value: '180' } });
     const save = screen.getByRole('button', { name: 'Save' });
     expect(save).toBeEnabled();
