@@ -166,9 +166,14 @@ export type LatestMeasurements = {
 
 // The most-recent day carrying a complete four-site set, for the collapsed weekly
 // summary on the day page (#68). null until the user has logged a full set once.
-export function selectLatestMeasurements(days: DailyMealLog[]): LatestMeasurements | null {
+// `asOf` bounds it to sets logged on or before that date, so a past day shows the
+// set that was standing then (not a later one).
+export function selectLatestMeasurements(
+  days: DailyMealLog[],
+  asOf?: string,
+): LatestMeasurements | null {
   const latest = days
-    .filter(isCompleteSet)
+    .filter((d): d is CompleteSetDay => isCompleteSet(d) && (asOf == null || d.date <= asOf))
     .sort((a, b) => a.date.localeCompare(b.date))
     .at(-1);
   if (!latest) return null;

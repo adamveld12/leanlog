@@ -477,6 +477,16 @@ describe('measurement selectors (#68)', () => {
     ).toBeNull();
   });
 
+  it('selectLatestMeasurements with asOf returns the set standing on that date', () => {
+    const days = [complete('a', '2026-06-10'), complete('c', '2026-06-20')];
+    // As of 06-15, only the 06-10 set had been logged.
+    expect(selectLatestMeasurements(days, '2026-06-15')?.date).toBe('2026-06-10');
+    // As of 06-20 (inclusive), the newer set stands.
+    expect(selectLatestMeasurements(days, '2026-06-20')?.date).toBe('2026-06-20');
+    // Before any set exists → null.
+    expect(selectLatestMeasurements(days, '2026-06-05')).toBeNull();
+  });
+
   it('selectMeasurementsDue: complete set within the last 7 days is not due (boundary today-6)', () => {
     const today = '2026-06-26';
     expect(selectMeasurementsDue([complete('a', '2026-06-26')], today)).toBe(false);
