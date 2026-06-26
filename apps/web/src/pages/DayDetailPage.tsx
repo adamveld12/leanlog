@@ -80,11 +80,12 @@ export default function DayDetailPage() {
   // fixed structure and per-meal logging. Ad-hoc days keep freeform meals.
   const isTemplateBacked = structure.kind === 'template';
   const isPast = isPastIso(day.date);
-  // Cadence is derived from all days: the most-recent complete measurement set
-  // feeds the collapsed weekly summary, and "due" hard-blocks when none falls in
-  // the last 7 days (#68).
-  const latestMeasurements = selectLatestMeasurements(days);
-  const measurementsDue = selectMeasurementsDue(days, todayIso());
+  // Cadence is derived from all days: the complete measurement set standing on
+  // this day feeds the collapsed summary (as-of the viewed date so a past day
+  // shows what was current then), and "due" hard-blocks the current day when none
+  // falls in the last 7 days. Past days are read-only, so they're never due (#68).
+  const latestMeasurements = selectLatestMeasurements(days, day.date);
+  const measurementsDue = isPast ? false : selectMeasurementsDue(days, todayIso());
 
   return (
     <DayDetailTemplate
@@ -96,32 +97,32 @@ export default function DayDetailPage() {
         rightContent: <HeaderControls />,
       }}
       weightSection={
-        // Weight + measurements are current-day-only; the whole card is hidden on
-        // past days, which are read-only (R3).
-        isPast ? undefined : (
-          <BodyTrackingCard
-            key={`bodytracking-${day.id}`}
-            weightLbs={day.weightLbs}
-            savingWeight={savingWeight}
-            onSaveWeight={(next) => {
-              setSavingWeight(true);
-              void updateDayWeight(day.id, next).finally(() => setSavingWeight(false));
-            }}
-            measurementsToday={{
-              shoulderInches: day.shoulderInches,
-              waistInches: day.waistInches,
-              bicepInches: day.bicepInches,
-              thighInches: day.thighInches,
-            }}
-            latestMeasurements={latestMeasurements}
-            measurementsDue={measurementsDue}
-            savingMeasurements={savingMeasurements}
-            onSaveMeasurements={(patch) => {
-              setSavingMeasurements(true);
-              void updateDayTargets(day.id, patch).finally(() => setSavingMeasurements(false));
-            }}
-          />
-        )
+        // Shown on every day: editable on the current day, read-only on past days
+        // (which the server day guard also enforces). Keyed per-day so editor
+        // drafts reset on navigation.
+        <BodyTrackingCard
+          key={`bodytracking-${day.id}`}
+          readOnly={isPast}
+          weightLbs={day.weightLbs}
+          savingWeight={savingWeight}
+          onSaveWeight={(next) => {
+            setSavingWeight(true);
+            void updateDayWeight(day.id, next).finally(() => setSavingWeight(false));
+          }}
+          measurementsToday={{
+            shoulderInches: day.shoulderInches,
+            waistInches: day.waistInches,
+            bicepInches: day.bicepInches,
+            thighInches: day.thighInches,
+          }}
+          latestMeasurements={latestMeasurements}
+          measurementsDue={measurementsDue}
+          savingMeasurements={savingMeasurements}
+          onSaveMeasurements={(patch) => {
+            setSavingMeasurements(true);
+            void updateDayTargets(day.id, patch).finally(() => setSavingMeasurements(false));
+          }}
+        />
       }
       totalsSection={
         <DailyTotalsCard

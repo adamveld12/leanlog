@@ -35,9 +35,20 @@ export const WeightPromptMeasurementsCurrent: Story = {
   args: { ...base, weightLbs: null, latestMeasurements: LATEST, measurementsDue: false },
 };
 
-// Everything satisfied: both sub-sections collapsed to compact summaries.
-export const AllLoggedCollapsed: Story = {
+// Everything satisfied: both collapsed to summaries, each with an Edit button.
+export const AllLoggedEditable: Story = {
   args: { ...base, weightLbs: 182, latestMeasurements: LATEST, measurementsDue: false },
+};
+
+// Past day: values shown read-only, no Edit, no inputs.
+export const ReadOnlyPastDay: Story = {
+  args: {
+    ...base,
+    weightLbs: 181,
+    latestMeasurements: LATEST,
+    measurementsDue: false,
+    readOnly: true,
+  },
 };
 
 // Weight logged, but measurements overdue → measurements force-expanded, all four required.
