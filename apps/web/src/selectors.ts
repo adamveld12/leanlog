@@ -16,6 +16,7 @@ import {
   V_TAPER_TARGET,
   weeklyWeightDelta,
   weeklyWeightAverages,
+  addDaysIso,
 } from '@leanlog/data-access';
 import { sum, todayIso } from './lib';
 
@@ -130,6 +131,63 @@ export function selectWaistEntries(days: DailyMealLog[]): MeasurementPoint[] {
     .filter((d): d is DailyMealLog & { waistInches: number } => d.waistInches != null)
     .map((d) => ({ date: d.date, value: d.waistInches }))
     .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+type CompleteSetDay = DailyMealLog & {
+  shoulderInches: number;
+  waistInches: number;
+  bicepInches: number;
+  thighInches: number;
+};
+
+// A "complete set": all four sites logged (and positive) on a single day. This is
+// the qualifying weekly measurement log (#68) — partial entries don't count.
+function isCompleteSet(day: DailyMealLog): day is CompleteSetDay {
+  return (
+    day.shoulderInches != null &&
+    day.shoulderInches > 0 &&
+    day.waistInches != null &&
+    day.waistInches > 0 &&
+    day.bicepInches != null &&
+    day.bicepInches > 0 &&
+    day.thighInches != null &&
+    day.thighInches > 0
+  );
+}
+
+export type LatestMeasurements = {
+  date: string;
+  shoulderInches: number;
+  waistInches: number;
+  bicepInches: number;
+  thighInches: number;
+  vTaper: number; // rounded to 2 decimals
+};
+
+// The most-recent day carrying a complete four-site set, for the collapsed weekly
+// summary on the day page (#68). null until the user has logged a full set once.
+export function selectLatestMeasurements(days: DailyMealLog[]): LatestMeasurements | null {
+  const latest = days
+    .filter(isCompleteSet)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .at(-1);
+  if (!latest) return null;
+  const ratio = vTaperRatio(latest.shoulderInches, latest.waistInches);
+  return {
+    date: latest.date,
+    shoulderInches: latest.shoulderInches,
+    waistInches: latest.waistInches,
+    bicepInches: latest.bicepInches,
+    thighInches: latest.thighInches,
+    vTaper: ratio == null ? 0 : roundVTaper(ratio),
+  };
+}
+
+// Measurements are due (hard block) when no complete four-site set exists within
+// the last 7 days — today and the prior 6 (#68). A brand-new user is due.
+export function selectMeasurementsDue(days: DailyMealLog[], today: string = todayIso()): boolean {
+  const start = addDaysIso(today, -6);
+  return !days.some((d) => isCompleteSet(d) && d.date >= start && d.date <= today);
 }
 
 export type NorthStar = {

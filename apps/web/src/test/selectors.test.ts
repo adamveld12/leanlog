@@ -14,6 +14,8 @@ import {
   selectNorthStar,
   selectWeeklyWeightDelta,
   selectWeeklyWeightEntries,
+  selectLatestMeasurements,
+  selectMeasurementsDue,
 } from '../selectors';
 
 const now = new Date().toISOString();
@@ -447,5 +449,50 @@ describe('measurement selectors (#68)', () => {
       makeDay({ id: '2', date: '2026-06-24', weightLbs: 198 }),
     ];
     expect(selectWeeklyWeightEntries(days)).toEqual([{ date: '2026-06-22', weightLbs: 199 }]);
+  });
+
+  // A day carrying a complete four-site set.
+  const complete = (id: string, date: string) =>
+    makeDay({ id, date, shoulderInches: 50, waistInches: 32, bicepInches: 15, thighInches: 23 });
+
+  it('selectLatestMeasurements returns the most-recent complete set, ignoring partial days', () => {
+    const days = [
+      complete('a', '2026-06-10'),
+      makeDay({ id: 'b', date: '2026-06-20', shoulderInches: 51, waistInches: 31 }), // partial → ignored
+      complete('c', '2026-06-15'),
+    ];
+    expect(selectLatestMeasurements(days)).toEqual({
+      date: '2026-06-15',
+      shoulderInches: 50,
+      waistInches: 32,
+      bicepInches: 15,
+      thighInches: 23,
+      vTaper: 1.56,
+    });
+  });
+
+  it('selectLatestMeasurements is null until a full set exists', () => {
+    expect(
+      selectLatestMeasurements([makeDay({ id: 'a', date: '2026-06-10', waistInches: 32 })]),
+    ).toBeNull();
+  });
+
+  it('selectMeasurementsDue: complete set within the last 7 days is not due (boundary today-6)', () => {
+    const today = '2026-06-26';
+    expect(selectMeasurementsDue([complete('a', '2026-06-26')], today)).toBe(false);
+    expect(selectMeasurementsDue([complete('a', '2026-06-20')], today)).toBe(false); // today-6
+  });
+
+  it('selectMeasurementsDue: a 7-day-old complete set is due (boundary today-7)', () => {
+    expect(selectMeasurementsDue([complete('a', '2026-06-19')], '2026-06-26')).toBe(true);
+  });
+
+  it('selectMeasurementsDue: a brand-new user is due', () => {
+    expect(selectMeasurementsDue([], '2026-06-26')).toBe(true);
+  });
+
+  it('selectMeasurementsDue: a partial set in the window does not satisfy the cadence', () => {
+    const days = [makeDay({ id: 'a', date: '2026-06-25', shoulderInches: 50, waistInches: 32 })];
+    expect(selectMeasurementsDue(days, '2026-06-26')).toBe(true);
   });
 });
