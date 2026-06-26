@@ -95,16 +95,6 @@ export function trackingCoverage(mealsTracked: number, mealsExpected: number): n
   return Math.min(100, Math.round((mealsTracked / mealsExpected) * 100));
 }
 
-export function estimatedWeightLost(totalConsumed: number, totalMaintenance: number): number {
-  const deficit = totalMaintenance - totalConsumed;
-  if (deficit <= 0) return 0;
-  return Math.round((deficit / 3000) * 10) / 10;
-}
-
-export function weightLossCertainty(coveragePct: number): number {
-  return Math.min(80, Math.round(coveragePct * 0.8));
-}
-
 // ---------------------------------------------------------------------------
 // Body measurements, v-taper ratio & measured weekly weight delta (#68)
 // ---------------------------------------------------------------------------

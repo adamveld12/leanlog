@@ -223,20 +223,17 @@ describe('aggregateStats', () => {
       }),
     ];
 
-    const result = aggregateStats(days, 2700);
+    const result = aggregateStats(days);
     expect(result.totalCalories).toBe(2500);
     expect(result.mealsTracked).toBe(5);
     expect(result.mealsExpected).toBe(6);
     expect(result.coverage).toBe(83);
-    expect(result.certainty).toBe(66);
-    expect(result.estimatedWeightLost).toBeGreaterThan(0);
   });
 
   it('returns zeros for empty days', () => {
-    const result = aggregateStats([], 2700);
+    const result = aggregateStats([]);
     expect(result.accuracy.overall).toBe(0);
     expect(result.coverage).toBe(0);
-    expect(result.estimatedWeightLost).toBe(0);
   });
 
   it('computes totalFiber and totalNetCarbs', () => {
@@ -279,7 +276,7 @@ describe('aggregateStats', () => {
       mealCountTarget: 3,
       meals: [meal, meal],
     });
-    const result = aggregateStats([day, day], 2700);
+    const result = aggregateStats([day, day]);
     expect(result.totalFiber).toBe(20); // 5 * 4 meals
     expect(result.totalNetCarbs).toBe(180); // (50-5)*4
   });
@@ -316,7 +313,7 @@ describe('aggregateStats', () => {
       ],
     };
     const day = makeDay({ meals: [highFiberMeal] });
-    const result = aggregateStats([day], 2700);
+    const result = aggregateStats([day]);
     expect(result.totalNetCarbs).toBe(0);
   });
 
@@ -356,7 +353,7 @@ describe('aggregateStats', () => {
       ],
     };
     const day = makeDay({ targetCarbs: 50, meals: [meal] });
-    const result = aggregateStats([day], 2700);
+    const result = aggregateStats([day]);
     expect(result.accuracy.carbs).toBe(100);
   });
 });

@@ -5,8 +5,6 @@ import {
   dayTargetsFromProfile,
   macroAccuracy,
   trackingCoverage,
-  estimatedWeightLost,
-  weightLossCertainty,
   estimateCalories,
   scaleLabelToIngredient,
   vTaperRatio,
@@ -164,34 +162,6 @@ describe('trackingCoverage', () => {
 
   it('clamps at 100 when meals exceed target', () => {
     expect(trackingCoverage(5, 3)).toBe(100);
-  });
-});
-
-describe('estimatedWeightLost', () => {
-  it('returns 1.0 lb for 3000 kcal deficit', () => {
-    expect(estimatedWeightLost(15000, 18000)).toBe(1);
-  });
-
-  it('returns 0 when in surplus', () => {
-    expect(estimatedWeightLost(20000, 18000)).toBe(0);
-  });
-
-  it('returns 0 when at maintenance', () => {
-    expect(estimatedWeightLost(18000, 18000)).toBe(0);
-  });
-});
-
-describe('weightLossCertainty', () => {
-  it('returns 80 for 100% coverage', () => {
-    expect(weightLossCertainty(100)).toBe(80);
-  });
-
-  it('returns 40 for 50% coverage', () => {
-    expect(weightLossCertainty(50)).toBe(40);
-  });
-
-  it('caps at 80', () => {
-    expect(weightLossCertainty(150)).toBe(80);
   });
 });
 

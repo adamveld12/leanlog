@@ -8,8 +8,6 @@ import type {
 import {
   macroAccuracy,
   trackingCoverage,
-  estimatedWeightLost,
-  weightLossCertainty,
   contributesNutrition,
   dayMealStructure,
   vTaperRatio,
@@ -183,8 +181,6 @@ export type PeriodStats = {
   coverage: number;
   mealsTracked: number;
   mealsExpected: number;
-  estimatedWeightLost: number;
-  certainty: number;
   totalCalories: number;
   targetCalories: number;
   totalProtein: number;
@@ -197,7 +193,7 @@ export type PeriodStats = {
   totalNetCarbs: number;
 };
 
-export function aggregateStats(days: DailyMealLog[], maintenanceCalories: number): PeriodStats {
+export function aggregateStats(days: DailyMealLog[]): PeriodStats {
   let totalCalories = 0;
   let targetCalories = 0;
   let totalProtein = 0;
@@ -235,15 +231,12 @@ export function aggregateStats(days: DailyMealLog[], maintenanceCalories: number
   const fatAcc = macroAccuracy(totalFat, targetFat);
   const overall = days.length > 0 ? Math.round((calAcc + protAcc + carbAcc + fatAcc) / 4) : 0;
   const coverage = trackingCoverage(mealsTracked, mealsExpected);
-  const totalMaintenance = maintenanceCalories * days.length;
 
   return {
     accuracy: { calories: calAcc, protein: protAcc, carbs: carbAcc, fat: fatAcc, overall },
     coverage,
     mealsTracked,
     mealsExpected,
-    estimatedWeightLost: estimatedWeightLost(totalCalories, totalMaintenance),
-    certainty: weightLossCertainty(coverage),
     totalCalories,
     targetCalories,
     totalProtein,

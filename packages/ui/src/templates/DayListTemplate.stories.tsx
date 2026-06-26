@@ -14,8 +14,6 @@ const emptyStats = {
   coverage: 0,
   mealsTracked: 0,
   mealsExpected: 0,
-  estimatedWeightLost: 0,
-  certainty: 0,
 };
 
 const SAMPLE_WEIGHTS = [
@@ -49,6 +47,8 @@ const meta: Meta<typeof DayListTemplate> = {
         overall={emptyStats}
         hasWeeklyData={false}
         hasOverallData={false}
+        northStar={null}
+        weeklyWeightChangeLbs={null}
       />
     ),
     calendar: (
