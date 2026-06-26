@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   APP_NAV_LINKS,
   DayListTemplate,
+  MeasurementTrendCard,
   MonthCalendarCard,
   QuickActionsCard,
   WeeklyStatsCard,
@@ -15,6 +16,10 @@ import {
   dayTotals,
   daysLast90,
   daysThisWeek,
+  selectVTaperEntries,
+  selectWaistEntries,
+  selectWeeklyWeightDelta,
+  selectWeeklyWeightEntries,
   selectWeightEntries,
   todayLog,
   trackedDatesMap,
@@ -70,6 +75,12 @@ export default function DayListPage() {
 
   const dateMap = useMemo(() => trackedDatesMap(days), [days]);
   const weightEntries = useMemo(() => selectWeightEntries(days), [days]);
+  // The week-over-week weight number is computed once here and shared by the
+  // Weight Trend's week view headline so the two surfaces never disagree (R13).
+  const weeklyWeightEntries = useMemo(() => selectWeeklyWeightEntries(days), [days]);
+  const weeklyWeightDelta = useMemo(() => selectWeeklyWeightDelta(days), [days]);
+  const vTaperEntries = useMemo(() => selectVTaperEntries(days), [days]);
+  const waistEntries = useMemo(() => selectWaistEntries(days), [days]);
   const selectDay = useCallback((dayId: string) => nav(`/track/day/${dayId}`), [nav]);
 
   const hasDays = days.length > 0;
@@ -185,7 +196,16 @@ export default function DayListPage() {
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
       weightTrend={
-        <WeightTrendCard entries={weightEntries} goalWeightLbs={profile?.goalWeightLbs ?? null} />
+        <WeightTrendCard
+          entries={weightEntries}
+          weeklyEntries={weeklyWeightEntries}
+          weekOverWeekDeltaLbs={weeklyWeightDelta?.deltaLbs ?? null}
+          goalWeightLbs={profile?.goalWeightLbs ?? null}
+        />
+      }
+      // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
+      measurementTrend={
+        <MeasurementTrendCard vTaperEntries={vTaperEntries} waistEntries={waistEntries} />
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
       calendar={

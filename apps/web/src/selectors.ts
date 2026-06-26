@@ -1,4 +1,10 @@
-import type { Ingredient, Meal, DailyMealLog, WeightEntry } from '@leanlog/data-access';
+import type {
+  Ingredient,
+  Meal,
+  DailyMealLog,
+  WeightEntry,
+  WeeklyWeightDelta,
+} from '@leanlog/data-access';
 import {
   macroAccuracy,
   trackingCoverage,
@@ -6,6 +12,12 @@ import {
   weightLossCertainty,
   contributesNutrition,
   dayMealStructure,
+  vTaperRatio,
+  roundVTaper,
+  vTaperGapToTarget,
+  V_TAPER_TARGET,
+  weeklyWeightDelta,
+  weeklyWeightAverages,
 } from '@leanlog/data-access';
 import { sum, todayIso } from './lib';
 
@@ -93,6 +105,77 @@ export function selectWeightEntries(days: DailyMealLog[]): WeightEntry[] {
     .filter((d): d is DailyMealLog & { weightLbs: number } => d.weightLbs != null)
     .map((d) => ({ date: d.date, weightLbs: d.weightLbs }))
     .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// ---------------------------------------------------------------------------
+// Body measurements & v-taper (#68)
+// ---------------------------------------------------------------------------
+
+export type MeasurementPoint = { date: string; value: number };
+
+// Per-day v-taper points for the trend chart (R15): one point per day that has
+// BOTH shoulder and waist, sorted chronologically. The displayed ratio is
+// rounded to 2 decimals to match the day-page readout and north-star number.
+export function selectVTaperEntries(days: DailyMealLog[]): MeasurementPoint[] {
+  return days
+    .map((d) => {
+      const ratio = vTaperRatio(d.shoulderInches, d.waistInches);
+      return ratio == null ? null : { date: d.date, value: roundVTaper(ratio) };
+    })
+    .filter((p): p is MeasurementPoint => p != null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// Per-day waist points for the waist trend chart (R16).
+export function selectWaistEntries(days: DailyMealLog[]): MeasurementPoint[] {
+  return days
+    .filter((d): d is DailyMealLog & { waistInches: number } => d.waistInches != null)
+    .map((d) => ({ date: d.date, value: d.waistInches }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export type NorthStar = {
+  currentVTaper: number; // rounded to 2 decimals for display
+  target: number;
+  gapToTarget: number;
+  met: boolean;
+};
+
+// The current v-taper against the 1.6 north star (R7/R8). Uses the most recent
+// day that has both shoulder and waist. Returns null before any such day exists
+// so the Statistics card shows a prompt rather than a zero/broken ratio (R9).
+// "met" is judged on the raw ratio, not the rounded display value.
+export function selectNorthStar(days: DailyMealLog[]): NorthStar | null {
+  const withRatio = days
+    .map((d) => ({ date: d.date, ratio: vTaperRatio(d.shoulderInches, d.waistInches) }))
+    .filter((d): d is { date: string; ratio: number } => d.ratio != null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const latest = withRatio.at(-1);
+  if (!latest) return null;
+  return {
+    currentVTaper: roundVTaper(latest.ratio),
+    target: V_TAPER_TARGET,
+    gapToTarget: vTaperGapToTarget(latest.ratio),
+    met: latest.ratio >= V_TAPER_TARGET,
+  };
+}
+
+// The measured week-over-week weight delta (R10), null until there are enough
+// weigh-ins (R12). Defaults `today` to the local date.
+export function selectWeeklyWeightDelta(
+  days: DailyMealLog[],
+  today: string = todayIso(),
+): WeeklyWeightDelta | null {
+  return weeklyWeightDelta(selectWeightEntries(days), today);
+}
+
+// De-noised weekly-average weight points (Monday-dated) for the week-over-week
+// trend line (R14).
+export function selectWeeklyWeightEntries(days: DailyMealLog[]): WeightEntry[] {
+  return weeklyWeightAverages(selectWeightEntries(days)).map((w) => ({
+    date: w.weekStart,
+    weightLbs: w.avgLbs,
+  }));
 }
 
 export type PeriodStats = {

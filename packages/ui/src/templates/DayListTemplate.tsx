@@ -7,6 +7,8 @@ export type DayListTemplateProps = {
   quickActions: ReactNode;
   statistics: ReactNode;
   weightTrend?: ReactNode;
+  /** V-taper + waist measurement trends (#68). */
+  measurementTrend?: ReactNode;
   /** The month calendar, which also creates today/future days on tap (#41). */
   calendar: ReactNode;
   /** Optional entry point to the meal template editor (issue #41). */
@@ -19,6 +21,7 @@ export function DayListTemplate({
   quickActions,
   statistics,
   weightTrend,
+  measurementTrend,
   calendar,
   templatesLink,
   footer,
@@ -29,6 +32,7 @@ export function DayListTemplate({
       {quickActions}
       {statistics}
       {weightTrend}
+      {measurementTrend}
       {calendar}
       {templatesLink}
       {footer}

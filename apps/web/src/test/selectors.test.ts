@@ -9,6 +9,11 @@ import {
   trackedDatesMap,
   aggregateStats,
   selectWeightEntries,
+  selectVTaperEntries,
+  selectWaistEntries,
+  selectNorthStar,
+  selectWeeklyWeightDelta,
+  selectWeeklyWeightEntries,
 } from '../selectors';
 
 const now = new Date().toISOString();
@@ -378,5 +383,72 @@ describe('selectWeightEntries', () => {
     ];
     const entries = selectWeightEntries(days);
     expect(entries.map((e) => e.date)).toEqual(['2026-05-26', '2026-05-27', '2026-05-28']);
+  });
+});
+
+describe('measurement selectors (#68)', () => {
+  it('selectVTaperEntries yields one rounded point per day with both sites', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-26', shoulderInches: 50, waistInches: 32 }),
+      makeDay({ id: 'b', date: '2026-05-27', waistInches: 33 }), // shoulder missing → skipped
+      makeDay({ id: 'c', date: '2026-05-28', shoulderInches: 51, waistInches: 31 }),
+    ];
+    expect(selectVTaperEntries(days)).toEqual([
+      { date: '2026-05-26', value: 1.56 },
+      { date: '2026-05-28', value: 1.65 },
+    ]);
+  });
+
+  it('selectWaistEntries yields a point per day with a waist, sorted by date', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-28', waistInches: 31 }),
+      makeDay({ id: 'b', date: '2026-05-26', waistInches: 33 }),
+      makeDay({ id: 'c', date: '2026-05-27' }), // no waist → skipped
+    ];
+    expect(selectWaistEntries(days)).toEqual([
+      { date: '2026-05-26', value: 33 },
+      { date: '2026-05-28', value: 31 },
+    ]);
+  });
+
+  it('selectNorthStar uses the most recent day with both sites and judges the target', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-26', shoulderInches: 50, waistInches: 32 }),
+      makeDay({ id: 'b', date: '2026-05-28', shoulderInches: 51, waistInches: 31 }),
+    ];
+    expect(selectNorthStar(days)).toEqual({
+      currentVTaper: 1.65,
+      target: 1.6,
+      gapToTarget: 0,
+      met: true,
+    });
+  });
+
+  it('selectNorthStar returns null before any day has both sites (prompt state)', () => {
+    const days = [makeDay({ id: 'a', date: '2026-05-26', waistInches: 32 })];
+    expect(selectNorthStar(days)).toBeNull();
+  });
+
+  it('selectWeeklyWeightDelta measures last-7 vs prior-7 around an explicit today', () => {
+    const days = [
+      makeDay({ id: '1', date: '2026-06-26', weightLbs: 199 }),
+      makeDay({ id: '2', date: '2026-06-25', weightLbs: 199 }),
+      makeDay({ id: '3', date: '2026-06-19', weightLbs: 201 }),
+      makeDay({ id: '4', date: '2026-06-18', weightLbs: 201 }),
+    ];
+    expect(selectWeeklyWeightDelta(days, '2026-06-26')?.deltaLbs).toBe(-2);
+  });
+
+  it('selectWeeklyWeightDelta is null with too few weigh-ins', () => {
+    const days = [makeDay({ id: '1', date: '2026-06-26', weightLbs: 199 })];
+    expect(selectWeeklyWeightDelta(days, '2026-06-26')).toBeNull();
+  });
+
+  it('selectWeeklyWeightEntries buckets weigh-ins into Monday-dated averages', () => {
+    const days = [
+      makeDay({ id: '1', date: '2026-06-22', weightLbs: 200 }),
+      makeDay({ id: '2', date: '2026-06-24', weightLbs: 198 }),
+    ];
+    expect(selectWeeklyWeightEntries(days)).toEqual([{ date: '2026-06-22', weightLbs: 199 }]);
   });
 });

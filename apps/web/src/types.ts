@@ -22,6 +22,7 @@ export type SaveSections = Partial<
     | 'calorieTarget'
     | 'macroTargets'
     | 'dayWeight'
+    | 'dayMeasurements'
     | 'theme'
     | 'data',
     boolean

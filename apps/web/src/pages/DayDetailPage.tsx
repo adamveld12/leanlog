@@ -6,6 +6,7 @@ import {
   cn,
   DailyTotalsCard,
   DayDetailTemplate,
+  DayMeasurementsCard,
   DayWeightCard,
   HelperText,
   MacroSummaryLine,
@@ -39,6 +40,7 @@ export default function DayDetailPage() {
   } = useStore();
   const { saved, markDirty, markSaved } = useSavedSections();
   const [savingWeight, setSavingWeight] = useState(false);
+  const [savingMeasurements, setSavingMeasurements] = useState(false);
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
     dayId: dayId ?? '',
     status: 'loading',
@@ -86,20 +88,40 @@ export default function DayDetailPage() {
         rightContent: <HeaderControls />,
       }}
       weightSection={
+        // Weight + measurements are current-day-only; both are hidden on past
+        // days, which are read-only (R3).
         isPast ? undefined : (
-          <DayWeightCard
-            key={day.id}
-            saved={saved.dayWeight}
-            saving={savingWeight}
-            weightLbs={day.weightLbs}
-            onSave={(next) => {
-              markDirty('dayWeight');
-              setSavingWeight(true);
-              void updateDayWeight(day.id, next)
-                .then(() => markSaved('dayWeight'))
-                .finally(() => setSavingWeight(false));
-            }}
-          />
+          <>
+            <DayWeightCard
+              key={`weight-${day.id}`}
+              saved={saved.dayWeight}
+              saving={savingWeight}
+              weightLbs={day.weightLbs}
+              onSave={(next) => {
+                markDirty('dayWeight');
+                setSavingWeight(true);
+                void updateDayWeight(day.id, next)
+                  .then(() => markSaved('dayWeight'))
+                  .finally(() => setSavingWeight(false));
+              }}
+            />
+            <DayMeasurementsCard
+              key={`measurements-${day.id}`}
+              saved={saved.dayMeasurements}
+              saving={savingMeasurements}
+              shoulderInches={day.shoulderInches}
+              waistInches={day.waistInches}
+              bicepInches={day.bicepInches}
+              thighInches={day.thighInches}
+              onSave={(patch) => {
+                markDirty('dayMeasurements');
+                setSavingMeasurements(true);
+                void updateDayTargets(day.id, patch)
+                  .then(() => markSaved('dayMeasurements'))
+                  .finally(() => setSavingMeasurements(false));
+              }}
+            />
+          </>
         )
       }
       totalsSection={
