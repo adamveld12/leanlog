@@ -2,19 +2,24 @@ import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   APP_NAV_LINKS,
+  BodyTrackingCard,
   Button,
   cn,
   DailyTotalsCard,
   DayDetailTemplate,
-  DayMeasurementsCard,
-  DayWeightCard,
   HelperText,
   MacroSummaryLine,
   recipes,
 } from '@leanlog/ui';
 import { deriveDayPlan, dayMealStructure } from '@leanlog/data-access';
 import { isPastIso, prettyDate, todayIso } from '../lib';
-import { dayTotals, mealTotals, selectWeightEntries } from '../selectors';
+import {
+  dayTotals,
+  mealTotals,
+  selectLatestMeasurements,
+  selectMeasurementsDue,
+  selectWeightEntries,
+} from '../selectors';
 import { useStore } from '../state';
 import {
   HeaderControls,
@@ -77,6 +82,11 @@ export default function DayDetailPage() {
   // fixed structure and per-meal logging. Ad-hoc days keep freeform meals.
   const isTemplateBacked = structure.kind === 'template';
   const isPast = isPastIso(day.date);
+  // Cadence is derived from all days: the most-recent complete measurement set
+  // feeds the collapsed weekly summary, and "due" hard-blocks when none falls in
+  // the last 7 days (#68).
+  const latestMeasurements = selectLatestMeasurements(days);
+  const measurementsDue = selectMeasurementsDue(days, todayIso());
 
   return (
     <DayDetailTemplate
@@ -88,40 +98,39 @@ export default function DayDetailPage() {
         rightContent: <HeaderControls />,
       }}
       weightSection={
-        // Weight + measurements are current-day-only; both are hidden on past
-        // days, which are read-only (R3).
+        // Weight + measurements are current-day-only; the whole card is hidden on
+        // past days, which are read-only (R3).
         isPast ? undefined : (
-          <>
-            <DayWeightCard
-              key={`weight-${day.id}`}
-              saved={saved.dayWeight}
-              saving={savingWeight}
-              weightLbs={day.weightLbs}
-              onSave={(next) => {
-                markDirty('dayWeight');
-                setSavingWeight(true);
-                void updateDayWeight(day.id, next)
-                  .then(() => markSaved('dayWeight'))
-                  .finally(() => setSavingWeight(false));
-              }}
-            />
-            <DayMeasurementsCard
-              key={`measurements-${day.id}`}
-              saved={saved.dayMeasurements}
-              saving={savingMeasurements}
-              shoulderInches={day.shoulderInches}
-              waistInches={day.waistInches}
-              bicepInches={day.bicepInches}
-              thighInches={day.thighInches}
-              onSave={(patch) => {
-                markDirty('dayMeasurements');
-                setSavingMeasurements(true);
-                void updateDayTargets(day.id, patch)
-                  .then(() => markSaved('dayMeasurements'))
-                  .finally(() => setSavingMeasurements(false));
-              }}
-            />
-          </>
+          <BodyTrackingCard
+            key={`bodytracking-${day.id}`}
+            weightLbs={day.weightLbs}
+            savingWeight={savingWeight}
+            savedWeight={saved.dayWeight}
+            onSaveWeight={(next) => {
+              markDirty('dayWeight');
+              setSavingWeight(true);
+              void updateDayWeight(day.id, next)
+                .then(() => markSaved('dayWeight'))
+                .finally(() => setSavingWeight(false));
+            }}
+            measurementsToday={{
+              shoulderInches: day.shoulderInches,
+              waistInches: day.waistInches,
+              bicepInches: day.bicepInches,
+              thighInches: day.thighInches,
+            }}
+            latestMeasurements={latestMeasurements}
+            measurementsDue={measurementsDue}
+            savingMeasurements={savingMeasurements}
+            savedMeasurements={saved.dayMeasurements}
+            onSaveMeasurements={(patch) => {
+              markDirty('dayMeasurements');
+              setSavingMeasurements(true);
+              void updateDayTargets(day.id, patch)
+                .then(() => markSaved('dayMeasurements'))
+                .finally(() => setSavingMeasurements(false));
+            }}
+          />
         )
       }
       totalsSection={

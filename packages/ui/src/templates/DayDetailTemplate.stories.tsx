@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { BodyTrackingCard } from '../organisms/BodyTrackingCard';
 import { DailyTotalsCard } from '../organisms/DailyTotalsCard';
-import { DayWeightCard } from '../organisms/DayWeightCard';
 import { DayDetailTemplate } from './DayDetailTemplate';
 
 const meta: Meta<typeof DayDetailTemplate> = {
@@ -41,6 +41,27 @@ export const Default: Story = {};
 
 export const WithWeightSection: Story = {
   args: {
-    weightSection: <DayWeightCard weightLbs={182} onSave={() => undefined} />,
+    weightSection: (
+      <BodyTrackingCard
+        weightLbs={182}
+        onSaveWeight={() => undefined}
+        measurementsToday={{
+          shoulderInches: null,
+          waistInches: null,
+          bicepInches: null,
+          thighInches: null,
+        }}
+        latestMeasurements={{
+          shoulderInches: 50,
+          waistInches: 32,
+          bicepInches: 15.5,
+          thighInches: 23,
+          vTaper: 1.56,
+          date: '2026-06-22',
+        }}
+        measurementsDue={false}
+        onSaveMeasurements={() => undefined}
+      />
+    ),
   },
 };
