@@ -42,7 +42,7 @@ export function Collapsible({
       <AnalyticsScope properties={{ molecule: 'Collapsible' }}>
         <div className={recipes.stack.rowBetween}>
           <div className="min-w-0">{summary}</div>
-          <Button type="button" variant="subtle" size="sm" className="shrink-0" onClick={onToggle}>
+          <Button type="button" variant="subtle" size="md" className="shrink-0" onClick={onToggle}>
             {editLabel}
           </Button>
         </div>
@@ -54,7 +54,7 @@ export function Collapsible({
     <AnalyticsScope properties={{ molecule: 'Collapsible' }}>
       <div className={recipes.stack.sm}>
         <div className={recipes.stack.rowEnd}>
-          <Button type="button" variant="subtle" size="sm" onClick={onToggle}>
+          <Button type="button" variant="subtle" size="md" onClick={onToggle}>
             {collapseLabel}
           </Button>
         </div>
