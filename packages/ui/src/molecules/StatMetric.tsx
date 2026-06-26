@@ -9,7 +9,9 @@ import { recipes } from '../styles/recipes';
 export type StatMetricProps = {
   label: string;
   value: string;
-  progress: number;
+  // Omit to render a barless stat (e.g. a measured weekly weight delta, which has
+  // no natural 0–100 scale). When present, drives the progress bar.
+  progress?: number;
   detail?: ReactNode;
   progressColor?: string;
   hint?: string;
@@ -33,7 +35,7 @@ export function StatMetric({
           {value}
         </Text>
       </div>
-      <ProgressBar value={progress} max={100} color={progressColor} />
+      {progress != null ? <ProgressBar value={progress} max={100} color={progressColor} /> : null}
       {hint ? (
         <HelperText as="p">{hint}</HelperText>
       ) : detail ? (

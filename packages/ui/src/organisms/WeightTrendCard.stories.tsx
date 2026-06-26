@@ -24,11 +24,23 @@ const SAMPLE = [
   { date: relativeIso(0), weightLbs: 178.5 },
 ];
 
+const WEEKLY = [
+  { date: relativeIso(56), weightLbs: 187.5 },
+  { date: relativeIso(49), weightLbs: 185.5 },
+  { date: relativeIso(35), weightLbs: 183.5 },
+  { date: relativeIso(21), weightLbs: 182 },
+  { date: relativeIso(14), weightLbs: 181 },
+  { date: relativeIso(7), weightLbs: 180 },
+  { date: relativeIso(0), weightLbs: 178.7 },
+];
+
 const meta: Meta<typeof WeightTrendCard> = {
   title: 'Design System/Organisms/WeightTrendCard',
   component: WeightTrendCard,
   args: {
     entries: SAMPLE,
+    weeklyEntries: WEEKLY,
+    weekOverWeekDeltaLbs: -1.3,
     goalWeightLbs: 175,
     defaultRange: '30d',
     now: TODAY,
@@ -43,3 +55,7 @@ export const NoGoal: Story = { args: { goalWeightLbs: null } };
 export const Empty: Story = { args: { entries: [] } };
 export const SevenDays: Story = { args: { defaultRange: '7d' } };
 export const AllTime: Story = { args: { defaultRange: 'all' } };
+export const WeekOverWeek: Story = { args: { defaultView: 'weekly', defaultRange: 'all' } };
+export const WeekOverWeekInsufficient: Story = {
+  args: { defaultView: 'weekly', defaultRange: 'all', weekOverWeekDeltaLbs: null },
+};

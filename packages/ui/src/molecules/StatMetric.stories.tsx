@@ -27,12 +27,22 @@ export const Coverage: Story = {
   },
 };
 
-export const WeightLost: Story = {
+// Measured week-over-week weight change (#68): a barless stat — a signed delta
+// has no natural 0–100 scale, so `progress` is omitted.
+export const WeeklyWeightChange: Story = {
   args: {
-    label: 'Est. Weight Lost',
-    value: '0.8 lb',
-    progress: 60,
-    detail: '~60% certainty',
+    label: 'Weekly Weight Change',
+    value: '−2.0 lb',
+    detail: 'avg last 7 days vs prior 7 days',
+  },
+};
+
+export const NorthStarVTaper: Story = {
+  args: {
+    label: 'V-Taper (North Star)',
+    value: '1.56',
+    progress: 98,
+    detail: 'Target 1.60 · 0.04 to go',
   },
 };
 
