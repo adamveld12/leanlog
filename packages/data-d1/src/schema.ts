@@ -90,6 +90,14 @@ export const dailyMealLogs = sqliteTable(
     targetProtein: integer('target_protein').notNull().default(140),
     mealCountTarget: integer('meal_count_target').notNull().default(3),
     weightLbs: real('weight_lbs'),
+    // Per-day body-circumference measurements in inches (#68). All optional and
+    // independent of weight: the user may log any subset on the current day. Only
+    // shoulder + waist feed the v-taper ratio; bicep/thigh are supplementary
+    // (single-value, right-side by convention).
+    shoulderInches: real('shoulder_inches'),
+    waistInches: real('waist_inches'),
+    bicepInches: real('bicep_inches'),
+    thighInches: real('thigh_inches'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },

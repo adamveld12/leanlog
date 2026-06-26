@@ -106,6 +106,128 @@ export function weightLossCertainty(coveragePct: number): number {
 }
 
 // ---------------------------------------------------------------------------
+// Body measurements, v-taper ratio & measured weekly weight delta (#68)
+// ---------------------------------------------------------------------------
+
+// The app's single defining physique target for v1 (R7): shoulders 1.6× the
+// waist. Body fat (the eventual "sub-15%" half of the north star) is deferred.
+export const V_TAPER_TARGET = 1.6;
+
+// V-taper = shoulder ÷ waist, computed for a day only when BOTH the shoulder and
+// waist are present (R6). Returns null when either is missing or non-positive, so
+// callers render a prompt/empty state rather than a zero or a broken ratio (R9).
+export function vTaperRatio(
+  shoulderInches: number | null | undefined,
+  waistInches: number | null | undefined,
+): number | null {
+  if (shoulderInches == null || waistInches == null) return null;
+  if (shoulderInches <= 0 || waistInches <= 0) return null;
+  return shoulderInches / waistInches;
+}
+
+// Display rounding for a v-taper ratio: two decimals (R6 BDD: 50/32 → 1.56,
+// 51/31 → 1.65). The "met" check uses the raw ratio against V_TAPER_TARGET, not
+// this rounded value, so a 1.595→1.60 display never falsely reads as reached.
+export function roundVTaper(ratio: number): number {
+  return Math.round(ratio * 100) / 100;
+}
+
+// The gap remaining to the 1.6 north star (R7), never negative. Zero once met.
+export function vTaperGapToTarget(ratio: number): number {
+  return Math.max(0, Math.round((V_TAPER_TARGET - ratio) * 100) / 100);
+}
+
+// Shifts an ISO (YYYY-MM-DD) calendar date by a whole number of days. Computed in
+// UTC so it never drifts across a DST boundary — the dates are calendar-only.
+function addDaysIso(iso: string, days: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return dt.toISOString().slice(0, 10);
+}
+
+function averageWeight(entries: WeightEntry[]): number {
+  return entries.reduce((sum, e) => sum + e.weightLbs, 0) / entries.length;
+}
+
+// Minimum weigh-ins required in EACH trailing 7-day window before a measured
+// weekly delta is shown (R12). Two per window keeps a single noisy reading from
+// defining the trend while still surfacing for anyone weighing a couple of times
+// a week. Below this in either window, callers show a "needs more weigh-ins"
+// placeholder rather than a misleading number.
+export const MIN_WEIGH_INS_PER_WINDOW = 2;
+
+export type WeeklyWeightDelta = {
+  // avg(last 7 days) − avg(prior 7 days), rounded to 0.1 lb. Negative = lost.
+  deltaLbs: number;
+  lastAvgLbs: number;
+  priorAvgLbs: number;
+  lastCount: number;
+  priorCount: number;
+};
+
+// The measured week-over-week weight number (R10): the average of the last 7
+// logged days minus the average of the prior 7 logged days, relative to `today`.
+// Replaces the calorie-deficit "Est. Weight Lost" estimate. Returns null when
+// either 7-day window has fewer than MIN_WEIGH_INS_PER_WINDOW weigh-ins (R12).
+// The same value headlines the week-over-week weight tab so the two never
+// disagree (R13).
+export function weeklyWeightDelta(entries: WeightEntry[], today: string): WeeklyWeightDelta | null {
+  // last window = [today−6 .. today]; prior window = [today−13 .. today−7].
+  const lastStart = addDaysIso(today, -6);
+  const priorStart = addDaysIso(today, -13);
+  const priorEnd = addDaysIso(today, -7);
+
+  const last = entries.filter((e) => e.date >= lastStart && e.date <= today);
+  const prior = entries.filter((e) => e.date >= priorStart && e.date <= priorEnd);
+
+  if (last.length < MIN_WEIGH_INS_PER_WINDOW || prior.length < MIN_WEIGH_INS_PER_WINDOW) {
+    return null;
+  }
+
+  const lastAvg = averageWeight(last);
+  const priorAvg = averageWeight(prior);
+  return {
+    deltaLbs: Math.round((lastAvg - priorAvg) * 10) / 10,
+    lastAvgLbs: Math.round(lastAvg * 10) / 10,
+    priorAvgLbs: Math.round(priorAvg * 10) / 10,
+    lastCount: last.length,
+    priorCount: prior.length,
+  };
+}
+
+export type WeeklyWeightAverage = { weekStart: string; avgLbs: number; count: number };
+
+// Buckets weigh-ins into Monday-anchored calendar weeks and averages each, for
+// the de-noised week-over-week trend line (R14). Returned oldest-week-first with
+// each point dated at its Monday so the line plots chronologically.
+export function weeklyWeightAverages(entries: WeightEntry[]): WeeklyWeightAverage[] {
+  const buckets = new Map<string, number[]>();
+  for (const e of entries) {
+    const weekStart = mondayStartIso(e.date);
+    const list = buckets.get(weekStart);
+    if (list) list.push(e.weightLbs);
+    else buckets.set(weekStart, [e.weightLbs]);
+  }
+  return [...buckets.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([weekStart, values]) => ({
+      weekStart,
+      avgLbs: Math.round((values.reduce((s, v) => s + v, 0) / values.length) * 10) / 10,
+      count: values.length,
+    }));
+}
+
+// The Monday on or before an ISO date (ISO-8601 week start), UTC calendar math.
+function mondayStartIso(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const dow = dt.getUTCDay(); // 0=Sun..6=Sat
+  const diff = dow === 0 ? -6 : 1 - dow;
+  return addDaysIso(iso, diff);
+}
+
+// ---------------------------------------------------------------------------
 // Goal adherence & outcomes (#56)
 // ---------------------------------------------------------------------------
 

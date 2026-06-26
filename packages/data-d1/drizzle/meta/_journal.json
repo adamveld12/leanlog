@@ -64,6 +64,13 @@
       "when": 1782348637550,
       "tag": "0008_clammy_nextwave",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1782441394890,
+      "tag": "0009_bouncy_leper_queen",
+      "breakpoints": true
     }
   ]
 }

@@ -50,6 +50,10 @@ function makeDay(): DailyMealLog {
     targetProtein: 270,
     mealCountTarget: 4,
     weightLbs: null,
+    shoulderInches: null,
+    waistInches: null,
+    bicepInches: null,
+    thighInches: null,
     meals: [
       {
         id: 'm1',
