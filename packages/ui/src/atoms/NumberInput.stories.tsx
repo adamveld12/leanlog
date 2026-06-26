@@ -7,11 +7,13 @@ function Demo({
   initialValue,
   placeholder,
   disabled,
+  allowNegative,
 }: {
   label: string;
   initialValue: number | null;
   placeholder?: string;
   disabled?: boolean;
+  allowNegative?: boolean;
 }) {
   const [value, setValue] = useState<number | null>(initialValue);
   return (
@@ -20,6 +22,7 @@ function Demo({
       value={value}
       placeholder={placeholder}
       disabled={disabled}
+      allowNegative={allowNegative}
       onChange={setValue}
     />
   );
@@ -47,4 +50,8 @@ export const Empty: Story = {
 
 export const Disabled: Story = {
   args: { label: '# of Servings', initialValue: 0, disabled: true },
+};
+
+export const WithNegativeValue: Story = {
+  args: { label: 'Calorie delta', initialValue: -250, allowNegative: true },
 };
