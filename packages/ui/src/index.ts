@@ -68,6 +68,7 @@ export * from './templates/ErrorTemplate';
 export * from './templates/LandingTemplate';
 export * from './templates/DayListTemplate';
 export * from './templates/DayDetailTemplate';
+export * from './templates/StatsTemplate';
 export * from './templates/MealEditTemplate';
 export * from './templates/MealTemplatesTemplate';
 export * from './templates/MealTemplateEditTemplate';

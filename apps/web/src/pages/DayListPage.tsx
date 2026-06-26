@@ -3,11 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   APP_NAV_LINKS,
   DayListTemplate,
-  MeasurementTrendCard,
   MonthCalendarCard,
   QuickActionsCard,
   WeeklyStatsCard,
-  WeightTrendCard,
 } from '@leanlog/ui';
 import { resolveCoveringGoal, type GoalMode } from '@leanlog/data-access';
 import { prettyDate, todayIso } from '../lib';
@@ -17,11 +15,7 @@ import {
   daysLast90,
   daysThisWeek,
   selectNorthStar,
-  selectVTaperEntries,
-  selectWaistEntries,
   selectWeeklyWeightDelta,
-  selectWeeklyWeightEntries,
-  selectWeightEntries,
   todayLog,
   trackedDatesMap,
 } from '../selectors';
@@ -67,13 +61,9 @@ export default function DayListPage() {
   const overallStats = useMemo(() => aggregateStats(last90Days), [last90Days]);
 
   const dateMap = useMemo(() => trackedDatesMap(days), [days]);
-  const weightEntries = useMemo(() => selectWeightEntries(days), [days]);
-  // The week-over-week weight number is computed once here and shared by the
-  // Weight Trend's week view headline so the two surfaces never disagree (R13).
-  const weeklyWeightEntries = useMemo(() => selectWeeklyWeightEntries(days), [days]);
+  // The measured week-over-week weight number headlines the Statistics card; the
+  // trend charts themselves now live on the Stats page (#68).
   const weeklyWeightDelta = useMemo(() => selectWeeklyWeightDelta(days), [days]);
-  const vTaperEntries = useMemo(() => selectVTaperEntries(days), [days]);
-  const waistEntries = useMemo(() => selectWaistEntries(days), [days]);
   const northStar = useMemo(() => selectNorthStar(days), [days]);
   const selectDay = useCallback((dayId: string) => nav(`/track/day/${dayId}`), [nav]);
 
@@ -185,19 +175,6 @@ export default function DayListPage() {
           northStar={northStar}
           weeklyWeightChangeLbs={weeklyWeightDelta?.deltaLbs ?? null}
         />
-      }
-      // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
-      weightTrend={
-        <WeightTrendCard
-          entries={weightEntries}
-          weeklyEntries={weeklyWeightEntries}
-          weekOverWeekDeltaLbs={weeklyWeightDelta?.deltaLbs ?? null}
-          goalWeightLbs={profile?.goalWeightLbs ?? null}
-        />
-      }
-      // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
-      measurementTrend={
-        <MeasurementTrendCard vTaperEntries={vTaperEntries} waistEntries={waistEntries} />
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
       calendar={
