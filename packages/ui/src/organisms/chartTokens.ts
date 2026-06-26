@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 // re-read on theme mutation. Shared by WeightTrendCard and MeasurementTrendCard.
 export type Tokens = { text: string; muted: string; line: string };
 
-export const FALLBACK_TOKENS: Tokens = { text: '#151515', muted: '#606060', line: '#e8e8e8' };
+const FALLBACK_TOKENS: Tokens = { text: '#151515', muted: '#606060', line: '#e8e8e8' };
 
-export function readChartTokens(): Tokens {
+function readChartTokens(): Tokens {
   if (typeof document === 'undefined') return FALLBACK_TOKENS;
   const cs = getComputedStyle(document.documentElement);
   const read = (name: string, fallback: string) => cs.getPropertyValue(name).trim() || fallback;
