@@ -129,7 +129,8 @@ export function vTaperGapToTarget(ratio: number): number {
 
 // Shifts an ISO (YYYY-MM-DD) calendar date by a whole number of days. Computed in
 // UTC so it never drifts across a DST boundary — the dates are calendar-only.
-function addDaysIso(iso: string, days: number): string {
+// Exported so web selectors reuse the same calendar math for cadence windows (#68).
+export function addDaysIso(iso: string, days: number): string {
   const [y, m, d] = iso.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
   dt.setUTCDate(dt.getUTCDate() + days);
