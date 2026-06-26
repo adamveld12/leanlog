@@ -120,9 +120,11 @@ export function ProgressComparisonSection() {
   };
 
   const panels = PROGRESS_POSES.map((pose) => {
-    const options = photoDays
-      .filter((d) => d[POSE_TO_KEY[pose]])
-      .map((d) => ({ value: d.date, label: prettyDate(d.date) }));
+    const column = POSE_TO_KEY[pose];
+    const options = photoDays.reduce<{ value: string; label: string }[]>((acc, d) => {
+      if (d[column]) acc.push({ value: d.date, label: prettyDate(d.date) });
+      return acc;
+    }, []);
     return buildPanel(
       pose,
       byPose[pose],
