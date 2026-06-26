@@ -653,7 +653,7 @@ function GoalDetail({
           <Field label="Description">
             <Input value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
-          <NumberInput label="Calorie delta" value={delta} onChange={setDelta} />
+          <NumberInput label="Calorie delta" value={delta} onChange={setDelta} allowNegative />
           {carbsWouldGoNegative ? (
             <WarningText>
               That deficit would push carbs below 0 g. The lowest allowed delta is {minDelta}.

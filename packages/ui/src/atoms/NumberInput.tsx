@@ -12,6 +12,8 @@ type NumberInputProps = {
   disabled?: boolean;
   labelClassName?: string;
   inputClassName?: string;
+  /** Allow a leading minus sign for negative values (e.g. calorie deltas). */
+  allowNegative?: boolean;
 };
 
 function display(value: number | null): string {
@@ -27,9 +29,12 @@ export function NumberInput({
   disabled,
   labelClassName = '',
   inputClassName = '',
+  allowNegative = false,
 }: NumberInputProps) {
   const [text, setText] = useState(() => display(value));
   const [editing, setEditing] = useState(false);
+  // Optionally permit a single leading minus so deltas can go negative.
+  const pattern = allowNegative ? /^-?\d*\.?\d*$/ : /^\d*\.?\d*$/;
 
   return (
     <Field label={label} className={labelClassName} labelClassName={cn(disabled && 'opacity-50')}>
@@ -44,8 +49,9 @@ export function NumberInput({
             onChange(null);
             return;
           }
-          if (!/^\d*\.?\d*$/.test(next)) return;
-          if (next === '.' || next.endsWith('.')) return;
+          if (!pattern.test(next)) return;
+          // Intermediate states with no parseable number yet (e.g. "-", "1.").
+          if (next === '-' || next === '.' || next === '-.' || next.endsWith('.')) return;
           const parsed = Number(next);
           if (!Number.isNaN(parsed)) onChange(parsed);
         }}

@@ -30,6 +30,30 @@ describe('NumberInput', () => {
     expect(onChange).toHaveBeenLastCalledWith(null);
   });
 
+  it('rejects a leading minus sign by default', async () => {
+    const onChange = vi.fn();
+    render(<NumberInput label="Calories" value={0} onChange={onChange} />);
+    const input = screen.getByRole('textbox');
+
+    await userEvent.clear(input);
+    onChange.mockClear();
+    await userEvent.type(input, '-5');
+    // The leading minus makes every intermediate string fail the numeric
+    // pattern, so no value is ever emitted.
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('accepts negative values when allowNegative is set', async () => {
+    const onChange = vi.fn();
+    render(<NumberInput label="Calorie delta" value={0} onChange={onChange} allowNegative />);
+    const input = screen.getByRole('textbox');
+
+    await userEvent.clear(input);
+    onChange.mockClear();
+    await userEvent.type(input, '-250');
+    expect(onChange).toHaveBeenLastCalledWith(-250);
+  });
+
   it('renders empty with a placeholder for a null value', () => {
     render(
       <NumberInput label="Weight (g)" value={null} placeholder="e.g. 120" onChange={() => {}} />,
