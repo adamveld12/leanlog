@@ -12,7 +12,6 @@ const DayDetailPage = lazy(() => import('./DayDetailPage'));
 const MealEditPage = lazy(() => import('./MealEditPage'));
 const NutritionFactsDatabasePage = lazy(() => import('./NutritionFactsDatabasePage'));
 const GoalsPage = lazy(() => import('./GoalsPage'));
-const StatsPage = lazy(() => import('./StatsPage'));
 
 export default function App() {
   return (
@@ -48,14 +47,6 @@ export default function App() {
           element={
             <RequireSignedIn>
               <NutritionFactsDatabasePage />
-            </RequireSignedIn>
-          }
-        />
-        <Route
-          path="/track/stats"
-          element={
-            <RequireSignedIn>
-              <StatsPage />
             </RequireSignedIn>
           }
         />
