@@ -66,17 +66,36 @@ describe('BodyTrackingCard (#68)', () => {
     expect(onSaveWeight).toHaveBeenCalledWith(180);
   });
 
-  it('measurements: Edit seeds the standing set, shows live v-taper, Cancel returns', () => {
-    // weightLbs null → weight is a hard block (no weight Edit), so the only Edit is measurements'.
+  it('measurements: no log today → button says "Log", seeds the standing set, Cancel returns', () => {
+    // weightLbs null → weight is a hard block (no weight Edit), so the only action button
+    // is measurements'. Today has no set of its own (NO_TODAY), so this creates a new log.
     renderCard({ weightLbs: null, measurementsDue: false, latestMeasurements: LATEST });
     expect(screen.getByText(/Last measured/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText('e.g. 50')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Log' }));
     const shoulder = screen.getByPlaceholderText('e.g. 50') as HTMLInputElement;
-    expect(shoulder.value).toBe('50'); // seeded from the standing set
+    expect(shoulder.value).toBe('50'); // carry-forward seed from the standing set
     expect(screen.getByText('1.56')).toBeInTheDocument(); // live v-taper from 50/32
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByPlaceholderText('e.g. 50')).not.toBeInTheDocument();
+  });
+
+  it('measurements: a complete set logged today → button says "Edit"', () => {
+    // Today carries its own complete set, so the summary action edits today's log.
+    renderCard({
+      weightLbs: null,
+      measurementsDue: false,
+      measurementsToday: {
+        shoulderInches: 50,
+        waistInches: 32,
+        bicepInches: 15.5,
+        thighInches: 23,
+      },
+      latestMeasurements: { ...LATEST, date: '2026-06-27' },
+    });
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Log' })).not.toBeInTheDocument();
   });
 
   it('measurements: overdue is a hard block — required-all-four, Save gated, no Edit/Cancel', () => {

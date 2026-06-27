@@ -125,6 +125,15 @@ export function BodyTrackingCard({
   const vtaper = displayVTaper(md.shoulder, md.waist);
   const measHardBlock = !readOnly && measurementsDue;
   const measShowEditor = measHardBlock || (!readOnly && meas.editing);
+  // Whether THIS day already carries its own complete set. When it does the summary
+  // button edits today's log ("Edit"); otherwise the standing set is from an earlier
+  // day and the action creates a fresh log for today ("Log") — not an edit (#68).
+  const loggedMeasToday = [
+    measurementsToday.shoulderInches,
+    measurementsToday.waistInches,
+    measurementsToday.bicepInches,
+    measurementsToday.thighInches,
+  ].every((v) => v != null && v > 0);
 
   const setMeasField = (key: keyof MeasDraft) => (value: number | null) =>
     setMeas((m) => ({ ...m, draft: { ...m.draft, [key]: value } }));
@@ -284,7 +293,7 @@ export function BodyTrackingCard({
               )}
               {!readOnly && latestMeasurements != null ? (
                 <Button variant="secondary" onClick={startEditMeas}>
-                  Edit
+                  {loggedMeasToday ? 'Edit' : 'Log'}
                 </Button>
               ) : null}
             </div>
