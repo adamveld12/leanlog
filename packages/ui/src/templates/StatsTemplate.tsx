@@ -8,14 +8,22 @@ export type StatsTemplateProps = {
   heading: ComponentProps<typeof PageNavHeading>;
   weightTrend: ReactNode;
   measurementTrend: ReactNode;
+  /** Bicep + quad circumference trends, charted separately from the v-taper group (#68). */
+  limbTrend: ReactNode;
 };
 
-export function StatsTemplate({ heading, weightTrend, measurementTrend }: StatsTemplateProps) {
+export function StatsTemplate({
+  heading,
+  weightTrend,
+  measurementTrend,
+  limbTrend,
+}: StatsTemplateProps) {
   return (
     <AppShell>
       <PageNavHeading {...heading} />
       {weightTrend}
       {measurementTrend}
+      {limbTrend}
     </AppShell>
   );
 }

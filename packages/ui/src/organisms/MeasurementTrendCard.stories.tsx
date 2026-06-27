@@ -46,46 +46,34 @@ const NOW = new Date('2026-05-30T12:00:00');
 const meta: Meta<typeof MeasurementTrendCard> = {
   title: 'Design System/Organisms/MeasurementTrendCard',
   component: MeasurementTrendCard,
-  args: {
-    now: NOW,
-    defaultRange: 'all',
-    vTaperEntries: V_TAPER,
-    shoulderEntries: SHOULDER,
-    waistEntries: WAIST,
-    bicepEntries: BICEP,
-    thighEntries: THIGH,
-  },
+  args: { now: NOW, defaultRange: 'all' },
 };
 
 export default meta;
 type Story = StoryObj<typeof MeasurementTrendCard>;
 
-export const VTaper: Story = {
-  args: { defaultMetric: 'vtaper' },
+// The v-taper grouping shown on the Stats page.
+export const MeasurementTrends: Story = {
+  args: {
+    title: 'Measurement Trends',
+    metrics: ['vtaper', 'shoulder', 'waist'],
+    entries: { vtaper: V_TAPER, shoulder: SHOULDER, waist: WAIST },
+  },
 };
 
-export const Shoulder: Story = {
-  args: { defaultMetric: 'shoulder' },
-};
-
-export const Waist: Story = {
-  args: { defaultMetric: 'waist' },
-};
-
-export const Bicep: Story = {
-  args: { defaultMetric: 'bicep' },
-};
-
-export const Quad: Story = {
-  args: { defaultMetric: 'thigh' },
+// The bicep + quad grouping, charted as a separate card on the Stats page.
+export const LimbTrends: Story = {
+  args: {
+    title: 'Limb Trends',
+    metrics: ['bicep', 'thigh'],
+    entries: { bicep: BICEP, thigh: THIGH },
+  },
 };
 
 export const Empty: Story = {
   args: {
-    vTaperEntries: [],
-    shoulderEntries: [],
-    waistEntries: [],
-    bicepEntries: [],
-    thighEntries: [],
+    title: 'Measurement Trends',
+    metrics: ['vtaper', 'shoulder', 'waist'],
+    entries: {},
   },
 };

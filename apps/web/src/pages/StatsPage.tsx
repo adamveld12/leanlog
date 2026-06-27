@@ -53,11 +53,17 @@ export default function StatsPage() {
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
       measurementTrend={
         <MeasurementTrendCard
-          vTaperEntries={vTaperEntries}
-          shoulderEntries={shoulderEntries}
-          waistEntries={waistEntries}
-          bicepEntries={bicepEntries}
-          thighEntries={thighEntries}
+          title="Measurement Trends"
+          metrics={['vtaper', 'shoulder', 'waist']}
+          entries={{ vtaper: vTaperEntries, shoulder: shoulderEntries, waist: waistEntries }}
+        />
+      }
+      // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
+      limbTrend={
+        <MeasurementTrendCard
+          title="Limb Trends"
+          metrics={['bicep', 'thigh']}
+          entries={{ bicep: bicepEntries, thigh: thighEntries }}
         />
       }
     />

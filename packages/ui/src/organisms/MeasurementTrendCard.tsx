@@ -17,17 +17,12 @@ export type MeasurementTrendRange = '7d' | '30d' | '90d' | 'all';
 export type MeasurementMetric = 'vtaper' | 'shoulder' | 'waist' | 'bicep' | 'thigh';
 
 export type MeasurementTrendCardProps = {
-  // Per-day v-taper points (days where both shoulder + waist were logged — R15).
-  vTaperEntries: MeasurementTrendEntry[];
-  // Per-day shoulder points (#68 fast-follow).
-  shoulderEntries: MeasurementTrendEntry[];
-  // Per-day waist points (R16).
-  waistEntries: MeasurementTrendEntry[];
-  // Per-day bicep points (#68 fast-follow).
-  bicepEntries: MeasurementTrendEntry[];
-  // Per-day thigh / quad points (#68 fast-follow).
-  thighEntries: MeasurementTrendEntry[];
-  defaultMetric?: MeasurementMetric;
+  // The card heading + which metric tabs to show (in order). The card is generic so
+  // the Stats page can mount it more than once with different metric groupings (#68).
+  title: string;
+  metrics: MeasurementMetric[];
+  // Per-day points keyed by metric; a metric with no entries shows its empty prompt.
+  entries: Partial<Record<MeasurementMetric, MeasurementTrendEntry[]>>;
   defaultRange?: MeasurementTrendRange;
   now?: Date;
 };
@@ -37,14 +32,6 @@ const RANGE_DAYS: Record<Exclude<MeasurementTrendRange, 'all'>, number> = {
   '30d': 30,
   '90d': 90,
 };
-
-const METRIC_TABS = [
-  { key: 'vtaper', label: 'V-Taper', panelId: 'measurement-trend-vtaper-panel' },
-  { key: 'shoulder', label: 'Shoulder', panelId: 'measurement-trend-shoulder-panel' },
-  { key: 'waist', label: 'Waist', panelId: 'measurement-trend-waist-panel' },
-  { key: 'bicep', label: 'Bicep', panelId: 'measurement-trend-bicep-panel' },
-  { key: 'thigh', label: 'Quad', panelId: 'measurement-trend-thigh-panel' },
-];
 
 // Range tabs are a segmented filter on top of the metric tabpanel, so they carry
 // no panelId of their own (the metric tabs own the panel).
@@ -57,9 +44,10 @@ const RANGE_TABS = [
 
 const METRIC_CONFIG: Record<
   MeasurementMetric,
-  { unit: string; precision: number; minPad: number; noun: string; empty: string }
+  { label: string; unit: string; precision: number; minPad: number; noun: string; empty: string }
 > = {
   vtaper: {
+    label: 'V-Taper',
     unit: '',
     precision: 2,
     minPad: 0.05,
@@ -67,6 +55,7 @@ const METRIC_CONFIG: Record<
     empty: 'Log shoulder and waist on the day page to chart your v-taper over time.',
   },
   shoulder: {
+    label: 'Shoulder',
     unit: 'in',
     precision: 1,
     minPad: 1,
@@ -74,6 +63,7 @@ const METRIC_CONFIG: Record<
     empty: 'Log your shoulders on the day page to chart them over time.',
   },
   waist: {
+    label: 'Waist',
     unit: 'in',
     precision: 1,
     minPad: 1,
@@ -81,6 +71,7 @@ const METRIC_CONFIG: Record<
     empty: 'Log your waist on the day page to chart it over time.',
   },
   bicep: {
+    label: 'Bicep',
     unit: 'in',
     precision: 1,
     minPad: 1,
@@ -88,6 +79,7 @@ const METRIC_CONFIG: Record<
     empty: 'Log your biceps on the day page to chart them over time.',
   },
   thigh: {
+    label: 'Quad',
     unit: 'in',
     precision: 1,
     minPad: 1,
@@ -96,50 +88,47 @@ const METRIC_CONFIG: Record<
   },
 };
 
+const NO_ENTRIES: MeasurementTrendEntry[] = [];
+
 export function MeasurementTrendCard({
-  vTaperEntries,
-  shoulderEntries,
-  waistEntries,
-  bicepEntries,
-  thighEntries,
-  defaultMetric = 'vtaper',
+  title,
+  metrics,
+  entries,
   defaultRange = '30d',
   now,
 }: MeasurementTrendCardProps) {
-  const [metric, setMetric] = useState<MeasurementMetric>(defaultMetric);
+  const [metric, setMetric] = useState<MeasurementMetric>(() => metrics[0]);
   const [range, setRange] = useState<MeasurementTrendRange>(defaultRange);
   const tokens = useChartTokens();
 
-  const entriesByMetric: Record<MeasurementMetric, MeasurementTrendEntry[]> = {
-    vtaper: vTaperEntries,
-    shoulder: shoulderEntries,
-    waist: waistEntries,
-    bicep: bicepEntries,
-    thigh: thighEntries,
-  };
-  const entries = entriesByMetric[metric];
+  const metricTabs = metrics.map((m) => ({
+    key: m,
+    label: METRIC_CONFIG[m].label,
+    panelId: `measurement-trend-${m}-panel`,
+  }));
+  const points = entries[metric] ?? NO_ENTRIES;
   const config = METRIC_CONFIG[metric];
 
   const filtered = useMemo(() => {
-    if (range === 'all') return entries;
+    if (range === 'all') return points;
     const reference = now ?? new Date();
     const cutoff = new Date(reference);
     cutoff.setHours(0, 0, 0, 0);
     cutoff.setDate(cutoff.getDate() - RANGE_DAYS[range] + 1);
     const cutoffIso = toIso(cutoff);
-    return entries.filter((e) => e.date >= cutoffIso);
-  }, [entries, range, now]);
+    return points.filter((e) => e.date >= cutoffIso);
+  }, [points, range, now]);
 
   const isEmpty = filtered.length === 0;
 
   return (
     <AnalyticsScope properties={{ organism: 'MeasurementTrendCard' }}>
-      <SectionCard title="Measurement Trends">
+      <SectionCard title={title}>
         <Tabs
-          tabs={METRIC_TABS}
+          tabs={metricTabs}
           active={metric}
           onChange={(k) => setMetric(k as MeasurementMetric)}
-          label="Measurement"
+          label={`${title} metric`}
         />
         <div
           role="tabpanel"
@@ -151,7 +140,7 @@ export function MeasurementTrendCard({
             tabs={RANGE_TABS}
             active={range}
             onChange={(k) => setRange(k as MeasurementTrendRange)}
-            label="Measurement trend range"
+            label={`${title} range`}
           />
           <div className="relative h-56 w-full">
             <Suspense fallback={null}>

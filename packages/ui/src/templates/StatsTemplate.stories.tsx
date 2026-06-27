@@ -58,11 +58,18 @@ const meta: Meta<typeof StatsTemplate> = {
     ),
     measurementTrend: (
       <MeasurementTrendCard
-        vTaperEntries={V_TAPER}
-        shoulderEntries={SHOULDER}
-        waistEntries={WAIST}
-        bicepEntries={BICEP}
-        thighEntries={THIGH}
+        title="Measurement Trends"
+        metrics={['vtaper', 'shoulder', 'waist']}
+        entries={{ vtaper: V_TAPER, shoulder: SHOULDER, waist: WAIST }}
+        defaultRange="all"
+        now={NOW}
+      />
+    ),
+    limbTrend: (
+      <MeasurementTrendCard
+        title="Limb Trends"
+        metrics={['bicep', 'thigh']}
+        entries={{ bicep: BICEP, thigh: THIGH }}
         defaultRange="all"
         now={NOW}
       />
