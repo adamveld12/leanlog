@@ -173,8 +173,13 @@ function num(cell: string | undefined): number | null {
 }
 
 // A required numeric (calories/macros) — guaranteed present in every curated row.
+// Floored at 0: USDA reports carbohydrate "by difference", so a few high-protein/
+// high-fat animal foods (e.g. ground bison, raw chicken) round a few hundredths of
+// a gram below zero. A negative macro is physically meaningless and fails the read
+// schema (carbs >= 0), so we clamp it up to 0 — the same rounding-artifact handling
+// clampToTotal applies to sub-values.
 function required(cell: string | undefined): number {
-  return num(cell) ?? 0;
+  return Math.max(0, num(cell) ?? 0);
 }
 
 // A sub-value can't exceed the total it belongs to (USDA per-100g rounding pushes

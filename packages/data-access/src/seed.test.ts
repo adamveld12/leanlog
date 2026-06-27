@@ -140,6 +140,14 @@ describe('buildUsdaSeedRow', () => {
     expect(row.sugar).toBe(4.8);
   });
 
+  it('floors a negative carbohydrate-by-difference at 0', () => {
+    // USDA carb "by difference" rounds slightly negative on some animal foods; a
+    // negative macro is meaningless and fails the read schema, so it clamps to 0.
+    const row = buildUsdaSeedRow({ ...beefRow, TOTAL_CARBOHYDRATES_G: '-0.42825' });
+    expect(row.carbs).toBe(0);
+    expect(NutritionDatabaseIngredientSchema.safeParse(row).success).toBe(true);
+  });
+
   it('produces a row that passes the read schema and label validation', () => {
     const row = buildUsdaSeedRow(milkRow);
     expect(NutritionDatabaseIngredientSchema.safeParse(row).success).toBe(true);
