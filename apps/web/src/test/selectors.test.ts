@@ -11,6 +11,9 @@ import {
   selectWeightEntries,
   selectVTaperEntries,
   selectWaistEntries,
+  selectShoulderEntries,
+  selectBicepEntries,
+  selectThighEntries,
   selectNorthStar,
   selectWeeklyWeightDelta,
   selectWeeklyWeightEntries,
@@ -407,6 +410,42 @@ describe('measurement selectors (#68)', () => {
     expect(selectWaistEntries(days)).toEqual([
       { date: '2026-05-26', value: 33 },
       { date: '2026-05-28', value: 31 },
+    ]);
+  });
+
+  it('selectShoulderEntries yields a point per day with a shoulder, sorted by date', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-28', shoulderInches: 52 }),
+      makeDay({ id: 'b', date: '2026-05-26', shoulderInches: 51 }),
+      makeDay({ id: 'c', date: '2026-05-27' }), // no shoulder → skipped
+    ];
+    expect(selectShoulderEntries(days)).toEqual([
+      { date: '2026-05-26', value: 51 },
+      { date: '2026-05-28', value: 52 },
+    ]);
+  });
+
+  it('selectBicepEntries yields a point per day with a bicep, sorted by date', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-28', bicepInches: 15.5 }),
+      makeDay({ id: 'b', date: '2026-05-26', bicepInches: 15 }),
+      makeDay({ id: 'c', date: '2026-05-27' }), // no bicep → skipped
+    ];
+    expect(selectBicepEntries(days)).toEqual([
+      { date: '2026-05-26', value: 15 },
+      { date: '2026-05-28', value: 15.5 },
+    ]);
+  });
+
+  it('selectThighEntries yields a point per day with a thigh, sorted by date', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-28', thighInches: 23.5 }),
+      makeDay({ id: 'b', date: '2026-05-26', thighInches: 23 }),
+      makeDay({ id: 'c', date: '2026-05-27' }), // no thigh → skipped
+    ];
+    expect(selectThighEntries(days)).toEqual([
+      { date: '2026-05-26', value: 23 },
+      { date: '2026-05-28', value: 23.5 },
     ]);
   });
 

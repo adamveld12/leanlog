@@ -133,6 +133,30 @@ export function selectWaistEntries(days: DailyMealLog[]): MeasurementPoint[] {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+// Per-day shoulder points for the shoulder trend chart (#68 fast-follow).
+export function selectShoulderEntries(days: DailyMealLog[]): MeasurementPoint[] {
+  return days
+    .filter((d): d is DailyMealLog & { shoulderInches: number } => d.shoulderInches != null)
+    .map((d) => ({ date: d.date, value: d.shoulderInches }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// Per-day bicep points for the bicep trend chart (#68 fast-follow).
+export function selectBicepEntries(days: DailyMealLog[]): MeasurementPoint[] {
+  return days
+    .filter((d): d is DailyMealLog & { bicepInches: number } => d.bicepInches != null)
+    .map((d) => ({ date: d.date, value: d.bicepInches }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// Per-day thigh (quad) points for the quad trend chart (#68 fast-follow).
+export function selectThighEntries(days: DailyMealLog[]): MeasurementPoint[] {
+  return days
+    .filter((d): d is DailyMealLog & { thighInches: number } => d.thighInches != null)
+    .map((d) => ({ date: d.date, value: d.thighInches }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 type CompleteSetDay = DailyMealLog & {
   shoulderInches: number;
   waistInches: number;

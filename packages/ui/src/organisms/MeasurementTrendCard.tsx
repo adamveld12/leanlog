@@ -14,13 +14,19 @@ const MeasurementTrendChart = lazy(() => import('./MeasurementTrendChart'));
 
 export type MeasurementTrendEntry = { date: string; value: number };
 export type MeasurementTrendRange = '7d' | '30d' | '90d' | 'all';
-export type MeasurementMetric = 'vtaper' | 'waist';
+export type MeasurementMetric = 'vtaper' | 'shoulder' | 'waist' | 'bicep' | 'thigh';
 
 export type MeasurementTrendCardProps = {
   // Per-day v-taper points (days where both shoulder + waist were logged — R15).
   vTaperEntries: MeasurementTrendEntry[];
+  // Per-day shoulder points (#68 fast-follow).
+  shoulderEntries: MeasurementTrendEntry[];
   // Per-day waist points (R16).
   waistEntries: MeasurementTrendEntry[];
+  // Per-day bicep points (#68 fast-follow).
+  bicepEntries: MeasurementTrendEntry[];
+  // Per-day thigh / quad points (#68 fast-follow).
+  thighEntries: MeasurementTrendEntry[];
   defaultMetric?: MeasurementMetric;
   defaultRange?: MeasurementTrendRange;
   now?: Date;
@@ -34,7 +40,10 @@ const RANGE_DAYS: Record<Exclude<MeasurementTrendRange, 'all'>, number> = {
 
 const METRIC_TABS = [
   { key: 'vtaper', label: 'V-Taper', panelId: 'measurement-trend-vtaper-panel' },
+  { key: 'shoulder', label: 'Shoulder', panelId: 'measurement-trend-shoulder-panel' },
   { key: 'waist', label: 'Waist', panelId: 'measurement-trend-waist-panel' },
+  { key: 'bicep', label: 'Bicep', panelId: 'measurement-trend-bicep-panel' },
+  { key: 'thigh', label: 'Quad', panelId: 'measurement-trend-thigh-panel' },
 ];
 
 // Range tabs are a segmented filter on top of the metric tabpanel, so they carry
@@ -57,6 +66,13 @@ const METRIC_CONFIG: Record<
     noun: 'v-taper',
     empty: 'Log shoulder and waist on the day page to chart your v-taper over time.',
   },
+  shoulder: {
+    unit: 'in',
+    precision: 1,
+    minPad: 1,
+    noun: 'shoulder',
+    empty: 'Log your shoulders on the day page to chart them over time.',
+  },
   waist: {
     unit: 'in',
     precision: 1,
@@ -64,11 +80,28 @@ const METRIC_CONFIG: Record<
     noun: 'waist',
     empty: 'Log your waist on the day page to chart it over time.',
   },
+  bicep: {
+    unit: 'in',
+    precision: 1,
+    minPad: 1,
+    noun: 'bicep',
+    empty: 'Log your biceps on the day page to chart them over time.',
+  },
+  thigh: {
+    unit: 'in',
+    precision: 1,
+    minPad: 1,
+    noun: 'quad',
+    empty: 'Log your quads on the day page to chart them over time.',
+  },
 };
 
 export function MeasurementTrendCard({
   vTaperEntries,
+  shoulderEntries,
   waistEntries,
+  bicepEntries,
+  thighEntries,
   defaultMetric = 'vtaper',
   defaultRange = '30d',
   now,
@@ -77,7 +110,14 @@ export function MeasurementTrendCard({
   const [range, setRange] = useState<MeasurementTrendRange>(defaultRange);
   const tokens = useChartTokens();
 
-  const entries = metric === 'vtaper' ? vTaperEntries : waistEntries;
+  const entriesByMetric: Record<MeasurementMetric, MeasurementTrendEntry[]> = {
+    vtaper: vTaperEntries,
+    shoulder: shoulderEntries,
+    waist: waistEntries,
+    bicep: bicepEntries,
+    thigh: thighEntries,
+  };
+  const entries = entriesByMetric[metric];
   const config = METRIC_CONFIG[metric];
 
   const filtered = useMemo(() => {

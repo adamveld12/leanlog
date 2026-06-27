@@ -1,6 +1,9 @@
 import { useMemo } from 'react';
 import { APP_NAV_LINKS, MeasurementTrendCard, StatsTemplate, WeightTrendCard } from '@leanlog/ui';
 import {
+  selectBicepEntries,
+  selectShoulderEntries,
+  selectThighEntries,
   selectVTaperEntries,
   selectWaistEntries,
   selectWeeklyWeightDelta,
@@ -22,7 +25,10 @@ export default function StatsPage() {
   const weeklyWeightEntries = useMemo(() => selectWeeklyWeightEntries(days), [days]);
   const weeklyWeightDelta = useMemo(() => selectWeeklyWeightDelta(days), [days]);
   const vTaperEntries = useMemo(() => selectVTaperEntries(days), [days]);
+  const shoulderEntries = useMemo(() => selectShoulderEntries(days), [days]);
   const waistEntries = useMemo(() => selectWaistEntries(days), [days]);
+  const bicepEntries = useMemo(() => selectBicepEntries(days), [days]);
+  const thighEntries = useMemo(() => selectThighEntries(days), [days]);
 
   if (loading) return <PageLoadingState label="Loading your stats…" />;
   if (error) return <TrackerErrorState message={error} />;
@@ -46,7 +52,13 @@ export default function StatsPage() {
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
       measurementTrend={
-        <MeasurementTrendCard vTaperEntries={vTaperEntries} waistEntries={waistEntries} />
+        <MeasurementTrendCard
+          vTaperEntries={vTaperEntries}
+          shoulderEntries={shoulderEntries}
+          waistEntries={waistEntries}
+          bicepEntries={bicepEntries}
+          thighEntries={thighEntries}
+        />
       }
     />
   );

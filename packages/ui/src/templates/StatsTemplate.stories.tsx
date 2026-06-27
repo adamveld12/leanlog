@@ -15,10 +15,25 @@ const V_TAPER = [
   { date: '2026-05-14', value: 1.56 },
   { date: '2026-05-28', value: 1.62 },
 ];
+const SHOULDER = [
+  { date: '2026-05-01', value: 51 },
+  { date: '2026-05-14', value: 51.5 },
+  { date: '2026-05-28', value: 51.8 },
+];
 const WAIST = [
   { date: '2026-05-01', value: 34 },
   { date: '2026-05-14', value: 33 },
   { date: '2026-05-28', value: 32 },
+];
+const BICEP = [
+  { date: '2026-05-01', value: 15 },
+  { date: '2026-05-14', value: 15.3 },
+  { date: '2026-05-28', value: 15.5 },
+];
+const THIGH = [
+  { date: '2026-05-01', value: 23 },
+  { date: '2026-05-14', value: 23.3 },
+  { date: '2026-05-28', value: 23.6 },
 ];
 
 const meta: Meta<typeof StatsTemplate> = {
@@ -44,7 +59,10 @@ const meta: Meta<typeof StatsTemplate> = {
     measurementTrend: (
       <MeasurementTrendCard
         vTaperEntries={V_TAPER}
+        shoulderEntries={SHOULDER}
         waistEntries={WAIST}
+        bicepEntries={BICEP}
+        thighEntries={THIGH}
         defaultRange="all"
         now={NOW}
       />
