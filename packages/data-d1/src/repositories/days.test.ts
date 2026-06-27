@@ -254,4 +254,44 @@ describe('createDayRepository', () => {
       expect(ingredientCount).toBe(120);
     });
   });
+
+  // #68: body-circumference measurements ride the same per-day model and write
+  // path as weight (updateTargets), independent of whether weight was logged.
+  describe('updateTargets — body measurements', () => {
+    test('persists shoulder/waist/bicep/thigh and round-trips through getById', async () => {
+      await seedUser(env.DB, userId);
+      const dayId = await seedDay(env.DB, userId, '2026-01-01');
+
+      const repo = createDayRepository(env.DB);
+      const updated = await repo.updateTargets(userId, dayId, {
+        shoulderInches: 50,
+        waistInches: 32,
+        bicepInches: 15.5,
+        thighInches: 23,
+      });
+
+      expect(updated.shoulderInches).toBe(50);
+      expect(updated.waistInches).toBe(32);
+      expect(updated.bicepInches).toBe(15.5);
+      expect(updated.thighInches).toBe(23);
+
+      const reloaded = await repo.getById(userId, dayId);
+      expect(reloaded!.shoulderInches).toBe(50);
+      expect(reloaded!.waistInches).toBe(32);
+    });
+
+    test('allows partial entry (waist only) without touching weight or other sites', async () => {
+      await seedUser(env.DB, userId);
+      const dayId = await seedDay(env.DB, userId, '2026-01-01');
+
+      const repo = createDayRepository(env.DB);
+      const updated = await repo.updateTargets(userId, dayId, { waistInches: 33 });
+
+      expect(updated.waistInches).toBe(33);
+      expect(updated.shoulderInches).toBeNull();
+      expect(updated.bicepInches).toBeNull();
+      expect(updated.thighInches).toBeNull();
+      expect(updated.weightLbs).toBeNull();
+    });
+  });
 });

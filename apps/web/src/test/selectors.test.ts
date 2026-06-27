@@ -9,6 +9,16 @@ import {
   trackedDatesMap,
   aggregateStats,
   selectWeightEntries,
+  selectVTaperEntries,
+  selectWaistEntries,
+  selectShoulderEntries,
+  selectBicepEntries,
+  selectThighEntries,
+  selectNorthStar,
+  selectWeeklyWeightDelta,
+  selectWeeklyWeightEntries,
+  selectLatestMeasurements,
+  selectMeasurementsDue,
 } from '../selectors';
 
 const now = new Date().toISOString();
@@ -24,6 +34,10 @@ function makeDay(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
     targetProtein: 270,
     mealCountTarget: 4,
     weightLbs: null,
+    shoulderInches: null,
+    waistInches: null,
+    bicepInches: null,
+    thighInches: null,
     meals: [],
     createdAt: now,
     updatedAt: now,
@@ -214,20 +228,17 @@ describe('aggregateStats', () => {
       }),
     ];
 
-    const result = aggregateStats(days, 2700);
+    const result = aggregateStats(days);
     expect(result.totalCalories).toBe(2500);
     expect(result.mealsTracked).toBe(5);
     expect(result.mealsExpected).toBe(6);
     expect(result.coverage).toBe(83);
-    expect(result.certainty).toBe(66);
-    expect(result.estimatedWeightLost).toBeGreaterThan(0);
   });
 
   it('returns zeros for empty days', () => {
-    const result = aggregateStats([], 2700);
+    const result = aggregateStats([]);
     expect(result.accuracy.overall).toBe(0);
     expect(result.coverage).toBe(0);
-    expect(result.estimatedWeightLost).toBe(0);
   });
 
   it('computes totalFiber and totalNetCarbs', () => {
@@ -270,7 +281,7 @@ describe('aggregateStats', () => {
       mealCountTarget: 3,
       meals: [meal, meal],
     });
-    const result = aggregateStats([day, day], 2700);
+    const result = aggregateStats([day, day]);
     expect(result.totalFiber).toBe(20); // 5 * 4 meals
     expect(result.totalNetCarbs).toBe(180); // (50-5)*4
   });
@@ -307,7 +318,7 @@ describe('aggregateStats', () => {
       ],
     };
     const day = makeDay({ meals: [highFiberMeal] });
-    const result = aggregateStats([day], 2700);
+    const result = aggregateStats([day]);
     expect(result.totalNetCarbs).toBe(0);
   });
 
@@ -347,7 +358,7 @@ describe('aggregateStats', () => {
       ],
     };
     const day = makeDay({ targetCarbs: 50, meals: [meal] });
-    const result = aggregateStats([day], 2700);
+    const result = aggregateStats([day]);
     expect(result.accuracy.carbs).toBe(100);
   });
 });
@@ -374,5 +385,163 @@ describe('selectWeightEntries', () => {
     ];
     const entries = selectWeightEntries(days);
     expect(entries.map((e) => e.date)).toEqual(['2026-05-26', '2026-05-27', '2026-05-28']);
+  });
+});
+
+describe('measurement selectors (#68)', () => {
+  it('selectVTaperEntries yields one rounded point per day with both sites', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-26', shoulderInches: 50, waistInches: 32 }),
+      makeDay({ id: 'b', date: '2026-05-27', waistInches: 33 }), // shoulder missing → skipped
+      makeDay({ id: 'c', date: '2026-05-28', shoulderInches: 51, waistInches: 31 }),
+    ];
+    expect(selectVTaperEntries(days)).toEqual([
+      { date: '2026-05-26', value: 1.56 },
+      { date: '2026-05-28', value: 1.65 },
+    ]);
+  });
+
+  it('selectWaistEntries yields a point per day with a waist, sorted by date', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-28', waistInches: 31 }),
+      makeDay({ id: 'b', date: '2026-05-26', waistInches: 33 }),
+      makeDay({ id: 'c', date: '2026-05-27' }), // no waist → skipped
+    ];
+    expect(selectWaistEntries(days)).toEqual([
+      { date: '2026-05-26', value: 33 },
+      { date: '2026-05-28', value: 31 },
+    ]);
+  });
+
+  it('selectShoulderEntries yields a point per day with a shoulder, sorted by date', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-28', shoulderInches: 52 }),
+      makeDay({ id: 'b', date: '2026-05-26', shoulderInches: 51 }),
+      makeDay({ id: 'c', date: '2026-05-27' }), // no shoulder → skipped
+    ];
+    expect(selectShoulderEntries(days)).toEqual([
+      { date: '2026-05-26', value: 51 },
+      { date: '2026-05-28', value: 52 },
+    ]);
+  });
+
+  it('selectBicepEntries yields a point per day with a bicep, sorted by date', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-28', bicepInches: 15.5 }),
+      makeDay({ id: 'b', date: '2026-05-26', bicepInches: 15 }),
+      makeDay({ id: 'c', date: '2026-05-27' }), // no bicep → skipped
+    ];
+    expect(selectBicepEntries(days)).toEqual([
+      { date: '2026-05-26', value: 15 },
+      { date: '2026-05-28', value: 15.5 },
+    ]);
+  });
+
+  it('selectThighEntries yields a point per day with a thigh, sorted by date', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-28', thighInches: 23.5 }),
+      makeDay({ id: 'b', date: '2026-05-26', thighInches: 23 }),
+      makeDay({ id: 'c', date: '2026-05-27' }), // no thigh → skipped
+    ];
+    expect(selectThighEntries(days)).toEqual([
+      { date: '2026-05-26', value: 23 },
+      { date: '2026-05-28', value: 23.5 },
+    ]);
+  });
+
+  it('selectNorthStar uses the most recent day with both sites and judges the target', () => {
+    const days = [
+      makeDay({ id: 'a', date: '2026-05-26', shoulderInches: 50, waistInches: 32 }),
+      makeDay({ id: 'b', date: '2026-05-28', shoulderInches: 51, waistInches: 31 }),
+    ];
+    expect(selectNorthStar(days)).toEqual({
+      currentVTaper: 1.65,
+      target: 1.6,
+      gapToTarget: 0,
+      met: true,
+    });
+  });
+
+  it('selectNorthStar returns null before any day has both sites (prompt state)', () => {
+    const days = [makeDay({ id: 'a', date: '2026-05-26', waistInches: 32 })];
+    expect(selectNorthStar(days)).toBeNull();
+  });
+
+  it('selectWeeklyWeightDelta measures last-7 vs prior-7 around an explicit today', () => {
+    const days = [
+      makeDay({ id: '1', date: '2026-06-26', weightLbs: 199 }),
+      makeDay({ id: '2', date: '2026-06-25', weightLbs: 199 }),
+      makeDay({ id: '3', date: '2026-06-19', weightLbs: 201 }),
+      makeDay({ id: '4', date: '2026-06-18', weightLbs: 201 }),
+    ];
+    expect(selectWeeklyWeightDelta(days, '2026-06-26')?.deltaLbs).toBe(-2);
+  });
+
+  it('selectWeeklyWeightDelta is null with too few weigh-ins', () => {
+    const days = [makeDay({ id: '1', date: '2026-06-26', weightLbs: 199 })];
+    expect(selectWeeklyWeightDelta(days, '2026-06-26')).toBeNull();
+  });
+
+  it('selectWeeklyWeightEntries buckets weigh-ins into Monday-dated averages', () => {
+    const days = [
+      makeDay({ id: '1', date: '2026-06-22', weightLbs: 200 }),
+      makeDay({ id: '2', date: '2026-06-24', weightLbs: 198 }),
+    ];
+    expect(selectWeeklyWeightEntries(days)).toEqual([{ date: '2026-06-22', weightLbs: 199 }]);
+  });
+
+  // A day carrying a complete four-site set.
+  const complete = (id: string, date: string) =>
+    makeDay({ id, date, shoulderInches: 50, waistInches: 32, bicepInches: 15, thighInches: 23 });
+
+  it('selectLatestMeasurements returns the most-recent complete set, ignoring partial days', () => {
+    const days = [
+      complete('a', '2026-06-10'),
+      makeDay({ id: 'b', date: '2026-06-20', shoulderInches: 51, waistInches: 31 }), // partial → ignored
+      complete('c', '2026-06-15'),
+    ];
+    expect(selectLatestMeasurements(days)).toEqual({
+      date: '2026-06-15',
+      shoulderInches: 50,
+      waistInches: 32,
+      bicepInches: 15,
+      thighInches: 23,
+      vTaper: 1.56,
+    });
+  });
+
+  it('selectLatestMeasurements is null until a full set exists', () => {
+    expect(
+      selectLatestMeasurements([makeDay({ id: 'a', date: '2026-06-10', waistInches: 32 })]),
+    ).toBeNull();
+  });
+
+  it('selectLatestMeasurements with asOf returns the set standing on that date', () => {
+    const days = [complete('a', '2026-06-10'), complete('c', '2026-06-20')];
+    // As of 06-15, only the 06-10 set had been logged.
+    expect(selectLatestMeasurements(days, '2026-06-15')?.date).toBe('2026-06-10');
+    // As of 06-20 (inclusive), the newer set stands.
+    expect(selectLatestMeasurements(days, '2026-06-20')?.date).toBe('2026-06-20');
+    // Before any set exists → null.
+    expect(selectLatestMeasurements(days, '2026-06-05')).toBeNull();
+  });
+
+  it('selectMeasurementsDue: complete set within the last 7 days is not due (boundary today-6)', () => {
+    const today = '2026-06-26';
+    expect(selectMeasurementsDue([complete('a', '2026-06-26')], today)).toBe(false);
+    expect(selectMeasurementsDue([complete('a', '2026-06-20')], today)).toBe(false); // today-6
+  });
+
+  it('selectMeasurementsDue: a 7-day-old complete set is due (boundary today-7)', () => {
+    expect(selectMeasurementsDue([complete('a', '2026-06-19')], '2026-06-26')).toBe(true);
+  });
+
+  it('selectMeasurementsDue: a brand-new user is due', () => {
+    expect(selectMeasurementsDue([], '2026-06-26')).toBe(true);
+  });
+
+  it('selectMeasurementsDue: a partial set in the window does not satisfy the cadence', () => {
+    const days = [makeDay({ id: 'a', date: '2026-06-25', shoulderInches: 50, waistInches: 32 })];
+    expect(selectMeasurementsDue(days, '2026-06-26')).toBe(true);
   });
 });

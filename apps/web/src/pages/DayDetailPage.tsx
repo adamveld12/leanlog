@@ -2,18 +2,24 @@ import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   APP_NAV_LINKS,
+  BodyTrackingCard,
   Button,
   cn,
   DailyTotalsCard,
   DayDetailTemplate,
-  DayWeightCard,
   HelperText,
   MacroSummaryLine,
   recipes,
 } from '@leanlog/ui';
 import { deriveDayPlan, dayMealStructure } from '@leanlog/data-access';
 import { isPastIso, prettyDate, todayIso } from '../lib';
-import { dayTotals, mealTotals, selectWeightEntries } from '../selectors';
+import {
+  dayTotals,
+  mealTotals,
+  selectLatestMeasurements,
+  selectMeasurementsDue,
+  selectWeightEntries,
+} from '../selectors';
 import { useStore } from '../state';
 import {
   HeaderControls,
@@ -21,7 +27,6 @@ import {
   RouteErrorState,
   RouteLoadingState,
   type RouteLoadState,
-  useSavedSections,
 } from './_shared';
 
 export default function DayDetailPage() {
@@ -37,8 +42,8 @@ export default function DayDetailPage() {
     updateDayTargets,
     updateDayWeight,
   } = useStore();
-  const { saved, markDirty, markSaved } = useSavedSections();
   const [savingWeight, setSavingWeight] = useState(false);
+  const [savingMeasurements, setSavingMeasurements] = useState(false);
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
     dayId: dayId ?? '',
     status: 'loading',
@@ -75,6 +80,12 @@ export default function DayDetailPage() {
   // fixed structure and per-meal logging. Ad-hoc days keep freeform meals.
   const isTemplateBacked = structure.kind === 'template';
   const isPast = isPastIso(day.date);
+  // Cadence is derived from all days: the complete measurement set standing on
+  // this day feeds the collapsed summary (as-of the viewed date so a past day
+  // shows what was current then), and "due" hard-blocks the current day when none
+  // falls in the last 7 days. Past days are read-only, so they're never due (#68).
+  const latestMeasurements = selectLatestMeasurements(days, day.date);
+  const measurementsDue = isPast ? false : selectMeasurementsDue(days, todayIso());
 
   return (
     <DayDetailTemplate
@@ -86,21 +97,32 @@ export default function DayDetailPage() {
         rightContent: <HeaderControls />,
       }}
       weightSection={
-        isPast ? undefined : (
-          <DayWeightCard
-            key={day.id}
-            saved={saved.dayWeight}
-            saving={savingWeight}
-            weightLbs={day.weightLbs}
-            onSave={(next) => {
-              markDirty('dayWeight');
-              setSavingWeight(true);
-              void updateDayWeight(day.id, next)
-                .then(() => markSaved('dayWeight'))
-                .finally(() => setSavingWeight(false));
-            }}
-          />
-        )
+        // Shown on every day: editable on the current day, read-only on past days
+        // (which the server day guard also enforces). Keyed per-day so editor
+        // drafts reset on navigation.
+        <BodyTrackingCard
+          key={`bodytracking-${day.id}`}
+          readOnly={isPast}
+          weightLbs={day.weightLbs}
+          savingWeight={savingWeight}
+          onSaveWeight={(next) => {
+            setSavingWeight(true);
+            void updateDayWeight(day.id, next).finally(() => setSavingWeight(false));
+          }}
+          measurementsToday={{
+            shoulderInches: day.shoulderInches,
+            waistInches: day.waistInches,
+            bicepInches: day.bicepInches,
+            thighInches: day.thighInches,
+          }}
+          latestMeasurements={latestMeasurements}
+          measurementsDue={measurementsDue}
+          savingMeasurements={savingMeasurements}
+          onSaveMeasurements={(patch) => {
+            setSavingMeasurements(true);
+            void updateDayTargets(day.id, patch).finally(() => setSavingMeasurements(false));
+          }}
+        />
       }
       totalsSection={
         <DailyTotalsCard

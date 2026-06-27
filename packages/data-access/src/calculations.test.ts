@@ -5,10 +5,15 @@ import {
   dayTargetsFromProfile,
   macroAccuracy,
   trackingCoverage,
-  estimatedWeightLost,
-  weightLossCertainty,
   estimateCalories,
   scaleLabelToIngredient,
+  vTaperRatio,
+  roundVTaper,
+  vTaperGapToTarget,
+  V_TAPER_TARGET,
+  weeklyWeightDelta,
+  weeklyWeightAverages,
+  MIN_WEIGH_INS_PER_WINDOW,
 } from './calculations';
 import type { UserProfile, NutritionDatabaseIngredient } from './models';
 
@@ -160,31 +165,144 @@ describe('trackingCoverage', () => {
   });
 });
 
-describe('estimatedWeightLost', () => {
-  it('returns 1.0 lb for 3000 kcal deficit', () => {
-    expect(estimatedWeightLost(15000, 18000)).toBe(1);
+describe('vTaperRatio', () => {
+  it('computes shoulder ÷ waist when both present (BDD 50/32 → 1.5625)', () => {
+    expect(vTaperRatio(50, 32)).toBeCloseTo(1.5625, 4);
   });
 
-  it('returns 0 when in surplus', () => {
-    expect(estimatedWeightLost(20000, 18000)).toBe(0);
+  it('returns null when shoulder is missing (R6)', () => {
+    expect(vTaperRatio(null, 32)).toBeNull();
+    expect(vTaperRatio(undefined, 32)).toBeNull();
   });
 
-  it('returns 0 when at maintenance', () => {
-    expect(estimatedWeightLost(18000, 18000)).toBe(0);
+  it('returns null when waist is missing (R6)', () => {
+    expect(vTaperRatio(50, null)).toBeNull();
+    expect(vTaperRatio(50, undefined)).toBeNull();
+  });
+
+  it('returns null for non-positive inputs rather than a broken ratio (R9)', () => {
+    expect(vTaperRatio(0, 32)).toBeNull();
+    expect(vTaperRatio(50, 0)).toBeNull();
+    expect(vTaperRatio(-1, 32)).toBeNull();
   });
 });
 
-describe('weightLossCertainty', () => {
-  it('returns 80 for 100% coverage', () => {
-    expect(weightLossCertainty(100)).toBe(80);
+describe('roundVTaper', () => {
+  it('rounds 50/32 to 1.56 (BDD)', () => {
+    expect(roundVTaper(vTaperRatio(50, 32)!)).toBe(1.56);
   });
 
-  it('returns 40 for 50% coverage', () => {
-    expect(weightLossCertainty(50)).toBe(40);
+  it('rounds 51/31 to 1.65 (BDD: north star met)', () => {
+    expect(roundVTaper(vTaperRatio(51, 31)!)).toBe(1.65);
+  });
+});
+
+describe('v-taper north star', () => {
+  it('north-star target is 1.6 (R7)', () => {
+    expect(V_TAPER_TARGET).toBe(1.6);
   });
 
-  it('caps at 80', () => {
-    expect(weightLossCertainty(150)).toBe(80);
+  it('51/31 ≈ 1.645 meets the 1.6 target (BDD)', () => {
+    expect(vTaperRatio(51, 31)!).toBeGreaterThanOrEqual(V_TAPER_TARGET);
+  });
+
+  it('50/32 = 1.5625 is short of the target', () => {
+    expect(vTaperRatio(50, 32)!).toBeLessThan(V_TAPER_TARGET);
+  });
+
+  it('gap to target is 1.6 − ratio, never negative', () => {
+    expect(vTaperGapToTarget(1.5625)).toBe(0.04);
+    expect(vTaperGapToTarget(1.65)).toBe(0);
+  });
+});
+
+describe('weeklyWeightDelta', () => {
+  const today = '2026-06-26';
+
+  // Helper: an entry on `today` shifted back `daysAgo` days.
+  function ago(daysAgo: number, weightLbs: number): WeightEntry {
+    const [y, m, d] = today.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    dt.setUTCDate(dt.getUTCDate() - daysAgo);
+    return { date: dt.toISOString().slice(0, 10), weightLbs };
+  }
+
+  it('measures avg(last 7) − avg(prior 7) = -2.0 lb (BDD)', () => {
+    const entries: WeightEntry[] = [
+      // last 7 days average 199
+      ago(0, 199),
+      ago(1, 199),
+      ago(2, 199),
+      ago(3, 199),
+      // prior 7 days average 201
+      ago(7, 201),
+      ago(8, 201),
+      ago(9, 201),
+      ago(10, 201),
+    ];
+    const result = weeklyWeightDelta(entries, today);
+    expect(result).not.toBeNull();
+    expect(result!.deltaLbs).toBe(-2);
+    expect(result!.lastAvgLbs).toBe(199);
+    expect(result!.priorAvgLbs).toBe(201);
+  });
+
+  it('returns null with only 2 total weigh-ins (BDD: needs more weigh-ins)', () => {
+    const entries: WeightEntry[] = [ago(0, 199), ago(1, 199)];
+    expect(weeklyWeightDelta(entries, today)).toBeNull();
+  });
+
+  it('returns null when one window is below the minimum', () => {
+    // 4 in the last window, only 1 in the prior window → insufficient.
+    const entries: WeightEntry[] = [
+      ago(0, 199),
+      ago(1, 199),
+      ago(2, 199),
+      ago(3, 199),
+      ago(8, 201),
+    ];
+    expect(weeklyWeightDelta(entries, today)).toBeNull();
+  });
+
+  it('requires at least MIN_WEIGH_INS_PER_WINDOW per window', () => {
+    expect(MIN_WEIGH_INS_PER_WINDOW).toBe(2);
+    const entries: WeightEntry[] = [ago(0, 200), ago(6, 200), ago(7, 202), ago(13, 202)];
+    const result = weeklyWeightDelta(entries, today);
+    expect(result).not.toBeNull();
+    expect(result!.deltaLbs).toBe(-2);
+  });
+
+  it('excludes weigh-ins older than 14 days from both windows', () => {
+    const entries: WeightEntry[] = [
+      ago(0, 200),
+      ago(1, 200),
+      ago(7, 205),
+      ago(8, 205),
+      ago(20, 150), // far outside both windows — must not affect the delta
+    ];
+    const result = weeklyWeightDelta(entries, today);
+    expect(result!.deltaLbs).toBe(-5);
+  });
+});
+
+describe('weeklyWeightAverages', () => {
+  it('buckets weigh-ins by Monday-anchored week and averages each', () => {
+    // 2026-06-22 is a Monday; 2026-06-15 the prior Monday.
+    const entries: WeightEntry[] = [
+      { date: '2026-06-22', weightLbs: 200 },
+      { date: '2026-06-24', weightLbs: 198 },
+      { date: '2026-06-15', weightLbs: 204 },
+      { date: '2026-06-17', weightLbs: 202 },
+    ];
+    const result = weeklyWeightAverages(entries);
+    expect(result).toEqual([
+      { weekStart: '2026-06-15', avgLbs: 203, count: 2 },
+      { weekStart: '2026-06-22', avgLbs: 199, count: 2 },
+    ]);
+  });
+
+  it('returns an empty array for no entries', () => {
+    expect(weeklyWeightAverages([])).toEqual([]);
   });
 });
 
@@ -396,6 +514,10 @@ function makeDay(meals: Meal[], mealCountTarget = 0): DailyMealLog {
     targetProtein: 150,
     mealCountTarget,
     weightLbs: null,
+    shoulderInches: null,
+    waistInches: null,
+    bicepInches: null,
+    thighInches: null,
     meals,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',

@@ -14,6 +14,7 @@ import {
   Input,
   ListRow,
   MacroSummaryLine,
+  MeasurementTrendCard,
   NumberInput,
   recipes,
   RadioGroup,
@@ -23,6 +24,7 @@ import {
   SuccessText,
   Text,
   WarningText,
+  WeightTrendCard,
 } from '@leanlog/ui';
 import {
   buildTimeline,
@@ -55,7 +57,16 @@ import {
   type UpdateBackgroundGoal,
 } from '@leanlog/data-access';
 import { todayIso, prettyDate } from '../lib';
-import { selectWeightEntries } from '../selectors';
+import {
+  selectBicepEntries,
+  selectShoulderEntries,
+  selectThighEntries,
+  selectVTaperEntries,
+  selectWaistEntries,
+  selectWeeklyWeightDelta,
+  selectWeeklyWeightEntries,
+  selectWeightEntries,
+} from '../selectors';
 import { useStore } from '../state';
 import { HeaderControls, renderRouterNavLink } from './_shared';
 
@@ -1075,8 +1086,47 @@ function violationMessage(code: string): string {
   }
 }
 
+// Progress trend charts shown beneath the goal planner (#68): weight, the v-taper
+// measurement group, and a separate bicep + quad limb group. Folded into Goals so
+// the mobile nav stays short enough not to overflow the header.
+function GoalsTrends() {
+  const { days, profile } = useStore();
+
+  const weightEntries = useMemo(() => selectWeightEntries(days), [days]);
+  const weeklyWeightEntries = useMemo(() => selectWeeklyWeightEntries(days), [days]);
+  const weeklyWeightDelta = useMemo(() => selectWeeklyWeightDelta(days), [days]);
+  const vTaperEntries = useMemo(() => selectVTaperEntries(days), [days]);
+  const shoulderEntries = useMemo(() => selectShoulderEntries(days), [days]);
+  const waistEntries = useMemo(() => selectWaistEntries(days), [days]);
+  const bicepEntries = useMemo(() => selectBicepEntries(days), [days]);
+  const thighEntries = useMemo(() => selectThighEntries(days), [days]);
+
+  return (
+    <>
+      <SectionHeading>Trends</SectionHeading>
+      <WeightTrendCard
+        entries={weightEntries}
+        weeklyEntries={weeklyWeightEntries}
+        weekOverWeekDeltaLbs={weeklyWeightDelta?.deltaLbs ?? null}
+        goalWeightLbs={profile?.goalWeightLbs ?? null}
+      />
+      <MeasurementTrendCard
+        title="Measurement Trends"
+        metrics={['vtaper', 'shoulder', 'waist']}
+        entries={{ vtaper: vTaperEntries, shoulder: shoulderEntries, waist: waistEntries }}
+      />
+      <MeasurementTrendCard
+        title="Limb Trends"
+        metrics={['bicep', 'thigh']}
+        entries={{ bicep: bicepEntries, thigh: thighEntries }}
+      />
+    </>
+  );
+}
+
 // Goals command center (#56): timeline planner + selected-goal detail / inline
-// Add Goal, inside the standard app shell with Execute/Goals nav.
+// Add Goal, with the progress trend charts (#68) beneath, inside the standard app
+// shell with Execute/Goals nav.
 export default function GoalsPage() {
   return (
     <AnalyticsScope properties={{ page: 'Goals' }}>
@@ -1089,6 +1139,7 @@ export default function GoalsPage() {
         }}
       >
         <GoalsPlanner />
+        <GoalsTrends />
       </GoalsTemplate>
     </AnalyticsScope>
   );

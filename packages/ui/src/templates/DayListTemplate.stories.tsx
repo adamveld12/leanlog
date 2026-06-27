@@ -3,7 +3,6 @@ import { DayListTemplate } from './DayListTemplate';
 import { QuickActionsCard } from '../organisms/QuickActionsCard';
 import { WeeklyStatsCard } from '../organisms/WeeklyStatsCard';
 import { MonthCalendarCard } from '../organisms/MonthCalendarCard';
-import { WeightTrendCard } from '../organisms/WeightTrendCard';
 
 const emptyStats = {
   accuracyOverall: 0,
@@ -14,17 +13,7 @@ const emptyStats = {
   coverage: 0,
   mealsTracked: 0,
   mealsExpected: 0,
-  estimatedWeightLost: 0,
-  certainty: 0,
 };
-
-const SAMPLE_WEIGHTS = [
-  { date: '2026-05-01', weightLbs: 188 },
-  { date: '2026-05-07', weightLbs: 186 },
-  { date: '2026-05-14', weightLbs: 183 },
-  { date: '2026-05-21', weightLbs: 181 },
-  { date: '2026-05-28', weightLbs: 179 },
-];
 
 const meta: Meta<typeof DayListTemplate> = {
   title: 'Design System/Templates/DayListTemplate',
@@ -49,6 +38,8 @@ const meta: Meta<typeof DayListTemplate> = {
         overall={emptyStats}
         hasWeeklyData={false}
         hasOverallData={false}
+        northStar={null}
+        weeklyWeightChangeLbs={null}
       />
     ),
     calendar: (
@@ -64,9 +55,3 @@ const meta: Meta<typeof DayListTemplate> = {
 export default meta;
 type Story = StoryObj<typeof DayListTemplate>;
 export const Default: Story = {};
-
-export const WithWeightTrend: Story = {
-  args: {
-    weightTrend: <WeightTrendCard entries={SAMPLE_WEIGHTS} goalWeightLbs={175} />,
-  },
-};

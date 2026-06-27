@@ -275,6 +275,13 @@ export const DailyMealLogSchema = z.object({
   targetProtein: z.number().min(0),
   mealCountTarget: z.number().min(0).default(3),
   weightLbs: z.number().positive().nullable().default(null),
+  // Per-day body-circumference measurements in inches (#68). Each is optional and
+  // independent of weight; the user may log any subset on the current day. Only
+  // shoulder + waist feed the v-taper ratio (see vTaperRatio in calculations).
+  shoulderInches: z.number().positive().nullable().default(null),
+  waistInches: z.number().positive().nullable().default(null),
+  bicepInches: z.number().positive().nullable().default(null),
+  thighInches: z.number().positive().nullable().default(null),
   meals: z.array(MealSchema).default([]),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -303,6 +310,12 @@ export const CreateDailyMealLogSchema = DailyMealLogSchema.omit({
   userId: true,
   meals: true,
   weightLbs: true,
+  // Measurements, like weight, are logged after the day exists via PATCH — never
+  // on create (#68).
+  shoulderInches: true,
+  waistInches: true,
+  bicepInches: true,
+  thighInches: true,
   createdAt: true,
   updatedAt: true,
 }).extend({
@@ -357,6 +370,12 @@ export const DayTargetsSchema = z.object({
   targetProtein: z.number().min(0).optional(),
   mealCountTarget: z.number().min(0).optional(),
   weightLbs: z.number().positive().optional(),
+  // Body-circumference measurements (#68). Current-day-only writes guarded the
+  // same way as weight; each is optional so partial entry is allowed (R2).
+  shoulderInches: z.number().positive().optional(),
+  waistInches: z.number().positive().optional(),
+  bicepInches: z.number().positive().optional(),
+  thighInches: z.number().positive().optional(),
 });
 
 // ---------------------------------------------------------------------------

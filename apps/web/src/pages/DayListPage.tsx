@@ -6,16 +6,16 @@ import {
   MonthCalendarCard,
   QuickActionsCard,
   WeeklyStatsCard,
-  WeightTrendCard,
 } from '@leanlog/ui';
-import { caloriesFromMode, resolveCoveringGoal, type GoalMode } from '@leanlog/data-access';
+import { resolveCoveringGoal, type GoalMode } from '@leanlog/data-access';
 import { prettyDate, todayIso } from '../lib';
 import {
   aggregateStats,
   dayTotals,
   daysLast90,
   daysThisWeek,
-  selectWeightEntries,
+  selectNorthStar,
+  selectWeeklyWeightDelta,
   todayLog,
   trackedDatesMap,
 } from '../selectors';
@@ -51,25 +51,20 @@ export default function DayListPage() {
     return { summary, onOpen: () => nav(`/track/goals?goal=${goal.id}`) };
   }, [goals, nav]);
 
-  const maintenance = useMemo(
-    () => (profile ? (caloriesFromMode(profile.weightLbs, 'maintenance') ?? 0) : 0),
-    [profile],
-  );
-
   const today = useMemo(() => todayLog(days), [days]);
   const todayTotalsData = useMemo(() => (today ? dayTotals(today) : null), [today]);
 
   const weekDays = useMemo(() => daysThisWeek(days), [days]);
-  const weeklyStats = useMemo(() => aggregateStats(weekDays, maintenance), [weekDays, maintenance]);
+  const weeklyStats = useMemo(() => aggregateStats(weekDays), [weekDays]);
 
   const last90Days = useMemo(() => daysLast90(days), [days]);
-  const overallStats = useMemo(
-    () => aggregateStats(last90Days, maintenance),
-    [last90Days, maintenance],
-  );
+  const overallStats = useMemo(() => aggregateStats(last90Days), [last90Days]);
 
   const dateMap = useMemo(() => trackedDatesMap(days), [days]);
-  const weightEntries = useMemo(() => selectWeightEntries(days), [days]);
+  // The measured week-over-week weight number headlines the Statistics card; the
+  // trend charts themselves now live on the Stats page (#68).
+  const weeklyWeightDelta = useMemo(() => selectWeeklyWeightDelta(days), [days]);
+  const northStar = useMemo(() => selectNorthStar(days), [days]);
   const selectDay = useCallback((dayId: string) => nav(`/track/day/${dayId}`), [nav]);
 
   const hasDays = days.length > 0;
@@ -164,8 +159,6 @@ export default function DayListPage() {
             coverage: weeklyStats.coverage,
             mealsTracked: weeklyStats.mealsTracked,
             mealsExpected: weeklyStats.mealsExpected,
-            estimatedWeightLost: weeklyStats.estimatedWeightLost,
-            certainty: weeklyStats.certainty,
           }}
           overall={{
             accuracyOverall: overallStats.accuracy.overall,
@@ -176,16 +169,12 @@ export default function DayListPage() {
             coverage: overallStats.coverage,
             mealsTracked: overallStats.mealsTracked,
             mealsExpected: overallStats.mealsExpected,
-            estimatedWeightLost: overallStats.estimatedWeightLost,
-            certainty: overallStats.certainty,
           }}
           hasWeeklyData={weekDays.length > 0}
           hasOverallData={last90Days.length > 0}
+          northStar={northStar}
+          weeklyWeightChangeLbs={weeklyWeightDelta?.deltaLbs ?? null}
         />
-      }
-      // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
-      weightTrend={
-        <WeightTrendCard entries={weightEntries} goalWeightLbs={profile?.goalWeightLbs ?? null} />
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
       calendar={

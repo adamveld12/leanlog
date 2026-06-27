@@ -18,11 +18,9 @@ const goodStats: StatsData = {
   coverage: 75,
   mealsTracked: 21,
   mealsExpected: 28,
-  estimatedWeightLost: 0.8,
-  certainty: 60,
 };
 
-const highCertaintyStats: StatsData = {
+const greatStats: StatsData = {
   accuracyOverall: 94,
   accuracyCalories: 95,
   accuracyProtein: 96,
@@ -31,64 +29,59 @@ const highCertaintyStats: StatsData = {
   coverage: 100,
   mealsTracked: 28,
   mealsExpected: 28,
-  estimatedWeightLost: 1.2,
-  certainty: 80,
 };
 
-export const WeeklyTab: Story = {
+const emptyStats: StatsData = {
+  accuracyOverall: 0,
+  accuracyCalories: 0,
+  accuracyProtein: 0,
+  accuracyCarbs: 0,
+  accuracyFat: 0,
+  coverage: 0,
+  mealsTracked: 0,
+  mealsExpected: 0,
+};
+
+export const Default: Story = {
   args: {
     weekly: goodStats,
-    overall: highCertaintyStats,
+    overall: greatStats,
     hasWeeklyData: true,
     hasOverallData: true,
+    northStar: { currentVTaper: 1.56, target: 1.6, gapToTarget: 0.04, met: false },
+    weeklyWeightChangeLbs: -2,
   },
 };
 
-export const OverallTab: Story = {
+export const NorthStarReached: Story = {
   args: {
-    weekly: goodStats,
-    overall: highCertaintyStats,
+    weekly: greatStats,
+    overall: greatStats,
     hasWeeklyData: true,
     hasOverallData: true,
+    northStar: { currentVTaper: 1.65, target: 1.6, gapToTarget: 0, met: true },
+    weeklyWeightChangeLbs: 0.3,
   },
 };
 
-export const LowCertaintyWarning: Story = {
+export const NoMeasurementsYet: Story = {
   args: {
-    weekly: { ...goodStats, certainty: 40, coverage: 50 },
+    weekly: goodStats,
     overall: goodStats,
     hasWeeklyData: true,
     hasOverallData: true,
+    northStar: null,
+    weeklyWeightChangeLbs: null,
   },
 };
 
 export const ZeroDays: Story = {
   args: {
-    weekly: {
-      accuracyOverall: 0,
-      accuracyCalories: 0,
-      accuracyProtein: 0,
-      accuracyCarbs: 0,
-      accuracyFat: 0,
-      coverage: 0,
-      mealsTracked: 0,
-      mealsExpected: 0,
-      estimatedWeightLost: 0,
-      certainty: 0,
-    },
-    overall: {
-      accuracyOverall: 0,
-      accuracyCalories: 0,
-      accuracyProtein: 0,
-      accuracyCarbs: 0,
-      accuracyFat: 0,
-      coverage: 0,
-      mealsTracked: 0,
-      mealsExpected: 0,
-      estimatedWeightLost: 0,
-      certainty: 0,
-    },
+    weekly: emptyStats,
+    overall: emptyStats,
     hasWeeklyData: false,
     hasOverallData: false,
+    northStar: null,
+    weeklyWeightChangeLbs: null,
   },
 };
