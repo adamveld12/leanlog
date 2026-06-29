@@ -245,6 +245,18 @@ export function useCreateStore(): Store {
       dispatch({ type: 'profileSet', profile: refreshed });
     },
 
+    async setDayProgressPhoto(dayId, pose, key) {
+      const updated = await withToken((t) =>
+        api.progressPhotos.setDayPhoto(t, dayId, { pose, key }),
+      );
+      dispatch({ type: 'dayReplaced', day: updated });
+    },
+
+    async setProgressBaseline(pose, date) {
+      const updated = await withToken((t) => api.progressPhotos.setBaseline(t, { pose, date }));
+      dispatch({ type: 'profileSet', profile: updated });
+    },
+
     async addTemplate(name) {
       const template = await withToken((t) => api.mealTemplates.create(t, { name }));
       dispatch({ type: 'templateAdded', template });

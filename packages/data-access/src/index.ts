@@ -8,4 +8,5 @@ export * from './scan';
 export * from './repositories';
 export * from './nutritionPhotos';
 export * from './seed';
+export * from './progressPhotos';
 export { uuidv7 } from 'uuidv7';

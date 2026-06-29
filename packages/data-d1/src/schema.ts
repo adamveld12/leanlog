@@ -19,6 +19,12 @@ export const userProfiles = sqliteTable('user_profiles', {
   macroProtein: integer('macro_protein').notNull().default(40),
   goalWeightLbs: real('goal_weight_lbs'),
   goalBodyFatPct: real('goal_body_fat_pct'),
+  // Per-pose progress-photo baseline selection (#69). Each holds the ISO date of
+  // the day whose photo anchors that pose's latest-vs-baseline comparison; null
+  // means default to the earliest photo for the pose (R15).
+  frontBaselineDate: text('front_baseline_date'),
+  sideBaselineDate: text('side_baseline_date'),
+  backBaselineDate: text('back_baseline_date'),
   // Set once the user's default meal templates have been seeded. Distinguishes
   // "never seeded" (seed Breakfast/Lunch/Dinner/Snack) from "deliberately empty"
   // (user deleted all templates) so we never re-seed. See issue #41.
@@ -98,6 +104,11 @@ export const dailyMealLogs = sqliteTable(
     waistInches: real('waist_inches'),
     bicepInches: real('bicep_inches'),
     thighInches: real('thigh_inches'),
+    // Private progress-photo R2 object keys, one per pose (#69). Keyed
+    // `progress/<userId>/<uuid>.jpg`; null when that pose has no photo this day.
+    frontPhotoKey: text('front_photo_key'),
+    sidePhotoKey: text('side_photo_key'),
+    backPhotoKey: text('back_photo_key'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },

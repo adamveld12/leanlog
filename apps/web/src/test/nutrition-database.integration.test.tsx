@@ -79,6 +79,9 @@ const mockProfile: UserProfile = {
   macroProtein: 40,
   goalWeightLbs: null,
   goalBodyFatPct: null,
+  frontBaselineDate: null,
+  sideBaselineDate: null,
+  backBaselineDate: null,
   createdAt: now,
   updatedAt: now,
 };
@@ -275,6 +278,9 @@ function makeDayWithMeal(ingredients: Ingredient[] = []): DailyMealLog {
     waistInches: null,
     bicepInches: null,
     thighInches: null,
+    frontPhotoKey: null,
+    sidePhotoKey: null,
+    backPhotoKey: null,
     meals: [
       {
         id: 'm1',

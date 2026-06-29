@@ -9,6 +9,15 @@ afterEach(() => {
   cleanup();
 });
 
+// jsdom has no object-URL implementation; progress-photo tiles create one from
+// the proxied blob (#69). Stub it so those components render in tests.
+if (typeof URL.createObjectURL !== 'function') {
+  URL.createObjectURL = () => 'blob:mock';
+}
+if (typeof URL.revokeObjectURL !== 'function') {
+  URL.revokeObjectURL = () => {};
+}
+
 let signedIn = true;
 
 // Stable identity across renders. The store's load effect depends on getToken;
@@ -107,6 +116,17 @@ vi.mock('../api', () => ({
       updatePhotos: vi.fn(),
       delete: vi.fn(),
     },
+    progressPhotos: {
+      uploadImage: vi.fn(() =>
+        Promise.resolve({
+          key: 'progress/user_test/2f1c8a3b-4d5e-4f6a-8b9c-0d1e2f3a4b5c.jpg',
+          contentType: 'image/jpeg',
+        }),
+      ),
+      setDayPhoto: vi.fn(),
+      setBaseline: vi.fn(),
+      fetchBlob: vi.fn(() => Promise.resolve(new Blob([], { type: 'image/jpeg' }))),
+    },
     profile: {
       get: () =>
         Promise.resolve({
@@ -122,6 +142,9 @@ vi.mock('../api', () => ({
           macroProtein: 40,
           goalWeightLbs: null,
           goalBodyFatPct: null,
+          frontBaselineDate: null,
+          sideBaselineDate: null,
+          backBaselineDate: null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
