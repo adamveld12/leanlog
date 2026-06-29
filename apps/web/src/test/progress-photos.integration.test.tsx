@@ -50,6 +50,10 @@ function makeDay(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
     targetProtein: 140,
     mealCountTarget: 0,
     weightLbs: null,
+    shoulderInches: null,
+    waistInches: null,
+    bicepInches: null,
+    thighInches: null,
     frontPhotoKey: null,
     sidePhotoKey: null,
     backPhotoKey: null,
@@ -91,22 +95,54 @@ describe('progress photo comparison (Statistics area)', () => {
         makeDay({ id: 'b', date: '2026-06-25', weightLbs: 199, frontPhotoKey: KEY(1) }),
       ],
     });
-    renderApp('/track');
+    renderApp('/track/goals');
 
     await waitFor(() => expect(screen.getByText('11 weeks')).toBeInTheDocument());
     expect(screen.getByText('-8 lb')).toBeInTheDocument();
-    // Absolute weights under each photo (v-taper omitted — #68 not built, R11).
+    // Absolute weights under each photo. These days carry no shoulder/waist, so
+    // each stat line is the bare weight ("207 lb", not "207 lb · v-taper …") —
+    // v-taper is omitted rather than zeroed (R11).
     expect(screen.getByText('207 lb')).toBeInTheDocument();
     expect(screen.getByText('199 lb')).toBeInTheDocument();
     // The bytes were fetched through the authenticated proxy, never a public <img>.
     await waitFor(() => expect(apiMock.progressPhotos.fetchBlob).toHaveBeenCalled());
   });
 
+  it('headlines the v-taper delta when the photo days carry shoulder + waist (#68)', async () => {
+    // Baseline 50/32 → 1.56, latest 51/31 → 1.65, so the comparison reads +0.09.
+    apiMock.days.list.mockResolvedValue({
+      days: [
+        makeDay({
+          id: 'a',
+          date: '2026-04-09',
+          weightLbs: 207,
+          shoulderInches: 50,
+          waistInches: 32,
+          frontPhotoKey: KEY(0),
+        }),
+        makeDay({
+          id: 'b',
+          date: '2026-06-25',
+          weightLbs: 199,
+          shoulderInches: 51,
+          waistInches: 31,
+          frontPhotoKey: KEY(1),
+        }),
+      ],
+    });
+    renderApp('/track/goals');
+
+    await waitFor(() => expect(screen.getByText('v-taper +0.09')).toBeInTheDocument());
+    // Absolute v-taper accompanies the weight beneath each photo.
+    expect(screen.getByText('207 lb · v-taper 1.56')).toBeInTheDocument();
+    expect(screen.getByText('199 lb · v-taper 1.65')).toBeInTheDocument();
+  });
+
   it('shows an empty prompt for poses with no photos', async () => {
     apiMock.days.list.mockResolvedValue({
       days: [makeDay({ id: 'a', date: '2026-06-25', frontPhotoKey: KEY(0) })],
     });
-    renderApp('/track');
+    renderApp('/track/goals');
     await waitFor(() =>
       expect(screen.getByText(/Log a side photo on the day page/)).toBeInTheDocument(),
     );
@@ -139,7 +175,7 @@ describe('progress photo comparison (Statistics area)', () => {
         makeDay({ id: 'c', date: '2026-06-25', weightLbs: 199, frontPhotoKey: KEY(2) }),
       ],
     });
-    renderApp('/track');
+    renderApp('/track/goals');
 
     const select = await screen.findByRole('combobox');
     await userEvent.selectOptions(select, 'May 21');
