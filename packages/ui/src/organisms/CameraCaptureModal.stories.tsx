@@ -18,7 +18,7 @@ function CameraCaptureModalDemo(props: {
       onCapture={() => {}}
       onCancel={() => {}}
       instructions={props.instructions}
-      overlay={props.withGuide ? <SilhouetteGuide poseLabel="Front" /> : undefined}
+      overlay={props.withGuide ? <SilhouetteGuide /> : undefined}
       onSkip={props.withSkip ? () => {} : undefined}
       skipLabel="Skip front photo"
     />

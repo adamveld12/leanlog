@@ -42,14 +42,14 @@ function DayProgressPhotoTile({
   const has = photoKey != null;
   const actions = (
     <>
-      <Button size="sm" variant="secondary" disabled={uploading} onClick={onCamera}>
+      <Button variant="secondary" disabled={uploading} onClick={onCamera}>
         {has ? 'Replace' : uploading ? 'Uploading…' : 'Camera'}
       </Button>
-      <Button size="sm" variant="ghost" disabled={uploading} onClick={onImport}>
+      <Button variant="ghost" disabled={uploading} onClick={onImport}>
         Import
       </Button>
       {has ? (
-        <Button size="sm" variant="danger" disabled={uploading} onClick={onRemove}>
+        <Button variant="danger" disabled={uploading} onClick={onRemove}>
           Remove
         </Button>
       ) : null}
@@ -145,7 +145,7 @@ export function DayProgressPhotos({
         title={`${activeLabel} progress photo`}
         instructions="Line up with the outline, then capture."
         viewfinderLabel={`${activeLabel} progress photo viewfinder`}
-        overlay={<SilhouetteGuide poseLabel={activeLabel} />}
+        overlay={<SilhouetteGuide />}
         onCapture={() => void capturePhoto()}
         onCancel={cancelCamera}
       />

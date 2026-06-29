@@ -104,12 +104,17 @@ export function useProgressPhotoCapture({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/jpeg', 0.92),
-    );
-    if (!blob) return;
+    // Capture losslessly (PNG); optimizeImage does the single downscale + JPEG
+    // encode in uploadBlob, so the camera path isn't double-compressed.
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
     stopCamera();
     setCameraOpen(false);
+    if (!blob) {
+      // Some browsers return null from toBlob (memory pressure, GPU blacklist).
+      // Surface it instead of failing silently.
+      onErrorRef.current?.('Photo capture failed. Please try again.');
+      return;
+    }
     await uploadBlob(blob);
   }, [stopCamera, uploadBlob]);
 

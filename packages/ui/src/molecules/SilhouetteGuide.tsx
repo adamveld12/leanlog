@@ -2,17 +2,16 @@ import { cn } from '../styles/cn';
 import { recipes } from '../styles/recipes';
 
 export type SilhouetteGuideProps = {
-  /** Pose announced to assistive tech, e.g. "Front", "Side", "Back". */
-  poseLabel?: string;
   className?: string;
 };
 
 // A static, translucent body outline overlaid on the live camera viewfinder to
 // standardize stance, distance, and framing (#69, R5). It is a fixed framing aid
 // — deliberately NOT the user's previous photo (onion-skin alignment is out of
-// scope) — and generic across poses. Pointer-events are off so it never blocks
-// the capture controls beneath it.
-export function SilhouetteGuide({ poseLabel, className }: SilhouetteGuideProps) {
+// scope) — and generic across poses. The overlay is decorative: the wrapper is
+// `aria-hidden` (so the svg carries no ARIA) and pointer-events are off so it
+// never blocks the capture controls beneath it.
+export function SilhouetteGuide({ className }: SilhouetteGuideProps) {
   return (
     <div
       aria-hidden="true"
@@ -20,8 +19,6 @@ export function SilhouetteGuide({ poseLabel, className }: SilhouetteGuideProps) 
     >
       <svg
         viewBox="0 0 100 200"
-        role="img"
-        aria-label={poseLabel ? `${poseLabel} framing guide` : 'Framing guide'}
         className="h-[88%] w-auto text-white opacity-40"
         fill="none"
         stroke="currentColor"
