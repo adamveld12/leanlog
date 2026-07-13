@@ -54,6 +54,9 @@ function makeDay(): DailyMealLog {
     waistInches: null,
     bicepInches: null,
     thighInches: null,
+    frontPhotoKey: null,
+    sidePhotoKey: null,
+    backPhotoKey: null,
     meals: [
       {
         id: 'm1',

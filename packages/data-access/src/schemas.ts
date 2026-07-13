@@ -282,6 +282,10 @@ export const DailyMealLogSchema = z.object({
   waistInches: z.number().positive().nullable().default(null),
   bicepInches: z.number().positive().nullable().default(null),
   thighInches: z.number().positive().nullable().default(null),
+  // Private progress-photo R2 keys, one per pose (#69). Null when unset.
+  frontPhotoKey: z.string().nullable().default(null),
+  sidePhotoKey: z.string().nullable().default(null),
+  backPhotoKey: z.string().nullable().default(null),
   meals: z.array(MealSchema).default([]),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -300,6 +304,11 @@ export const UserProfileSchema = z.object({
   macroProtein: profileFields.macroProtein.default(PROFILE_DEFAULTS.macroProtein),
   goalWeightLbs: profileFields.goalWeightLbs.default(PROFILE_DEFAULTS.goalWeightLbs),
   goalBodyFatPct: profileFields.goalBodyFatPct.default(PROFILE_DEFAULTS.goalBodyFatPct),
+  // Per-pose progress-photo baseline selection (#69): the ISO date anchoring each
+  // pose's comparison, or null to default to the earliest photo (R15).
+  frontBaselineDate: z.string().nullable().default(null),
+  sideBaselineDate: z.string().nullable().default(null),
+  backBaselineDate: z.string().nullable().default(null),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -316,6 +325,10 @@ export const CreateDailyMealLogSchema = DailyMealLogSchema.omit({
   waistInches: true,
   bicepInches: true,
   thighInches: true,
+  // Progress photos are pinned after the day exists, never on create (#69).
+  frontPhotoKey: true,
+  sidePhotoKey: true,
+  backPhotoKey: true,
   createdAt: true,
   updatedAt: true,
 }).extend({
@@ -377,6 +390,33 @@ export const DayTargetsSchema = z.object({
   bicepInches: z.number().positive().optional(),
   thighInches: z.number().positive().optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Progress photos (#69)
+// ---------------------------------------------------------------------------
+
+export const ProgressPoseSchema = z.enum(['front', 'side', 'back']);
+
+// Pin (or, with key=null, clear) one pose's photo for a day. The key is the R2
+// object key returned by the upload endpoint; ownership/format are re-checked
+// server-side against the authenticated user (R8).
+export const SetDayProgressPhotoSchema = z
+  .object({
+    pose: ProgressPoseSchema,
+    key: z.string().min(1).nullable(),
+  })
+  .strict();
+
+// Re-pick (or, with date=null, reset to earliest) the baseline for one pose (R15).
+export const SetProgressBaselineSchema = z
+  .object({
+    pose: ProgressPoseSchema,
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable(),
+  })
+  .strict();
 
 // ---------------------------------------------------------------------------
 // Goals (#56) — the target-planning authority that replaces Profile.

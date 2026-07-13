@@ -68,6 +68,7 @@ import {
   selectWeightEntries,
 } from '../selectors';
 import { useStore } from '../state';
+import { ProgressComparisonSection } from '../components/progress-photos/ProgressComparisonSection';
 import { HeaderControls, renderRouterNavLink } from './_shared';
 
 const MODE_LABEL: Record<GoalMode, string> = {
@@ -1115,6 +1116,9 @@ function GoalsTrends() {
         metrics={['vtaper', 'shoulder', 'waist']}
         entries={{ vtaper: vTaperEntries, shoulder: shoulderEntries, waist: waistEntries }}
       />
+      {/* Progress photos sit beside the v-taper trend so the picture and the
+          number it illustrates live together (#69). */}
+      <ProgressComparisonSection />
       <MeasurementTrendCard
         title="Limb Trends"
         metrics={['bicep', 'thigh']}

@@ -22,7 +22,10 @@ import type {
   CreateGoal,
   UpdateGoal,
   UpdateBackgroundGoal,
+  SetDayProgressPhoto,
+  SetProgressBaseline,
 } from '@leanlog/data-access';
+import { progressPhotoObjectPath } from './image';
 import { todayIso } from './lib';
 
 type ApiErrorKind = 'http' | 'invalid-payload' | 'network';
@@ -211,6 +214,27 @@ async function apiFetch<T>(path: string, opts: ApiFetchOptions): Promise<T> {
   return parseJsonPayload<T>(res, context);
 }
 
+// Fetches a private progress-photo's bytes through the authenticated proxy (#69).
+// Separate from apiFetch because the response is binary, not JSON; the caller
+// turns the Blob into an object URL for an <img> tag.
+async function fetchProgressPhotoBlob(token: string, key: string): Promise<Blob> {
+  const path = progressPhotoObjectPath(key) ?? '';
+  const context = { path, method: 'GET' };
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      headers: { Authorization: `Bearer ${token}`, 'X-Leanlog-Local-Date': todayIso() },
+    });
+  } catch (cause) {
+    const detail = cause instanceof Error ? cause.message : 'Network unavailable';
+    throw new ApiError({ ...context, kind: 'network', status: 0, detail, cause });
+  }
+  if (!res.ok) {
+    throw new ApiError({ ...context, kind: 'http', status: res.status, detail: res.statusText });
+  }
+  return res.blob();
+}
+
 export const api = {
   days: {
     list: (token: string) =>
@@ -394,5 +418,31 @@ export const api = {
       }),
     delete: (token: string, id: string) =>
       apiFetch<void>(`/api/nutrition-database/${id}`, { token, method: 'DELETE' }),
+  },
+  progressPhotos: {
+    // Uploads an already-optimized JPEG and returns its private per-user R2 key (#69).
+    uploadImage: (token: string, image: Blob) =>
+      apiFetch<{ key: string; contentType: string }>('/api/progress-photos/upload', {
+        token,
+        method: 'POST',
+        headers: { 'Content-Type': 'image/jpeg' },
+        body: image,
+      }),
+    // Pins (key) or clears (null) one pose's photo for a day; returns the updated day.
+    setDayPhoto: (token: string, dayId: string, data: SetDayProgressPhoto) =>
+      apiFetch<DailyMealLog>(`/api/days/${dayId}/progress-photos`, {
+        token,
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    // Re-picks (date) or resets (null) the per-pose comparison baseline (R15).
+    setBaseline: (token: string, data: SetProgressBaseline) =>
+      apiFetch<UserProfile>('/api/progress-photos/baseline', {
+        token,
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    // Fetches a photo's bytes through the authenticated proxy, as a Blob.
+    fetchBlob: (token: string, key: string) => fetchProgressPhotoBlob(token, key),
   },
 };

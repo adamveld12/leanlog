@@ -20,12 +20,22 @@ import type {
   UpdateBackgroundGoal,
 } from './models';
 import type { PhotoUpdatePatch } from './nutritionPhotos';
+import type { ProgressPose } from './progressPhotos';
 
 export interface DayRepository {
   listByUser(userId: string): Promise<DailyMealLog[]>;
   getById(userId: string, dayId: string): Promise<DailyMealLog | null>;
   create(userId: string, data: CreateDailyMealLog): Promise<DailyMealLog>;
   updateTargets(userId: string, dayId: string, targets: DayTargets): Promise<DailyMealLog>;
+  // Pins (or, with key=null, clears) one pose's progress photo for a day (#69).
+  // Returns the updated day plus the previous key this slot held (released for R2
+  // cleanup, R18), or null when the day does not exist / is not the user's.
+  setProgressPhoto(
+    userId: string,
+    dayId: string,
+    pose: ProgressPose,
+    key: string | null,
+  ): Promise<{ day: DailyMealLog; releasedKey: string | null } | null>;
   getMostRecentWeightDate(userId: string): Promise<string | null>;
   delete(userId: string, dayId: string): Promise<void>;
 }
@@ -89,6 +99,13 @@ export interface IngredientRepository {
 export interface ProfileRepository {
   getOrCreate(clerkUserId: string): Promise<UserProfile>;
   update(clerkUserId: string, data: UpdateProfile): Promise<UserProfile>;
+  // Re-picks (or, with date=null, resets to earliest) the baseline for one pose's
+  // progress-photo comparison (#69, R15). Ensures the profile row exists first.
+  setProgressBaseline(
+    clerkUserId: string,
+    pose: ProgressPose,
+    date: string | null,
+  ): Promise<UserProfile>;
 }
 
 // Thrown when a user tries to edit or delete a label they did not add (#49).

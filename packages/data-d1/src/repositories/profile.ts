@@ -3,7 +3,18 @@ import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { userProfiles } from '../schema';
 import { PROFILE_DEFAULTS } from '@leanlog/data-access';
-import type { ProfileRepository, UserProfile, UpdateProfile } from '@leanlog/data-access';
+import type {
+  ProfileRepository,
+  ProgressPose,
+  UserProfile,
+  UpdateProfile,
+} from '@leanlog/data-access';
+
+const POSE_TO_BASELINE_COLUMN = {
+  front: 'frontBaselineDate',
+  side: 'sideBaselineDate',
+  back: 'backBaselineDate',
+} as const satisfies Record<ProgressPose, keyof typeof userProfiles.$inferInsert>;
 
 export function createProfileRepository(db: D1Database): ProfileRepository {
   const d = drizzle(db);
@@ -23,6 +34,9 @@ export function createProfileRepository(db: D1Database): ProfileRepository {
       macroProtein: row.macroProtein,
       goalWeightLbs: row.goalWeightLbs ?? null,
       goalBodyFatPct: row.goalBodyFatPct ?? null,
+      frontBaselineDate: row.frontBaselineDate ?? null,
+      sideBaselineDate: row.sideBaselineDate ?? null,
+      backBaselineDate: row.backBaselineDate ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -60,6 +74,20 @@ export function createProfileRepository(db: D1Database): ProfileRepository {
         .update(userProfiles)
         .set({ ...data, updatedAt: ts })
         .where(eq(userProfiles.clerkUserId, clerkUserId));
+
+      const rows = await d
+        .select()
+        .from(userProfiles)
+        .where(eq(userProfiles.clerkUserId, clerkUserId));
+      return rowToProfile(rows[0]!);
+    },
+
+    async setProgressBaseline(clerkUserId, pose: ProgressPose, date) {
+      // Ensure the row exists so a first-time baseline pick has somewhere to land.
+      await this.getOrCreate(clerkUserId);
+      const set: Partial<typeof userProfiles.$inferInsert> = { updatedAt: now() };
+      set[POSE_TO_BASELINE_COLUMN[pose]] = date;
+      await d.update(userProfiles).set(set).where(eq(userProfiles.clerkUserId, clerkUserId));
 
       const rows = await d
         .select()

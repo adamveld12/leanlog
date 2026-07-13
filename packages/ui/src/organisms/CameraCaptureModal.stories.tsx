@@ -1,16 +1,24 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useRef } from 'react';
 import { CameraCaptureModal } from './CameraCaptureModal';
+import { SilhouetteGuide } from '../molecules/SilhouetteGuide';
 
-function CameraCaptureModalDemo(props: { instructions?: string; withSkip?: boolean }) {
+function CameraCaptureModalDemo(props: {
+  instructions?: string;
+  withSkip?: boolean;
+  withGuide?: boolean;
+  title?: string;
+}) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   return (
     <CameraCaptureModal
       open
+      title={props.title}
       videoRef={videoRef}
       onCapture={() => {}}
       onCancel={() => {}}
       instructions={props.instructions}
+      overlay={props.withGuide ? <SilhouetteGuide /> : undefined}
       onSkip={props.withSkip ? () => {} : undefined}
       skipLabel="Skip front photo"
     />
@@ -34,6 +42,18 @@ export const GuidedWithSkip: Story = {
     <CameraCaptureModalDemo
       instructions="Step 2 of 2: take a photo of the front of the package, or skip."
       withSkip
+    />
+  ),
+};
+
+// Progress-photo capture (#69): a static silhouette overlays the viewfinder to
+// standardize stance/distance/framing.
+export const WithFramingGuide: Story = {
+  render: () => (
+    <CameraCaptureModalDemo
+      title="Front progress photo"
+      instructions="Line up with the outline, then capture."
+      withGuide
     />
   ),
 };

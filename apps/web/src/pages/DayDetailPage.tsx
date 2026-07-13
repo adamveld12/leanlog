@@ -12,6 +12,7 @@ import {
   recipes,
 } from '@leanlog/ui';
 import { deriveDayPlan, dayMealStructure } from '@leanlog/data-access';
+import { DayProgressPhotos } from '../components/progress-photos/DayProgressPhotos';
 import { isPastIso, prettyDate, todayIso } from '../lib';
 import {
   dayTotals,
@@ -41,6 +42,7 @@ export default function DayDetailPage() {
     logMeal,
     updateDayTargets,
     updateDayWeight,
+    setDayProgressPhoto,
   } = useStore();
   const [savingWeight, setSavingWeight] = useState(false);
   const [savingMeasurements, setSavingMeasurements] = useState(false);
@@ -123,6 +125,15 @@ export default function DayDetailPage() {
             void updateDayTargets(day.id, patch).finally(() => setSavingMeasurements(false));
           }}
         />
+      }
+      photosSection={
+        isPast ? undefined : (
+          <DayProgressPhotos
+            key={day.id}
+            day={day}
+            onChange={(pose, photoKey) => void setDayProgressPhoto(day.id, pose, photoKey)}
+          />
+        )
       }
       totalsSection={
         <DailyTotalsCard

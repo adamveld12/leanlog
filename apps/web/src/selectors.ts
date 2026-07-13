@@ -4,6 +4,10 @@ import type {
   DailyMealLog,
   WeightEntry,
   WeeklyWeightDelta,
+  UserProfile,
+  ProgressPose,
+  ProgressPhotoDay,
+  PoseComparison,
 } from '@leanlog/data-access';
 import {
   macroAccuracy,
@@ -17,6 +21,7 @@ import {
   weeklyWeightDelta,
   weeklyWeightAverages,
   addDaysIso,
+  computeProgressComparisons,
 } from '@leanlog/data-access';
 import { sum, todayIso } from './lib';
 
@@ -261,6 +266,50 @@ export function selectWeeklyWeightEntries(days: DailyMealLog[]): WeightEntry[] {
     date: w.weekStart,
     weightLbs: w.avgLbs,
   }));
+}
+
+// The v-taper ratio (shoulder ÷ waist) pinned to a day, for the progress-photo
+// comparison (#69). Delegates to the canonical #68 helpers so every surface — the
+// north star, the trend chart, and the photo comparison — shows the same number.
+// Null when the day lacks shoulder or waist, so the comparison omits v-taper
+// rather than showing zero (R11).
+function dayVTaper(day: DailyMealLog): number | null {
+  const ratio = vTaperRatio(day.shoulderInches, day.waistInches);
+  return ratio == null ? null : roundVTaper(ratio);
+}
+
+// Maps loaded days into the shape the per-pose comparison needs (#69).
+export function selectProgressPhotoDays(days: DailyMealLog[]): ProgressPhotoDay[] {
+  return days.map((d) => ({
+    date: d.date,
+    frontPhotoKey: d.frontPhotoKey,
+    sidePhotoKey: d.sidePhotoKey,
+    backPhotoKey: d.backPhotoKey,
+    weightLbs: d.weightLbs,
+    vTaper: dayVTaper(d),
+  }));
+}
+
+// The user's per-pose baseline selections, defaulting each to null (earliest).
+export function selectProgressBaselines(
+  profile: UserProfile | null,
+): Record<ProgressPose, string | null> {
+  return {
+    front: profile?.frontBaselineDate ?? null,
+    side: profile?.sideBaselineDate ?? null,
+    back: profile?.backBaselineDate ?? null,
+  };
+}
+
+// The automatic latest-vs-baseline comparison for all three poses (#69).
+export function selectProgressComparisons(
+  days: DailyMealLog[],
+  profile: UserProfile | null,
+): PoseComparison[] {
+  return computeProgressComparisons(
+    selectProgressPhotoDays(days),
+    selectProgressBaselines(profile),
+  );
 }
 
 export type PeriodStats = {
