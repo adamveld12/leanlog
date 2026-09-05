@@ -825,6 +825,9 @@ function AddOrEditGoal({
       bodyFatPct: calorieBasis === 'katch' ? bodyFatPct : null,
       activityLevel: calorieBasis === 'katch' ? activityLevel : null,
       mealSlots: slots.map(({ name: slotName, ingredients }) => ({ name: slotName, ingredients })),
+      // TODO(#84 Step 6): wire to the plan picker; goal creation carries no
+      // default plan yet.
+      defaultPlanId: null,
     };
   }
 

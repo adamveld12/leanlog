@@ -179,6 +179,7 @@ vi.mock('../api', () => ({
                 { name: 'Dinner', ingredients: [] },
                 { name: 'Snack', ingredients: [] },
               ],
+              defaultPlanId: null,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             },

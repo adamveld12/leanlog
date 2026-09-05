@@ -46,6 +46,7 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
       bodyFatPct: row.bodyFatPct ?? null,
       activityLevel: row.activityLevel ?? null,
       mealSlots: parseMealSlotsJson(row.mealSlotsJson),
+      defaultPlanId: row.defaultPlanId ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

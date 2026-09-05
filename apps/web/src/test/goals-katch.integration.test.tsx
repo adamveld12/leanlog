@@ -43,6 +43,7 @@ const backgroundGoal: Goal = {
     { name: 'Dinner', ingredients: [] },
     { name: 'Snack', ingredients: [] },
   ],
+  defaultPlanId: null,
   createdAt: now,
   updatedAt: now,
 };

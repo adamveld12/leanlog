@@ -270,6 +270,85 @@ export const MealTemplateSchema = z.object({
   updatedAt: z.string().datetime(),
 });
 
+// ---------------------------------------------------------------------------
+// Plans (#84) — a user-level, named, ordered day of eating. Replaces both meal
+// templates (above) and goal meal slots (below) with one model.
+// ---------------------------------------------------------------------------
+
+// Plan ingredients follow the exact same validity rules as meal ingredients
+// (R3), differing only in their parent reference (planMealId instead of mealId).
+export const PlanMealIngredientSchema = IngredientSchema.omit({ mealId: true }).extend({
+  planMealId: z.string(),
+});
+
+export const PlanMealSchema = z.object({
+  id: z.string(),
+  planId: z.string(),
+  name: z.string().min(1),
+  position: z.number().int().min(0),
+  ingredients: z.array(PlanMealIngredientSchema).default([]),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const PlanSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  name: z.string().min(1),
+  position: z.number().int().min(0),
+  meals: z.array(PlanMealSchema).default([]),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+// A lighter read shape for list views — meal names/positions, no ingredients
+// (R41: app boot must not fetch a resource no surface consumes at full cost).
+export const PlanSummarySchema = PlanSchema.extend({
+  meals: z.array(PlanMealSchema.omit({ ingredients: true })).default([]),
+});
+
+export const CreatePlanSchema = z
+  .object({
+    name: z.string().min(1),
+  })
+  .strict();
+export const RenamePlanSchema = z
+  .object({
+    name: z.string().min(1),
+  })
+  .strict();
+export const ReorderPlansSchema = z
+  .object({
+    orderedIds: z.array(z.string()),
+  })
+  .strict();
+export const CreatePlanMealSchema = z
+  .object({
+    name: z.string().min(1),
+  })
+  .strict();
+export const RenamePlanMealSchema = z
+  .object({
+    name: z.string().min(1),
+  })
+  .strict();
+export const ReorderPlanMealsSchema = z
+  .object({
+    orderedIds: z.array(z.string()),
+  })
+  .strict();
+export const UpsertPlanIngredientSchema = PlanMealIngredientSchema.omit({
+  createdAt: true,
+  updatedAt: true,
+  calories: true,
+  calorieSource: true,
+  estimatedCalories: true,
+})
+  .extend({
+    calories: z.number().min(0).max(9999).nullable().optional(),
+  })
+  .strict();
+
 export const DailyMealLogSchema = z.object({
   id: z.string(),
   userId: z.string(),
@@ -527,6 +606,10 @@ const goalFields = {
   bodyFatPct: z.number().nullable(),
   activityLevel: ActivityLevelSchema.nullable(),
   mealSlots: z.array(MealSlotSchema),
+  // The plan materialized into new days this goal covers (#84). Null falls
+  // back to four default-named meals (R30). Replaces mealSlots; both are kept
+  // temporarily until the 0013 backfill-drop migration lands (issue #84 Step 7).
+  defaultPlanId: z.string().nullable(),
 };
 
 export const GoalSchema = z.object({
@@ -541,6 +624,7 @@ export const GoalSchema = z.object({
   bodyFatPct: goalFields.bodyFatPct.default(null),
   activityLevel: goalFields.activityLevel.default(null),
   mealSlots: goalFields.mealSlots.default(DEFAULT_MEAL_SLOTS),
+  defaultPlanId: goalFields.defaultPlanId.default(null),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

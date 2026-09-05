@@ -33,6 +33,17 @@ import type {
   CreateGoalSchema,
   UpdateGoalSchema,
   UpdateBackgroundGoalSchema,
+  PlanSchema,
+  PlanSummarySchema,
+  PlanMealSchema,
+  PlanMealIngredientSchema,
+  CreatePlanSchema,
+  RenamePlanSchema,
+  ReorderPlansSchema,
+  CreatePlanMealSchema,
+  RenamePlanMealSchema,
+  ReorderPlanMealsSchema,
+  UpsertPlanIngredientSchema,
 } from './schemas';
 
 export type Ingredient = z.infer<typeof IngredientSchema>;
@@ -75,3 +86,15 @@ export type MealSlotIngredient = z.infer<typeof MealSlotIngredientSchema>;
 export type CreateGoal = z.infer<typeof CreateGoalSchema>;
 export type UpdateGoal = z.infer<typeof UpdateGoalSchema>;
 export type UpdateBackgroundGoal = z.infer<typeof UpdateBackgroundGoalSchema>;
+
+export type Plan = z.infer<typeof PlanSchema>;
+export type PlanSummary = z.infer<typeof PlanSummarySchema>;
+export type PlanMeal = z.infer<typeof PlanMealSchema>;
+export type PlanMealIngredient = z.infer<typeof PlanMealIngredientSchema>;
+export type CreatePlan = z.infer<typeof CreatePlanSchema>;
+export type RenamePlan = z.infer<typeof RenamePlanSchema>;
+export type ReorderPlans = z.infer<typeof ReorderPlansSchema>;
+export type CreatePlanMeal = z.infer<typeof CreatePlanMealSchema>;
+export type RenamePlanMeal = z.infer<typeof RenamePlanMealSchema>;
+export type ReorderPlanMeals = z.infer<typeof ReorderPlanMealsSchema>;
+export type UpsertPlanIngredient = z.infer<typeof UpsertPlanIngredientSchema>;

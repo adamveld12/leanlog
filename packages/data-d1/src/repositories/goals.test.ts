@@ -37,6 +37,7 @@ function katchGoalInput(overrides: Partial<CreateGoal> = {}): CreateGoal {
     bodyFatPct: 15,
     activityLevel: 'moderate',
     mealSlots: [{ name: 'Breakfast', ingredients: [] }],
+    defaultPlanId: null,
     ...overrides,
   };
 }
