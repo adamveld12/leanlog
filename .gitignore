@@ -12,6 +12,7 @@ storybook-static
 !.dev.vars.example
 .wrangler/
 .worktrees/
+.claude/worktrees/
 
 # Generated eval artifact
 packages/nutrition-evals/eval-report.md
