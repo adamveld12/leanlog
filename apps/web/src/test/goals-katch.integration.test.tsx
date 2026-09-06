@@ -37,12 +37,6 @@ const backgroundGoal: Goal = {
   calorieBasis: 'bodyweight',
   bodyFatPct: null,
   activityLevel: null,
-  mealSlots: [
-    { name: 'Breakfast', ingredients: [] },
-    { name: 'Lunch', ingredients: [] },
-    { name: 'Dinner', ingredients: [] },
-    { name: 'Snack', ingredients: [] },
-  ],
   defaultPlanId: null,
   createdAt: now,
   updatedAt: now,

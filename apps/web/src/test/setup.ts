@@ -180,12 +180,6 @@ vi.mock('../api', () => ({
               calorieBasis: 'bodyweight' as const,
               bodyFatPct: null,
               activityLevel: null,
-              mealSlots: [
-                { name: 'Breakfast', ingredients: [] },
-                { name: 'Lunch', ingredients: [] },
-                { name: 'Dinner', ingredients: [] },
-                { name: 'Snack', ingredients: [] },
-              ],
               defaultPlanId: null,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),

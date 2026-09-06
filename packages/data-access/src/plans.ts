@@ -43,6 +43,6 @@ export function planMaterialization(
   });
 }
 
-// Replaces both DEFAULT_MEAL_TEMPLATE_NAMES and DEFAULT_MEAL_SLOTS — the four
-// meals a day (or goal) gets when it has no plan to materialize from (R30).
+// The four default-named meals a day (or goal) gets when it has no plan to
+// materialize from (R30).
 export const DEFAULT_MEAL_NAMES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const;

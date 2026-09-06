@@ -251,26 +251,6 @@ export const MealSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// Meal templates (user-level routine copied into each new day — issue #41)
-// ---------------------------------------------------------------------------
-
-// Template ingredients follow the exact same validity rules as meal ingredients
-// (R8), differing only in their parent reference (templateId instead of mealId).
-export const MealTemplateIngredientSchema = IngredientSchema.omit({ mealId: true }).extend({
-  templateId: z.string(),
-});
-
-export const MealTemplateSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  name: z.string().min(1),
-  position: z.number().int().min(0),
-  ingredients: z.array(MealTemplateIngredientSchema).default([]),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
-});
-
-// ---------------------------------------------------------------------------
 // Plans (#84) — a user-level, named, ordered day of eating. Replaces both meal
 // templates (above) and goal meal slots (below) with one model.
 // ---------------------------------------------------------------------------
@@ -434,32 +414,6 @@ export const UpsertIngredientSchema = IngredientSchema.omit({
     calories: z.number().min(0).max(9999).nullable().optional(),
   })
   .strict();
-export const CreateMealTemplateSchema = z
-  .object({
-    name: z.string().min(1),
-  })
-  .strict();
-export const RenameMealTemplateSchema = z
-  .object({
-    name: z.string().min(1),
-  })
-  .strict();
-export const ReorderMealTemplatesSchema = z
-  .object({
-    orderedIds: z.array(z.string()),
-  })
-  .strict();
-export const UpsertTemplateIngredientSchema = MealTemplateIngredientSchema.omit({
-  createdAt: true,
-  updatedAt: true,
-  calories: true,
-  calorieSource: true,
-  estimatedCalories: true,
-})
-  .extend({
-    calories: z.number().min(0).max(9999).nullable().optional(),
-  })
-  .strict();
 export const DayTargetsSchema = z.object({
   targetCalories: z.number().min(0).optional(),
   targetFat: z.number().min(0).optional(),
@@ -532,28 +486,6 @@ export const ActivityLevelSchema = z.enum([
 // (R4/R15). Deliberately limited to discourage false precision.
 export const BODY_FAT_OPTIONS = [10, 15, 20, 25] as const;
 
-// A meal slot is a named structure copied into each new day in the goal window
-// (R13/R57/R58). Slots may carry optional default ingredients that are snapshot
-// into the day's meal on creation (folds in the old meal-template seeding).
-export const MealSlotIngredientSchema = IngredientSchema.omit({
-  mealId: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const MealSlotSchema = z.object({
-  name: z.string().min(1),
-  ingredients: z.array(MealSlotIngredientSchema).default([]),
-});
-
-// The default four slots applied to every new goal (R7/R14/R56).
-export const DEFAULT_MEAL_SLOTS: z.infer<typeof MealSlotSchema>[] = [
-  { name: 'Breakfast', ingredients: [] },
-  { name: 'Lunch', ingredients: [] },
-  { name: 'Dinner', ingredients: [] },
-  { name: 'Snack', ingredients: [] },
-];
-
 export const GOAL_DEFAULTS = {
   mode: 'maintain' as const,
   macroFats: 25,
@@ -561,21 +493,6 @@ export const GOAL_DEFAULTS = {
   macroProtein: 40,
   calorieDelta: 0,
 };
-
-// Resilient reader for the stored meal_slots_json column: tolerates malformed
-// JSON (falls back to the default four slots) and normalizes each slot through
-// MealSlotSchema so a bad row never crashes a goal read.
-export function parseMealSlotsJson(
-  json: string | null | undefined,
-): z.infer<typeof MealSlotSchema>[] {
-  if (json == null) return DEFAULT_MEAL_SLOTS;
-  try {
-    const parsed = z.array(MealSlotSchema).safeParse(JSON.parse(json));
-    return parsed.success ? parsed.data : DEFAULT_MEAL_SLOTS;
-  } catch {
-    return DEFAULT_MEAL_SLOTS;
-  }
-}
 
 // Raw (default-free) field schemas for the mutable parts of a Goal. GoalSchema
 // layers `.default()` back on for reading full stored rows; UpdateGoalSchema is
@@ -605,10 +522,8 @@ const goalFields = {
   // tiers (R5). Both null on a bodyweight goal.
   bodyFatPct: z.number().nullable(),
   activityLevel: ActivityLevelSchema.nullable(),
-  mealSlots: z.array(MealSlotSchema),
   // The plan materialized into new days this goal covers (#84). Null falls
-  // back to four default-named meals (R30). Replaces mealSlots; both are kept
-  // temporarily until the 0013 backfill-drop migration lands (issue #84 Step 7).
+  // back to four default-named meals (R30).
   defaultPlanId: z.string().nullable(),
 };
 
@@ -623,7 +538,6 @@ export const GoalSchema = z.object({
   calorieBasis: goalFields.calorieBasis.default('bodyweight'),
   bodyFatPct: goalFields.bodyFatPct.default(null),
   activityLevel: goalFields.activityLevel.default(null),
-  mealSlots: goalFields.mealSlots.default(DEFAULT_MEAL_SLOTS),
   defaultPlanId: goalFields.defaultPlanId.default(null),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),

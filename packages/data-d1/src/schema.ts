@@ -25,10 +25,6 @@ export const userProfiles = sqliteTable('user_profiles', {
   frontBaselineDate: text('front_baseline_date'),
   sideBaselineDate: text('side_baseline_date'),
   backBaselineDate: text('back_baseline_date'),
-  // Set once the user's default meal templates have been seeded. Distinguishes
-  // "never seeded" (seed Breakfast/Lunch/Dinner/Snack) from "deliberately empty"
-  // (user deleted all templates) so we never re-seed. See issue #41.
-  mealTemplatesSeededAt: text('meal_templates_seeded_at'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
@@ -36,8 +32,8 @@ export const userProfiles = sqliteTable('user_profiles', {
 // Goals are the target-planning authority that replaces Profile (#56). Each user
 // has one background maintenance goal (null start/end) that supplies fallback
 // targets, plus timeline-constrained user goals. Macro fields are percentages
-// that sum to 100. `meal_slots_json` stores the slot templates (name + optional
-// default ingredients) copied into each new day in the goal window.
+// that sum to 100. `default_plan_id` points at the plan materialized into each
+// new day in the goal window (#84).
 export const goals = sqliteTable(
   'goals',
   {
@@ -71,11 +67,6 @@ export const goals = sqliteTable(
     activityLevel: text('activity_level', {
       enum: ['sedentary', 'light', 'moderate', 'very_active', 'athlete'],
     }),
-    mealSlotsJson: text('meal_slots_json')
-      .notNull()
-      .default(
-        '[{"name":"Breakfast","ingredients":[]},{"name":"Lunch","ingredients":[]},{"name":"Dinner","ingredients":[]},{"name":"Snack","ingredients":[]}]',
-      ),
     // The plan materialized into new days created while this goal covers them
     // (#84). Null falls back to four empty default-named meals. Set null when
     // the referenced plan is deleted.
@@ -168,60 +159,10 @@ export const ingredients = sqliteTable('ingredients', {
   updatedAt: text('updated_at').notNull(),
 });
 
-// User-level meal templates copied into each new day (issue #41).
-export const mealTemplates = sqliteTable(
-  'meal_templates',
-  {
-    id: text('id').primaryKey(),
-    userId: text('user_id')
-      .notNull()
-      .references(() => userProfiles.clerkUserId),
-    name: text('name').notNull(),
-    position: integer('position').notNull().default(0),
-    createdAt: text('created_at').notNull(),
-    updatedAt: text('updated_at').notNull(),
-  },
-  (table) => [index('meal_templates_user_idx').on(table.userId)],
-);
-
-// Default ingredients on a meal template. Mirrors `ingredients` minus mealId,
-// keyed to a template instead. Copied (as a snapshot) into a meal's ingredients
-// when a day is created.
-export const mealTemplateIngredients = sqliteTable('meal_template_ingredients', {
-  id: text('id').primaryKey(),
-  templateId: text('template_id')
-    .notNull()
-    .references(() => mealTemplates.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  weight: real('weight').notNull().default(0),
-  calories: real('calories').notNull().default(0),
-  fat: real('fat').notNull().default(0),
-  saturatedFat: real('saturated_fat').notNull().default(0),
-  carbs: real('carbs').notNull().default(0),
-  fiber: real('fiber').notNull().default(0),
-  protein: real('protein').notNull().default(0),
-  unsaturatedFat: real('unsaturated_fat'),
-  monounsaturatedFat: real('monounsaturated_fat'),
-  polyunsaturatedFat: real('polyunsaturated_fat'),
-  transFat: real('trans_fat'),
-  sugar: real('sugar'),
-  sugarAlcohol: real('sugar_alcohol'),
-  allulose: real('allulose'),
-  alcohol: real('alcohol'),
-  calorieSource: text('calorie_source', { enum: ['explicit', 'estimated'] })
-    .notNull()
-    .default('estimated'),
-  estimatedCalories: real('estimated_calories').notNull().default(0),
-  micronutrientsJson: text('micronutrients_json'),
-  sourceDatabaseIngredientId: text('source_database_ingredient_id'),
-  createdAt: text('created_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
-});
-
-// A user-level, named, ordered day of eating (#84). Replaces meal_templates
-// (#41) and goals.meal_slots_json (#56) with one model: a plan is a plan meal
-// is an ingredient list, at every zoom level. Plans are user-scoped and
-// goal-independent; deleting a goal never deletes a plan (R5).
+// A user-level, named, ordered day of eating (#84). Promoted from the old
+// meal_templates (#41); replaces goals.meal_slots_json (#56) too. A plan is a
+// plan meal is an ingredient list, at every zoom level. Plans are user-scoped
+// and goal-independent; deleting a goal never deletes a plan (R5).
 export const plans = sqliteTable(
   'plans',
   {

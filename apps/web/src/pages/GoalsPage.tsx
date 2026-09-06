@@ -43,7 +43,6 @@ import {
   findTrimmableActiveGoal,
   weightOnOrBefore,
   FALLBACK_WEIGHT_LBS,
-  DEFAULT_MEAL_SLOTS,
   GOAL_DEFAULTS,
   type ActivityLevel,
   type CalorieBasis,
@@ -832,9 +831,6 @@ function AddOrEditGoal({
       calorieBasis,
       bodyFatPct: calorieBasis === 'katch' ? bodyFatPct : null,
       activityLevel: calorieBasis === 'katch' ? activityLevel : null,
-      // mealSlots is vestigial (replaced by defaultPlanId, #84) but still a
-      // required column until the 0013 drop migration; the value is never read.
-      mealSlots: DEFAULT_MEAL_SLOTS,
       defaultPlanId,
     };
   }

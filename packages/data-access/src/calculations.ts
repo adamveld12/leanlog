@@ -8,9 +8,6 @@ import type {
   WeightEntry,
 } from './models';
 
-// Default meal templates seeded for a brand-new user (issue #41).
-export const DEFAULT_MEAL_TEMPLATE_NAMES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const;
-
 // A meal's calories/macros count toward day totals only when it is a logged
 // template meal, or an ad-hoc meal (which has no logged state and counts
 // directly). See R23/R25/R35.

@@ -10,10 +10,6 @@ import type {
   NutritionDatabaseIngredient,
   CreateNutritionDatabaseIngredient,
   UpdateNutritionDatabaseIngredient,
-  MealTemplate,
-  MealTemplateIngredient,
-  CreateMealTemplate,
-  UpsertTemplateIngredient,
   Goal,
   CreateGoal,
   UpdateGoal,
@@ -54,8 +50,8 @@ export interface MealRepository {
   delete(userId: string, mealId: string): Promise<void>;
 }
 
-// Thrown by MealRepository.delete when a caller tries to delete a meal copied
-// from a template — copied meals are fixed in structure (R19).
+// Thrown by MealRepository.delete when a caller tries to delete a *logged*
+// copied meal — it is recorded history (#41 R19, narrowed by #84).
 export class TemplateMealNotDeletableError extends Error {
   constructor(mealId: string) {
     super(`Meal ${mealId} was copied from a template and cannot be deleted`);
@@ -69,32 +65,6 @@ export class EmptyMealNotLoggableError extends Error {
   constructor(mealId: string) {
     super(`Meal ${mealId} has no ingredients and cannot be logged`);
     this.name = 'EmptyMealNotLoggableError';
-  }
-}
-
-export interface MealTemplateRepository {
-  // Seeds the default templates exactly once per user (R2/R10); a no-op after
-  // the first seed, even when the user has since deleted every template (R5).
-  ensureSeeded(userId: string): Promise<void>;
-  listByUser(userId: string): Promise<MealTemplate[]>;
-  create(userId: string, data: CreateMealTemplate): Promise<MealTemplate>;
-  rename(userId: string, templateId: string, name: string): Promise<MealTemplate>;
-  delete(userId: string, templateId: string): Promise<void>;
-  reorder(userId: string, orderedIds: string[]): Promise<MealTemplate[]>;
-  upsertIngredient(
-    userId: string,
-    templateId: string,
-    data: UpsertTemplateIngredient,
-  ): Promise<MealTemplateIngredient | null>;
-  deleteIngredient(userId: string, ingredientId: string): Promise<void>;
-}
-
-// Thrown when a template would be saved with a name that is blank or duplicates
-// another of the user's templates (R4).
-export class DuplicateTemplateNameError extends Error {
-  constructor(name: string) {
-    super(`A meal template named "${name}" already exists`);
-    this.name = 'DuplicateTemplateNameError';
   }
 }
 

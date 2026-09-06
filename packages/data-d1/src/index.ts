@@ -1,6 +1,5 @@
 export { createDayRepository } from './repositories/days';
 export { createMealRepository } from './repositories/meals';
-export { createMealTemplateRepository } from './repositories/mealTemplates';
 export { createPlanRepository } from './repositories/plans';
 export { createIngredientRepository } from './repositories/ingredients';
 export { createProfileRepository } from './repositories/profile';
