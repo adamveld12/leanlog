@@ -18,6 +18,13 @@ import type {
   CreateGoal,
   UpdateGoal,
   UpdateBackgroundGoal,
+  Plan,
+  PlanSummary,
+  PlanMeal,
+  PlanMealIngredient,
+  CreatePlan,
+  CreatePlanMeal,
+  UpsertPlanIngredient,
 } from './models';
 import type { PhotoUpdatePatch } from './nutritionPhotos';
 import type { ProgressPose } from './progressPhotos';
@@ -88,6 +95,51 @@ export class DuplicateTemplateNameError extends Error {
   constructor(name: string) {
     super(`A meal template named "${name}" already exists`);
     this.name = 'DuplicateTemplateNameError';
+  }
+}
+
+// The plans planning authority (#84). Replaces MealTemplateRepository and
+// goal meal-slot storage with one user-level, named, ordered day of eating.
+export interface PlanRepository {
+  // Summaries (meal names/positions, no ingredients) so app boot stays cheap
+  // (R41). Ordered by position.
+  listByUser(userId: string): Promise<PlanSummary[]>;
+  // The full tree (meals + ingredients), for the plan editor.
+  getById(userId: string, planId: string): Promise<Plan | null>;
+  create(userId: string, data: CreatePlan): Promise<Plan>;
+  rename(userId: string, planId: string, name: string): Promise<Plan>;
+  // Clears any goal.defaultPlanId pointing at this plan in the same
+  // transaction (R33); never deletes the goal or alters any existing day.
+  delete(userId: string, planId: string): Promise<void>;
+  // Forks a plan into a new one with the same meals/ingredients (R16).
+  duplicate(userId: string, planId: string): Promise<Plan | null>;
+  reorder(userId: string, orderedIds: string[]): Promise<PlanSummary[]>;
+  addMeal(userId: string, planId: string, data: CreatePlanMeal): Promise<PlanMeal | null>;
+  renameMeal(userId: string, planMealId: string, name: string): Promise<PlanMeal | null>;
+  removeMeal(userId: string, planMealId: string): Promise<void>;
+  reorderMeals(userId: string, planId: string, orderedIds: string[]): Promise<PlanMeal[]>;
+  upsertIngredient(
+    userId: string,
+    planMealId: string,
+    data: UpsertPlanIngredient,
+  ): Promise<PlanMealIngredient | null>;
+  deleteIngredient(userId: string, ingredientId: string): Promise<void>;
+  // Materializes the plan into a day's meals (R19-R27): fills empty/unlogged
+  // matches, skips everything else, appends unmatched — atomically. Returns
+  // null when the day or plan is not the user's.
+  applyToDay(
+    userId: string,
+    dayId: string,
+    planId: string,
+  ): Promise<{ day: DailyMealLog; filled: number; skipped: number } | null>;
+}
+
+// Thrown when a plan would be saved with a name that duplicates another of the
+// user's plans (R6).
+export class DuplicatePlanNameError extends Error {
+  constructor(name: string) {
+    super(`A plan named "${name}" already exists`);
+    this.name = 'DuplicatePlanNameError';
   }
 }
 
