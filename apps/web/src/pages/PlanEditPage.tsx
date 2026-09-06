@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import posthog from 'posthog-js';
 import {
@@ -13,7 +13,7 @@ import {
   ReorderableList,
   SectionCard,
 } from '@leanlog/ui';
-import { deriveDayPlan } from '@leanlog/data-access';
+import { deriveDayPlan, type Plan } from '@leanlog/data-access';
 import { isoToParts, normalizeIngredientName, partsToIso, todayIso } from '../lib';
 import { planMealTotals, planTotals, selectWeightEntries } from '../selectors';
 import { useStore } from '../state';
@@ -22,6 +22,7 @@ import {
   renderRouterNavLink,
   RouteErrorState,
   RouteLoadingState,
+  useApplyPlanState,
   useSavedSections,
 } from './_shared';
 
@@ -29,33 +30,8 @@ type PlanRouteLoad = { planId: string; status: 'loading' | 'not_found' | 'error'
 
 export default function PlanEditPage() {
   const { planId } = useParams();
-  const nav = useNavigate();
-  const {
-    days,
-    goals,
-    planDetails,
-    ensurePlanLoaded,
-    renamePlan,
-    duplicatePlan,
-    removePlan,
-    addPlanMeal,
-    reorderPlanMeals,
-    addDay,
-    applyPlanToDay,
-  } = useStore();
+  const { planDetails, ensurePlanLoaded } = useStore();
   const plan = planDetails.find((p) => p.id === planId);
-  const { saved, markDirty, markSaved } = useSavedSections();
-
-  const [nameDraft, setNameDraft] = useState<{ planId: string | null; name: string }>({
-    planId: plan?.id ?? null,
-    name: plan?.name ?? '',
-  });
-  const name = nameDraft.planId === plan?.id ? nameDraft.name : (plan?.name ?? '');
-  const setName = (next: string) => setNameDraft({ planId: plan?.id ?? null, name: next });
-
-  const [applyDate, setApplyDate] = useState(() => isoToParts(todayIso()));
-  const [applyResult, setApplyResult] = useState<{ filled: number; skipped: number } | null>(null);
-  const [applying, setApplying] = useState(false);
 
   const [routeLoad, setRouteLoad] = useState<PlanRouteLoad>({
     planId: planId ?? '',
@@ -84,6 +60,41 @@ export default function PlanEditPage() {
   if (!planId || routeStatus === 'not_found') return <Navigate to="/track/goals/plans" replace />;
   if (routeStatus === 'error') return <RouteErrorState message={routeLoad.error} />;
   if (!plan) return <RouteLoadingState title="Loading plan…" />;
+
+  return <PlanEditView plan={plan} />;
+}
+
+// Split out from PlanEditPage so `plan` is always defined here — no early
+// return precedes this component's hooks, unlike the parent's route-loading
+// guards.
+function PlanEditView({ plan }: { plan: Plan }) {
+  const nav = useNavigate();
+  const {
+    days,
+    goals,
+    renamePlan,
+    duplicatePlan,
+    addPlanMeal,
+    reorderPlanMeals,
+    addDay,
+    applyPlanToDay,
+  } = useStore();
+  const { saved, markDirty, markSaved } = useSavedSections();
+
+  const [nameDraft, setNameDraft] = useState<{ planId: string | null; name: string }>({
+    planId: plan.id,
+    name: plan.name,
+  });
+  const name = nameDraft.planId === plan.id ? nameDraft.name : plan.name;
+  const setName = (next: string) => setNameDraft({ planId: plan.id, name: next });
+
+  const [applyDate, setApplyDate] = useState(() => isoToParts(todayIso()));
+  const [applyState, dispatchApply] = useApplyPlanState();
+
+  const dangerZone = useMemo(
+    () => <PlanDangerZone planId={plan.id} mealCount={plan.meals.length} />,
+    [plan.id, plan.meals.length],
+  );
 
   const totals = planTotals(plan);
   const targetDate = todayIso();
@@ -136,9 +147,9 @@ export default function PlanEditPage() {
             <DateSelect3 {...applyDate} onChange={setApplyDate} />
             <Button
               className="w-full"
-              disabled={applying}
+              disabled={applyState.applying}
               onClick={async () => {
-                setApplying(true);
+                dispatchApply({ type: 'start' });
                 try {
                   const iso = partsToIso(applyDate);
                   let day = days.find((d) => d.date === iso);
@@ -148,7 +159,7 @@ export default function PlanEditPage() {
                     createdDay = true;
                   }
                   const result = await applyPlanToDay(day.id, plan.id);
-                  setApplyResult(result);
+                  dispatchApply({ type: 'succeeded', ...result });
                   posthog.capture('plan_applied', {
                     entry: 'plan_detail',
                     filled: result.filled,
@@ -156,16 +167,16 @@ export default function PlanEditPage() {
                     createdDay,
                   });
                 } finally {
-                  setApplying(false);
+                  dispatchApply({ type: 'settled' });
                 }
               }}
             >
               Apply to this date
             </Button>
-            {applyResult ? (
+            {applyState.result ? (
               <HelperText>
-                Filled {applyResult.filled} meal{applyResult.filled === 1 ? '' : 's'}, skipped{' '}
-                {applyResult.skipped} that already had food.
+                Filled {applyState.result.filled} meal{applyState.result.filled === 1 ? '' : 's'},
+                skipped {applyState.result.skipped} that already had food.
               </HelperText>
             ) : null}
           </div>
@@ -221,21 +232,27 @@ export default function PlanEditPage() {
           </Button>
         </SectionCard>
       }
-      dangerZone={
-        <SectionCard title="Danger zone">
-          <Button
-            variant="danger"
-            className="w-full"
-            onClick={async () => {
-              await removePlan(plan.id);
-              posthog.capture('plan_deleted', { mealCount: plan.meals.length });
-              nav('/track/goals/plans');
-            }}
-          >
-            Delete plan
-          </Button>
-        </SectionCard>
-      }
+      dangerZone={dangerZone}
     />
+  );
+}
+
+function PlanDangerZone({ planId, mealCount }: { planId: string; mealCount: number }) {
+  const nav = useNavigate();
+  const { removePlan } = useStore();
+  return (
+    <SectionCard title="Danger zone">
+      <Button
+        variant="danger"
+        className="w-full"
+        onClick={async () => {
+          await removePlan(planId);
+          posthog.capture('plan_deleted', { mealCount });
+          nav('/track/goals/plans');
+        }}
+      >
+        Delete plan
+      </Button>
+    </SectionCard>
   );
 }

@@ -3,11 +3,9 @@ import { z } from 'zod';
 import type { Env } from '../../_env';
 import { pastDayGuard } from '../../_dayGuard';
 
-const ApplyPlanSchema = z
-  .object({
-    planId: z.string().min(1),
-  })
-  .strict();
+const ApplyPlanSchema = z.strictObject({
+  planId: z.string().min(1),
+});
 
 // Applies a plan to a day (R18-R27): fills empty/unlogged meal matches, skips
 // everything else, and appends unmatched plan meals — atomically, unlogged.

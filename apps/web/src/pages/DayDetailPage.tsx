@@ -29,6 +29,7 @@ import {
   RouteErrorState,
   RouteLoadingState,
   type RouteLoadState,
+  useApplyPlanState,
 } from './_shared';
 
 export default function DayDetailPage() {
@@ -50,8 +51,7 @@ export default function DayDetailPage() {
   const [savingWeight, setSavingWeight] = useState(false);
   const [savingMeasurements, setSavingMeasurements] = useState(false);
   const [applyPlanId, setApplyPlanId] = useState('');
-  const [applyResult, setApplyResult] = useState<{ filled: number; skipped: number } | null>(null);
-  const [applying, setApplying] = useState(false);
+  const [applyState, dispatchApply] = useApplyPlanState();
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
     dayId: dayId ?? '',
     status: 'loading',
@@ -234,24 +234,25 @@ export default function DayDetailPage() {
                 <Button
                   className="w-full"
                   variant="secondary"
-                  disabled={!applyPlanId || applying}
+                  disabled={!applyPlanId || applyState.applying}
                   onClick={async () => {
-                    setApplying(true);
+                    dispatchApply({ type: 'start' });
                     try {
                       const result = await applyPlanToDay(day.id, applyPlanId);
-                      setApplyResult(result);
+                      dispatchApply({ type: 'succeeded', ...result });
                       setApplyPlanId('');
                     } finally {
-                      setApplying(false);
+                      dispatchApply({ type: 'settled' });
                     }
                   }}
                 >
                   Apply plan
                 </Button>
-                {applyResult ? (
+                {applyState.result ? (
                   <HelperText>
-                    Filled {applyResult.filled} meal{applyResult.filled === 1 ? '' : 's'}, skipped{' '}
-                    {applyResult.skipped} that already had food.
+                    Filled {applyState.result.filled} meal
+                    {applyState.result.filled === 1 ? '' : 's'}, skipped {applyState.result.skipped}{' '}
+                    that already had food.
                   </HelperText>
                 ) : null}
               </div>
