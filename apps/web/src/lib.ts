@@ -13,10 +13,20 @@ export const ingredientDedupeKey = (name: string) => normalizeIngredientName(nam
 
 export const sum = (nums: number[]) => round1(nums.reduce((acc, n) => acc + n, 0));
 
+// `new Date('2026-05-21')` parses a date-only string as UTC midnight, which
+// `format()` then renders in local time — a timezone behind UTC rolls it back
+// to the previous day. Build the Date from local-time components instead so
+// the calendar date always matches the ISO string, regardless of the runtime's
+// UTC offset.
+export function parseLocalDate(isoDate: string): Date {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export const prettyDate = (isoDate: string) => {
   const today = todayIso();
   const yesterday = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
   if (isoDate === today) return 'Today';
   if (isoDate === yesterday) return 'Yesterday';
-  return format(new Date(isoDate), 'MMM d');
+  return format(parseLocalDate(isoDate), 'MMM d');
 };

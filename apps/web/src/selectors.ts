@@ -23,7 +23,7 @@ import {
   addDaysIso,
   computeProgressComparisons,
 } from '@leanlog/data-access';
-import { sum, todayIso } from './lib';
+import { parseLocalDate, sum, todayIso } from './lib';
 
 function ingredientTotals(items: Ingredient[]) {
   return {
@@ -59,11 +59,6 @@ function isoWeekStart(date: Date): Date {
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   return d;
-}
-
-function parseLocalDate(iso: string): Date {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d);
 }
 
 export function daysThisWeek(days: DailyMealLog[], referenceDate?: string): DailyMealLog[] {
