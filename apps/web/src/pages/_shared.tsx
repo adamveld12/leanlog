@@ -1,8 +1,40 @@
-import { useEffect, useState, type PropsWithChildren } from 'react';
+import { useEffect, useReducer, useState, type PropsWithChildren } from 'react';
 import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { NavLink, Navigate, useNavigate } from 'react-router-dom';
 import { cn, ErrorTemplate, LoadingState, recipes, ThemeToggle } from '@leanlog/ui';
 import type { SaveSections } from '../types';
+
+export type ApplyPlanState = {
+  applying: boolean;
+  result: { filled: number; skipped: number } | null;
+};
+
+type ApplyPlanAction =
+  | { type: 'start' }
+  | { type: 'succeeded'; filled: number; skipped: number }
+  | { type: 'settled' };
+
+function applyPlanReducer(state: ApplyPlanState, action: ApplyPlanAction): ApplyPlanState {
+  switch (action.type) {
+    case 'start':
+      return { ...state, applying: true };
+    case 'succeeded':
+      return {
+        applying: state.applying,
+        result: { filled: action.filled, skipped: action.skipped },
+      };
+    case 'settled':
+      return { ...state, applying: false };
+  }
+}
+
+// Groups the "apply a plan" lifecycle (in-flight + last result) into one
+// reducer instead of two separate useState atoms; shared by DayDetailPage and
+// PlanEditPage. `result` persists across a later failed re-attempt, matching
+// the original try/finally behavior (only `applying` resets on failure).
+export function useApplyPlanState() {
+  return useReducer(applyPlanReducer, { applying: false, result: null });
+}
 
 export function useSavedSections() {
   const [saved, setSaved] = useState<SaveSections>({});

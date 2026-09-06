@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { resolveScannedMicronutrients, type NutritionUnit } from '@leanlog/data-access';
 
 export const round1 = (n: number) => Math.round(n * 10) / 10;
 export const todayIso = () => format(new Date(), 'yyyy-MM-dd');
@@ -30,3 +31,32 @@ export const prettyDate = (isoDate: string) => {
   if (isoDate === yesterday) return 'Yesterday';
   return format(parseLocalDate(isoDate), 'MMM d');
 };
+
+export function isoToParts(iso: string) {
+  const [year, month, day] = iso.split('-').map(Number);
+  return { year, month, day };
+}
+
+export function partsToIso({ year, month, day }: { year: number; month: number; day: number }) {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+// Resolve the manual-entry micronutrient rows (which may carry a %DV) into typed
+// amounts: a measured amount wins; otherwise the %DV is converted via the Daily
+// Value table. Empty / unknown-with-only-%DV rows are dropped. Shared by
+// MealEditPage and PlanMealEditPage.
+export function resolveDraftMicronutrients(
+  micros:
+    | { name: string; amount?: number | null; unit?: string; percentDailyValue?: number | null }[]
+    | null
+    | undefined,
+) {
+  return resolveScannedMicronutrients(
+    micros?.map((m) => ({
+      name: m.name,
+      amount: m.amount ?? undefined,
+      unit: (m.unit as NutritionUnit | undefined) ?? undefined,
+      percentDailyValue: m.percentDailyValue ?? undefined,
+    })),
+  );
+}

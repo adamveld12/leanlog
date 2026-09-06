@@ -12,6 +12,9 @@ const DayDetailPage = lazy(() => import('./DayDetailPage'));
 const MealEditPage = lazy(() => import('./MealEditPage'));
 const NutritionFactsDatabasePage = lazy(() => import('./NutritionFactsDatabasePage'));
 const GoalsPage = lazy(() => import('./GoalsPage'));
+const PlansPage = lazy(() => import('./PlansPage'));
+const PlanEditPage = lazy(() => import('./PlanEditPage'));
+const PlanMealEditPage = lazy(() => import('./PlanMealEditPage'));
 
 export default function App() {
   return (
@@ -55,6 +58,30 @@ export default function App() {
           element={
             <RequireSignedIn>
               <GoalsPage />
+            </RequireSignedIn>
+          }
+        />
+        <Route
+          path="/track/goals/plans"
+          element={
+            <RequireSignedIn>
+              <PlansPage />
+            </RequireSignedIn>
+          }
+        />
+        <Route
+          path="/track/goals/plans/:planId"
+          element={
+            <RequireSignedIn>
+              <PlanEditPage />
+            </RequireSignedIn>
+          }
+        />
+        <Route
+          path="/track/goals/plans/:planId/meal/:planMealId"
+          element={
+            <RequireSignedIn>
+              <PlanMealEditPage />
             </RequireSignedIn>
           }
         />

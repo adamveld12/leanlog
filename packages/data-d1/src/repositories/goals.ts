@@ -4,8 +4,6 @@ import { uuidv7 } from 'uuidv7';
 import { goals } from '../schema';
 import {
   GOAL_DEFAULTS,
-  DEFAULT_MEAL_SLOTS,
-  parseMealSlotsJson,
   goalLifecycle,
   validateNewGoal,
   GoalOverlapError,
@@ -45,7 +43,7 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
       calorieBasis: row.calorieBasis,
       bodyFatPct: row.bodyFatPct ?? null,
       activityLevel: row.activityLevel ?? null,
-      mealSlots: parseMealSlotsJson(row.mealSlotsJson),
+      defaultPlanId: row.defaultPlanId ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -139,7 +137,7 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
         calorieBasis: data.calorieBasis,
         bodyFatPct: data.bodyFatPct ?? null,
         activityLevel: data.activityLevel ?? null,
-        mealSlotsJson: JSON.stringify(data.mealSlots ?? DEFAULT_MEAL_SLOTS),
+        defaultPlanId: data.defaultPlanId ?? null,
         createdAt: ts,
         updatedAt: ts,
       });
@@ -191,7 +189,7 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
       }
       if (data.bodyFatPct !== undefined) patch.bodyFatPct = data.bodyFatPct ?? null;
       if (data.activityLevel !== undefined) patch.activityLevel = data.activityLevel ?? null;
-      if (data.mealSlots !== undefined) patch.mealSlotsJson = JSON.stringify(data.mealSlots);
+      if (data.defaultPlanId !== undefined) patch.defaultPlanId = data.defaultPlanId ?? null;
 
       await d
         .update(goals)
@@ -255,7 +253,6 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
       calorieBasis: 'bodyweight',
       bodyFatPct: null,
       activityLevel: null,
-      mealSlotsJson: JSON.stringify(DEFAULT_MEAL_SLOTS),
       createdAt: ts,
       updatedAt: ts,
     });
@@ -318,10 +315,12 @@ function assertEditAllowed(goal: Goal, lifecycle: GoalLifecycle, data: UpdateGoa
         (data.activityLevel ?? null) !== (goal.activityLevel ?? null),
     },
     {
-      field: 'mealSlots',
+      // R31: which plan a goal points at is frozen while active; editing that
+      // plan's own contents is not blocked here (see days.ts resolvePlanMeals).
+      field: 'defaultPlanId',
       changed:
-        data.mealSlots !== undefined &&
-        JSON.stringify(data.mealSlots) !== JSON.stringify(goal.mealSlots),
+        data.defaultPlanId !== undefined &&
+        (data.defaultPlanId ?? null) !== (goal.defaultPlanId ?? null),
     },
   ];
   const blocked = changes.find((c) => c.changed);

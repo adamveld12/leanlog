@@ -36,7 +36,7 @@ function katchGoalInput(overrides: Partial<CreateGoal> = {}): CreateGoal {
     calorieBasis: 'katch',
     bodyFatPct: 15,
     activityLevel: 'moderate',
-    mealSlots: [{ name: 'Breakfast', ingredients: [] }],
+    defaultPlanId: null,
     ...overrides,
   };
 }
@@ -142,10 +142,10 @@ describe('createGoalsRepository (#63 calorie basis)', () => {
     // Regression: the tests above call repo.update() directly with a hand-built
     // object, so they never exercise UpdateGoalSchema.safeParse. That's exactly
     // the path where Zod 4 used to reinject calorieBasis/bodyFatPct/
-    // activityLevel/mealSlots/calorieDelta defaults into an omitted-field patch,
-    // corrupting a trim-only PATCH into an apparent (and previously real) basis
-    // change and silently zeroing the calorie delta. Parsing through the schema
-    // first is the whole point of this test.
+    // activityLevel/defaultPlanId/calorieDelta defaults into an omitted-field
+    // patch, corrupting a trim-only PATCH into an apparent (and previously
+    // real) basis change and silently zeroing the calorie delta. Parsing
+    // through the schema first is the whole point of this test.
     test('a schema-parsed trim-only patch leaves every other field untouched', async () => {
       await seedUser(env.DB, userId);
       const repo = createGoalsRepository(env.DB);
@@ -165,7 +165,7 @@ describe('createGoalsRepository (#63 calorie basis)', () => {
       expect(updated.calorieBasis).toBe('katch');
       expect(updated.bodyFatPct).toBe(15);
       expect(updated.activityLevel).toBe('moderate');
-      expect(updated.mealSlots).toEqual([{ name: 'Breakfast', ingredients: [] }]);
+      expect(updated.defaultPlanId).toBeNull();
       expect(updated.calorieDelta).toBe(-200);
     });
   });

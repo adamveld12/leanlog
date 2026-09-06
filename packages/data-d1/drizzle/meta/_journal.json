@@ -78,6 +78,27 @@
       "when": 1782740034642,
       "tag": "0010_late_the_enforcers",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1788643517700,
+      "tag": "0011_plans_add",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1788644092663,
+      "tag": "0012_plans_backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1788664071071,
+      "tag": "0013_plans_drop",
+      "breakpoints": true
     }
   ]
 }

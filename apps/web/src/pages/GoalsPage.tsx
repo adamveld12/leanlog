@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import posthog from 'posthog-js';
 import {
   AnalyticsScope,
@@ -12,7 +12,6 @@ import {
   GoalsTemplate,
   HelperText,
   Input,
-  ListRow,
   MacroSummaryLine,
   MeasurementTrendCard,
   NumberInput,
@@ -44,19 +43,17 @@ import {
   findTrimmableActiveGoal,
   weightOnOrBefore,
   FALLBACK_WEIGHT_LBS,
-  DEFAULT_MEAL_SLOTS,
   GOAL_DEFAULTS,
-  uuidv7,
   type ActivityLevel,
   type CalorieBasis,
   type CreateGoal,
   type Goal,
   type GoalMode,
-  type MealSlot,
+  type PlanSummary,
   type TimelineSegment,
   type UpdateBackgroundGoal,
 } from '@leanlog/data-access';
-import { todayIso, prettyDate } from '../lib';
+import { todayIso, prettyDate, isoToParts, partsToIso } from '../lib';
 import {
   selectBicepEntries,
   selectShoulderEntries,
@@ -196,15 +193,6 @@ function BodyweightBreakdownPanel({
   );
 }
 
-function isoToParts(iso: string) {
-  const [year, month, day] = iso.split('-').map(Number);
-  return { year, month, day };
-}
-
-function partsToIso({ year, month, day }: { year: number; month: number; day: number }) {
-  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
-
 function segmentKey(seg: TimelineSegment): string {
   return seg.kind === 'goal'
     ? `goal:${seg.goalId}`
@@ -233,8 +221,17 @@ function dateRangeLabel(start: string | null, end: string | null): string {
 }
 
 function GoalsPlanner() {
-  const { goals, days, loading, createGoal, updateGoal, removeGoal, configureBackgroundGoal } =
-    useStore();
+  const {
+    goals,
+    days,
+    plans,
+    loading,
+    createGoal,
+    updateGoal,
+    removeGoal,
+    configureBackgroundGoal,
+  } = useStore();
+  const nav = useNavigate();
   const today = todayIso();
   const weightEntries = useMemo(() => selectWeightEntries(days), [days]);
   const segments = useMemo(() => buildTimeline(goals, today), [goals, today]);
@@ -337,6 +334,9 @@ function GoalsPlanner() {
           >
             + Add Goal
           </Button>
+          <Button variant="secondary" onClick={() => nav('/track/goals/plans')}>
+            Plans
+          </Button>
           {selectedGoal &&
           (goalLifecycle(selectedGoal, today) === 'future' ||
             goalLifecycle(selectedGoal, today) === 'today') ? (
@@ -360,6 +360,7 @@ function GoalsPlanner() {
       {adding ? (
         <AddOrEditGoal
           goals={goals}
+          plans={plans}
           today={today}
           latestWeightLbs={latestWeight}
           onCancel={() => setAdding(false)}
@@ -394,6 +395,7 @@ function GoalsPlanner() {
           goal={selectedGoal}
           today={today}
           weightEntries={weightEntries}
+          plans={plans}
           onUpdate={(data) => updateGoal(selectedGoal.id, data)}
           onSaved={setSavedMessage}
         />
@@ -538,19 +540,23 @@ function GoalDetail({
   goal,
   today,
   weightEntries,
+  plans,
   onUpdate,
   onSaved,
 }: {
   goal: Goal;
   today: string;
   weightEntries: { date: string; weightLbs: number }[];
+  plans: PlanSummary[];
   onUpdate: (data: Parameters<ReturnType<typeof useStore>['updateGoal']>[1]) => Promise<Goal>;
   onSaved: (message: string) => void;
 }) {
   const lifecycle = goalLifecycle(goal, today);
   const fullyEditable = lifecycle === 'future' || lifecycle === 'today';
   const canEdit = fullyEditable || lifecycle === 'active';
-  const slotNames = goal.mealSlots.map((s) => s.name).join(' · ');
+  const defaultPlanName = goal.defaultPlanId
+    ? (plans.find((p) => p.id === goal.defaultPlanId)?.name ?? 'Plan not found')
+    : 'None (four default meals)';
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(goal.name ?? '');
@@ -581,6 +587,7 @@ function GoalDetail({
     return (
       <AddOrEditGoal
         goals={[]}
+        plans={plans}
         today={today}
         latestWeightLbs={latestWeight}
         editingGoal={goal}
@@ -600,7 +607,9 @@ function GoalDetail({
             calorieBasis: data.calorieBasis,
             bodyFatPct: data.bodyFatPct,
             activityLevel: data.activityLevel,
-            mealSlots: data.mealSlots,
+            // R31: which plan a goal points at is frozen while active; this
+            // path (fullyEditable) never runs for an active goal.
+            defaultPlanId: data.defaultPlanId,
           });
           posthog.capture('goal_edited', { mode: data.mode, lifecycle });
           setEditing(false);
@@ -652,7 +661,7 @@ function GoalDetail({
           {goal.calorieDelta}.
         </HelperText>
       ) : null}
-      <SummaryRow label="Meal slots" value={slotNames} />
+      <SummaryRow label="Default plan" value={defaultPlanName} />
 
       {/* Active (older-than-today) goals allow only name, description, end date and
           calorie delta edits (R50/R51). Past goals are fully read-only (R52). */}
@@ -708,17 +717,16 @@ function GoalDetail({
 
 type SubmitTrim = { goalId: string; endDate: string };
 
-type FormSlot = MealSlot & { id: string };
-
 // Inline Add Goal / Edit-future-goal form (R54/R55). Mode is chosen first; the
 // rest prefill from standard defaults. The form is long because it composes the
-// full goal model (dates, mode, calorie basis + Katch body-comp, macros, meal
-// slots) in one card; the reusable Katch pieces are already extracted
+// full goal model (dates, mode, calorie basis + Katch body-comp, macros,
+// default plan) in one card; the reusable Katch pieces are already extracted
 // (BodyCompFields, KatchBreakdownPanel). A further split is tracked with the
 // useReducer migration (#50).
 // react-doctor-disable-next-line react-doctor/no-giant-component
 function AddOrEditGoal({
   goals,
+  plans,
   today,
   latestWeightLbs,
   editingGoal,
@@ -726,6 +734,7 @@ function AddOrEditGoal({
   onSubmit,
 }: {
   goals: Goal[];
+  plans: PlanSummary[];
   today: string;
   // Latest logged weight on/before today (null if none) — the basis for the live
   // calorie/macro preview, matching how day targets are derived.
@@ -764,10 +773,8 @@ function AddOrEditGoal({
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | null>(
     editingGoal?.activityLevel ?? null,
   );
-  // Form slots carry a stable local id so the editable list keys never fall back
-  // to the array index.
-  const [slots, setSlots] = useState<FormSlot[]>(() =>
-    (editingGoal?.mealSlots ?? DEFAULT_MEAL_SLOTS).map((s) => ({ ...s, id: uuidv7() })),
+  const [defaultPlanId, setDefaultPlanId] = useState<string | null>(
+    editingGoal?.defaultPlanId ?? null,
   );
   const [error, setError] = useState<string | null>(null);
   const [pendingTrim, setPendingTrim] = useState<SubmitTrim | null>(null);
@@ -824,7 +831,7 @@ function AddOrEditGoal({
       calorieBasis,
       bodyFatPct: calorieBasis === 'katch' ? bodyFatPct : null,
       activityLevel: calorieBasis === 'katch' ? activityLevel : null,
-      mealSlots: slots.map(({ name: slotName, ingredients }) => ({ name: slotName, ingredients })),
+      defaultPlanId,
     };
   }
 
@@ -992,46 +999,20 @@ function AddOrEditGoal({
         <NumberInput label={`Fat % (${gramTargets.targetFat} g)`} value={fats} onChange={setFats} />
       </div>
 
-      <SectionHeading noMargin>Meal slots</SectionHeading>
-      {slots.map((slot, i) => (
-        <ListRow
-          key={slot.id}
-          title={
-            <Input
-              value={slot.name}
-              aria-label={`Meal slot ${i + 1} name`}
-              onChange={(e) =>
-                setSlots((prev) =>
-                  prev.map((s) => (s.id === slot.id ? { ...s, name: e.target.value } : s)),
-                )
-              }
-            />
-          }
-          actions={
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-11"
-              onClick={() => setSlots((prev) => prev.filter((s) => s.id !== slot.id))}
-            >
-              Remove
-            </Button>
-          }
-        />
-      ))}
-      <Button
-        variant="subtle"
-        size="sm"
-        className="h-11"
-        onClick={() =>
-          setSlots((prev) => [
-            ...prev,
-            { id: uuidv7(), name: `Meal ${prev.length + 1}`, ingredients: [] },
-          ])
-        }
-      >
-        + Add slot
-      </Button>
+      <SectionHeading noMargin>Default plan</SectionHeading>
+      <Field label="Materialized into every new day this goal covers">
+        <Select
+          value={defaultPlanId ?? ''}
+          onChange={(e) => setDefaultPlanId(e.target.value || null)}
+        >
+          <option value="">None (four default meals)</option>
+          {plans.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </Select>
+      </Field>
 
       {error ? <WarningText>{error}</WarningText> : null}
 

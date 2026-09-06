@@ -29,7 +29,7 @@ describe('storeReducer', () => {
     const fetched = { id: 'd1', date: 'y', meals: [] } as unknown as DailyMealLog;
     const next = storeReducer(
       { ...initialStoreState, days: [optimistic] },
-      { type: 'loaded', days: [fetched], profile: {} as never, templates: [], goals: [] },
+      { type: 'loaded', days: [fetched], profile: {} as never, plans: [], goals: [] },
     );
     expect(next.days.map((d) => d.id)).toEqual(['d1', 'opt']);
   });
@@ -77,16 +77,16 @@ describe('storeReducer', () => {
     expect(next.days[0].meals[0].logged).toBe(true);
   });
 
-  it('templatesReordered reorders by id and ignores incomplete id lists', () => {
-    const t = (id: string) => ({ id, ingredients: [] }) as never;
-    const base: StoreState = { ...initialStoreState, templates: [t('a'), t('b'), t('c')] };
+  it('plansReordered reorders by id and ignores incomplete id lists', () => {
+    const p = (id: string) => ({ id, meals: [] }) as never;
+    const base: StoreState = { ...initialStoreState, plans: [p('a'), p('b'), p('c')] };
     const reordered = storeReducer(base, {
-      type: 'templatesReordered',
+      type: 'plansReordered',
       orderedIds: ['c', 'a', 'b'],
     });
-    expect(reordered.templates.map((x) => x.id)).toEqual(['c', 'a', 'b']);
-    const partial = storeReducer(base, { type: 'templatesReordered', orderedIds: ['c', 'a'] });
-    expect(partial.templates.map((x) => x.id)).toEqual(['a', 'b', 'c']);
+    expect(reordered.plans.map((x) => x.id)).toEqual(['c', 'a', 'b']);
+    const partial = storeReducer(base, { type: 'plansReordered', orderedIds: ['c', 'a'] });
+    expect(partial.plans.map((x) => x.id)).toEqual(['a', 'b', 'c']);
   });
 
   it('profilePatched merges into an existing profile only', () => {

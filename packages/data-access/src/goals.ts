@@ -1,4 +1,4 @@
-import type { ActivityLevel, Goal, GoalMode, MealSlot, WeightEntry } from './models';
+import type { ActivityLevel, Goal, GoalMode, WeightEntry } from './models';
 import { macrosFromPercentage } from './calculations';
 
 // Cut/Maintain/Lean Gain map to fixed latest-weight calorie multipliers (R16).
@@ -178,12 +178,11 @@ export function minCalorieDelta(goal: Goal, latestWeightLbs: number): number {
 export type DerivedDayPlan = GoalDayTargets & {
   goalId: string;
   targetWeightLbs: number;
-  mealSlots: MealSlot[];
 };
 
 // The full client-side derivation for a day: which goal covers it, the targets
-// from that goal + latest known weight, the effective target weight, and the
-// meal slots to materialize. The calorie delta only applies today/forward (R22).
+// from that goal + latest known weight, and the effective target weight. The
+// calorie delta only applies today/forward (R22).
 export function deriveDayPlan(
   dateIso: string,
   goals: Goal[],
@@ -198,7 +197,6 @@ export function deriveDayPlan(
     goalId: goal.id,
     ...targetsFromGoal(goal, latestWeight, { applyDelta }),
     targetWeightLbs: resolveTargetWeight(goal, weightEntries, dateIso),
-    mealSlots: goal.mealSlots,
   };
 }
 

@@ -12,11 +12,13 @@ export type {
   NutritionDatabaseIngredientSearchResult,
   AddIngredientFromDatabase,
   Micronutrient,
+  UpsertPlanIngredient,
 } from '@leanlog/data-access';
 
 export type SaveSections = Partial<
   Record<
     | 'mealName'
+    | 'planName'
     | 'ingredientForm'
     | 'bodyInfo'
     | 'calorieTarget'

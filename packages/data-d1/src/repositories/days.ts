@@ -2,121 +2,41 @@ import { and, desc, eq, isNotNull } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { dailyMealLogs, meals, ingredients, goals } from '../schema';
-import { createMealTemplateRepository } from './mealTemplates';
-import { parseMealSlotsJson, POSE_TO_KEY, setDayPhoto } from '@leanlog/data-access';
+import { copyPlanIngredient, createPlanRepository } from './plans';
+import {
+  DEFAULT_MEAL_NAMES,
+  planMaterialization,
+  POSE_TO_KEY,
+  setDayPhoto,
+} from '@leanlog/data-access';
 import type {
   DayRepository,
   CreateDailyMealLog,
   DayTargets,
-  MealTemplateIngredient,
-  MealSlotIngredient,
+  PlanMealIngredient,
   ProgressPose,
 } from '@leanlog/data-access';
 
-// Snapshot a template's default ingredient into a fresh meal ingredient row.
-// A new id is minted so the copy is independent of the template (R14).
-function copyTemplateIngredient(
-  ing: MealTemplateIngredient,
-  mealId: string,
-  ts: string,
-): typeof ingredients.$inferInsert {
-  return {
-    id: uuidv7(),
-    mealId,
-    name: ing.name,
-    weight: ing.weight,
-    calories: ing.calories,
-    fat: ing.fat,
-    saturatedFat: ing.saturatedFat,
-    carbs: ing.carbs,
-    fiber: ing.fiber,
-    protein: ing.protein,
-    unsaturatedFat: ing.unsaturatedFat ?? null,
-    monounsaturatedFat: ing.monounsaturatedFat ?? null,
-    polyunsaturatedFat: ing.polyunsaturatedFat ?? null,
-    transFat: ing.transFat ?? null,
-    sugar: ing.sugar ?? null,
-    sugarAlcohol: ing.sugarAlcohol ?? null,
-    allulose: ing.allulose ?? null,
-    alcohol: ing.alcohol ?? null,
-    calorieSource: ing.calorieSource,
-    estimatedCalories: ing.estimatedCalories,
-    micronutrientsJson: ing.micronutrients == null ? null : JSON.stringify(ing.micronutrients),
-    sourceDatabaseIngredientId: ing.sourceDatabaseIngredientId ?? null,
-    createdAt: ts,
-    updatedAt: ts,
-  };
-}
+type PlanMealSource = { name: string; ingredients: PlanMealIngredient[] };
 
-// Snapshot a goal meal-slot's default ingredient into a fresh meal ingredient
-// row, minting a new id so the copy is independent of the goal (#56).
-function copySlotIngredient(
-  ing: MealSlotIngredient,
-  mealId: string,
-  ts: string,
-): typeof ingredients.$inferInsert {
-  return {
-    id: uuidv7(),
-    mealId,
-    name: ing.name,
-    weight: ing.weight,
-    calories: ing.calories,
-    fat: ing.fat,
-    saturatedFat: ing.saturatedFat,
-    carbs: ing.carbs,
-    fiber: ing.fiber,
-    protein: ing.protein,
-    unsaturatedFat: ing.unsaturatedFat ?? null,
-    monounsaturatedFat: ing.monounsaturatedFat ?? null,
-    polyunsaturatedFat: ing.polyunsaturatedFat ?? null,
-    transFat: ing.transFat ?? null,
-    sugar: ing.sugar ?? null,
-    sugarAlcohol: ing.sugarAlcohol ?? null,
-    allulose: ing.allulose ?? null,
-    alcohol: ing.alcohol ?? null,
-    calorieSource: ing.calorieSource,
-    estimatedCalories: ing.estimatedCalories,
-    micronutrientsJson: ing.micronutrients == null ? null : JSON.stringify(ing.micronutrients),
-    sourceDatabaseIngredientId: ing.sourceDatabaseIngredientId ?? null,
-    createdAt: ts,
-    updatedAt: ts,
-  };
-}
-
-// A meal to materialize on a new day: its name plus a factory producing the
-// ingredient insert rows for a given meal id. Sourced from a goal's slots when a
-// covering goal is supplied, otherwise from the legacy meal templates.
-type MealSource = {
-  name: string;
-  ingredients: (mealId: string, ts: string) => (typeof ingredients.$inferInsert)[];
-};
-
-async function resolveMealSources(
+// R29/R30/R33: the covering goal's default plan, or the four default-named
+// meals when it has none, when the plan was deleted, or when no goal was
+// supplied. Replaces the old two-branch resolveMealSources (goal slots vs.
+// legacy meal templates) with a single source feeding planMaterialization.
+async function resolvePlanMeals(
   db: D1Database,
   userId: string,
   goalId: string | undefined,
-): Promise<MealSource[]> {
+): Promise<PlanMealSource[]> {
+  const defaults = () => DEFAULT_MEAL_NAMES.map((name) => ({ name, ingredients: [] }));
+  if (!goalId) return defaults();
   const d = drizzle(db);
-  if (goalId) {
-    const rows = await d.select().from(goals).where(eq(goals.id, goalId));
-    const goal = rows[0];
-    if (goal && goal.userId === userId) {
-      return parseMealSlotsJson(goal.mealSlotsJson).map((slot) => ({
-        name: slot.name,
-        ingredients: (mealId, ts) =>
-          slot.ingredients.map((ing) => copySlotIngredient(ing, mealId, ts)),
-      }));
-    }
-    return [];
-  }
-  const templateRepo = createMealTemplateRepository(db);
-  await templateRepo.ensureSeeded(userId);
-  const templates = await templateRepo.listByUser(userId);
-  return templates.map((template) => ({
-    name: template.name,
-    ingredients: (mealId, ts) =>
-      template.ingredients.map((ing) => copyTemplateIngredient(ing, mealId, ts)),
-  }));
+  const rows = await d.select().from(goals).where(eq(goals.id, goalId));
+  const goal = rows[0];
+  if (!goal || goal.userId !== userId) return []; // preserves today's behavior
+  if (!goal.defaultPlanId) return defaults();
+  const plan = await createPlanRepository(db).getById(userId, goal.defaultPlanId);
+  return plan ? plan.meals : defaults();
 }
 
 export function createDayRepository(db: D1Database): DayRepository {
@@ -198,29 +118,34 @@ export function createDayRepository(db: D1Database): DayRepository {
       const id = uuidv7();
       const ts = now();
 
-      // The day's meal structure is snapshot on create so later goal/template
-      // edits can never touch a day that already exists (R59). When a covering
-      // goal is supplied (#56) its meal slots are the source of structure; we
-      // fall back to the legacy meal templates otherwise.
-      const slots = await resolveMealSources(db, userId, data.goalId);
+      // The day's meal structure is snapshot on create so later goal/plan edits
+      // can never touch a day that already exists (R59, R32). Day creation is
+      // the degenerate case of plan application (R29): materializing against
+      // an empty day means every plan meal appends (#84).
+      const planMeals = await resolvePlanMeals(db, userId, data.goalId);
+      const actions = planMaterialization(planMeals, []);
 
       // Build every meal + ingredient insert up front so the whole day — day row,
       // meals, and ingredients — is written atomically via d.batch(). A sequential
       // set of awaits could leave a half-built day behind if any insert failed
       // mid-loop, and the duplicate-date guard would then block recreating it.
-      const mealStatements = slots.flatMap((slot) => {
+      const mealStatements = actions.flatMap((action) => {
+        // Materializing against an empty day only ever produces appends.
+        if (action.kind !== 'append') return [];
         const mealId = uuidv7();
         // Every copied meal starts unlogged, even with default ingredients (R12).
         const mealInsert = d.insert(meals).values({
           id: mealId,
           dailyMealLogId: id,
-          name: slot.name,
+          name: action.name,
           origin: 'template',
           logged: false,
           createdAt: ts,
           updatedAt: ts,
         });
-        const ingredientInserts = slot.ingredients(mealId, ts);
+        const ingredientInserts = action.ingredients.map((ing) =>
+          copyPlanIngredient(ing, mealId, ts),
+        );
         if (ingredientInserts.length === 0) return [mealInsert];
         return [mealInsert, d.insert(ingredients).values(ingredientInserts)];
       });
@@ -235,8 +160,8 @@ export function createDayRepository(db: D1Database): DayRepository {
           targetCarbs: data.targetCarbs,
           targetProtein: data.targetProtein,
           // Days derive coverage from their copied meals; mealCountTarget is kept
-          // coherent (slot count, or 0 for empty) for legacy display.
-          mealCountTarget: slots.length,
+          // coherent (plan meal count, or 0 for empty) for legacy display.
+          mealCountTarget: actions.length,
           createdAt: ts,
           updatedAt: ts,
         }),

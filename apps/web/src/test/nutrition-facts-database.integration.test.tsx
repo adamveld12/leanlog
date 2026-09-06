@@ -9,7 +9,7 @@ import type { NutritionDatabaseIngredientSearchResult } from '../types';
 
 const apiMock = api as unknown as {
   days: { list: Mock };
-  mealTemplates: { list: Mock };
+  plans: { list: Mock };
   nutritionDatabase: { list: Mock; search: Mock; create: Mock; update: Mock; delete: Mock };
 };
 
@@ -81,7 +81,7 @@ function rowFor(name: string): HTMLElement {
 afterEach(() => {
   cleanup();
   apiMock.days.list.mockResolvedValue({ days: [] });
-  apiMock.mealTemplates.list.mockResolvedValue({ templates: [] });
+  apiMock.plans.list.mockResolvedValue({ plans: [] });
   apiMock.nutritionDatabase.list.mockReset();
   apiMock.nutritionDatabase.search.mockReset();
   apiMock.nutritionDatabase.create.mockReset();

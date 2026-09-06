@@ -37,12 +37,7 @@ const backgroundGoal: Goal = {
   calorieBasis: 'bodyweight',
   bodyFatPct: null,
   activityLevel: null,
-  mealSlots: [
-    { name: 'Breakfast', ingredients: [] },
-    { name: 'Lunch', ingredients: [] },
-    { name: 'Dinner', ingredients: [] },
-    { name: 'Snack', ingredients: [] },
-  ],
+  defaultPlanId: null,
   createdAt: now,
   updatedAt: now,
 };
@@ -225,7 +220,7 @@ describe('Goals: Katch-McArdle calorie basis (#63)', () => {
       calorieBasis: 'katch',
       bodyFatPct: 15,
       activityLevel: 'moderate',
-      mealSlots: [{ name: 'Breakfast', ingredients: [] }],
+      defaultPlanId: null,
       createdAt: now,
       updatedAt: now,
     };

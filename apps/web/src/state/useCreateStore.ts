@@ -11,7 +11,7 @@ import { api, ApiError } from '../api';
 import { todayIso } from '../lib';
 import { selectWeightEntries } from '../selectors';
 import { initialStoreState, storeReducer } from './storeReducer';
-import type { EnsureDayResult, Store } from './types';
+import type { EnsureDayResult, EnsurePlanResult, Store } from './types';
 
 // Default day targets used only before any goal exists (the background goal is
 // seeded on first goals load, so this is a brief startup fallback).
@@ -50,10 +50,15 @@ export function useCreateStore(): Store {
   const [state, dispatch] = useReducer(storeReducer, initialStoreState);
   const daysRef = useRef<DailyMealLog[]>(state.days);
   const goalsRef = useRef<Goal[]>(state.goals);
+  const planDetailsRef = useRef(state.planDetails);
 
   useEffect(() => {
     daysRef.current = state.days;
   }, [state.days]);
+
+  useEffect(() => {
+    planDetailsRef.current = state.planDetails;
+  }, [state.planDetails]);
 
   useEffect(() => {
     goalsRef.current = state.goals;
@@ -69,13 +74,13 @@ export function useCreateStore(): Store {
       try {
         const token = await getToken();
         if (!token || cancelled) return;
-        const [{ days: d }, p, { templates: t }, { goals: g }] = await Promise.all([
+        const [{ days: d }, p, { plans: pl }, { goals: g }] = await Promise.all([
           api.days.list(token),
           api.profile.get(token),
-          api.mealTemplates.list(token),
+          api.plans.list(token),
           api.goals.list(token),
         ]);
-        if (!cancelled) dispatch({ type: 'loaded', days: d, profile: p, templates: t, goals: g });
+        if (!cancelled) dispatch({ type: 'loaded', days: d, profile: p, plans: pl, goals: g });
       } catch (e) {
         if (!cancelled) {
           dispatch({
@@ -121,14 +126,36 @@ export function useCreateStore(): Store {
     [getToken],
   );
 
+  const ensurePlanLoaded = useCallback(
+    async (planId: string): Promise<EnsurePlanResult> => {
+      const existing = planDetailsRef.current.find((plan) => plan.id === planId);
+      if (existing) return { status: 'found', plan: existing };
+
+      try {
+        const token = await getToken();
+        if (!token) throw new Error('Not authenticated');
+        const plan = await api.plans.get(token, planId);
+        dispatch({ type: 'planDetailUpserted', plan });
+        return { status: 'found', plan };
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return { status: 'not_found' };
+        const message = error instanceof Error ? error.message : 'Failed to load plan';
+        return { status: 'error', error: message };
+      }
+    },
+    [getToken],
+  );
+
   return {
     days: state.days,
-    templates: state.templates,
+    plans: state.plans,
+    planDetails: state.planDetails,
     goals: state.goals,
     profile: state.profile,
     loading: state.loading,
     error: state.error,
     ensureDayLoaded,
+    ensurePlanLoaded,
 
     async addDay(date) {
       // Derive targets + covering goal client-side (#56); the server snapshots the
@@ -198,6 +225,14 @@ export function useCreateStore(): Store {
       dispatch({ type: 'ingredientUpserted', dayId, mealId, ingredient });
     },
 
+    async applyPlanToDay(dayId, planId) {
+      // Apply both fills and appends unmatched meals, so a partial local
+      // mirror risks drifting from the server; replace the whole day instead.
+      const { day, filled, skipped } = await withToken((t) => api.days.applyPlan(t, dayId, planId));
+      dispatch({ type: 'dayReplaced', day });
+      return { filled, skipped };
+    },
+
     async searchNutritionDatabase(query) {
       return withToken((t) => api.nutritionDatabase.search(t, query));
     },
@@ -257,48 +292,76 @@ export function useCreateStore(): Store {
       dispatch({ type: 'profileSet', profile: updated });
     },
 
-    async addTemplate(name) {
-      const template = await withToken((t) => api.mealTemplates.create(t, { name }));
-      dispatch({ type: 'templateAdded', template });
-      return template;
+    async addPlan(name) {
+      const plan = await withToken((t) => api.plans.create(t, { name }));
+      dispatch({ type: 'planSummaryAdded', plan });
+      dispatch({ type: 'planDetailUpserted', plan });
+      return plan;
     },
 
-    async renameTemplate(templateId, name) {
-      const updated = await withToken((t) => api.mealTemplates.rename(t, templateId, name));
-      dispatch({ type: 'templateReplaced', template: updated });
+    async renamePlan(planId, name) {
+      const updated = await withToken((t) => api.plans.rename(t, planId, name));
+      dispatch({ type: 'planSummaryReplaced', plan: updated });
+      dispatch({ type: 'planDetailUpserted', plan: updated });
     },
 
-    async removeTemplate(templateId) {
-      await withToken((t) => api.mealTemplates.delete(t, templateId));
-      dispatch({ type: 'templateRemoved', templateId });
+    async removePlan(planId) {
+      await withToken((t) => api.plans.delete(t, planId));
+      dispatch({ type: 'planRemoved', planId });
     },
 
-    async reorderTemplates(orderedIds) {
+    async duplicatePlan(planId) {
+      const plan = await withToken((t) => api.plans.duplicate(t, planId));
+      dispatch({ type: 'planSummaryAdded', plan });
+      dispatch({ type: 'planDetailUpserted', plan });
+      return plan;
+    },
+
+    async reorderPlans(orderedIds) {
       // Optimistically reorder locally, then reconcile with the server result.
-      dispatch({ type: 'templatesReordered', orderedIds });
-      const { templates: updated } = await withToken((t) =>
-        api.mealTemplates.reorder(t, orderedIds),
-      );
-      dispatch({ type: 'templatesSet', templates: updated });
+      dispatch({ type: 'plansReordered', orderedIds });
+      const { plans: updated } = await withToken((t) => api.plans.reorder(t, orderedIds));
+      dispatch({ type: 'plansSet', plans: updated });
     },
 
-    async upsertTemplateIngredient(templateId, ingredient) {
+    async addPlanMeal(planId, name) {
+      const meal = await withToken((t) => api.plans.addMeal(t, planId, { name }));
+      dispatch({ type: 'planMealAdded', planId, meal });
+      return meal;
+    },
+
+    async renamePlanMeal(planId, mealId, name) {
+      await withToken((t) => api.plans.renameMeal(t, planId, mealId, name));
+      dispatch({ type: 'planMealRenamed', planId, mealId, name });
+    },
+
+    async removePlanMeal(planId, mealId) {
+      await withToken((t) => api.plans.removeMeal(t, planId, mealId));
+      dispatch({ type: 'planMealRemoved', planId, mealId });
+    },
+
+    async reorderPlanMeals(planId, orderedIds) {
+      const { meals } = await withToken((t) => api.plans.reorderMeals(t, planId, orderedIds));
+      dispatch({ type: 'planMealsReordered', planId, meals });
+    },
+
+    async upsertPlanIngredient(planId, mealId, ingredient) {
       const updated = await withToken((t) =>
-        api.mealTemplates.upsertIngredient(t, templateId, ingredient),
+        api.plans.upsertIngredient(t, planId, mealId, ingredient),
       );
-      dispatch({ type: 'templateIngredientUpserted', templateId, ingredient: updated });
+      dispatch({ type: 'planIngredientUpserted', planId, mealId, ingredient: updated });
     },
 
-    async removeTemplateIngredient(templateId, ingredientId) {
-      await withToken((t) => api.mealTemplates.deleteIngredient(t, templateId, ingredientId));
-      dispatch({ type: 'templateIngredientRemoved', templateId, ingredientId });
+    async removePlanIngredient(planId, mealId, ingredientId) {
+      await withToken((t) => api.plans.deleteIngredient(t, planId, mealId, ingredientId));
+      dispatch({ type: 'planIngredientRemoved', planId, mealId, ingredientId });
     },
 
-    async addTemplateIngredientFromDatabase(templateId, input) {
+    async addPlanIngredientFromDatabase(planId, mealId, input) {
       const created = await withToken((t) =>
-        api.mealTemplates.addIngredientFromDatabase(t, templateId, input),
+        api.plans.addIngredientFromDatabase(t, planId, mealId, input),
       );
-      dispatch({ type: 'templateIngredientUpserted', templateId, ingredient: created });
+      dispatch({ type: 'planIngredientUpserted', planId, mealId, ingredient: created });
     },
 
     patchProfileLocal(data) {

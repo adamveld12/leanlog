@@ -59,6 +59,7 @@ function makeDay(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
 type StoreCtx = {
   days: DailyMealLog[];
   goals: unknown[];
+  plans: unknown[];
   profile: UserProfile;
   loading: boolean;
   error: null;
@@ -73,6 +74,7 @@ type StoreCtx = {
   upsertIngredient: (...args: unknown[]) => Promise<void>;
   removeIngredient: (...args: unknown[]) => Promise<void>;
   addIngredientFromDatabase: (...args: unknown[]) => Promise<void>;
+  applyPlanToDay: (...args: unknown[]) => Promise<{ filled: number; skipped: number }>;
   searchNutritionDatabase: (query: string) => Promise<{ results: unknown[]; total: number }>;
   createNutritionDatabaseIngredient: (input: unknown) => Promise<unknown>;
   updateDayTargets: (...args: unknown[]) => Promise<void>;
@@ -95,6 +97,7 @@ function FakeStateProvider({
   const store: StoreCtx = {
     days,
     goals: [],
+    plans: [],
     profile: mockProfile,
     loading: false,
     error: null,
@@ -116,6 +119,7 @@ function FakeStateProvider({
     upsertIngredient: async () => {},
     removeIngredient: async () => {},
     addIngredientFromDatabase: async () => {},
+    applyPlanToDay: async () => ({ filled: 0, skipped: 0 }),
     searchNutritionDatabase: async () => ({ results: [], total: 0 }),
     createNutritionDatabaseIngredient: async () => ({}),
     updateDayTargets: async () => {},

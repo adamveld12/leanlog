@@ -25,10 +25,6 @@ export const userProfiles = sqliteTable('user_profiles', {
   frontBaselineDate: text('front_baseline_date'),
   sideBaselineDate: text('side_baseline_date'),
   backBaselineDate: text('back_baseline_date'),
-  // Set once the user's default meal templates have been seeded. Distinguishes
-  // "never seeded" (seed Breakfast/Lunch/Dinner/Snack) from "deliberately empty"
-  // (user deleted all templates) so we never re-seed. See issue #41.
-  mealTemplatesSeededAt: text('meal_templates_seeded_at'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
@@ -36,8 +32,8 @@ export const userProfiles = sqliteTable('user_profiles', {
 // Goals are the target-planning authority that replaces Profile (#56). Each user
 // has one background maintenance goal (null start/end) that supplies fallback
 // targets, plus timeline-constrained user goals. Macro fields are percentages
-// that sum to 100. `meal_slots_json` stores the slot templates (name + optional
-// default ingredients) copied into each new day in the goal window.
+// that sum to 100. `default_plan_id` points at the plan materialized into each
+// new day in the goal window (#84).
 export const goals = sqliteTable(
   'goals',
   {
@@ -71,11 +67,10 @@ export const goals = sqliteTable(
     activityLevel: text('activity_level', {
       enum: ['sedentary', 'light', 'moderate', 'very_active', 'athlete'],
     }),
-    mealSlotsJson: text('meal_slots_json')
-      .notNull()
-      .default(
-        '[{"name":"Breakfast","ingredients":[]},{"name":"Lunch","ingredients":[]},{"name":"Dinner","ingredients":[]},{"name":"Snack","ingredients":[]}]',
-      ),
+    // The plan materialized into new days created while this goal covers them
+    // (#84). Null falls back to four empty default-named meals. Set null when
+    // the referenced plan is deleted.
+    defaultPlanId: text('default_plan_id').references(() => plans.id, { onDelete: 'set null' }),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
@@ -164,9 +159,12 @@ export const ingredients = sqliteTable('ingredients', {
   updatedAt: text('updated_at').notNull(),
 });
 
-// User-level meal templates copied into each new day (issue #41).
-export const mealTemplates = sqliteTable(
-  'meal_templates',
+// A user-level, named, ordered day of eating (#84). Promoted from the old
+// meal_templates (#41); replaces goals.meal_slots_json (#56) too. A plan is a
+// plan meal is an ingredient list, at every zoom level. Plans are user-scoped
+// and goal-independent; deleting a goal never deletes a plan (R5).
+export const plans = sqliteTable(
+  'plans',
   {
     id: text('id').primaryKey(),
     userId: text('user_id')
@@ -177,17 +175,33 @@ export const mealTemplates = sqliteTable(
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
-  (table) => [index('meal_templates_user_idx').on(table.userId)],
+  (table) => [index('plans_user_idx').on(table.userId)],
 );
 
-// Default ingredients on a meal template. Mirrors `ingredients` minus mealId,
-// keyed to a template instead. Copied (as a snapshot) into a meal's ingredients
-// when a day is created.
-export const mealTemplateIngredients = sqliteTable('meal_template_ingredients', {
+// A named, ordered meal within a plan (promoted from meal_templates, #41).
+export const planMeals = sqliteTable(
+  'plan_meals',
+  {
+    id: text('id').primaryKey(),
+    planId: text('plan_id')
+      .notNull()
+      .references(() => plans.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    position: integer('position').notNull().default(0),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => [index('plan_meals_plan_idx').on(table.planId)],
+);
+
+// An ingredient on a plan meal. Mirrors `ingredients` minus mealId, keyed to a
+// plan meal instead. Copied (as a value snapshot with fresh ids) into a day's
+// meal ingredients on day creation or explicit apply (R24).
+export const planMealIngredients = sqliteTable('plan_meal_ingredients', {
   id: text('id').primaryKey(),
-  templateId: text('template_id')
+  planMealId: text('plan_meal_id')
     .notNull()
-    .references(() => mealTemplates.id, { onDelete: 'cascade' }),
+    .references(() => planMeals.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   weight: real('weight').notNull().default(0),
   calories: real('calories').notNull().default(0),

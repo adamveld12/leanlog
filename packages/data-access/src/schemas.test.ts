@@ -466,18 +466,7 @@ describe('UpsertIngredientSchema', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Meal templates (issue #41)
-// ---------------------------------------------------------------------------
-
-import {
-  MealSchema,
-  MealTemplateSchema,
-  CreateMealTemplateSchema,
-  RenameMealTemplateSchema,
-  ReorderMealTemplatesSchema,
-  UpsertTemplateIngredientSchema,
-} from './schemas';
+import { MealSchema } from './schemas';
 
 describe('MealSchema origin/logged', () => {
   it('defaults origin to adhoc and logged to false when omitted', () => {
@@ -505,79 +494,6 @@ describe('MealSchema origin/logged', () => {
     });
     expect(result.success).toBe(true);
     expect(result.data!.origin).toBe('template');
-  });
-});
-
-describe('MealTemplateSchema', () => {
-  const base = {
-    id: 't1',
-    userId: 'u1',
-    name: 'Breakfast',
-    position: 0,
-    createdAt: '2024-01-01T00:00:00.000Z',
-    updatedAt: '2024-01-01T00:00:00.000Z',
-  };
-
-  it('accepts a valid template with no ingredients', () => {
-    const result = MealTemplateSchema.safeParse(base);
-    expect(result.success).toBe(true);
-    expect(result.data!.ingredients).toEqual([]);
-  });
-
-  it('rejects a blank name', () => {
-    expect(MealTemplateSchema.safeParse({ ...base, name: '' }).success).toBe(false);
-  });
-});
-
-describe('CreateMealTemplateSchema', () => {
-  it('accepts a non-blank name', () => {
-    expect(CreateMealTemplateSchema.safeParse({ name: 'Lunch' }).success).toBe(true);
-  });
-  it('rejects a blank name', () => {
-    expect(CreateMealTemplateSchema.safeParse({ name: '' }).success).toBe(false);
-  });
-});
-
-describe('RenameMealTemplateSchema', () => {
-  it('rejects a blank name', () => {
-    expect(RenameMealTemplateSchema.safeParse({ name: '' }).success).toBe(false);
-  });
-});
-
-describe('ReorderMealTemplatesSchema', () => {
-  it('accepts an ordered id list', () => {
-    expect(ReorderMealTemplatesSchema.safeParse({ orderedIds: ['a', 'b', 'c'] }).success).toBe(
-      true,
-    );
-  });
-  it('accepts an empty list', () => {
-    expect(ReorderMealTemplatesSchema.safeParse({ orderedIds: [] }).success).toBe(true);
-  });
-});
-
-describe('UpsertTemplateIngredientSchema', () => {
-  const valid = {
-    id: 'i1',
-    templateId: 't1',
-    name: 'Eggs',
-    weight: 100,
-    fat: 10,
-    saturatedFat: 3,
-    carbs: 1,
-    fiber: 0,
-    protein: 12,
-  };
-
-  it('accepts a valid template ingredient (calories optional/nullable)', () => {
-    expect(UpsertTemplateIngredientSchema.safeParse(valid).success).toBe(true);
-  });
-
-  it('rejects invalid nutrition (negative protein)', () => {
-    expect(UpsertTemplateIngredientSchema.safeParse({ ...valid, protein: -5 }).success).toBe(false);
-  });
-
-  it('rejects a blank name (same validity as meal ingredients)', () => {
-    expect(UpsertTemplateIngredientSchema.safeParse({ ...valid, name: '' }).success).toBe(false);
   });
 });
 
@@ -685,7 +601,7 @@ describe('UpdateGoalSchema — calorie basis (#63)', () => {
     ).toBe(true);
   });
 
-  // Regression: GoalSchema's calorieBasis/bodyFatPct/activityLevel/mealSlots/
+  // Regression: GoalSchema's calorieBasis/bodyFatPct/activityLevel/defaultPlanId/
   // calorieDelta fields carry `.default()`. Zod 4 does not suppress a default on
   // `.partial()`, so a schema derived from GoalSchema would silently inject those
   // defaults into an omitted-field patch — corrupting a trim-only PATCH into one
@@ -699,14 +615,14 @@ describe('UpdateGoalSchema — calorie basis (#63)', () => {
     expect(Object.keys(result.data!)).toHaveLength(1);
   });
 
-  it('a name-only patch does not inject calorieBasis, mealSlots, or calorieDelta', () => {
+  it('a name-only patch does not inject calorieBasis, defaultPlanId, or calorieDelta', () => {
     const result = UpdateGoalSchema.safeParse({ name: 'Renamed' });
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ name: 'Renamed' });
     expect(result.data).not.toHaveProperty('calorieBasis');
     expect(result.data).not.toHaveProperty('bodyFatPct');
     expect(result.data).not.toHaveProperty('activityLevel');
-    expect(result.data).not.toHaveProperty('mealSlots');
+    expect(result.data).not.toHaveProperty('defaultPlanId');
     expect(result.data).not.toHaveProperty('calorieDelta');
   });
 });

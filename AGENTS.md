@@ -69,7 +69,7 @@ Two production bugs in #45 came from missing these — follow them:
 
 - **D1 has no implicit transaction across `await`s.** Any repository write that touches more than one row/table must use `d.batch([...])` so it's atomic (e.g. copy-on-create inserting a row + its children). Sequential `await`s can leave half-written state on failure.
 - **Snapshot-on-copy:** when copying X into Y (e.g. template → day), mint **new** ids and copy values by reference-free value so later edits to the source never mutate the copy.
-- **Repositories verify ownership** (`userId`) before mutating, and return `null` / throw typed errors (e.g. `DuplicateTemplateNameError`) that API routes map to status codes.
+- **Repositories verify ownership** (`userId`) before mutating, and return `null` / throw typed errors (e.g. `DuplicatePlanNameError`) that API routes map to status codes.
 - **Optimistic store updates must mirror every server side-effect.** If a server mutation has a side-effect (e.g. adding an ingredient auto-logs a template meal), reproduce it in **every** store reducer that triggers that mutation — not just the obvious one. Missing one leaves the UI stale until reload.
 - **Day-scoped mutations are timezone-guarded.** The api client sends `X-Leanlog-Local-Date`; day/meal/ingredient endpoints reject past-day edits via the shared guard. New day-scoped endpoints must use it.
 
@@ -78,7 +78,7 @@ Two production bugs in #45 came from missing these — follow them:
 - The vitest setup files (`packages/ui/src/test/setup.ts`, `apps/web/src/test/setup.ts`) run a global `afterEach(cleanup)` — **don't** add per-file `afterEach(cleanup)`.
 - The shared api mock in `apps/web/src/test/setup.ts` is `satisfies typeof api`, so **adding a method to `src/api.ts` requires adding it to the mock** (TypeScript will tell you).
 - For store-dependent UI, render the app/route (`renderApp(route)` pattern) rather than `renderHook(StateProvider)` — the mocked `useAuth` interacts poorly with `renderHook`.
-- `@leanlog/data-d1` has **no unit-test harness yet** (lint = `tsc` only); repository logic is currently covered only by typecheck + web integration tests. Adding a Workers/Miniflare D1 test pool is the highest-value testing investment (tracked separately).
+- `@leanlog/data-d1` has a real unit-test harness: `@cloudflare/vitest-pool-workers` + Miniflare D1 (`vitest.config.ts` reads every migration via `readD1Migrations`, and `test/setup.ts`'s `beforeAll` applies them via `applyD1Migrations` before each test file). Write repository tests as `src/repositories/*.test.ts` using `import { env } from 'cloudflare:test'` — see `plans.test.ts` or `days.test.ts` for the pattern.
 
 ## SKILLS LOADING HINTS
 

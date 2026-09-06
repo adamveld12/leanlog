@@ -81,8 +81,14 @@ export function createMealRepository(db: D1Database): MealRepository {
     async delete(userId, mealId) {
       const owner = await ownerOf(mealId);
       if (!owner || owner.userId !== userId) return;
-      // Copied template meals are fixed in structure and cannot be deleted (R19).
-      if (owner.origin === 'template') throw new TemplateMealNotDeletableError(mealId);
+      // #41 R19 protected every copied meal outright. Narrowed for #84: an
+      // unlogged copied meal (from a goal's default plan, or appended by
+      // applying a plan) is still just a plan — it stays removable. Once
+      // logged it is recorded history and stays protected.
+      const meal = await load(mealId);
+      if (owner.origin === 'template' && meal.logged) {
+        throw new TemplateMealNotDeletableError(mealId);
+      }
       await d.delete(meals).where(eq(meals.id, mealId));
     },
   };

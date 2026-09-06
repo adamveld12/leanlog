@@ -8,6 +8,8 @@ import type {
   ProgressPose,
   ProgressPhotoDay,
   PoseComparison,
+  Plan,
+  PlanMeal,
 } from '@leanlog/data-access';
 import {
   macroAccuracy,
@@ -25,7 +27,16 @@ import {
 } from '@leanlog/data-access';
 import { parseLocalDate, sum, todayIso } from './lib';
 
-function ingredientTotals(items: Ingredient[]) {
+type NutritionFields = {
+  calories: number;
+  fat: number;
+  saturatedFat: number;
+  carbs: number;
+  fiber: number;
+  protein: number;
+};
+
+function ingredientTotals(items: NutritionFields[]) {
   return {
     calories: sum(items.map((i) => i.calories)),
     fat: sum(items.map((i) => i.fat)),
@@ -50,6 +61,16 @@ export function dayTotals(day: DailyMealLog) {
       return acc;
     }, []),
   );
+}
+
+// A plan meal always contributes — simulation has no logged/unlogged
+// distinction (R10), unlike a real day's contributesNutrition gate.
+export function planMealTotals(meal: PlanMeal) {
+  return ingredientTotals(meal.ingredients);
+}
+
+export function planTotals(plan: Plan) {
+  return ingredientTotals(plan.meals.flatMap((m) => m.ingredients));
 }
 
 function isoWeekStart(date: Date): Date {

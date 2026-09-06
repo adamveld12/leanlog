@@ -13,7 +13,7 @@ export function useDatabaseScan({
   onError,
   onCapturedImage,
 }: {
-  analyticsContext: 'meal' | 'template' | 'database';
+  analyticsContext: 'meal' | 'plan' | 'database';
   onResult: (result: ScanResolution) => void;
   onError: (message: string) => void;
   // When provided, the raw captured/selected image is also handed back so the

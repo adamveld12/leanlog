@@ -465,7 +465,6 @@ describe('scaleLabelToIngredient — servings & package modes', () => {
 import {
   dayMealStructure,
   contributesNutrition,
-  DEFAULT_MEAL_TEMPLATE_NAMES,
   dayAdherence,
   dayConsumed,
   goalOutcome,
@@ -530,12 +529,6 @@ function makeDay(meals: Meal[], mealCountTarget = 0): DailyMealLog {
   };
 }
 
-describe('DEFAULT_MEAL_TEMPLATE_NAMES', () => {
-  it('seeds Breakfast, Lunch, Dinner, Snack in order', () => {
-    expect(DEFAULT_MEAL_TEMPLATE_NAMES).toEqual(['Breakfast', 'Lunch', 'Dinner', 'Snack']);
-  });
-});
-
 describe('dayMealStructure', () => {
   it('template-backed day: expected = copied count, tracked = logged copied count', () => {
     const day = makeDay([
@@ -598,7 +591,7 @@ function makeGoalFor(partial: Partial<Goal> = {}): Goal {
     calorieBasis: 'bodyweight',
     bodyFatPct: null,
     activityLevel: null,
-    mealSlots: [],
+    defaultPlanId: null,
     createdAt: '2026-05-01T00:00:00.000Z',
     updatedAt: '2026-05-01T00:00:00.000Z',
     ...partial,

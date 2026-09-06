@@ -3,7 +3,9 @@ import { env } from 'cloudflare:test';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { createDayRepository } from './days';
-import { userProfiles, dailyMealLogs, meals, ingredients } from '../schema';
+import { createPlanRepository } from './plans';
+import { userProfiles, dailyMealLogs, meals, ingredients, goals } from '../schema';
+import type { UpsertPlanIngredient } from '@leanlog/data-access';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -252,6 +254,132 @@ describe('createDayRepository', () => {
       expect(day!.meals).toHaveLength(120);
       const ingredientCount = day!.meals.reduce((n, m) => n + m.ingredients.length, 0);
       expect(ingredientCount).toBe(120);
+    });
+  });
+
+  // #84: day creation materializes the covering goal's default plan, or the
+  // four default meals when it has none — the degenerate case of applying a
+  // plan to an empty day (same rule as plans.applyToDay).
+  describe('create — plan materialization', () => {
+    function createInput(goalId?: string) {
+      return {
+        date: '2026-06-01',
+        targetCalories: 2000,
+        targetFat: 70,
+        targetCarbs: 250,
+        targetProtein: 140,
+        mealCountTarget: 3,
+        goalId,
+      };
+    }
+
+    async function seedGoalWithPlan(
+      planMealNames: string[],
+    ): Promise<{ goalId: string; planId: string }> {
+      const planRepo = createPlanRepository(env.DB);
+      const plan = await planRepo.create(userId, { name: 'Default' });
+      for (const name of planMealNames) {
+        const meal = await planRepo.addMeal(userId, plan.id, { name });
+        await planRepo.upsertIngredient(userId, meal!.id, {
+          id: uuidv7(),
+          planMealId: meal!.id,
+          name: 'Oats',
+          weight: 80,
+          calories: 300,
+          fat: 5,
+          saturatedFat: 1,
+          carbs: 50,
+          fiber: 8,
+          protein: 10,
+        } satisfies UpsertPlanIngredient);
+      }
+      const d = drizzle(env.DB);
+      const goalId = uuidv7();
+      await d.insert(goals).values({
+        id: goalId,
+        userId,
+        isBackground: true,
+        mode: 'maintain',
+        startDate: null,
+        endDate: null,
+        defaultPlanId: plan.id,
+        createdAt: ts(),
+        updatedAt: ts(),
+      });
+      return { goalId, planId: plan.id };
+    }
+
+    test('a goal with a default plan materializes its meals and ingredients, unlogged', async () => {
+      await seedUser(env.DB, userId);
+      const { goalId } = await seedGoalWithPlan(['Breakfast', 'Lunch']);
+
+      const repo = createDayRepository(env.DB);
+      const day = await repo.create(userId, createInput(goalId));
+
+      expect(day.meals.map((m) => m.name)).toEqual(['Breakfast', 'Lunch']);
+      for (const meal of day.meals) {
+        expect(meal.logged).toBe(false);
+        expect(meal.origin).toBe('template');
+        expect(meal.ingredients).toHaveLength(1);
+      }
+    });
+
+    test('a goal with no default plan yields the four default meals (R30)', async () => {
+      await seedUser(env.DB, userId);
+      const d = drizzle(env.DB);
+      const goalId = uuidv7();
+      await d.insert(goals).values({
+        id: goalId,
+        userId,
+        isBackground: true,
+        mode: 'maintain',
+        startDate: null,
+        endDate: null,
+        defaultPlanId: null,
+        createdAt: ts(),
+        updatedAt: ts(),
+      });
+
+      const repo = createDayRepository(env.DB);
+      const day = await repo.create(userId, createInput(goalId));
+
+      expect(day.meals.map((m) => m.name)).toEqual(['Breakfast', 'Lunch', 'Dinner', 'Snack']);
+      expect(day.meals.every((m) => m.ingredients.length === 0)).toBe(true);
+    });
+
+    test('no goalId also yields the four default meals', async () => {
+      await seedUser(env.DB, userId);
+      const repo = createDayRepository(env.DB);
+      const day = await repo.create(userId, createInput(undefined));
+      expect(day.meals.map((m) => m.name)).toEqual(['Breakfast', 'Lunch', 'Dinner', 'Snack']);
+    });
+
+    test('editing the plan after day creation leaves the day unchanged (R32)', async () => {
+      await seedUser(env.DB, userId);
+      const { goalId, planId } = await seedGoalWithPlan(['Breakfast']);
+
+      const repo = createDayRepository(env.DB);
+      const day = await repo.create(userId, createInput(goalId));
+      expect(day.meals[0].ingredients).toHaveLength(1);
+
+      const planRepo = createPlanRepository(env.DB);
+      const plan = await planRepo.getById(userId, planId);
+      await planRepo.upsertIngredient(userId, plan!.meals[0].id, {
+        id: uuidv7(),
+        planMealId: plan!.meals[0].id,
+        name: 'Added later',
+        weight: 50,
+        calories: 100,
+        fat: 1,
+        saturatedFat: 0,
+        carbs: 20,
+        fiber: 1,
+        protein: 2,
+      } satisfies UpsertPlanIngredient);
+
+      const reloaded = await repo.getById(userId, day.id);
+      expect(reloaded!.meals[0].ingredients).toHaveLength(1);
+      expect(reloaded!.meals[0].ingredients[0].name).toBe('Oats');
     });
   });
 
