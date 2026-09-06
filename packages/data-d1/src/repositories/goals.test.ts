@@ -3,7 +3,7 @@ import { env } from 'cloudflare:test';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { createGoalsRepository } from './goals';
-import { GoalNotEditableError, type CreateGoal } from '@leanlog/data-access';
+import { GoalNotEditableError, UpdateGoalSchema, type CreateGoal } from '@leanlog/data-access';
 import { userProfiles } from '../schema';
 
 // ---------------------------------------------------------------------------
@@ -137,6 +137,36 @@ describe('createGoalsRepository (#63 calorie basis)', () => {
       expect(updated.name).toBe('Renamed');
       expect(updated.calorieBasis).toBe('katch');
       expect(updated.bodyFatPct).toBe(15);
+    });
+
+    // Regression: the tests above call repo.update() directly with a hand-built
+    // object, so they never exercise UpdateGoalSchema.safeParse. That's exactly
+    // the path where Zod 4 used to reinject calorieBasis/bodyFatPct/
+    // activityLevel/mealSlots/calorieDelta defaults into an omitted-field patch,
+    // corrupting a trim-only PATCH into an apparent (and previously real) basis
+    // change and silently zeroing the calorie delta. Parsing through the schema
+    // first is the whole point of this test.
+    test('a schema-parsed trim-only patch leaves every other field untouched', async () => {
+      await seedUser(env.DB, userId);
+      const repo = createGoalsRepository(env.DB);
+      const goal = await repo.create(
+        userId,
+        katchGoalInput({ startDate: '2026-06-01', endDate: '2026-12-31' }),
+        '2026-06-01',
+      );
+      // Seed a non-zero delta — repo.create always forces calorieDelta to 0, and
+      // calorieDelta isn't gated by assertEditAllowed, so an active goal can set it.
+      await repo.update(userId, goal.id, { calorieDelta: -200 }, today);
+
+      const parsed = UpdateGoalSchema.parse({ endDate: '2026-08-01' });
+      const updated = await repo.update(userId, goal.id, parsed, today);
+
+      expect(updated.endDate).toBe('2026-08-01');
+      expect(updated.calorieBasis).toBe('katch');
+      expect(updated.bodyFatPct).toBe(15);
+      expect(updated.activityLevel).toBe('moderate');
+      expect(updated.mealSlots).toEqual([{ name: 'Breakfast', ingredients: [] }]);
+      expect(updated.calorieDelta).toBe(-200);
     });
   });
 

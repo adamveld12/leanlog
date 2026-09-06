@@ -684,6 +684,31 @@ describe('UpdateGoalSchema — calorie basis (#63)', () => {
       }).success,
     ).toBe(true);
   });
+
+  // Regression: GoalSchema's calorieBasis/bodyFatPct/activityLevel/mealSlots/
+  // calorieDelta fields carry `.default()`. Zod 4 does not suppress a default on
+  // `.partial()`, so a schema derived from GoalSchema would silently inject those
+  // defaults into an omitted-field patch — corrupting a trim-only PATCH into one
+  // that appears to change calorieBasis on an active Katch goal (real bug: a
+  // false 409 "Active goals cannot change calorieBasis"). UpdateGoalSchema must
+  // be built from goalFields (no defaults) instead, exactly like UpdateProfileSchema.
+  it('an end-date-only patch contains exactly that key — no defaults leak', () => {
+    const result = UpdateGoalSchema.safeParse({ endDate: '2026-08-01' });
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ endDate: '2026-08-01' });
+    expect(Object.keys(result.data!)).toHaveLength(1);
+  });
+
+  it('a name-only patch does not inject calorieBasis, mealSlots, or calorieDelta', () => {
+    const result = UpdateGoalSchema.safeParse({ name: 'Renamed' });
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ name: 'Renamed' });
+    expect(result.data).not.toHaveProperty('calorieBasis');
+    expect(result.data).not.toHaveProperty('bodyFatPct');
+    expect(result.data).not.toHaveProperty('activityLevel');
+    expect(result.data).not.toHaveProperty('mealSlots');
+    expect(result.data).not.toHaveProperty('calorieDelta');
+  });
 });
 
 describe('UpdateBackgroundGoalSchema (#63 R19/R21)', () => {

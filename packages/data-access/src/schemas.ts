@@ -144,6 +144,11 @@ export const CreateNutritionDatabaseIngredientSchema = NutritionDatabaseIngredie
 // fields: `creationSource` is fixed at capture time (it records whether the
 // label was scanned or typed) and `addedByUserId` is the owner; neither can be
 // changed by an edit. Server still re-runs validateNutritionLabel on the result.
+// Deliberately NOT `.partial()` — every edit call site resends the full object,
+// including the defaulted `servingSizeUnit`. Do not add `.partial()` here without
+// first rebuilding this from a default-free field map (see goalFields), or a
+// missing key will silently reintroduce its Zod default on save (the same Zod 4
+// hazard UpdateGoalSchema had).
 export const UpdateNutritionDatabaseIngredientSchema = NutritionDatabaseIngredientSchema.omit({
   id: true,
   addedByUserId: true,
@@ -493,12 +498,12 @@ export function parseMealSlotsJson(
   }
 }
 
-export const GoalSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  // The background maintenance goal supplies fallback targets and is the only
-  // goal allowed null start/end dates (R6/R8/R24).
-  isBackground: z.boolean().default(false),
+// Raw (default-free) field schemas for the mutable parts of a Goal. GoalSchema
+// layers `.default()` back on for reading full stored rows; UpdateGoalSchema is
+// built from these directly (not from GoalSchema) so `.partial()` leaves missing
+// fields as `undefined` instead of Zod 4 silently reinjecting the default — the
+// same hazard UpdateProfileSchema (see profileFields) already guards against.
+const goalFields = {
   name: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   mode: GoalModeSchema,
@@ -511,17 +516,31 @@ export const GoalSchema = z.object({
   startDate: z.string().regex(ISO_DATE).nullable(),
   endDate: z.string().regex(ISO_DATE).nullable(),
   // Active-goal-only calorie adjustment, default 0 (R20/R21).
-  calorieDelta: z.number().int().default(0),
+  calorieDelta: z.number().int(),
   // Calorie basis (#63). `bodyweight` keeps the flat multiplier; `katch` derives
   // calories from lean body mass + activity, requiring the two snapshot fields
   // below (R1/R3/R6). Defaults to bodyweight so existing goals are unchanged.
-  calorieBasis: CalorieBasisSchema.default('bodyweight'),
+  calorieBasis: CalorieBasisSchema,
   // Body-composition snapshot, present only on a Katch goal (R3/R6). Body fat is
   // one of the fixed BODY_FAT_OPTIONS percentages (R4); activity is one of five
   // tiers (R5). Both null on a bodyweight goal.
-  bodyFatPct: z.number().nullable().default(null),
-  activityLevel: ActivityLevelSchema.nullable().default(null),
-  mealSlots: z.array(MealSlotSchema).default(DEFAULT_MEAL_SLOTS),
+  bodyFatPct: z.number().nullable(),
+  activityLevel: ActivityLevelSchema.nullable(),
+  mealSlots: z.array(MealSlotSchema),
+};
+
+export const GoalSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  // The background maintenance goal supplies fallback targets and is the only
+  // goal allowed null start/end dates (R6/R8/R24).
+  isBackground: z.boolean().default(false),
+  ...goalFields,
+  calorieDelta: goalFields.calorieDelta.default(0),
+  calorieBasis: goalFields.calorieBasis.default('bodyweight'),
+  bodyFatPct: goalFields.bodyFatPct.default(null),
+  activityLevel: goalFields.activityLevel.default(null),
+  mealSlots: goalFields.mealSlots.default(DEFAULT_MEAL_SLOTS),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -598,14 +617,11 @@ export const CreateGoalSchema = GoalSchema.omit({
   .refine(bodyCompConsistent, { message: BODY_COMP_MESSAGE, path: ['bodyFatPct'] });
 
 // Update input is partial; which fields are actually allowed depends on the
-// goal's lifecycle state (R47–R52) and is enforced in the repository.
-export const UpdateGoalSchema = GoalSchema.omit({
-  id: true,
-  userId: true,
-  isBackground: true,
-  createdAt: true,
-  updatedAt: true,
-})
+// goal's lifecycle state (R47–R52) and is enforced in the repository. Built from
+// goalFields (not GoalSchema) so .partial() keeps missing fields as undefined —
+// prevents Zod 4 defaults from overwriting existing DB values on partial updates.
+export const UpdateGoalSchema = z
+  .object(goalFields)
   .partial()
   .strict()
   .refine(
