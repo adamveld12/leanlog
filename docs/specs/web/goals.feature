@@ -54,8 +54,15 @@ Feature: Goals target planning (#56)
 
     Scenario: Lifecycle gating
       Then future and today-started goals are fully editable and deletable
-      And an active older goal allows only name, description, end date, and calorie delta
+      And an active older goal allows only name, description, end date, calorie delta, and default plan
       And past goals are read-only summary rows
+
+    Scenario: Repointing an active goal's default plan
+      Given an active older goal runs with default plan "Plan A"
+      When the user edits the goal and changes its default plan to "Plan B"
+      Then the change is accepted and the goal's mode and macros stay locked
+      And days already created keep "Plan A"'s meals
+      And new days created after the change get "Plan B"'s meals
 
   Rule: New day logs inherit the covering goal's meal slots
 

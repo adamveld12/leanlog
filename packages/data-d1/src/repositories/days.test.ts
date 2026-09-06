@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { env } from 'cloudflare:test';
 import { drizzle } from 'drizzle-orm/d1';
+import { eq } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { createDayRepository } from './days';
 import { createPlanRepository } from './plans';
@@ -380,6 +381,28 @@ describe('createDayRepository', () => {
       const reloaded = await repo.getById(userId, day.id);
       expect(reloaded!.meals[0].ingredients).toHaveLength(1);
       expect(reloaded!.meals[0].ingredients[0].name).toBe('Oats');
+    });
+
+    test('repointing a goal to a different plan only affects days created afterward', async () => {
+      await seedUser(env.DB, userId);
+      const { goalId } = await seedGoalWithPlan(['Breakfast']);
+
+      const planRepo = createPlanRepository(env.DB);
+      const planB = await planRepo.create(userId, { name: 'Plan B' });
+      await planRepo.addMeal(userId, planB.id, { name: 'Second Breakfast' });
+
+      const repo = createDayRepository(env.DB);
+      const existingDay = await repo.create(userId, createInput(goalId));
+      expect(existingDay.meals.map((m) => m.name)).toEqual(['Breakfast']);
+
+      const d = drizzle(env.DB);
+      await d.update(goals).set({ defaultPlanId: planB.id }).where(eq(goals.id, goalId));
+
+      const newDay = await repo.create(userId, { ...createInput(goalId), date: '2026-06-02' });
+      expect(newDay.meals.map((m) => m.name)).toEqual(['Second Breakfast']);
+
+      const reloadedExisting = await repo.getById(userId, existingDay.id);
+      expect(reloadedExisting!.meals.map((m) => m.name)).toEqual(['Breakfast']);
     });
   });
 
