@@ -43,7 +43,7 @@ export function QuickActionsCard({
 
         {onOpenPlans ? (
           <Button variant="subtle" fullWidth onClick={onOpenPlans}>
-            📋 Plans
+            📋 Meal Planning
           </Button>
         ) : null}
 

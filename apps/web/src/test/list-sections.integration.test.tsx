@@ -233,10 +233,10 @@ describe('list section behaviors', () => {
     });
   });
 
-  it('Quick Actions Plans button navigates to the plans list', async () => {
+  it('Quick Actions Meal Planning button navigates to the plans list', async () => {
     renderApp('/track', []);
 
-    await userEvent.click(screen.getByRole('button', { name: /Plans/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Meal Planning/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/goals/plans');
