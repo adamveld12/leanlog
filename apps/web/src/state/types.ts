@@ -10,8 +10,10 @@ import type {
   CreateNutritionDatabaseIngredient,
   UpdateNutritionDatabaseIngredient,
   AddIngredientFromDatabase,
-  MealTemplate,
-  UpsertTemplateIngredient,
+  Plan,
+  PlanSummary,
+  PlanMeal,
+  UpsertPlanIngredient,
   Goal,
   CreateGoal,
   UpdateGoal,
@@ -24,9 +26,15 @@ export type EnsureDayResult =
   | { status: 'not_found' }
   | { status: 'error'; error: string };
 
+export type EnsurePlanResult =
+  | { status: 'found'; plan: Plan }
+  | { status: 'not_found' }
+  | { status: 'error'; error: string };
+
 export type Store = {
   days: DailyMealLog[];
-  templates: MealTemplate[];
+  plans: PlanSummary[];
+  planDetails: Plan[];
   goals: Goal[];
   profile: UserProfile | null;
   loading: boolean;
@@ -42,14 +50,30 @@ export type Store = {
   logMeal(dayId: string, mealId: string): Promise<void>;
   upsertIngredient(dayId: string, mealId: string, ingredient: UpsertIngredient): Promise<void>;
   removeIngredient(dayId: string, mealId: string, ingredientId: string): Promise<void>;
-  addTemplate(name: string): Promise<MealTemplate>;
-  renameTemplate(templateId: string, name: string): Promise<void>;
-  removeTemplate(templateId: string): Promise<void>;
-  reorderTemplates(orderedIds: string[]): Promise<void>;
-  upsertTemplateIngredient(templateId: string, ingredient: UpsertTemplateIngredient): Promise<void>;
-  removeTemplateIngredient(templateId: string, ingredientId: string): Promise<void>;
-  addTemplateIngredientFromDatabase(
-    templateId: string,
+  // Applies a plan to a day (R18-R27); returns how many meals were filled vs.
+  // skipped so the UI can report it (R26).
+  applyPlanToDay(dayId: string, planId: string): Promise<{ filled: number; skipped: number }>;
+  // Loads a plan's full tree (meals + ingredients) on demand for the editor,
+  // mirroring ensureDayLoaded (R41 — the summary list alone has no ingredients).
+  ensurePlanLoaded(planId: string): Promise<EnsurePlanResult>;
+  addPlan(name: string): Promise<Plan>;
+  renamePlan(planId: string, name: string): Promise<void>;
+  removePlan(planId: string): Promise<void>;
+  duplicatePlan(planId: string): Promise<Plan>;
+  reorderPlans(orderedIds: string[]): Promise<void>;
+  addPlanMeal(planId: string, name: string): Promise<PlanMeal | null>;
+  renamePlanMeal(planId: string, mealId: string, name: string): Promise<void>;
+  removePlanMeal(planId: string, mealId: string): Promise<void>;
+  reorderPlanMeals(planId: string, orderedIds: string[]): Promise<void>;
+  upsertPlanIngredient(
+    planId: string,
+    mealId: string,
+    ingredient: UpsertPlanIngredient,
+  ): Promise<void>;
+  removePlanIngredient(planId: string, mealId: string, ingredientId: string): Promise<void>;
+  addPlanIngredientFromDatabase(
+    planId: string,
+    mealId: string,
     input: AddIngredientFromDatabase,
   ): Promise<void>;
   addIngredientFromDatabase(

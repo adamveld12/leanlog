@@ -18,7 +18,7 @@ vi.mock('react-chartjs-2', () => ({ Line: () => null }));
 
 const apiMock = api as unknown as {
   days: { list: Mock; get: Mock };
-  mealTemplates: { list: Mock };
+  plans: { list: Mock };
   progressPhotos: { uploadImage: Mock; setDayPhoto: Mock; setBaseline: Mock; fetchBlob: Mock };
 };
 
@@ -79,7 +79,7 @@ afterEach(() => {
   apiMock.days.list.mockReset();
   apiMock.days.list.mockResolvedValue({ days: [] });
   apiMock.days.get.mockReset();
-  apiMock.mealTemplates.list.mockResolvedValue({ templates: [] });
+  apiMock.plans.list.mockResolvedValue({ plans: [] });
   apiMock.progressPhotos.uploadImage.mockReset();
   apiMock.progressPhotos.setDayPhoto.mockReset();
   apiMock.progressPhotos.setBaseline.mockReset();

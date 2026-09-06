@@ -1,11 +1,34 @@
-import type { DailyMealLog, Goal, Meal, MealTemplate, UserProfile } from '@leanlog/data-access';
+import type {
+  DailyMealLog,
+  Goal,
+  Meal,
+  Plan,
+  PlanSummary,
+  PlanMeal,
+  UserProfile,
+} from '@leanlog/data-access';
 
 type MealIngredient = Meal['ingredients'][number];
-type TemplateIngredient = MealTemplate['ingredients'][number];
+type PlanIngredient = PlanMeal['ingredients'][number];
+type PlanSummaryMeal = PlanSummary['meals'][number];
+
+function toSummaryMeal(meal: PlanMeal): PlanSummaryMeal {
+  return {
+    id: meal.id,
+    planId: meal.planId,
+    name: meal.name,
+    position: meal.position,
+    createdAt: meal.createdAt,
+    updatedAt: meal.updatedAt,
+  };
+}
 
 export type StoreState = {
   days: DailyMealLog[];
-  templates: MealTemplate[];
+  plans: PlanSummary[];
+  // Full plan trees (with ingredients), loaded on demand for the plan editor
+  // (R41 — app boot fetches summaries only).
+  planDetails: Plan[];
   goals: Goal[];
   profile: UserProfile | null;
   loading: boolean;
@@ -14,7 +37,8 @@ export type StoreState = {
 
 export const initialStoreState: StoreState = {
   days: [],
-  templates: [],
+  plans: [],
+  planDetails: [],
   goals: [],
   profile: null,
   loading: true,
@@ -26,7 +50,7 @@ export type StoreAction =
       type: 'loaded';
       days: DailyMealLog[];
       profile: UserProfile;
-      templates: MealTemplate[];
+      plans: PlanSummary[];
       goals: Goal[];
     }
   | { type: 'loadFailed'; error: string }
@@ -40,13 +64,18 @@ export type StoreAction =
   | { type: 'mealPatched'; dayId: string; mealId: string; patch: Partial<Meal> }
   | { type: 'ingredientUpserted'; dayId: string; mealId: string; ingredient: MealIngredient }
   | { type: 'ingredientRemoved'; dayId: string; mealId: string; ingredientId: string }
-  | { type: 'templatesSet'; templates: MealTemplate[] }
-  | { type: 'templateAdded'; template: MealTemplate }
-  | { type: 'templateReplaced'; template: MealTemplate }
-  | { type: 'templateRemoved'; templateId: string }
-  | { type: 'templatesReordered'; orderedIds: string[] }
-  | { type: 'templateIngredientUpserted'; templateId: string; ingredient: TemplateIngredient }
-  | { type: 'templateIngredientRemoved'; templateId: string; ingredientId: string }
+  | { type: 'plansSet'; plans: PlanSummary[] }
+  | { type: 'planSummaryAdded'; plan: PlanSummary }
+  | { type: 'planSummaryReplaced'; plan: PlanSummary }
+  | { type: 'planRemoved'; planId: string }
+  | { type: 'plansReordered'; orderedIds: string[] }
+  | { type: 'planDetailUpserted'; plan: Plan }
+  | { type: 'planMealAdded'; planId: string; meal: PlanMeal }
+  | { type: 'planMealRenamed'; planId: string; mealId: string; name: string }
+  | { type: 'planMealRemoved'; planId: string; mealId: string }
+  | { type: 'planMealsReordered'; planId: string; meals: PlanMeal[] }
+  | { type: 'planIngredientUpserted'; planId: string; mealId: string; ingredient: PlanIngredient }
+  | { type: 'planIngredientRemoved'; planId: string; mealId: string; ingredientId: string }
   | { type: 'profileSet'; profile: UserProfile | null }
   | { type: 'profilePatched'; data: Partial<UserProfile> }
   | { type: 'goalsSet'; goals: Goal[] }
@@ -74,7 +103,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
         ...state,
         days: [...action.days, ...state.days.filter((day) => !loadedIds.has(day.id))],
         profile: action.profile,
-        templates: action.templates,
+        plans: action.plans,
         goals: action.goals,
       };
     }
@@ -150,50 +179,135 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
         ),
       };
 
-    case 'templatesSet':
-      return { ...state, templates: action.templates };
-    case 'templateAdded':
-      return { ...state, templates: [...state.templates, action.template] };
-    case 'templateReplaced':
+    case 'plansSet':
+      return { ...state, plans: action.plans };
+    case 'planSummaryAdded':
+      return { ...state, plans: [...state.plans, action.plan] };
+    case 'planSummaryReplaced':
       return {
         ...state,
-        templates: state.templates.map((t) => (t.id === action.template.id ? action.template : t)),
+        plans: state.plans.map((p) => (p.id === action.plan.id ? action.plan : p)),
       };
-    case 'templateRemoved':
-      return { ...state, templates: state.templates.filter((t) => t.id !== action.templateId) };
-    case 'templatesReordered': {
-      const byId = new Map(state.templates.map((tpl) => [tpl.id, tpl]));
+    case 'planRemoved':
+      return {
+        ...state,
+        plans: state.plans.filter((p) => p.id !== action.planId),
+        planDetails: state.planDetails.filter((p) => p.id !== action.planId),
+      };
+    case 'plansReordered': {
+      const byId = new Map(state.plans.map((p) => [p.id, p]));
       const reordered = action.orderedIds
         .map((id) => byId.get(id))
-        .filter((tpl): tpl is MealTemplate => tpl != null);
+        .filter((p): p is PlanSummary => p != null);
+      return { ...state, plans: reordered.length === state.plans.length ? reordered : state.plans };
+    }
+    case 'planDetailUpserted': {
+      const found = state.planDetails.some((p) => p.id === action.plan.id);
       return {
         ...state,
-        templates: reordered.length === state.templates.length ? reordered : state.templates,
+        planDetails: found
+          ? state.planDetails.map((p) => (p.id === action.plan.id ? action.plan : p))
+          : [...state.planDetails, action.plan],
       };
     }
-    case 'templateIngredientUpserted':
+    case 'planMealAdded':
       return {
         ...state,
-        templates: state.templates.map((tpl) =>
-          tpl.id === action.templateId
-            ? {
-                ...tpl,
-                ingredients: tpl.ingredients.some((i) => i.id === action.ingredient.id)
-                  ? tpl.ingredients.map((i) =>
-                      i.id === action.ingredient.id ? action.ingredient : i,
-                    )
-                  : [...tpl.ingredients, action.ingredient],
-              }
-            : tpl,
+        plans: state.plans.map((p) =>
+          p.id === action.planId ? { ...p, meals: [...p.meals, toSummaryMeal(action.meal)] } : p,
+        ),
+        planDetails: state.planDetails.map((p) =>
+          p.id === action.planId ? { ...p, meals: [...p.meals, action.meal] } : p,
         ),
       };
-    case 'templateIngredientRemoved':
+    case 'planMealRenamed':
       return {
         ...state,
-        templates: state.templates.map((tpl) =>
-          tpl.id === action.templateId
-            ? { ...tpl, ingredients: tpl.ingredients.filter((i) => i.id !== action.ingredientId) }
-            : tpl,
+        plans: state.plans.map((p) =>
+          p.id === action.planId
+            ? {
+                ...p,
+                meals: p.meals.map((m) =>
+                  m.id === action.mealId ? { ...m, name: action.name } : m,
+                ),
+              }
+            : p,
+        ),
+        planDetails: state.planDetails.map((p) =>
+          p.id === action.planId
+            ? {
+                ...p,
+                meals: p.meals.map((m) =>
+                  m.id === action.mealId ? { ...m, name: action.name } : m,
+                ),
+              }
+            : p,
+        ),
+      };
+    case 'planMealRemoved':
+      return {
+        ...state,
+        plans: state.plans.map((p) =>
+          p.id === action.planId
+            ? { ...p, meals: p.meals.filter((m) => m.id !== action.mealId) }
+            : p,
+        ),
+        planDetails: state.planDetails.map((p) =>
+          p.id === action.planId
+            ? { ...p, meals: p.meals.filter((m) => m.id !== action.mealId) }
+            : p,
+        ),
+      };
+    case 'planMealsReordered':
+      return {
+        ...state,
+        plans: state.plans.map((p) =>
+          p.id === action.planId ? { ...p, meals: action.meals.map(toSummaryMeal) } : p,
+        ),
+        planDetails: state.planDetails.map((p) =>
+          p.id === action.planId ? { ...p, meals: action.meals } : p,
+        ),
+      };
+    case 'planIngredientUpserted':
+      return {
+        ...state,
+        planDetails: state.planDetails.map((p) =>
+          p.id === action.planId
+            ? {
+                ...p,
+                meals: p.meals.map((m) =>
+                  m.id === action.mealId
+                    ? {
+                        ...m,
+                        ingredients: m.ingredients.some((i) => i.id === action.ingredient.id)
+                          ? m.ingredients.map((i) =>
+                              i.id === action.ingredient.id ? action.ingredient : i,
+                            )
+                          : [...m.ingredients, action.ingredient],
+                      }
+                    : m,
+                ),
+              }
+            : p,
+        ),
+      };
+    case 'planIngredientRemoved':
+      return {
+        ...state,
+        planDetails: state.planDetails.map((p) =>
+          p.id === action.planId
+            ? {
+                ...p,
+                meals: p.meals.map((m) =>
+                  m.id === action.mealId
+                    ? {
+                        ...m,
+                        ingredients: m.ingredients.filter((i) => i.id !== action.ingredientId),
+                      }
+                    : m,
+                ),
+              }
+            : p,
         ),
       };
 

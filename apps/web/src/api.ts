@@ -14,10 +14,13 @@ import type {
   UpdateNutritionDatabaseIngredient,
   PhotoUpdatePatch as NutritionPhotoPatch,
   AddIngredientFromDatabase,
-  MealTemplate,
-  MealTemplateIngredient,
-  CreateMealTemplate,
-  UpsertTemplateIngredient,
+  Plan,
+  PlanSummary,
+  PlanMeal,
+  PlanMealIngredient,
+  CreatePlan,
+  CreatePlanMeal,
+  UpsertPlanIngredient,
   Goal,
   CreateGoal,
   UpdateGoal,
@@ -251,6 +254,11 @@ export const api = {
       }),
     delete: (token: string, dayId: string) =>
       apiFetch<void>(`/api/days/${dayId}`, { token, method: 'DELETE' }),
+    applyPlan: (token: string, dayId: string, planId: string) =>
+      apiFetch<{ day: DailyMealLog; filled: number; skipped: number }>(
+        `/api/days/${dayId}/apply-plan`,
+        { token, method: 'POST', body: JSON.stringify({ planId }) },
+      ),
   },
   meals: {
     create: (token: string, dayId: string, name: string) =>
@@ -298,52 +306,69 @@ export const api = {
         body: JSON.stringify(data),
       }),
   },
-  mealTemplates: {
+  plans: {
     list: (token: string) =>
-      apiFetch<{ templates: MealTemplate[] }>('/api/meal-templates', { token, method: 'GET' }),
-    create: (token: string, data: CreateMealTemplate) =>
-      apiFetch<MealTemplate>('/api/meal-templates', {
-        token,
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-    rename: (token: string, templateId: string, name: string) =>
-      apiFetch<MealTemplate>(`/api/meal-templates/${templateId}`, {
+      apiFetch<{ plans: PlanSummary[] }>('/api/plans', { token, method: 'GET' }),
+    get: (token: string, planId: string) =>
+      apiFetch<Plan>(`/api/plans/${planId}`, { token, method: 'GET' }),
+    create: (token: string, data: CreatePlan) =>
+      apiFetch<Plan>('/api/plans', { token, method: 'POST', body: JSON.stringify(data) }),
+    rename: (token: string, planId: string, name: string) =>
+      apiFetch<Plan>(`/api/plans/${planId}`, {
         token,
         method: 'PATCH',
         body: JSON.stringify({ name }),
       }),
-    delete: (token: string, templateId: string) =>
-      apiFetch<void>(`/api/meal-templates/${templateId}`, { token, method: 'DELETE' }),
+    delete: (token: string, planId: string) =>
+      apiFetch<void>(`/api/plans/${planId}`, { token, method: 'DELETE' }),
+    duplicate: (token: string, planId: string) =>
+      apiFetch<Plan>(`/api/plans/${planId}/duplicate`, { token, method: 'POST' }),
     reorder: (token: string, orderedIds: string[]) =>
-      apiFetch<{ templates: MealTemplate[] }>('/api/meal-templates/reorder', {
+      apiFetch<{ plans: PlanSummary[] }>('/api/plans/reorder', {
         token,
         method: 'PUT',
         body: JSON.stringify({ orderedIds }),
       }),
-    upsertIngredient: (token: string, templateId: string, data: UpsertTemplateIngredient) =>
-      apiFetch<MealTemplateIngredient>(`/api/meal-templates/${templateId}/ingredients`, {
+    addMeal: (token: string, planId: string, data: CreatePlanMeal) =>
+      apiFetch<PlanMeal>(`/api/plans/${planId}/meals`, {
+        token,
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    renameMeal: (token: string, planId: string, mealId: string, name: string) =>
+      apiFetch<PlanMeal>(`/api/plans/${planId}/meals/${mealId}`, {
+        token,
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      }),
+    removeMeal: (token: string, planId: string, mealId: string) =>
+      apiFetch<void>(`/api/plans/${planId}/meals/${mealId}`, { token, method: 'DELETE' }),
+    reorderMeals: (token: string, planId: string, orderedIds: string[]) =>
+      apiFetch<{ meals: PlanMeal[] }>(`/api/plans/${planId}/meals/reorder`, {
+        token,
+        method: 'PUT',
+        body: JSON.stringify({ orderedIds }),
+      }),
+    upsertIngredient: (token: string, planId: string, mealId: string, data: UpsertPlanIngredient) =>
+      apiFetch<PlanMealIngredient>(`/api/plans/${planId}/meals/${mealId}/ingredients`, {
         token,
         method: 'PUT',
         body: JSON.stringify(data),
       }),
-    deleteIngredient: (token: string, templateId: string, ingredientId: string) =>
-      apiFetch<void>(`/api/meal-templates/${templateId}/ingredients/${ingredientId}`, {
+    deleteIngredient: (token: string, planId: string, mealId: string, ingredientId: string) =>
+      apiFetch<void>(`/api/plans/${planId}/meals/${mealId}/ingredients/${ingredientId}`, {
         token,
         method: 'DELETE',
       }),
     addIngredientFromDatabase: (
       token: string,
-      templateId: string,
+      planId: string,
+      mealId: string,
       data: AddIngredientFromDatabase,
     ) =>
-      apiFetch<MealTemplateIngredient>(
-        `/api/meal-templates/${templateId}/ingredients/from-database`,
-        {
-          token,
-          method: 'POST',
-          body: JSON.stringify(data),
-        },
+      apiFetch<PlanMealIngredient>(
+        `/api/plans/${planId}/meals/${mealId}/ingredients/from-database`,
+        { token, method: 'POST', body: JSON.stringify(data) },
       ),
   },
   profile: {
