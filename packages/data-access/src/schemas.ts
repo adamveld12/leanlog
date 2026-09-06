@@ -416,6 +416,20 @@ export const UpsertIngredientSchema = IngredientSchema.omit({
     calories: z.number().min(0).max(9999).nullable().optional(),
   })
   .strict();
+
+// A quick-add Extra (#64): unlike UpsertIngredientSchema, calories are
+// required (R2/R12 — never re-estimated) and weight/saturatedFat/fiber don't
+// apply, since Extras trade precision for speed. Macros default to zero/blank.
+export const AddExtraSchema = z
+  .object({
+    id: z.string(),
+    name: z.string().min(1),
+    calories: z.number().min(0).max(9999),
+    fat: z.number().min(0).max(999).optional(),
+    carbs: z.number().min(0).max(999).optional(),
+    protein: z.number().min(0).max(999).optional(),
+  })
+  .strict();
 export const DayTargetsSchema = z.object({
   targetCalories: z.number().min(0).optional(),
   targetFat: z.number().min(0).optional(),

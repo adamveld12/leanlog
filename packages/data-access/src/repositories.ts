@@ -6,6 +6,7 @@ import type {
   CreateDailyMealLog,
   UpdateProfile,
   UpsertIngredient,
+  AddExtra,
   DayTargets,
   NutritionDatabaseIngredient,
   CreateNutritionDatabaseIngredient,
@@ -48,6 +49,10 @@ export interface MealRepository {
   rename(userId: string, mealId: string, name: string): Promise<Meal>;
   setLogged(userId: string, mealId: string, logged: boolean): Promise<Meal>;
   delete(userId: string, mealId: string): Promise<void>;
+  // Finds the day's singleton 'extra' meal (#64) or creates it, then inserts
+  // the new ingredient into it — atomically when the meal doesn't exist yet.
+  // Returns the full Extras meal, or null if the day isn't the user's.
+  addExtra(userId: string, dailyMealLogId: string, data: AddExtra): Promise<Meal | null>;
 }
 
 // Thrown by MealRepository.delete when a caller tries to delete a *logged*

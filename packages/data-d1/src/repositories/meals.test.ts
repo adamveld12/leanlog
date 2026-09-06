@@ -115,3 +115,104 @@ describe('createMealRepository — delete guard (#84 narrowing of #41 R19)', () 
     expect(rows).toHaveLength(0);
   });
 });
+
+describe('createMealRepository — addExtra (#64)', () => {
+  let userId: string;
+  beforeEach(() => {
+    userId = `test-user-${uuidv7()}`;
+  });
+
+  test('creates the Extras bucket meal on the first call', async () => {
+    await seedUser(env.DB, userId);
+    const dayId = await seedDay(env.DB, userId);
+    const repo = createMealRepository(env.DB);
+
+    const meal = await repo.addExtra(userId, dayId, {
+      id: uuidv7(),
+      name: 'Tortilla chips',
+      calories: 150,
+    });
+
+    expect(meal).not.toBeNull();
+    expect(meal!.name).toBe('Extras');
+    expect(meal!.origin).toBe('extra');
+    expect(meal!.ingredients).toHaveLength(1);
+    expect(meal!.ingredients[0].name).toBe('Tortilla chips');
+    expect(meal!.ingredients[0].calories).toBe(150);
+  });
+
+  test('reuses the same Extras meal for a second item (idempotent find-or-create)', async () => {
+    await seedUser(env.DB, userId);
+    const dayId = await seedDay(env.DB, userId);
+    const repo = createMealRepository(env.DB);
+
+    const first = await repo.addExtra(userId, dayId, {
+      id: uuidv7(),
+      name: 'Tortilla chips',
+      calories: 150,
+    });
+    const second = await repo.addExtra(userId, dayId, {
+      id: uuidv7(),
+      name: 'Red wine',
+      calories: 125,
+    });
+
+    expect(second!.id).toBe(first!.id);
+    expect(second!.ingredients).toHaveLength(2);
+
+    const d = drizzle(env.DB);
+    const extrasMeals = await d.select().from(meals).where(eq(meals.dailyMealLogId, dayId));
+    expect(extrasMeals.filter((m) => m.origin === 'extra')).toHaveLength(1);
+  });
+
+  test('calories are stored explicit and never re-estimated (R12)', async () => {
+    await seedUser(env.DB, userId);
+    const dayId = await seedDay(env.DB, userId);
+    const repo = createMealRepository(env.DB);
+
+    // fat/carbs/protein would estimate to far more than 10 kcal if re-derived.
+    const meal = await repo.addExtra(userId, dayId, {
+      id: uuidv7(),
+      name: 'Underestimated snack',
+      calories: 10,
+      fat: 20,
+      carbs: 30,
+      protein: 40,
+    });
+
+    const ingredient = meal!.ingredients[0];
+    expect(ingredient.calories).toBe(10);
+    expect(ingredient.calorieSource).toBe('explicit');
+  });
+
+  test('macros default to zero when omitted (R2)', async () => {
+    await seedUser(env.DB, userId);
+    const dayId = await seedDay(env.DB, userId);
+    const repo = createMealRepository(env.DB);
+
+    const meal = await repo.addExtra(userId, dayId, {
+      id: uuidv7(),
+      name: 'Red wine',
+      calories: 125,
+    });
+
+    const ingredient = meal!.ingredients[0];
+    expect(ingredient.fat).toBe(0);
+    expect(ingredient.carbs).toBe(0);
+    expect(ingredient.protein).toBe(0);
+  });
+
+  test('returns null when the day does not belong to the user', async () => {
+    await seedUser(env.DB, userId);
+    const dayId = await seedDay(env.DB, userId);
+    const repo = createMealRepository(env.DB);
+
+    const meal = await repo.addExtra('someone-else', dayId, {
+      id: uuidv7(),
+      name: 'Chips',
+      calories: 150,
+    });
+
+    expect(meal).toBeNull();
+  });
+});
