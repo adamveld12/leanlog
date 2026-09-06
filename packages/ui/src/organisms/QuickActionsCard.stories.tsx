@@ -16,6 +16,7 @@ export const ActiveUser: Story = {
     today: {
       calories: 1520,
       calorieTarget: 2700,
+      adjustedCalories: 1520,
       protein: 130,
       proteinTarget: 270,
       carbs: 95,
@@ -27,6 +28,7 @@ export const ActiveUser: Story = {
     week: {
       calories: 8200,
       calorieTarget: 18900,
+      adjustedCalories: 8200,
       protein: 780,
       proteinTarget: 1890,
       carbs: 620,
@@ -49,6 +51,7 @@ export const NoTodayEntry: Story = {
     week: {
       calories: 5400,
       calorieTarget: 13500,
+      adjustedCalories: 5400,
       protein: 520,
       proteinTarget: 1350,
       carbs: 410,

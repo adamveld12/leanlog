@@ -23,6 +23,7 @@ const meta: Meta<typeof DayDetailTemplate> = {
       <DailyTotalsCard
         calories={1800}
         calorieTarget={2200}
+        adjustedCalories={1800}
         fat={70}
         protein={160}
         carbs={120}

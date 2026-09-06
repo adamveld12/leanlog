@@ -145,6 +145,7 @@ export default function DayDetailPage() {
         <DailyTotalsCard
           calories={totals.calories}
           calorieTarget={day.targetCalories}
+          adjustedCalories={totals.adjustedCalories}
           fat={totals.fat}
           protein={totals.protein}
           carbs={totals.carbs}

@@ -186,6 +186,7 @@ function PlanEditView({ plan }: { plan: Plan }) {
         <DailyTotalsCard
           calories={totals.calories}
           calorieTarget={targets?.targetCalories ?? 0}
+          adjustedCalories={totals.adjustedCalories}
           fat={totals.fat}
           protein={totals.protein}
           carbs={totals.carbs}

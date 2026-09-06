@@ -117,6 +117,7 @@ export default function DayListPage() {
               ? {
                   calories: todayTotalsData.calories,
                   calorieTarget: today.targetCalories,
+                  adjustedCalories: todayTotalsData.adjustedCalories,
                   protein: todayTotalsData.protein,
                   proteinTarget: today.targetProtein,
                   carbs: todayTotalsData.carbs,
@@ -132,6 +133,7 @@ export default function DayListPage() {
               ? {
                   calories: weeklyStats.totalCalories,
                   calorieTarget: weeklyStats.targetCalories,
+                  adjustedCalories: weeklyStats.adjustedCalories,
                   protein: weeklyStats.totalProtein,
                   proteinTarget: weeklyStats.targetProtein,
                   carbs: weeklyStats.totalCarbs,
