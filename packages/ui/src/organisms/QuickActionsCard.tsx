@@ -14,6 +14,8 @@ export type QuickActionsCardProps = {
   onAction: () => void;
   // A shortcut to the goal covering today (mode + end date), linking to Goals.
   activeGoal?: { summary: string; onOpen: () => void };
+  // A shortcut to the plans list, which has no top-level nav entry (#84).
+  onOpenPlans?: () => void;
 };
 
 export function QuickActionsCard({
@@ -24,6 +26,7 @@ export function QuickActionsCard({
   weekDayCount,
   onAction,
   activeGoal,
+  onOpenPlans,
 }: QuickActionsCardProps) {
   return (
     <AnalyticsScope properties={{ organism: 'QuickActionsCard' }}>
@@ -35,6 +38,12 @@ export function QuickActionsCard({
         {activeGoal ? (
           <Button variant="subtle" fullWidth onClick={activeGoal.onOpen}>
             {activeGoal.summary}
+          </Button>
+        ) : null}
+
+        {onOpenPlans ? (
+          <Button variant="subtle" fullWidth onClick={onOpenPlans}>
+            📋 Meal Planning
           </Button>
         ) : null}
 

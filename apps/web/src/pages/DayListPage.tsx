@@ -42,11 +42,11 @@ export default function DayListPage() {
     const goal = resolveCoveringGoal(todayIso(), goals);
     if (!goal) return undefined;
     if (goal.isBackground) {
-      return { summary: '🎯 Maintenance — set a goal', onOpen: () => nav('/track/goals') };
+      return { summary: 'GOAL: 🎯 Maintenance — set a goal', onOpen: () => nav('/track/goals') };
     }
     const namePart = goal.name?.trim() ? `${goal.name.trim()} · ` : '';
     const endPart = goal.endDate ? `ends ${prettyDate(goal.endDate)}` : 'ongoing';
-    const summary = `🎯 ${namePart}${GOAL_MODE_LABEL[goal.mode]} · ${endPart}`;
+    const summary = `GOAL: 🎯 ${namePart}${GOAL_MODE_LABEL[goal.mode]} · ${endPart}`;
     // Deep-link to this specific goal on the Goals page.
     return { summary, onOpen: () => nav(`/track/goals?goal=${goal.id}`) };
   }, [goals, nav]);
@@ -145,6 +145,7 @@ export default function DayListPage() {
           weekDayCount={weekDays.length}
           onAction={() => void handleAction()}
           activeGoal={activeGoal}
+          onOpenPlans={() => nav('/track/goals/plans')}
         />
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop

@@ -233,6 +233,16 @@ describe('list section behaviors', () => {
     });
   });
 
+  it('Quick Actions Meal Planning button navigates to the plans list', async () => {
+    renderApp('/track', []);
+
+    await userEvent.click(screen.getByRole('button', { name: /Meal Planning/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/goals/plans');
+    });
+  });
+
   it('missing meal route redirects to the parent day', async () => {
     const initialDays = [
       makeDayWithMeals({
