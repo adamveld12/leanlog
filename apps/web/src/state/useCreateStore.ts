@@ -218,6 +218,12 @@ export function useCreateStore(): Store {
       dispatch({ type: 'ingredientRemoved', dayId, mealId, ingredientId });
     },
 
+    async addExtra(dayId, data) {
+      const meal = await withToken((t) => api.extras.add(t, dayId, data));
+      dispatch({ type: 'mealUpserted', dayId, meal });
+      return meal;
+    },
+
     async addIngredientFromDatabase(dayId, mealId, input) {
       const ingredient = await withToken((t) =>
         api.ingredients.addFromDatabase(t, dayId, mealId, input),

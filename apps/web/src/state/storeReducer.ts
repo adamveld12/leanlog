@@ -60,6 +60,10 @@ export type StoreAction =
   | { type: 'dayRemoved'; dayId: string }
   | { type: 'dayReplaced'; day: DailyMealLog }
   | { type: 'mealAdded'; dayId: string; meal: Meal }
+  // Replaces the meal by id if the day already has it, else appends it (#64
+  // find-or-create — the server may return either an existing or a newly
+  // created Extras bucket meal).
+  | { type: 'mealUpserted'; dayId: string; meal: Meal }
   | { type: 'mealRemoved'; dayId: string; mealId: string }
   | { type: 'mealPatched'; dayId: string; mealId: string; patch: Partial<Meal> }
   | { type: 'ingredientUpserted'; dayId: string; mealId: string; ingredient: MealIngredient }
@@ -132,6 +136,16 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
       return {
         ...state,
         days: mapDay(state.days, action.dayId, (d) => ({ ...d, meals: [...d.meals, action.meal] })),
+      };
+    case 'mealUpserted':
+      return {
+        ...state,
+        days: mapDay(state.days, action.dayId, (d) => ({
+          ...d,
+          meals: d.meals.some((m) => m.id === action.meal.id)
+            ? d.meals.map((m) => (m.id === action.meal.id ? action.meal : m))
+            : [...d.meals, action.meal],
+        })),
       };
     case 'mealRemoved':
       return {

@@ -6,6 +6,7 @@ import type {
   CreateDailyMealLog,
   UpdateProfile,
   UpsertIngredient,
+  AddExtra,
   DayTargets,
   ScanResolution,
   NutritionDatabaseIngredient,
@@ -301,6 +302,17 @@ export const api = {
       data: AddIngredientFromDatabase,
     ) =>
       apiFetch<Ingredient>(`/api/days/${dayId}/meals/${mealId}/ingredients/from-database`, {
+        token,
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
+  extras: {
+    // Finds or creates the day's Extras bucket meal and adds the item to it
+    // (#64). Editing/deleting an existing extra goes through ingredients.upsert
+    // / ingredients.delete once its meal id is known from the day's state.
+    add: (token: string, dayId: string, data: AddExtra) =>
+      apiFetch<Meal>(`/api/days/${dayId}/extras`, {
         token,
         method: 'POST',
         body: JSON.stringify(data),
