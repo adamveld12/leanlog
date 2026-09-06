@@ -119,7 +119,9 @@ export const meals = sqliteTable('meals', {
   // Meals copied from a template are fixed in structure and gated by `logged`;
   // ad-hoc meals are freeform. Existing rows default to 'adhoc'/false so
   // pre-feature days behave exactly as before. See issue #41.
-  origin: text('origin', { enum: ['template', 'adhoc'] })
+  // 'extra' is the day's singleton loose-item bucket (#64) — a plain text
+  // column with no CHECK constraint, so adding this value needs no migration.
+  origin: text('origin', { enum: ['template', 'adhoc', 'extra'] })
     .notNull()
     .default('adhoc'),
   logged: integer('logged', { mode: 'boolean' }).notNull().default(false),

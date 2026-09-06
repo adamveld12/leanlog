@@ -594,6 +594,44 @@ describe('dayMealStructure', () => {
       mealsTracked: 0,
     });
   });
+
+  // #64 R4: extras are excluded from the meal coverage math everywhere,
+  // regardless of which branch (template/legacy/adhoc) the day falls into.
+  it('template-backed day: an extras meal does not inflate expected/tracked', () => {
+    const day = makeDay([
+      makeMeal({ origin: 'template', logged: true }),
+      makeMeal({ origin: 'template', logged: false }),
+      makeMeal({ origin: 'extra', ingredients: [makeIngredient()] }),
+    ]);
+    expect(dayMealStructure(day)).toEqual({ kind: 'template', mealsExpected: 2, mealsTracked: 1 });
+  });
+
+  it('legacy day: an extras meal is excluded from the ad-hoc meal count', () => {
+    const day = makeDay(
+      [
+        makeMeal({ origin: 'adhoc' }),
+        makeMeal({ origin: 'extra', ingredients: [makeIngredient()] }),
+      ],
+      1,
+    );
+    expect(dayMealStructure(day)).toEqual({ kind: 'legacy', mealsExpected: 1, mealsTracked: 1 });
+  });
+
+  it('zero-template ad-hoc day: an extras meal is excluded from expected/tracked', () => {
+    const day = makeDay(
+      [
+        makeMeal({ origin: 'adhoc' }),
+        makeMeal({ origin: 'extra', ingredients: [makeIngredient()] }),
+      ],
+      0,
+    );
+    expect(dayMealStructure(day)).toEqual({ kind: 'adhoc', mealsExpected: 1, mealsTracked: 1 });
+  });
+
+  it('a day with only an extras meal reports kind adhoc with 0 / 0', () => {
+    const day = makeDay([makeMeal({ origin: 'extra', ingredients: [makeIngredient()] })], 0);
+    expect(dayMealStructure(day)).toEqual({ kind: 'adhoc', mealsExpected: 0, mealsTracked: 0 });
+  });
 });
 
 describe('contributesNutrition', () => {
@@ -702,6 +740,27 @@ describe('dayAdherence', () => {
 
   it('fails an empty day (R67)', () => {
     expect(dayAdherence(makeDay([], 0)).pass).toBe(false);
+  });
+
+  // #64 R4: an extras meal with ingredients must not count as a tracked meal.
+  it('an extras meal does not count toward mealCount adherence', () => {
+    const day = onTargetDay();
+    day.meals[3].ingredients = []; // 3 of 4 ad-hoc meals tracked — incomplete
+    day.meals.push(makeMeal({ origin: 'extra', ingredients: [makeIngredient({ name: 'Chips' })] }));
+    const a = dayAdherence(day);
+    expect(a.mealCount).toBe(false);
+    expect(a.pass).toBe(false);
+  });
+
+  it('a day with only extras fails mealCount despite contributing calories (R3/R4)', () => {
+    const day = makeDay(
+      [makeMeal({ origin: 'extra', ingredients: [makeIngredient({ calories: 200 })] })],
+      0,
+    );
+    const a = dayAdherence(day);
+    expect(a.mealCount).toBe(false);
+    expect(a.pass).toBe(false);
+    expect(dayConsumed(day).calories).toBe(200);
   });
 });
 

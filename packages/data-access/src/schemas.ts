@@ -243,7 +243,9 @@ export const MealSchema = z.object({
   // origin distinguishes meals copied from a template (fixed structure, logged
   // gating) from freeform ad-hoc meals. logged controls whether a template meal
   // contributes to day totals and tracking coverage. See issue #41.
-  origin: z.enum(['template', 'adhoc']).default('adhoc'),
+  // 'extra' is the day's singleton loose-item bucket for quick-add non-meal
+  // items (#64) — contributes to totals but excluded from meal coverage.
+  origin: z.enum(['template', 'adhoc', 'extra']).default('adhoc'),
   logged: z.boolean().default(false),
   ingredients: z.array(IngredientSchema).default([]),
   createdAt: z.string().datetime(),
