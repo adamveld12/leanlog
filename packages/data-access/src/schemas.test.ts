@@ -601,7 +601,7 @@ describe('UpdateGoalSchema — calorie basis (#63)', () => {
     ).toBe(true);
   });
 
-  // Regression: GoalSchema's calorieBasis/bodyFatPct/activityLevel/mealSlots/
+  // Regression: GoalSchema's calorieBasis/bodyFatPct/activityLevel/defaultPlanId/
   // calorieDelta fields carry `.default()`. Zod 4 does not suppress a default on
   // `.partial()`, so a schema derived from GoalSchema would silently inject those
   // defaults into an omitted-field patch — corrupting a trim-only PATCH into one
@@ -615,14 +615,14 @@ describe('UpdateGoalSchema — calorie basis (#63)', () => {
     expect(Object.keys(result.data!)).toHaveLength(1);
   });
 
-  it('a name-only patch does not inject calorieBasis, mealSlots, or calorieDelta', () => {
+  it('a name-only patch does not inject calorieBasis, defaultPlanId, or calorieDelta', () => {
     const result = UpdateGoalSchema.safeParse({ name: 'Renamed' });
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ name: 'Renamed' });
     expect(result.data).not.toHaveProperty('calorieBasis');
     expect(result.data).not.toHaveProperty('bodyFatPct');
     expect(result.data).not.toHaveProperty('activityLevel');
-    expect(result.data).not.toHaveProperty('mealSlots');
+    expect(result.data).not.toHaveProperty('defaultPlanId');
     expect(result.data).not.toHaveProperty('calorieDelta');
   });
 });

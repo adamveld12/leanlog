@@ -220,7 +220,7 @@ describe('Goals: Katch-McArdle calorie basis (#63)', () => {
       calorieBasis: 'katch',
       bodyFatPct: 15,
       activityLevel: 'moderate',
-      mealSlots: [{ name: 'Breakfast', ingredients: [] }],
+      defaultPlanId: null,
       createdAt: now,
       updatedAt: now,
     };
