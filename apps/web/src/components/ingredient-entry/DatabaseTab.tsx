@@ -18,7 +18,7 @@ import { useDatabaseScan } from './useDatabaseScan';
 import { mapDbSearchResults, type AddFromDatabaseInput } from './types';
 
 export type DatabaseTabProps = {
-  analyticsContext: 'meal' | 'template';
+  analyticsContext: 'meal' | 'plan';
   showDatabaseCreate: boolean;
   onAddFromDatabase: (databaseIngredientId: string, input: AddFromDatabaseInput) => Promise<void>;
   dbTotal: number | null;

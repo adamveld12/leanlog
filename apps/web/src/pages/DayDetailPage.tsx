@@ -10,6 +10,7 @@ import {
   HelperText,
   MacroSummaryLine,
   recipes,
+  Select,
 } from '@leanlog/ui';
 import { deriveDayPlan, dayMealStructure } from '@leanlog/data-access';
 import { DayProgressPhotos } from '../components/progress-photos/DayProgressPhotos';
@@ -36,6 +37,7 @@ export default function DayDetailPage() {
   const {
     days,
     goals,
+    plans,
     ensureDayLoaded,
     addMeal,
     removeMeal,
@@ -43,9 +45,13 @@ export default function DayDetailPage() {
     updateDayTargets,
     updateDayWeight,
     setDayProgressPhoto,
+    applyPlanToDay,
   } = useStore();
   const [savingWeight, setSavingWeight] = useState(false);
   const [savingMeasurements, setSavingMeasurements] = useState(false);
+  const [applyPlanId, setApplyPlanId] = useState('');
+  const [applyResult, setApplyResult] = useState<{ filled: number; skipped: number } | null>(null);
+  const [applying, setApplying] = useState(false);
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
     dayId: dayId ?? '',
     status: 'loading',
@@ -201,26 +207,67 @@ export default function DayDetailPage() {
             </Button>
           ) : undefined,
           onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
-          // Copied template meals cannot be deleted (R19); ad-hoc meals can,
-          // unless the day is in the past (R22).
-          onDelete: isTemplateMeal || isPast ? undefined : () => void removeMeal(day.id, m.id),
+          // A logged copied meal is recorded history and cannot be deleted;
+          // an unlogged one (a plan default the user doesn't want) can (#84
+          // narrows #41 R19). Ad-hoc meals can always be deleted, unless the
+          // day is in the past (R22).
+          onDelete:
+            (isTemplateMeal && m.logged) || isPast
+              ? undefined
+              : () => void removeMeal(day.id, m.id),
           deleteLabel: 'Delete meal',
         };
       })}
       mealsControls={
-        // Ad-hoc meals can only be added to zero-template days, and never to a
-        // past day (R34/R36/R22).
-        isTemplateBacked || isPast ? undefined : (
+        isPast ? undefined : (
           <div className={cn(recipes.stack.sm, 'mb-5')}>
-            <Button
-              className="w-full"
-              onClick={async () => {
-                const meal = await addMeal(day.id, '');
-                if (meal) nav(`/track/day/${day.id}/meal/${meal.id}`);
-              }}
-            >
-              Add meal
-            </Button>
+            {plans.length > 0 ? (
+              <div className={recipes.stack.sm}>
+                <Select value={applyPlanId} onChange={(e) => setApplyPlanId(e.target.value)}>
+                  <option value="">Apply a plan…</option>
+                  {plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </Select>
+                <Button
+                  className="w-full"
+                  variant="secondary"
+                  disabled={!applyPlanId || applying}
+                  onClick={async () => {
+                    setApplying(true);
+                    try {
+                      const result = await applyPlanToDay(day.id, applyPlanId);
+                      setApplyResult(result);
+                      setApplyPlanId('');
+                    } finally {
+                      setApplying(false);
+                    }
+                  }}
+                >
+                  Apply plan
+                </Button>
+                {applyResult ? (
+                  <HelperText>
+                    Filled {applyResult.filled} meal{applyResult.filled === 1 ? '' : 's'}, skipped{' '}
+                    {applyResult.skipped} that already had food.
+                  </HelperText>
+                ) : null}
+              </div>
+            ) : null}
+            {/* Ad-hoc meals can only be added to zero-template days (R34/R36). */}
+            {!isTemplateBacked ? (
+              <Button
+                className="w-full"
+                onClick={async () => {
+                  const meal = await addMeal(day.id, '');
+                  if (meal) nav(`/track/day/${day.id}/meal/${meal.id}`);
+                }}
+              >
+                Add meal
+              </Button>
+            ) : null}
           </div>
         )
       }

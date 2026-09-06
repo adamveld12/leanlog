@@ -34,6 +34,7 @@ const mockProfile: UserProfile = {
 type StoreCtx = {
   days: DailyMealLog[];
   goals: unknown[];
+  plans: unknown[];
   profile: UserProfile;
   loading: boolean;
   error: null;
@@ -48,6 +49,7 @@ type StoreCtx = {
   upsertIngredient: (...args: unknown[]) => Promise<void>;
   removeIngredient: (dayId: string, mealId: string, ingredientId: string) => Promise<void>;
   addIngredientFromDatabase: (...args: unknown[]) => Promise<void>;
+  applyPlanToDay: (...args: unknown[]) => Promise<{ filled: number; skipped: number }>;
   searchNutritionDatabase: (query: string) => Promise<{ results: unknown[]; total: number }>;
   createNutritionDatabaseIngredient: (input: unknown) => Promise<unknown>;
   updateDayTargets: (...args: unknown[]) => Promise<void>;
@@ -70,6 +72,7 @@ function FakeStateProvider({
   const store: StoreCtx = {
     days,
     goals: [],
+    plans: [],
     profile: mockProfile,
     loading: false,
     error: null,
@@ -105,6 +108,7 @@ function FakeStateProvider({
       );
     },
     addIngredientFromDatabase: async () => {},
+    applyPlanToDay: async () => ({ filled: 0, skipped: 0 }),
     searchNutritionDatabase: async (query: string) => {
       if (query.trim().length < 2) return { results: [], total: 0 };
       return { results: [], total: 0 };

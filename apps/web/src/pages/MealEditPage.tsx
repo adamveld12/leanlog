@@ -14,8 +14,7 @@ import {
   SectionCard,
   Text,
 } from '@leanlog/ui';
-import { resolveScannedMicronutrients, type NutritionUnit } from '@leanlog/data-access';
-import { isPastIso, normalizeIngredientName } from '../lib';
+import { isPastIso, normalizeIngredientName, resolveDraftMicronutrients } from '../lib';
 import { IngredientEntry } from '../components/IngredientEntry';
 import { mealTotals } from '../selectors';
 import { useStore } from '../state';
@@ -28,25 +27,6 @@ import {
   type RouteLoadState,
   useSavedSections,
 } from './_shared';
-
-// Resolve the manual-entry micronutrient rows (which may carry a %DV) into typed
-// amounts: a measured amount wins; otherwise the %DV is converted via the Daily
-// Value table. Empty / unknown-with-only-%DV rows are dropped.
-function resolveDraftMicronutrients(
-  micros:
-    | { name: string; amount?: number | null; unit?: string; percentDailyValue?: number | null }[]
-    | null
-    | undefined,
-) {
-  return resolveScannedMicronutrients(
-    micros?.map((m) => ({
-      name: m.name,
-      amount: m.amount ?? undefined,
-      unit: (m.unit as NutritionUnit | undefined) ?? undefined,
-      percentDailyValue: m.percentDailyValue ?? undefined,
-    })),
-  );
-}
 
 export default function MealEditPage() {
   const { dayId, mealId } = useParams();
