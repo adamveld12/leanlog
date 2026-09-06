@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { IngredientEntryCard, type IngredientEntryValue } from '../organisms/IngredientEntryCard';
 
-/** Mirrors the estimateCalories formula from @leanlog/data-access */
-function estimateCalories(v: {
+type MacroInput = {
   fat: number | null;
   carbs: number | null;
   protein: number | null;
@@ -13,13 +12,40 @@ function estimateCalories(v: {
   sugarAlcohol?: number | null;
   allulose?: number | null;
   alcohol?: number | null;
-}): number {
+};
+
+// @leanlog/ui has no dependency on @leanlog/data-access, so these mirror
+// estimateCalories/fiberAdjustedCalories from packages/data-access/src/calculations.ts.
+// Keep in sync with that module.
+function estimateCalories(v: MacroInput): number {
   const fat = v.fat ?? 0;
   const carbs = v.carbs ?? 0;
-  const fiber = Math.min(v.fiber ?? 0, carbs);
   const protein = v.protein ?? 0;
-  const netCarbs = carbs - fiber;
-  return Math.round((fat * 9 + protein * 4 + netCarbs * 4 + fiber * 2) * 10) / 10;
+  return (
+    Math.round((fat * 9 + protein * 4 + carbs * 4 + Math.max(0, v.alcohol ?? 0) * 7) * 10) / 10
+  );
+}
+
+function fiberAdjustedCalories(v: MacroInput): number {
+  const fat = v.fat ?? 0;
+  const carbs = v.carbs ?? 0;
+  const protein = v.protein ?? 0;
+  const fiberC = Math.min(Math.max(0, v.fiber ?? 0), carbs);
+  const saC = Math.min(Math.max(0, v.sugarAlcohol ?? 0), carbs - fiberC);
+  const alluC = Math.min(Math.max(0, v.allulose ?? 0), carbs - fiberC - saC);
+  const digestible = carbs - fiberC - saC - alluC;
+  return (
+    Math.round(
+      (fat * 9 +
+        protein * 4 +
+        digestible * 4 +
+        fiberC * 2 +
+        saC * 2.4 +
+        alluC * 0.4 +
+        Math.max(0, v.alcohol ?? 0) * 7) *
+        10,
+    ) / 10
+  );
 }
 
 const base: IngredientEntryValue = {
@@ -44,7 +70,7 @@ function Harness({
   submitLabel?: 'Add' | 'Update';
 }) {
   const [value, setValue] = useState(base);
-  const estimated = estimateCalories({
+  const macros = {
     fat: value.fat,
     carbs: value.carbs,
     protein: value.protein,
@@ -52,11 +78,14 @@ function Harness({
     sugarAlcohol: value.sugarAlcohol,
     allulose: value.allulose,
     alcohol: value.alcohol,
-  });
+  };
+  const estimated = estimateCalories(macros);
+  const adjusted = fiberAdjustedCalories(macros);
   return (
     <IngredientEntryCard
       value={value}
       estimatedCalories={estimated}
+      adjustedCalories={adjusted}
       onChange={setValue}
       onSubmit={onSubmit}
       submitLabel={submitLabel}
@@ -72,6 +101,7 @@ describe('IngredientEntryCard', () => {
       <IngredientEntryCard
         value={base}
         estimatedCalories={222}
+        adjustedCalories={222}
         onChange={() => {}}
         onSubmit={() => {}}
         submitLabel="Add"
@@ -92,6 +122,7 @@ describe('IngredientEntryCard', () => {
       <IngredientEntryCard
         value={base}
         estimatedCalories={222}
+        adjustedCalories={222}
         onChange={() => {}}
         onSubmit={() => {}}
         submitLabel="Update"
@@ -105,6 +136,7 @@ describe('IngredientEntryCard', () => {
       <IngredientEntryCard
         value={base}
         estimatedCalories={222}
+        adjustedCalories={222}
         onChange={() => {}}
         onSubmit={() => {}}
         submitLabel="Add"
@@ -119,6 +151,7 @@ describe('IngredientEntryCard', () => {
       <IngredientEntryCard
         value={base}
         estimatedCalories={222}
+        adjustedCalories={222}
         onChange={() => {}}
         onSubmit={() => {}}
         submitLabel="Add"
@@ -130,7 +163,7 @@ describe('IngredientEntryCard', () => {
     );
   });
 
-  it('recalculates calories when macros change (fiber reduces net carbs)', async () => {
+  it('recalculates calories from total carbs when macros change', async () => {
     render(<Harness onSubmit={() => {}} />);
 
     const carbs = screen.getByLabelText('Carbs');
@@ -144,10 +177,11 @@ describe('IngredientEntryCard', () => {
     await userEvent.tab();
 
     // fat=6, carbs=20, fiber=5, protein=42
-    // netCarbs = 20 - 5 = 15, estimatedCalories = 6*9 + 42*4 + 15*4 + 5*2 = 54 + 168 + 60 + 10 = 292
+    // estimatedCalories (total carbs) = 6*9 + 42*4 + 20*4 = 54 + 168 + 80 = 302
+    // adjusted (fiber discounted) = 6*9 + 42*4 + digestible(20-5=15)*4 + fiber5*2 = 54+168+60+10 = 292
     expect(screen.getByLabelText('Calories (kcal)')).toHaveAttribute(
       'placeholder',
-      'Estimated calories: 292',
+      'Estimated calories: 302 (292 adj)',
     );
   });
 
@@ -206,6 +240,7 @@ describe('IngredientEntryCard', () => {
       <IngredientEntryCard
         value={base}
         estimatedCalories={222}
+        adjustedCalories={222}
         onChange={() => {}}
         onSubmit={onSubmit}
         onCancel={onCancel}
@@ -235,6 +270,7 @@ describe('IngredientEntryCard', () => {
           alcohol: null,
         }}
         estimatedCalories={0}
+        adjustedCalories={0}
         onChange={() => {}}
         onSubmit={() => {}}
         submitLabel="Add"
@@ -282,6 +318,7 @@ describe('IngredientEntryCard', () => {
       <IngredientEntryCard
         value={{ ...base, micronutrients: [{ name: 'Sodium', amount: 60, unit: 'milligram' }] }}
         estimatedCalories={222}
+        adjustedCalories={222}
         onChange={() => {}}
         onSubmit={() => {}}
         submitLabel="Add"

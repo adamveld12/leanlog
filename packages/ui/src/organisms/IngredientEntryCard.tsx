@@ -48,6 +48,7 @@ export type IngredientEntryValue = {
 type IngredientEntryCardProps = {
   value: IngredientEntryValue;
   estimatedCalories: number;
+  adjustedCalories: number;
   saved?: boolean;
   submitLabel: 'Add' | 'Update';
   onChange: (next: IngredientEntryValue) => void;
@@ -69,6 +70,7 @@ const nextMicroRowKey = () => `ing-micro-${microRowSeq++}`;
 export function IngredientEntryCard({
   value,
   estimatedCalories,
+  adjustedCalories,
   saved,
   submitLabel,
   onChange,
@@ -87,8 +89,10 @@ export function IngredientEntryCard({
   // otherwise calories must be entered (block submit).
   const hasEstimate = estimatedCalories > 0;
   const caloriesMissing = value.calories == null && !hasEstimate;
+  const roundedAdjusted = Math.round(adjustedCalories);
+  const showAdjusted = hasEstimate && roundedAdjusted !== Math.round(estimatedCalories);
   const caloriesPlaceholder = hasEstimate
-    ? `Estimated calories: ${Math.round(estimatedCalories)}`
+    ? `Estimated calories: ${Math.round(estimatedCalories)}${showAdjusted ? ` (${roundedAdjusted} adj)` : ''}`
     : 'Calories';
 
   // Micronutrient editor. Stable per-row keys so removing a row doesn't remount
