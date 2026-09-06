@@ -1,5 +1,5 @@
-import { createMealTemplateRepository } from '@leanlog/data-d1';
-import { ReorderMealTemplatesSchema } from '@leanlog/data-access';
+import { createPlanRepository } from '@leanlog/data-d1';
+import { ReorderPlansSchema } from '@leanlog/data-access';
 import type { Env } from '../_env';
 
 export const onRequestPut: PagesFunction<Env> = async (context) => {
@@ -10,11 +10,11 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
   } catch {
     return new Response('Invalid JSON', { status: 400 });
   }
-  const parsed = ReorderMealTemplatesSchema.safeParse(body);
+  const parsed = ReorderPlansSchema.safeParse(body);
   if (!parsed.success) {
     return new Response(JSON.stringify(parsed.error.flatten()), { status: 400 });
   }
-  const repo = createMealTemplateRepository(context.env.DB);
-  const templates = await repo.reorder(userId, parsed.data.orderedIds);
-  return Response.json({ templates });
+  const repo = createPlanRepository(context.env.DB);
+  const plans = await repo.reorder(userId, parsed.data.orderedIds);
+  return Response.json({ plans });
 };

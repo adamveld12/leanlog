@@ -1,15 +1,15 @@
-import { createMealTemplateRepository, createNutritionDatabaseRepository } from '@leanlog/data-d1';
+import { createPlanRepository, createNutritionDatabaseRepository } from '@leanlog/data-d1';
 import {
   AddIngredientFromDatabaseSchema,
   scaleLabelToIngredient,
   uuidv7,
   type AddLabelToMealInput,
 } from '@leanlog/data-access';
-import type { Env } from '../../../_env';
+import type { Env } from '../../../../../_env';
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const userId = (context.data as Record<string, string>).userId;
-  const { templateId } = context.params as { templateId: string };
+  const { mealId } = context.params as { planId: string; mealId: string };
 
   let body: unknown;
   try {
@@ -36,13 +36,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     mode === 'package' ? { mode } : { mode, amount: amount as number };
   const snapshot = scaleLabelToIngredient(source, scaling);
 
-  const repo = createMealTemplateRepository(context.env.DB);
-  const ingredient = await repo.upsertIngredient(userId, templateId, {
+  const repo = createPlanRepository(context.env.DB);
+  const ingredient = await repo.upsertIngredient(userId, mealId, {
     id: uuidv7(),
-    templateId,
+    planMealId: mealId,
     name: snapshot.name,
     weight: snapshot.weight,
-    // Forward the label's scaled explicit calories so the template ingredient
+    // Forward the label's scaled explicit calories so the plan ingredient
     // keeps the printed value instead of re-estimating.
     calories: snapshot.calories,
     fat: snapshot.fat,
@@ -63,7 +63,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   });
 
   if (!ingredient) {
-    return new Response('Template not found or not owned by user', { status: 404 });
+    return new Response('Plan meal not found or not owned by user', { status: 404 });
   }
 
   return Response.json(ingredient);
