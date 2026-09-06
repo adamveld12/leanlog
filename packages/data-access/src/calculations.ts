@@ -318,13 +318,24 @@ export type CalorieEstimateInput = {
   fat: number;
   carbs: number;
   protein: number;
-  fiber?: number | null; // 2 kcal/g
-  sugarAlcohol?: number | null; // 2.4 kcal/g
-  allulose?: number | null; // 0.4 kcal/g
+  fiber?: number | null; // 2 kcal/g in fiberAdjustedCalories only
+  sugarAlcohol?: number | null; // 2.4 kcal/g in fiberAdjustedCalories only
+  allulose?: number | null; // 0.4 kcal/g in fiberAdjustedCalories only
   alcohol?: number | null; // 7 kcal/g, separate from carbs
 };
 
+// The primary calorie total: always total carbs at 4 kcal/g, never net carbs.
+// Macro-derived targets (see goals.ts) assume total carbs too, so this is the
+// only formula that keeps consumed and target calories reconcilable against
+// the displayed gram totals.
 export function estimateCalories(i: CalorieEstimateInput): number {
+  return round1(i.fat * 9 + i.protein * 4 + i.carbs * 4 + Math.max(0, i.alcohol ?? 0) * 7);
+}
+
+// A secondary, informational figure using the discounted energy value of
+// fiber, sugar alcohol and allulose. Never used to drive the primary calorie
+// total or any target — display only.
+export function fiberAdjustedCalories(i: CalorieEstimateInput): number {
   const fiberC = Math.min(Math.max(0, i.fiber ?? 0), i.carbs);
   const saC = Math.min(Math.max(0, i.sugarAlcohol ?? 0), i.carbs - fiberC);
   const alluC = Math.min(Math.max(0, i.allulose ?? 0), i.carbs - fiberC - saC);

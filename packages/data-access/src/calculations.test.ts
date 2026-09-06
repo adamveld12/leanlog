@@ -6,6 +6,7 @@ import {
   macroAccuracy,
   trackingCoverage,
   estimateCalories,
+  fiberAdjustedCalories,
   scaleLabelToIngredient,
   vTaperRatio,
   roundVTaper,
@@ -310,45 +311,81 @@ describe('weeklyWeightAverages', () => {
 });
 
 describe('estimateCalories', () => {
+  // Total carbs at 4 kcal/g — fiber, sugar alcohol and allulose are never
+  // discounted here. Discounting fiber caused the daily calorie total to fall
+  // out of sync with macro-derived targets, which always assume total carbs.
+  it('fiber does not reduce calories — fat0 protein0 carbs20 fiber5 -> 80', () => {
+    expect(estimateCalories({ fat: 0, carbs: 20, protein: 0, fiber: 5 })).toBe(80);
+  });
+
+  it('sugar alcohol and allulose do not reduce calories either', () => {
+    expect(estimateCalories({ fat: 0, carbs: 20, protein: 0, sugarAlcohol: 8, allulose: 4 })).toBe(
+      80,
+    );
+  });
+
+  it('fat+protein+carbs — fat9 protein10 carbs20 -> 201', () => {
+    // fat:9*9=81, protein:10*4=40, carbs:20*4=80 => 201
+    expect(estimateCalories({ fat: 9, protein: 10, carbs: 20 })).toBe(201);
+  });
+
+  it('missing contributors default to 0 — fat10 carbs30 protein20 -> 290', () => {
+    // fat10*9=90, protein20*4=80, carbs30*4=120 => 290
+    expect(estimateCalories({ fat: 10, carbs: 30, protein: 20 })).toBe(290);
+  });
+
+  it('alcohol is charged separately at 7 kcal/g — fat0 carbs0 protein0 alcohol10 -> 70', () => {
+    expect(estimateCalories({ fat: 0, carbs: 0, protein: 0, alcohol: 10 })).toBe(70);
+  });
+
+  it('rounds to 1 decimal — fat1.1 carbs2.1 protein1.1 -> 22.7', () => {
+    // 1.1*9=9.9 + 1.1*4=4.4 + 2.1*4=8.4 = 22.7
+    expect(estimateCalories({ fat: 1.1, carbs: 2.1, protein: 1.1 })).toBe(22.7);
+  });
+});
+
+describe('fiberAdjustedCalories', () => {
+  // Preserves the old net-carb Atwater formula as a secondary, informational
+  // figure — never used for the primary calorie total (see estimateCalories).
   it('AE1: fiber deduction — fat0 protein0 carbs20 fiber5 -> 70', () => {
     // digestible = 20-5 = 15, fiber = 5*2=10, total = 15*4 + 10 = 60+10 = 70
-    expect(estimateCalories({ fat: 0, carbs: 20, protein: 0, fiber: 5 })).toBe(70);
+    expect(fiberAdjustedCalories({ fat: 0, carbs: 20, protein: 0, fiber: 5 })).toBe(70);
   });
 
   it('AE2: fat+protein+fiber+SA — fat9 protein10 carbs20 fiber8 SA4 -> 178.6', () => {
     // fat:9*9=81, protein:10*4=40, digestible:(20-8-4=8)*4=32, fiber:8*2=16, SA:4*2.4=9.6
     // total = 81+40+32+16+9.6 = 178.6
-    expect(estimateCalories({ fat: 9, protein: 10, carbs: 20, fiber: 8, sugarAlcohol: 4 })).toBe(
-      178.6,
-    );
+    expect(
+      fiberAdjustedCalories({ fat: 9, protein: 10, carbs: 20, fiber: 8, sugarAlcohol: 4 }),
+    ).toBe(178.6);
   });
 
   it('missing contributors default to 0 — fat10 carbs30 protein20 -> 290', () => {
     // fat10*9=90, protein20*4=80, digestible30*4=120 => 290
-    expect(estimateCalories({ fat: 10, carbs: 30, protein: 20 })).toBe(290);
+    expect(fiberAdjustedCalories({ fat: 10, carbs: 30, protein: 20 })).toBe(290);
   });
 
   it('over-clamp: fiber and SA exceed carbs — clamp to available carbs', () => {
     // fiber clamped to 20 (carbs), SA clamped to 0 (20-20=0 remaining), digestible=0
     // total = 20*2 = 40
-    expect(estimateCalories({ fat: 0, carbs: 20, protein: 0, fiber: 25, sugarAlcohol: 10 })).toBe(
-      40,
-    );
+    expect(
+      fiberAdjustedCalories({ fat: 0, carbs: 20, protein: 0, fiber: 25, sugarAlcohol: 10 }),
+    ).toBe(40);
   });
 
   it('allulose factor — fat0 carbs10 protein0 allulose10 -> 4', () => {
     // allulose clamped to 10, digestible=0; total = 10*0.4 = 4
-    expect(estimateCalories({ fat: 0, carbs: 10, protein: 0, allulose: 10 })).toBe(4);
+    expect(fiberAdjustedCalories({ fat: 0, carbs: 10, protein: 0, allulose: 10 })).toBe(4);
   });
 
   it('alcohol only — fat0 carbs0 protein0 alcohol10 -> 70', () => {
     // 10*7 = 70
-    expect(estimateCalories({ fat: 0, carbs: 0, protein: 0, alcohol: 10 })).toBe(70);
+    expect(fiberAdjustedCalories({ fat: 0, carbs: 0, protein: 0, alcohol: 10 })).toBe(70);
   });
 
   it('rounds to 1 decimal — fat1.1 carbs1.1 protein1.1 -> 18.7', () => {
     // 1.1*9=9.9 + 1.1*4=4.4 + 1.1*4=4.4 = 18.7
-    expect(estimateCalories({ fat: 1.1, carbs: 1.1, protein: 1.1 })).toBe(18.7);
+    expect(fiberAdjustedCalories({ fat: 1.1, carbs: 1.1, protein: 1.1 })).toBe(18.7);
   });
 });
 
