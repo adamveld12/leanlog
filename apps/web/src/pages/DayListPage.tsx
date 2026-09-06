@@ -145,6 +145,7 @@ export default function DayListPage() {
           weekDayCount={weekDays.length}
           onAction={() => void handleAction()}
           activeGoal={activeGoal}
+          onOpenPlans={() => nav('/track/goals/plans')}
         />
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop

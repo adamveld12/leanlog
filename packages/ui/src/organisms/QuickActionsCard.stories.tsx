@@ -38,6 +38,7 @@ export const ActiveUser: Story = {
     weekDayCount: 3,
     onAction: () => {},
     activeGoal: { summary: '🎯 Cut · ends Jul 31', onOpen: () => {} },
+    onOpenPlans: () => {},
   },
 };
 
