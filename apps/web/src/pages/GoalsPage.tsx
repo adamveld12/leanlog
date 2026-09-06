@@ -550,6 +550,9 @@ function GoalDetail({
   plans: PlanSummary[];
   onUpdate: (data: Parameters<ReturnType<typeof useStore>['updateGoal']>[1]) => Promise<Goal>;
   onSaved: (message: string) => void;
+  // Several useState hooks for this form are intentional; a useReducer
+  // migration is tracked separately (#50), same as AddOrEditGoal below.
+  // react-doctor-disable-next-line react-doctor/prefer-useReducer
 }) {
   const lifecycle = goalLifecycle(goal, today);
   const fullyEditable = lifecycle === 'future' || lifecycle === 'today';
