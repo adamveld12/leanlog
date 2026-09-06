@@ -11,6 +11,15 @@ vi.mock('react-chartjs-2', () => ({ Line: () => null }));
 
 const now = new Date().toISOString();
 
+// Relative to the real clock (these tests don't mock time) so the "active"
+// goal below stays active — started in the past, still open-ended — no matter
+// when the suite runs.
+function isoOffset(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 const backgroundGoal: Goal = {
   id: 'bg',
   userId: 'user_test',
@@ -192,5 +201,60 @@ describe('Goals: Katch-McArdle calorie basis (#63)', () => {
       bodyFatPct: 20,
       activityLevel: 'sedentary',
     });
+  });
+
+  // Regression for the false 409 "Active goals cannot change calorieBasis":
+  // creating a goal that overlaps an active Katch goal and confirming
+  // "Trim and save" must send a trim-only PATCH ({ endDate }) and succeed.
+  it('trims an active Katch goal without a false calorieBasis conflict', async () => {
+    const user = userEvent.setup();
+    const activeKatchGoal: Goal = {
+      id: 'g-active-katch',
+      userId: 'user_test',
+      isBackground: false,
+      name: 'Active Katch Cut',
+      description: null,
+      mode: 'cut',
+      targetWeightLbs: null,
+      macroFats: 25,
+      macroCarbs: 35,
+      macroProtein: 40,
+      startDate: isoOffset(-30),
+      endDate: null,
+      calorieDelta: -200,
+      calorieBasis: 'katch',
+      bodyFatPct: 15,
+      activityLevel: 'moderate',
+      mealSlots: [{ name: 'Breakfast', ingredients: [] }],
+      createdAt: now,
+      updatedAt: now,
+    };
+    apiMock.goals.list.mockResolvedValue({ goals: [backgroundGoal, activeKatchGoal] });
+    apiMock.goals.update.mockImplementation((_t: string, _id: string, data: unknown) =>
+      Promise.resolve({ ...activeKatchGoal, ...(data as object) }),
+    );
+    apiMock.goals.create.mockImplementation((_t: string, data: unknown) =>
+      Promise.resolve({ ...backgroundGoal, ...(data as object), id: 'g-new', isBackground: false }),
+    );
+
+    renderGoals();
+    await user.click(await screen.findByRole('button', { name: '+ Add Goal' }));
+
+    // Defaults (Maintain, bodyweight, macros 25/35/40) are valid as-is; the new
+    // goal starts today and overlaps the open-ended active Katch goal.
+    await user.click(screen.getByRole('button', { name: 'Create goal' }));
+
+    expect(await screen.findByText(/This overlaps your current goal/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Trim and save' }));
+
+    await waitFor(() => expect(apiMock.goals.update).toHaveBeenCalledTimes(1));
+    const [, updatedGoalId, updatePayload] = apiMock.goals.update.mock.calls[0];
+    expect(updatedGoalId).toBe('g-active-katch');
+    // The trim call must send exactly the end date — nothing else.
+    expect(updatePayload).toEqual({ endDate: expect.any(String) });
+
+    await waitFor(() => expect(apiMock.goals.create).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/Active goals cannot change/i)).not.toBeInTheDocument();
+    expect(await screen.findByText('Goal created')).toBeInTheDocument();
   });
 });

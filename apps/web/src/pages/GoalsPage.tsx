@@ -881,6 +881,7 @@ function AddOrEditGoal({
     try {
       await onSubmit(build(), trim);
     } catch (e) {
+      posthog.captureException(e, { context: 'goal_save' });
       setError(e instanceof Error ? e.message : 'Could not save the goal. Please try again.');
     }
   }
