@@ -59,6 +59,7 @@ const meta: Meta<typeof MealEditTemplate> = {
       <IngredientEntryCard
         value={value}
         estimatedCalories={220}
+        adjustedCalories={220}
         submitLabel="Add"
         onChange={() => undefined}
         onSubmit={() => undefined}

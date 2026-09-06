@@ -14,6 +14,7 @@ import { targetProgressColor } from '../styles/targetProgress';
 export type DailyTotalsCardProps = {
   calories: number;
   calorieTarget: number;
+  adjustedCalories: number;
   fat: number;
   protein: number;
   carbs: number;
@@ -25,6 +26,7 @@ export type DailyTotalsCardProps = {
 export function DailyTotalsCard({
   calories,
   calorieTarget,
+  adjustedCalories,
   fat,
   protein,
   carbs,
@@ -34,6 +36,8 @@ export function DailyTotalsCard({
 }: DailyTotalsCardProps) {
   const calorieStyle = calorieColor(calories, calorieTarget);
   const netCarbs = Math.max(0, Math.round(carbs - fiber));
+  const roundedAdjusted = Math.round(adjustedCalories);
+  const showAdjusted = roundedAdjusted !== Math.round(calories);
 
   return (
     <AnalyticsScope properties={{ organism: 'DailyTotalsCard' }}>
@@ -56,6 +60,7 @@ export function DailyTotalsCard({
             calories
           )}
           <UnitText> kcal</UnitText>
+          {showAdjusted ? <UnitText> ({roundedAdjusted} adj)</UnitText> : null}
         </Text>
 
         <ProgressBar

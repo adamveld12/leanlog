@@ -47,16 +47,19 @@ function Harness({
   initial = emptyValue,
   onSubmit = () => {},
   estimatedCalories = 0,
+  adjustedCalories,
 }: {
   initial?: NutritionDatabaseEntryValue;
   onSubmit?: () => void;
   estimatedCalories?: number;
+  adjustedCalories?: number;
 }) {
   const [value, setValue] = useState(initial);
   return (
     <NutritionDatabaseEntryCard
       value={value}
       estimatedCalories={estimatedCalories}
+      adjustedCalories={adjustedCalories ?? estimatedCalories}
       onChange={setValue}
       onSubmit={onSubmit}
     />
@@ -77,6 +80,7 @@ describe('NutritionDatabaseEntryCard', () => {
       <NutritionDatabaseEntryCard
         value={filledValue}
         estimatedCalories={156.4}
+        adjustedCalories={156.4}
         onChange={() => {}}
         onSubmit={() => {}}
       />,
@@ -92,6 +96,7 @@ describe('NutritionDatabaseEntryCard', () => {
       <NutritionDatabaseEntryCard
         value={emptyValue}
         estimatedCalories={0}
+        adjustedCalories={0}
         onChange={() => {}}
         onSubmit={() => {}}
       />,
@@ -202,5 +207,13 @@ describe('NutritionDatabaseEntryCard', () => {
     await userEvent.tab();
     expect(fat).toHaveValue('');
     expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+  });
+
+  it('shows the fiber-adjusted total in parentheses when it differs', () => {
+    render(<Harness initial={filledValue} estimatedCalories={200} adjustedCalories={180} />);
+    expect(screen.getByLabelText('Calories (kcal)')).toHaveAttribute(
+      'placeholder',
+      'Estimated calories: 200 (180 adj)',
+    );
   });
 });

@@ -9,6 +9,7 @@ const meta: Meta<typeof DailyTotalsCard> = {
   args: {
     calories: 1520,
     calorieTarget: 2000,
+    adjustedCalories: 1520,
     fat: 48,
     protein: 130,
     carbs: 95,
@@ -40,6 +41,17 @@ export const AtTarget: Story = {
 export const OverTarget: Story = {
   args: {
     calories: 2450,
+    adjustedCalories: 2450,
     calorieTarget: 2000,
+  },
+};
+
+export const FiberAdjusted: Story = {
+  args: {
+    calories: 2006,
+    adjustedCalories: 1780,
+    calorieTarget: 2004,
+    carbs: 187.5,
+    fiber: 109.5,
   },
 };

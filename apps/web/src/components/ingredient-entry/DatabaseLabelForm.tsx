@@ -1,6 +1,7 @@
 import { NutritionDatabaseEntryCard, type NutritionDatabaseEntryValue } from '@leanlog/ui';
 import {
   estimateCalories,
+  fiberAdjustedCalories,
   type CreateNutritionDatabaseIngredient,
   type NutritionUnit,
 } from '@leanlog/data-access';
@@ -45,7 +46,7 @@ export function DatabaseLabelForm({
   photosBusy,
   guidedFrontPromptSignal,
 }: DatabaseLabelFormProps) {
-  const estimatedCalories = estimateCalories({
+  const macroInput = {
     fat: value.fat ?? 0,
     carbs: value.carbs ?? 0,
     protein: value.protein ?? 0,
@@ -53,7 +54,9 @@ export function DatabaseLabelForm({
     sugarAlcohol: value.sugarAlcohol ?? null,
     allulose: value.allulose ?? null,
     alcohol: value.alcohol ?? null,
-  });
+  };
+  const estimatedCalories = estimateCalories(macroInput);
+  const adjustedCalories = fiberAdjustedCalories(macroInput);
 
   const setPhoto = (slot: EntryPhotoSlot, key: string | null) => {
     // Edit mode persists immediately; create mode stages into the form value
@@ -72,6 +75,7 @@ export function DatabaseLabelForm({
     <NutritionDatabaseEntryCard
       value={value}
       estimatedCalories={estimatedCalories}
+      adjustedCalories={adjustedCalories}
       submitting={submitting}
       submitLabel={submitLabel}
       onChange={onChange}

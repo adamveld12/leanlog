@@ -47,6 +47,7 @@ const meta: Meta<typeof NutritionDatabaseEntryCard> = {
   args: {
     value: base,
     estimatedCalories: 0,
+    adjustedCalories: 0,
     onChange: () => {},
     onSubmit: () => {},
     submitting: false,
@@ -88,6 +89,16 @@ export const FiberError: Story = {
       carbs: 5,
       fiber: 10,
     },
+  },
+};
+
+export const FiberAdjusted: Story = {
+  args: {
+    // fat3.6*9=32.4 + protein31*4=124 + carbs20*4=80 = 236.4
+    value: { ...filled, carbs: 20, fiber: 5 },
+    estimatedCalories: 236.4,
+    // adjusted: 32.4 + 124 + digestible(20-5=15)*4=60 + fiber5*2=10 = 226.4
+    adjustedCalories: 226.4,
   },
 };
 

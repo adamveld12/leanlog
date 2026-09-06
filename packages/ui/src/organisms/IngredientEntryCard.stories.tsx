@@ -21,6 +21,7 @@ const meta: Meta<typeof IngredientEntryCard> = {
   args: {
     value: base,
     estimatedCalories: 222,
+    adjustedCalories: 222,
     submitLabel: 'Add',
     onChange: () => {},
     onSubmit: () => {},
@@ -32,9 +33,18 @@ type Story = StoryObj<typeof IngredientEntryCard>;
 
 export const Add: Story = {};
 
+export const FiberAdjusted: Story = {
+  args: {
+    value: { ...base, carbs: 20, fiber: 5 },
+    estimatedCalories: 302,
+    adjustedCalories: 292,
+  },
+};
+
 export const Empty: Story = {
   args: {
     estimatedCalories: 0,
+    adjustedCalories: 0,
     value: {
       name: '',
       weight: null,
@@ -61,7 +71,10 @@ export const Editing: Story = {
 
 export const FiberError: Story = {
   args: {
-    estimatedCalories: 234,
+    // fat6*9=54 + protein42*4=168 + carbs5*4=20 = 242
+    estimatedCalories: 242,
+    // adjusted: fiber clamped to carbs(5), digestible=0 => 54+168+0+5*2=232
+    adjustedCalories: 232,
     value: {
       ...base,
       carbs: 5,

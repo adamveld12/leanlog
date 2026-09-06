@@ -24,6 +24,7 @@ import {
   weeklyWeightAverages,
   addDaysIso,
   computeProgressComparisons,
+  fiberAdjustedCalories,
 } from '@leanlog/data-access';
 import { parseLocalDate, sum, todayIso } from './lib';
 
@@ -34,6 +35,9 @@ type NutritionFields = {
   carbs: number;
   fiber: number;
   protein: number;
+  sugarAlcohol?: number | null;
+  allulose?: number | null;
+  alcohol?: number | null;
 };
 
 function ingredientTotals(items: NutritionFields[]) {
@@ -44,6 +48,10 @@ function ingredientTotals(items: NutritionFields[]) {
     carbs: sum(items.map((i) => i.carbs)),
     fiber: sum(items.map((i) => i.fiber)),
     protein: sum(items.map((i) => i.protein)),
+    // Derived fresh from each ingredient's own macros — never from the stored
+    // `calories` column, so it stays correct even for rows saved before the
+    // primary total stopped discounting fiber.
+    adjustedCalories: sum(items.map((i) => fiberAdjustedCalories(i))),
   };
 }
 
@@ -343,6 +351,7 @@ export type PeriodStats = {
   targetFat: number;
   totalFiber: number;
   totalNetCarbs: number;
+  adjustedCalories: number;
 };
 
 export function aggregateStats(days: DailyMealLog[]): PeriodStats {
@@ -355,6 +364,7 @@ export function aggregateStats(days: DailyMealLog[]): PeriodStats {
   let totalFat = 0;
   let targetFat = 0;
   let totalFiber = 0;
+  let adjustedCalories = 0;
   let mealsTracked = 0;
   let mealsExpected = 0;
 
@@ -369,6 +379,7 @@ export function aggregateStats(days: DailyMealLog[]): PeriodStats {
     totalFat += totals.fat;
     targetFat += day.targetFat;
     totalFiber += totals.fiber;
+    adjustedCalories += totals.adjustedCalories;
     // Coverage is derived per-day from its own copied/ad-hoc structure (R37–R40).
     const structure = dayMealStructure(day);
     mealsTracked += structure.mealsTracked;
@@ -399,5 +410,6 @@ export function aggregateStats(days: DailyMealLog[]): PeriodStats {
     targetFat,
     totalFiber,
     totalNetCarbs,
+    adjustedCalories,
   };
 }

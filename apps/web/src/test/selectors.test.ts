@@ -102,6 +102,43 @@ describe('selectors', () => {
     expect(mealTotals(meal).calories).toBe(30);
     expect(dayTotals(makeDay({ meals: [meal] })).protein).toBe(9);
   });
+
+  it('computes adjustedCalories from macros, independent of stored calories', () => {
+    const meal = {
+      id: 'm',
+      dailyMealLogId: 'd',
+      origin: 'adhoc' as const,
+      logged: false,
+      name: 'X',
+      createdAt: now,
+      updatedAt: now,
+      ingredients: [
+        {
+          id: '1',
+          mealId: 'm',
+          name: 'A',
+          weight: 100,
+          // Stored calories reflect a stale (pre-fix) net-carb estimate — adjustedCalories
+          // must be derived fresh from macros, not from this column.
+          calories: 9999,
+          estimatedCalories: 9999,
+          calorieSource: 'estimated' as const,
+          fat: 0,
+          saturatedFat: 0,
+          carbs: 20,
+          fiber: 5,
+          protein: 0,
+          sugarAlcohol: null,
+          allulose: null,
+          alcohol: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+    };
+    // fiberAdjustedCalories: digestible(20-5=15)*4 + fiber5*2 = 60+10 = 70
+    expect(dayTotals(makeDay({ meals: [meal] })).adjustedCalories).toBe(70);
+  });
 });
 
 describe('daysThisWeek', () => {
@@ -287,6 +324,9 @@ describe('aggregateStats', () => {
     const result = aggregateStats([day, day]);
     expect(result.totalFiber).toBe(20); // 5 * 4 meals
     expect(result.totalNetCarbs).toBe(180); // (50-5)*4
+    // Per ingredient: fat20*9=180, protein30*4=120, digestible(50-5=45)*4=180, fiber5*2=10 = 490
+    // Across 4 ingredient copies (2 days * 2 meals): 490 * 4 = 1960
+    expect(result.adjustedCalories).toBe(1960);
   });
 
   it('clamps totalNetCarbs to 0 when fiber exceeds carbs', () => {

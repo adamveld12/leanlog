@@ -65,6 +65,7 @@ export type NutritionDatabaseEntryValue = {
 type NutritionDatabaseEntryCardProps = {
   value: NutritionDatabaseEntryValue;
   estimatedCalories: number;
+  adjustedCalories: number;
   onChange: (next: NutritionDatabaseEntryValue) => void;
   onSubmit: () => void;
   submitting?: boolean;
@@ -193,6 +194,7 @@ function MicronutrientRow({
 export function NutritionDatabaseEntryCard({
   value,
   estimatedCalories,
+  adjustedCalories,
   onChange,
   onSubmit,
   submitting,
@@ -244,8 +246,10 @@ export function NutritionDatabaseEntryCard({
   // Calories is only required (and only highlighted) when there is no estimate
   // to fall back on; otherwise an empty field uses the estimate on save.
   const caloriesDanger = started && value.calories == null && !hasEstimate ? danger : '';
+  const roundedAdjusted = Math.round(adjustedCalories);
+  const showAdjusted = hasEstimate && roundedAdjusted !== Math.round(estimatedCalories);
   const caloriesPlaceholder = hasEstimate
-    ? `Estimated calories: ${Math.round(estimatedCalories)}`
+    ? `Estimated calories: ${Math.round(estimatedCalories)}${showAdjusted ? ` (${roundedAdjusted} adj)` : ''}`
     : 'Calories';
 
   // Micronutrient helpers

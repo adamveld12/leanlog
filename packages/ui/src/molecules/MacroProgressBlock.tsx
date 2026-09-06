@@ -11,6 +11,7 @@ export type MacroProgressBlockProps = {
   label: string;
   calories: number;
   calorieTarget: number;
+  adjustedCalories: number;
   protein: number;
   proteinTarget: number;
   carbs: number;
@@ -25,6 +26,7 @@ export function MacroProgressBlock({
   label,
   calories,
   calorieTarget,
+  adjustedCalories,
   protein,
   proteinTarget,
   carbs,
@@ -38,6 +40,8 @@ export function MacroProgressBlock({
   const colorStyle = calorieColor(calories, calorieTarget);
   const barColor = colorStyle?.color ?? 'var(--ll-text)';
   const netCarbs = Math.max(0, Math.round(carbs - fiber));
+  const roundedAdjusted = Math.round(adjustedCalories);
+  const showAdjusted = roundedAdjusted !== Math.round(calories);
 
   return (
     <div className={cn(recipes.stack.xs)}>
@@ -46,7 +50,8 @@ export function MacroProgressBlock({
       </SectionHeading>
       <HelperText as="span" style={colorStyle}>
         {calories} / {calorieTarget}
-        <UnitText> kcal</UnitText> · {pct}%
+        <UnitText> kcal</UnitText>
+        {showAdjusted ? <UnitText> ({roundedAdjusted} adj)</UnitText> : null} · {pct}%
       </HelperText>
       <ProgressBar value={calories} max={calorieTarget} color={barColor} />
 

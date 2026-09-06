@@ -45,6 +45,7 @@ const totalsSection = (
   <DailyTotalsCard
     calories={2088}
     calorieTarget={2100}
+    adjustedCalories={2088}
     fat={62}
     protein={195}
     carbs={180}

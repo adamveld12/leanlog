@@ -214,8 +214,8 @@ describe('resolveScan — databaseCandidate', () => {
     const r = resolveScan(labelZeroCal, req({ mode: 'weight', weight: 30, name: 'Granola' }));
     expect(r.databaseCandidate).not.toBeNull();
     const c = r.databaseCandidate as DatabaseCandidate;
-    // fat6*9=54 + protein3*4=12 + digestible(14-2=12)*4=48 + fiber2*2=4 = 118
-    expect(c.calories).toBe(118);
+    // fat6*9=54 + protein3*4=12 + carbs14*4=56 = 122 (total carbs, fiber not discounted)
+    expect(c.calories).toBe(122);
   });
 
   it('missing protein → no candidate + databaseBlockReason mentions protein, apply still possible', () => {

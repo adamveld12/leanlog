@@ -1,5 +1,5 @@
 import { IngredientEntryCard } from '@leanlog/ui';
-import { estimateCalories } from '@leanlog/data-access';
+import { estimateCalories, fiberAdjustedCalories } from '@leanlog/data-access';
 import { normalizeIngredientName } from '../../lib';
 import type { IngredientDraft } from './types';
 
@@ -18,18 +18,20 @@ export function DraftEntryCard({
   onSubmit,
   onCancel,
 }: DraftEntryCardProps) {
+  const macroInput = {
+    fat: draft.fat ?? 0,
+    carbs: draft.carbs ?? 0,
+    protein: draft.protein ?? 0,
+    fiber: draft.fiber,
+    sugarAlcohol: draft.sugarAlcohol,
+    allulose: draft.allulose,
+    alcohol: draft.alcohol,
+  };
   return (
     <IngredientEntryCard
       value={draft}
-      estimatedCalories={estimateCalories({
-        fat: draft.fat ?? 0,
-        carbs: draft.carbs ?? 0,
-        protein: draft.protein ?? 0,
-        fiber: draft.fiber,
-        sugarAlcohol: draft.sugarAlcohol,
-        allulose: draft.allulose,
-        alcohol: draft.alcohol,
-      })}
+      estimatedCalories={estimateCalories(macroInput)}
+      adjustedCalories={fiberAdjustedCalories(macroInput)}
       submitLabel={editingId ? 'Update' : 'Add'}
       onChange={onChange}
       onSubmit={onSubmit}
