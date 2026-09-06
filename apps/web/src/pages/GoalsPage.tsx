@@ -550,6 +550,9 @@ function GoalDetail({
   plans: PlanSummary[];
   onUpdate: (data: Parameters<ReturnType<typeof useStore>['updateGoal']>[1]) => Promise<Goal>;
   onSaved: (message: string) => void;
+  // Several useState hooks for this form are intentional; a useReducer
+  // migration is tracked separately (#50), same as AddOrEditGoal below.
+  // react-doctor-disable-next-line react-doctor/prefer-useReducer
 }) {
   const lifecycle = goalLifecycle(goal, today);
   const fullyEditable = lifecycle === 'future' || lifecycle === 'today';
@@ -565,6 +568,8 @@ function GoalDetail({
   // selected goal changes, so this never goes stale.
   // react-doctor-disable-next-line react-doctor/no-derived-useState
   const [delta, setDelta] = useState<number | null>(goal.calorieDelta);
+  // react-doctor-disable-next-line react-doctor/no-derived-useState
+  const [planId, setPlanId] = useState<string | null>(goal.defaultPlanId);
 
   // Derived display values for the read-only summary. Without an explicit target
   // weight, targets fall back to the latest logged weight (or 180), like the day
@@ -607,8 +612,6 @@ function GoalDetail({
             calorieBasis: data.calorieBasis,
             bodyFatPct: data.bodyFatPct,
             activityLevel: data.activityLevel,
-            // R31: which plan a goal points at is frozen while active; this
-            // path (fullyEditable) never runs for an active goal.
             defaultPlanId: data.defaultPlanId,
           });
           posthog.capture('goal_edited', { mode: data.mode, lifecycle });
@@ -663,8 +666,9 @@ function GoalDetail({
       ) : null}
       <SummaryRow label="Default plan" value={defaultPlanName} />
 
-      {/* Active (older-than-today) goals allow only name, description, end date and
-          calorie delta edits (R50/R51). Past goals are fully read-only (R52). */}
+      {/* Active (older-than-today) goals allow name, description, end date,
+          calorie delta, and default plan edits (R50/R51). Past goals are fully
+          read-only (R52). */}
       {editing && lifecycle === 'active' ? (
         <div className={recipes.stack.sm}>
           <SectionHeading noMargin>Edit</SectionHeading>
@@ -680,6 +684,16 @@ function GoalDetail({
               That deficit would push carbs below 0 g. The lowest allowed delta is {minDelta}.
             </WarningText>
           ) : null}
+          <Field label="Materialized into every new day this goal covers">
+            <Select value={planId ?? ''} onChange={(e) => setPlanId(e.target.value || null)}>
+              <option value="">None (four default meals)</option>
+              {plans.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
           <div className={cn(recipes.stack.row, 'flex-wrap')}>
             <Button
               variant="primary"
@@ -690,6 +704,7 @@ function GoalDetail({
                   name: name || null,
                   description: description || null,
                   calorieDelta: Math.round(delta ?? 0),
+                  defaultPlanId: planId,
                 }).then(() => {
                   setEditing(false);
                   onSaved('Goal updated');
@@ -704,6 +719,8 @@ function GoalDetail({
           </div>
           <HelperText>
             Changing the calorie delta updates today and future days; past days keep their targets.
+            A new default plan applies to days created from now on — days that already exist are
+            unaffected (use Apply plan on a day to update it).
           </HelperText>
         </div>
       ) : canEdit ? (

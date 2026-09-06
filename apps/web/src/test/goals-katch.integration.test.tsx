@@ -50,6 +50,7 @@ const apiMock = api as unknown as {
     update: ReturnType<typeof vi.fn>;
     updateBackground: ReturnType<typeof vi.fn>;
   };
+  plans: { list: ReturnType<typeof vi.fn> };
 };
 
 function renderGoals() {
@@ -66,6 +67,7 @@ beforeEach(() => {
   apiMock.days.list.mockResolvedValue({ days: [] });
   apiMock.goals.list.mockResolvedValue({ goals: [backgroundGoal] });
   apiMock.goals.create.mockReset();
+  apiMock.goals.update.mockReset();
   apiMock.goals.updateBackground.mockReset();
 });
 
@@ -251,5 +253,64 @@ describe('Goals: Katch-McArdle calorie basis (#63)', () => {
     await waitFor(() => expect(apiMock.goals.create).toHaveBeenCalledTimes(1));
     expect(screen.queryByText(/Active goals cannot change/i)).not.toBeInTheDocument();
     expect(await screen.findByText('Goal created')).toBeInTheDocument();
+  });
+
+  // Regression: R31 used to freeze defaultPlanId on active goals. The plan
+  // picker should now show up in the active-goal edit form and round-trip.
+  it('lets an active goal change its default plan', async () => {
+    const user = userEvent.setup();
+    const activeGoal: Goal = {
+      id: 'g-active',
+      userId: 'user_test',
+      isBackground: false,
+      name: 'Active Cut',
+      description: null,
+      mode: 'cut',
+      targetWeightLbs: 180,
+      macroFats: 25,
+      macroCarbs: 35,
+      macroProtein: 40,
+      startDate: isoOffset(-30),
+      endDate: null,
+      calorieDelta: 0,
+      calorieBasis: 'bodyweight',
+      bodyFatPct: null,
+      activityLevel: null,
+      defaultPlanId: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    apiMock.goals.list.mockResolvedValue({ goals: [backgroundGoal, activeGoal] });
+    apiMock.plans.list.mockResolvedValue({
+      plans: [
+        {
+          id: 'plan-b',
+          userId: 'user_test',
+          name: 'Plan B',
+          position: 0,
+          meals: [],
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+    });
+    apiMock.goals.update.mockImplementation((_t: string, _id: string, data: unknown) =>
+      Promise.resolve({ ...activeGoal, ...(data as object) }),
+    );
+
+    renderGoals();
+    await user.click(await screen.findByRole('button', { name: 'Edit' }));
+
+    const planSelect = await screen.findByLabelText(
+      /Materialized into every new day this goal covers/i,
+    );
+    await user.selectOptions(planSelect, 'Plan B');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(apiMock.goals.update).toHaveBeenCalledTimes(1));
+    const [, updatedGoalId, updatePayload] = apiMock.goals.update.mock.calls[0];
+    expect(updatedGoalId).toBe('g-active');
+    expect(updatePayload).toMatchObject({ defaultPlanId: 'plan-b' });
+    expect(await screen.findByText('Goal updated')).toBeInTheDocument();
   });
 });

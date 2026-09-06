@@ -3,6 +3,7 @@ import { env } from 'cloudflare:test';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { createGoalsRepository } from './goals';
+import { createPlanRepository } from './plans';
 import { GoalNotEditableError, UpdateGoalSchema, type CreateGoal } from '@leanlog/data-access';
 import { userProfiles } from '../schema';
 
@@ -137,6 +138,27 @@ describe('createGoalsRepository (#63 calorie basis)', () => {
       expect(updated.name).toBe('Renamed');
       expect(updated.calorieBasis).toBe('katch');
       expect(updated.bodyFatPct).toBe(15);
+    });
+
+    test('allows an active goal to change its default plan', async () => {
+      await seedUser(env.DB, userId);
+      const repo = createGoalsRepository(env.DB);
+      const plans = createPlanRepository(env.DB);
+      const plan = await plans.create(userId, { name: 'New plan' });
+      const goal = await repo.create(
+        userId,
+        katchGoalInput({ startDate: '2026-06-01', endDate: '2026-12-31' }),
+        '2026-06-01',
+      );
+      expect(goal.defaultPlanId).toBeNull();
+
+      const updated = await repo.update(userId, goal.id, { defaultPlanId: plan.id }, today);
+      expect(updated.defaultPlanId).toBe(plan.id);
+
+      // The rest of the active-goal lock is unaffected by loosening the plan field.
+      await expect(
+        repo.update(userId, goal.id, { calorieBasis: 'bodyweight' }, today),
+      ).rejects.toBeInstanceOf(GoalNotEditableError);
     });
 
     // Regression: the tests above call repo.update() directly with a hand-built

@@ -263,7 +263,7 @@ export function createGoalsRepository(db: D1Database): GoalsRepository {
 
 // Enforces which fields a lifecycle state may change (R47–R52). For active goals
 // only *actual* changes to immutable fields are rejected — a save that echoes the
-// goal's existing values (e.g. the edit form re-sending unchanged meal slots while
+// goal's existing values (e.g. the edit form re-sending unchanged macros while
 // the user only tweaks the name) is a no-op and is allowed. This keeps a benign
 // re-save from failing when the goal's lifecycle has shifted to active since the
 // edit form was opened.
@@ -273,7 +273,8 @@ function assertEditAllowed(goal: Goal, lifecycle: GoalLifecycle, data: UpdateGoa
   if (lifecycle === 'past') throw new GoalNotEditableError('Past goals are read-only');
   if (lifecycle === 'future' || lifecycle === 'today') return; // fully editable
 
-  // Active (older than today): name, description, end date, and delta only.
+  // Active (older than today): name, description, end date, delta, and default
+  // plan only — mode/macros/dates/basis/body-comp stay locked.
   const changes: { field: string; changed: boolean }[] = [
     { field: 'mode', changed: data.mode !== undefined && data.mode !== goal.mode },
     {
@@ -313,14 +314,6 @@ function assertEditAllowed(goal: Goal, lifecycle: GoalLifecycle, data: UpdateGoa
       changed:
         data.activityLevel !== undefined &&
         (data.activityLevel ?? null) !== (goal.activityLevel ?? null),
-    },
-    {
-      // R31: which plan a goal points at is frozen while active; editing that
-      // plan's own contents is not blocked here (see days.ts resolvePlanMeals).
-      field: 'defaultPlanId',
-      changed:
-        data.defaultPlanId !== undefined &&
-        (data.defaultPlanId ?? null) !== (goal.defaultPlanId ?? null),
     },
   ];
   const blocked = changes.find((c) => c.changed);
