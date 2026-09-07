@@ -47,6 +47,7 @@ export * from './organisms/appNav';
 export * from './organisms/AuthLanding';
 export * from './organisms/IngredientEntryCard';
 export * from './organisms/IngredientList';
+export * from './organisms/ExtrasCard';
 export * from './organisms/CameraCaptureModal';
 export * from './organisms/LabelScanCard';
 export * from './organisms/ListSectionCard';
