@@ -16,6 +16,9 @@ export type QuickActionsCardProps = {
   activeGoal?: { summary: string; onOpen: () => void };
   // A shortcut to the plans list, which has no top-level nav entry (#84).
   onOpenPlans?: () => void;
+  // Targets today's day (creating it if missing) and opens the Extras quick-add
+  // form there (#64 R9/R10). Omitted hides the button entirely.
+  onAddExtra?: () => void;
 };
 
 export function QuickActionsCard({
@@ -27,6 +30,7 @@ export function QuickActionsCard({
   onAction,
   activeGoal,
   onOpenPlans,
+  onAddExtra,
 }: QuickActionsCardProps) {
   return (
     <AnalyticsScope properties={{ organism: 'QuickActionsCard' }}>
@@ -34,6 +38,12 @@ export function QuickActionsCard({
         <Button onClick={onAction} className="w-full">
           Log a meal
         </Button>
+
+        {onAddExtra ? (
+          <Button variant="secondary" onClick={onAddExtra} className="w-full">
+            Log an extra
+          </Button>
+        ) : null}
 
         {activeGoal ? (
           <Button variant="subtle" fullWidth onClick={activeGoal.onOpen}>

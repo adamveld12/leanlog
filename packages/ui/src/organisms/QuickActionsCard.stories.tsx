@@ -41,6 +41,7 @@ export const ActiveUser: Story = {
     onAction: () => {},
     activeGoal: { summary: 'GOAL: 🎯 Cut · ends Jul 31', onOpen: () => {} },
     onOpenPlans: () => {},
+    onAddExtra: () => {},
   },
 };
 

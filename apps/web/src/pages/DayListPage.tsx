@@ -71,15 +71,15 @@ export default function DayListPage() {
   const creatingRef = useRef(false);
 
   // Create a day for the given ISO date (copying templates) and open it. Shared
-  // by the "Log a meal" quick action and the calendar's tap-to-create.
+  // by the "Log a meal"/"Log an extra" quick actions and the calendar's tap-to-create.
   const createAndOpenDay = useCallback(
-    async (iso: string) => {
+    async (iso: string, navState?: { openExtras: boolean }) => {
       if (creatingRef.current) return;
       creatingRef.current = true;
       try {
         // Targets + meal slots are derived from the covering goal inside addDay (#56).
         const day = await addDay(iso);
-        nav(`/track/day/${day.id}`);
+        nav(`/track/day/${day.id}`, navState ? { state: navState } : undefined);
       } finally {
         creatingRef.current = false;
       }
@@ -95,6 +95,17 @@ export default function DayListPage() {
       return;
     }
     await createAndOpenDay(todayIso());
+  }
+
+  // Log an extra (#64 R9/R10): same day-creation path as "Log a meal", but
+  // navigates with state telling the Day screen to open the Extras form.
+  async function handleAddExtra() {
+    if (!profile) return;
+    if (today) {
+      nav(`/track/day/${today.id}`, { state: { openExtras: true } });
+      return;
+    }
+    await createAndOpenDay(todayIso(), { openExtras: true });
   }
 
   if (loading) return <PageLoadingState label="Loading your days…" />;
@@ -148,6 +159,7 @@ export default function DayListPage() {
           onAction={() => void handleAction()}
           activeGoal={activeGoal}
           onOpenPlans={() => nav('/track/goals/plans')}
+          onAddExtra={() => void handleAddExtra()}
         />
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop

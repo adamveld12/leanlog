@@ -13,7 +13,7 @@ const TODAY = todayIso();
 const YESTERDAY = '2020-01-01'; // any date strictly before "today" in the test clock
 
 const apiMock = api as unknown as {
-  days: { list: Mock; get: Mock };
+  days: { list: Mock; get: Mock; create: Mock };
   extras: { add: Mock };
   ingredients: { upsert: Mock; delete: Mock };
 };
@@ -92,6 +92,7 @@ describe('extras (#64)', () => {
     apiMock.days.list.mockReset();
     apiMock.days.list.mockResolvedValue({ days: [] });
     apiMock.days.get.mockReset();
+    apiMock.days.create.mockReset();
     apiMock.extras.add.mockReset();
     apiMock.ingredients.upsert.mockReset();
     apiMock.ingredients.delete.mockReset();
@@ -175,5 +176,41 @@ describe('extras (#64)', () => {
     await screen.findByText('Tortilla chips');
     expect(screen.queryByRole('button', { name: '+ Add extra' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+  });
+
+  it('"Log an extra" targets today and opens the form focused when today exists (scenario)', async () => {
+    apiMock.days.list.mockResolvedValue({ days: [makeDay()] });
+
+    render(
+      <StateProvider>
+        <MemoryRouter initialEntries={['/track']}>
+          <App />
+        </MemoryRouter>
+      </StateProvider>,
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Log an extra' }));
+
+    await screen.findByText('Extras');
+    expect(screen.getByLabelText('Name')).toHaveFocus();
+  });
+
+  it('"Log an extra" creates today from templates when missing, then opens the form (scenario)', async () => {
+    apiMock.days.list.mockResolvedValue({ days: [] });
+    apiMock.days.create.mockResolvedValue(makeDay());
+
+    render(
+      <StateProvider>
+        <MemoryRouter initialEntries={['/track']}>
+          <App />
+        </MemoryRouter>
+      </StateProvider>,
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Log an extra' }));
+
+    await waitFor(() => expect(apiMock.days.create).toHaveBeenCalled());
+    await screen.findByText('Extras');
+    expect(screen.getByLabelText('Name')).toHaveFocus();
   });
 });
