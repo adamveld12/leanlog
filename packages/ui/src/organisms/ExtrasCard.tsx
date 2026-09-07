@@ -84,7 +84,9 @@ export function ExtrasCard({
 }: ExtrasCardProps) {
   // autoOpen is a one-shot mount-time signal from the Track quick-action
   // (R10), not a live prop to track — the caller remounts this component
-  // (fresh route/key) rather than flipping autoOpen on an existing instance.
+  // (fresh route/key) rather than flipping autoOpen on an existing instance,
+  // so react-doctor's "prop derived into useState" is a false positive here.
+  // react-doctor-disable-next-line react-doctor/no-derived-useState
   const [open, setOpen] = useState(autoOpen);
   const [form, setForm] = useState<FormState>(emptyForm);
   // Focuses the name field the instant it mounts open, with no extra render

@@ -9,11 +9,12 @@ import {
   DayDetailTemplate,
   ExtrasCard,
   HelperText,
+  type ListSectionItem,
   MacroSummaryLine,
   recipes,
   Select,
 } from '@leanlog/ui';
-import { deriveDayPlan, dayMealStructure, uuidv7 } from '@leanlog/data-access';
+import { deriveDayPlan, dayMealStructure, uuidv7, type PlanSummary } from '@leanlog/data-access';
 import { DayProgressPhotos } from '../components/progress-photos/DayProgressPhotos';
 import { isPastIso, prettyDate, todayIso } from '../lib';
 import {
@@ -25,6 +26,7 @@ import {
 } from '../selectors';
 import { useStore } from '../state';
 import {
+  type ApplyPlanState,
   HeaderControls,
   renderRouterNavLink,
   RouteErrorState,
@@ -58,10 +60,9 @@ export default function DayDetailPage() {
   const [applyPlanId, setApplyPlanId] = useState('');
   const [applyState, dispatchApply] = useApplyPlanState();
   // R10: the Track quick-action navigates here wanting the Extras form open
-  // and focused. One-shot — read once from the navigation, not tracked live.
-  const [autoOpenExtras] = useState(
-    () => (location.state as { openExtras?: boolean } | null)?.openExtras ?? false,
-  );
+  // and focused. Not component state — ExtrasCard itself only reads this prop
+  // at its own mount time, so recomputing it here on every render is safe.
+  const autoOpenExtras = Boolean((location.state as { openExtras?: boolean } | null)?.openExtras);
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
     dayId: dayId ?? '',
     status: 'loading',
@@ -101,6 +102,51 @@ export default function DayDetailPage() {
   // The day's singleton Extras bucket (#64) — undefined until the first item
   // is quick-added, lazily created by addExtra().
   const extrasMeal = day.meals.find((m) => m.origin === 'extra');
+  // Structured meals for the list, one pass: the Extras bucket lives in its
+  // own section (R1), so it's dropped here rather than filtered separately.
+  const mealsItems = day.meals.reduce<ListSectionItem[]>((acc, m) => {
+    if (m.origin === 'extra') return acc;
+    const mTotals = mealTotals(m);
+    const isTemplateMeal = m.origin === 'template';
+    const canLog = isTemplateMeal && !m.logged && m.ingredients.length > 0 && !isPast;
+    acc.push({
+      id: m.id,
+      title: m.name || 'Meal',
+      meta: (
+        <MacroSummaryLine
+          calories={mTotals.calories}
+          protein={mTotals.protein}
+          carbs={mTotals.carbs}
+          fat={mTotals.fat}
+        />
+      ),
+      // Logged copied meals show a confirmation; unlogged ones read "Not logged".
+      rightMetric: isTemplateMeal ? (
+        <HelperText>{m.logged ? '✓ Logged' : 'Not logged'}</HelperText>
+      ) : undefined,
+      actions: canLog ? (
+        <Button
+          size="sm"
+          className="min-w-[72px] shrink-0 px-3"
+          onClick={(e) => {
+            e.stopPropagation();
+            void logMeal(day.id, m.id);
+          }}
+        >
+          Log
+        </Button>
+      ) : undefined,
+      onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
+      // A logged copied meal is recorded history and cannot be deleted; an
+      // unlogged one (a plan default the user doesn't want) can (#84 narrows
+      // #41 R19). Ad-hoc meals can always be deleted, unless the day is in
+      // the past (R22).
+      onDelete:
+        (isTemplateMeal && m.logged) || isPast ? undefined : () => void removeMeal(day.id, m.id),
+      deleteLabel: 'Delete meal',
+    });
+    return acc;
+  }, []);
   // Cadence is derived from all days: the complete measurement set standing on
   // this day feeds the collapsed summary (as-of the viewed date so a past day
   // shows what was current then), and "due" hard-blocks the current day when none
@@ -189,106 +235,30 @@ export default function DayDetailPage() {
       }
       mealsTitle={`Meals ${structure.mealsTracked} / ${structure.mealsExpected}`}
       mealsEmptyText={isPast ? 'No meals were logged this day.' : 'No meals yet. Add one below.'}
-      // The Extras bucket lives in its own section, separate from structured
-      // meals (R1) — rendered below via the Extras card, not this list.
-      mealsItems={day.meals
-        .filter((m) => m.origin !== 'extra')
-        .map((m) => {
-          const mTotals = mealTotals(m);
-          const isTemplateMeal = m.origin === 'template';
-          const canLog = isTemplateMeal && !m.logged && m.ingredients.length > 0 && !isPast;
-          return {
-            id: m.id,
-            title: m.name || 'Meal',
-            meta: (
-              <MacroSummaryLine
-                calories={mTotals.calories}
-                protein={mTotals.protein}
-                carbs={mTotals.carbs}
-                fat={mTotals.fat}
-              />
-            ),
-            // Logged copied meals show a confirmation; unlogged ones read "Not logged".
-            rightMetric: isTemplateMeal ? (
-              <HelperText>{m.logged ? '✓ Logged' : 'Not logged'}</HelperText>
-            ) : undefined,
-            actions: canLog ? (
-              <Button
-                size="sm"
-                className="min-w-[72px] shrink-0 px-3"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void logMeal(day.id, m.id);
-                }}
-              >
-                Log
-              </Button>
-            ) : undefined,
-            onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
-            // A logged copied meal is recorded history and cannot be deleted;
-            // an unlogged one (a plan default the user doesn't want) can (#84
-            // narrows #41 R19). Ad-hoc meals can always be deleted, unless the
-            // day is in the past (R22).
-            onDelete:
-              (isTemplateMeal && m.logged) || isPast
-                ? undefined
-                : () => void removeMeal(day.id, m.id),
-            deleteLabel: 'Delete meal',
-          };
-        })}
+      mealsItems={mealsItems}
       mealsControls={
-        isPast ? undefined : (
-          <div className={cn(recipes.stack.sm, 'mb-5')}>
-            {plans.length > 0 ? (
-              <div className={recipes.stack.sm}>
-                <Select value={applyPlanId} onChange={(e) => setApplyPlanId(e.target.value)}>
-                  <option value="">Apply a plan…</option>
-                  {plans.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </Select>
-                <Button
-                  className="w-full"
-                  variant="secondary"
-                  disabled={!applyPlanId || applyState.applying}
-                  onClick={async () => {
-                    dispatchApply({ type: 'start' });
-                    try {
-                      const result = await applyPlanToDay(day.id, applyPlanId);
-                      dispatchApply({ type: 'succeeded', ...result });
-                      setApplyPlanId('');
-                    } finally {
-                      dispatchApply({ type: 'settled' });
-                    }
-                  }}
-                >
-                  Apply plan
-                </Button>
-                {applyState.result ? (
-                  <HelperText>
-                    Filled {applyState.result.filled} meal
-                    {applyState.result.filled === 1 ? '' : 's'}, skipped {applyState.result.skipped}{' '}
-                    that already had food.
-                  </HelperText>
-                ) : null}
-              </div>
-            ) : null}
-            {/* Ad-hoc meals can only be added to zero-template days (R34/R36). */}
-            {!isTemplateBacked ? (
-              <Button
-                className="w-full"
-                onClick={async () => {
-                  const meal = await addMeal(day.id, '');
-                  if (meal) nav(`/track/day/${day.id}/meal/${meal.id}`);
-                }}
-              >
-                Add meal
-              </Button>
-            ) : null}
-          </div>
-        )
+        <DayMealsControls
+          isPast={isPast}
+          isTemplateBacked={isTemplateBacked}
+          plans={plans}
+          applyPlanId={applyPlanId}
+          onApplyPlanIdChange={setApplyPlanId}
+          applyState={applyState}
+          onApplyPlan={async () => {
+            dispatchApply({ type: 'start' });
+            try {
+              const result = await applyPlanToDay(day.id, applyPlanId);
+              dispatchApply({ type: 'succeeded', ...result });
+              setApplyPlanId('');
+            } finally {
+              dispatchApply({ type: 'settled' });
+            }
+          }}
+          onAddMeal={async () => {
+            const meal = await addMeal(day.id, '');
+            if (meal) nav(`/track/day/${day.id}/meal/${meal.id}`);
+          }}
+        />
       }
     >
       <ExtrasCard
@@ -333,5 +303,67 @@ export default function DayDetailPage() {
         }}
       />
     </DayDetailTemplate>
+  );
+}
+
+type DayMealsControlsProps = {
+  isPast: boolean;
+  isTemplateBacked: boolean;
+  plans: PlanSummary[];
+  applyPlanId: string;
+  onApplyPlanIdChange: (planId: string) => void;
+  applyState: ApplyPlanState;
+  onApplyPlan: () => Promise<void>;
+  onAddMeal: () => Promise<void>;
+};
+
+// Below the meals list: apply a plan to fill matching meals, and add an
+// ad-hoc meal (only on zero-template days, R34/R36). Hidden on past days.
+function DayMealsControls({
+  isPast,
+  isTemplateBacked,
+  plans,
+  applyPlanId,
+  onApplyPlanIdChange,
+  applyState,
+  onApplyPlan,
+  onAddMeal,
+}: DayMealsControlsProps) {
+  if (isPast) return null;
+  return (
+    <div className={cn(recipes.stack.sm, 'mb-5')}>
+      {plans.length > 0 ? (
+        <div className={recipes.stack.sm}>
+          <Select value={applyPlanId} onChange={(e) => onApplyPlanIdChange(e.target.value)}>
+            <option value="">Apply a plan…</option>
+            {plans.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </Select>
+          <Button
+            className="w-full"
+            variant="secondary"
+            disabled={!applyPlanId || applyState.applying}
+            onClick={() => void onApplyPlan()}
+          >
+            Apply plan
+          </Button>
+          {applyState.result ? (
+            <HelperText>
+              Filled {applyState.result.filled} meal
+              {applyState.result.filled === 1 ? '' : 's'}, skipped {applyState.result.skipped} that
+              already had food.
+            </HelperText>
+          ) : null}
+        </div>
+      ) : null}
+      {!isTemplateBacked ? (
+        <Button className="w-full" onClick={() => void onAddMeal()}>
+          Add meal
+        </Button>
+      ) : null}
+    </div>
   );
 }
