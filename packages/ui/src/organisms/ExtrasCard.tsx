@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
@@ -82,17 +82,19 @@ export function ExtrasCard({
   readOnly = false,
   autoOpen = false,
 }: ExtrasCardProps) {
+  // autoOpen is a one-shot mount-time signal from the Track quick-action
+  // (R10), not a live prop to track — the caller remounts this component
+  // (fresh route/key) rather than flipping autoOpen on an existing instance.
   const [open, setOpen] = useState(autoOpen);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const nameInputRef = useRef<HTMLInputElement>(null);
-
-  // R10: the Track quick-action arrives here wanting the form open and focused
-  // without another tap.
-  useEffect(() => {
-    if (autoOpen) nameInputRef.current?.focus();
-    // Only ever fires once per mount — autoOpen is a one-shot navigation signal.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Focuses the name field the instant it mounts open, with no extra render
+  // or effect — a plain callback ref runs exactly when the node appears.
+  const nameInputRef = useCallback(
+    (node: HTMLInputElement | null) => {
+      if (node && autoOpen) node.focus();
+    },
+    [autoOpen],
+  );
 
   if (readOnly && items.length === 0) return null;
 
