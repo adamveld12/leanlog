@@ -56,7 +56,7 @@ export function QuickActionsCard({
               }}
             />
           ) : (
-            <Button variant="secondary" onClick={() => setAddingExtra(true)} className="w-full">
+            <Button variant="secondary" onClick={() => setAddingExtra(true)} fullWidth>
               Log an extra
             </Button>
           )

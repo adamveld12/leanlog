@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { Button } from '../atoms/Button';
 import { Field } from '../atoms/Field';
 import { Input } from '../atoms/Input';
@@ -101,58 +102,60 @@ export function ExtraQuickAddForm({
   };
 
   return (
-    <div className={cn(recipes.stack.sm)}>
-      <div className={cn(recipes.grid.two)}>
-        <Field label="Name">
-          <Input
-            ref={nameInputRef}
-            value={field.name}
-            onChange={(e) => setField((f) => ({ ...f, name: e.target.value }))}
-          />
-        </Field>
-        <NumberInput
-          label="Calories"
-          value={field.calories}
-          onChange={(calories) => setField((f) => ({ ...f, calories }))}
-        />
-      </div>
-
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setField((f) => ({ ...f, macrosExpanded: !f.macrosExpanded }))}
-      >
-        {field.macrosExpanded ? '- Hide macros' : '+ Add macros'}
-      </Button>
-
-      {field.macrosExpanded ? (
-        <div className={cn(recipes.grid.three)}>
+    <AnalyticsScope properties={{ molecule: 'ExtraQuickAddForm' }}>
+      <div className={cn(recipes.stack.sm)}>
+        <div className={cn(recipes.grid.two)}>
+          <Field label="Name">
+            <Input
+              ref={nameInputRef}
+              value={field.name}
+              onChange={(e) => setField((f) => ({ ...f, name: e.target.value }))}
+            />
+          </Field>
           <NumberInput
-            label="Protein (g)"
-            value={field.protein}
-            onChange={(protein) => setField((f) => ({ ...f, protein }))}
-          />
-          <NumberInput
-            label="Carbs (g)"
-            value={field.carbs}
-            onChange={(carbs) => setField((f) => ({ ...f, carbs }))}
-          />
-          <NumberInput
-            label="Fat (g)"
-            value={field.fat}
-            onChange={(fat) => setField((f) => ({ ...f, fat }))}
+            label="Calories"
+            value={field.calories}
+            onChange={(calories) => setField((f) => ({ ...f, calories }))}
           />
         </div>
-      ) : null}
 
-      <div className={cn(recipes.stack.row)}>
-        <Button className="flex-1" disabled={!canSubmit} onClick={submit}>
-          {submitLabel}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setField((f) => ({ ...f, macrosExpanded: !f.macrosExpanded }))}
+        >
+          {field.macrosExpanded ? '- Hide macros' : '+ Add macros'}
         </Button>
-        <Button variant="secondary" onClick={onCancel}>
-          Cancel
-        </Button>
+
+        {field.macrosExpanded ? (
+          <div className={cn(recipes.grid.three)}>
+            <NumberInput
+              label="Protein (g)"
+              value={field.protein}
+              onChange={(protein) => setField((f) => ({ ...f, protein }))}
+            />
+            <NumberInput
+              label="Carbs (g)"
+              value={field.carbs}
+              onChange={(carbs) => setField((f) => ({ ...f, carbs }))}
+            />
+            <NumberInput
+              label="Fat (g)"
+              value={field.fat}
+              onChange={(fat) => setField((f) => ({ ...f, fat }))}
+            />
+          </div>
+        ) : null}
+
+        <div className={cn(recipes.stack.row)}>
+          <Button className="flex-1" disabled={!canSubmit} onClick={submit}>
+            {submitLabel}
+          </Button>
+          <Button variant="secondary" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
       </div>
-    </div>
+    </AnalyticsScope>
   );
 }
