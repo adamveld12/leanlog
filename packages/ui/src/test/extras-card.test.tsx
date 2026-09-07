@@ -93,7 +93,7 @@ describe('ExtrasCard', () => {
     expect(calories).toHaveValue('150');
     await userEvent.clear(calories);
     await userEvent.type(calories, '180');
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save extra' }));
 
     expect(onEdit).toHaveBeenCalledWith('1', {
       name: 'Tortilla chips',

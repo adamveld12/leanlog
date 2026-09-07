@@ -212,7 +212,7 @@ export function ExtrasCard({
 
             <div className={cn(recipes.stack.row)}>
               <Button className="flex-1" disabled={!canSubmit} onClick={submit}>
-                {form.editingId ? 'Save' : 'Add extra'}
+                {form.editingId ? 'Save extra' : 'Add extra'}
               </Button>
               <Button variant="secondary" onClick={closeForm}>
                 Cancel

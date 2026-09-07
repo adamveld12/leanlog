@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   APP_NAV_LINKS,
   BodyTrackingCard,
@@ -7,12 +7,13 @@ import {
   cn,
   DailyTotalsCard,
   DayDetailTemplate,
+  ExtrasCard,
   HelperText,
   MacroSummaryLine,
   recipes,
   Select,
 } from '@leanlog/ui';
-import { deriveDayPlan, dayMealStructure } from '@leanlog/data-access';
+import { deriveDayPlan, dayMealStructure, uuidv7 } from '@leanlog/data-access';
 import { DayProgressPhotos } from '../components/progress-photos/DayProgressPhotos';
 import { isPastIso, prettyDate, todayIso } from '../lib';
 import {
@@ -35,6 +36,7 @@ import {
 export default function DayDetailPage() {
   const { dayId } = useParams();
   const nav = useNavigate();
+  const location = useLocation();
   const {
     days,
     goals,
@@ -47,11 +49,19 @@ export default function DayDetailPage() {
     updateDayWeight,
     setDayProgressPhoto,
     applyPlanToDay,
+    addExtra,
+    upsertIngredient,
+    removeIngredient,
   } = useStore();
   const [savingWeight, setSavingWeight] = useState(false);
   const [savingMeasurements, setSavingMeasurements] = useState(false);
   const [applyPlanId, setApplyPlanId] = useState('');
   const [applyState, dispatchApply] = useApplyPlanState();
+  // R10: the Track quick-action navigates here wanting the Extras form open
+  // and focused. One-shot — read once from the navigation, not tracked live.
+  const [autoOpenExtras] = useState(
+    () => (location.state as { openExtras?: boolean } | null)?.openExtras ?? false,
+  );
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
     dayId: dayId ?? '',
     status: 'loading',
@@ -88,6 +98,9 @@ export default function DayDetailPage() {
   // fixed structure and per-meal logging. Ad-hoc days keep freeform meals.
   const isTemplateBacked = structure.kind === 'template';
   const isPast = isPastIso(day.date);
+  // The day's singleton Extras bucket (#64) — undefined until the first item
+  // is quick-added, lazily created by addExtra().
+  const extrasMeal = day.meals.find((m) => m.origin === 'extra');
   // Cadence is derived from all days: the complete measurement set standing on
   // this day feeds the collapsed summary (as-of the viewed date so a past day
   // shows what was current then), and "due" hard-blocks the current day when none
@@ -176,49 +189,53 @@ export default function DayDetailPage() {
       }
       mealsTitle={`Meals ${structure.mealsTracked} / ${structure.mealsExpected}`}
       mealsEmptyText={isPast ? 'No meals were logged this day.' : 'No meals yet. Add one below.'}
-      mealsItems={day.meals.map((m) => {
-        const mTotals = mealTotals(m);
-        const isTemplateMeal = m.origin === 'template';
-        const canLog = isTemplateMeal && !m.logged && m.ingredients.length > 0 && !isPast;
-        return {
-          id: m.id,
-          title: m.name || 'Meal',
-          meta: (
-            <MacroSummaryLine
-              calories={mTotals.calories}
-              protein={mTotals.protein}
-              carbs={mTotals.carbs}
-              fat={mTotals.fat}
-            />
-          ),
-          // Logged copied meals show a confirmation; unlogged ones read "Not logged".
-          rightMetric: isTemplateMeal ? (
-            <HelperText>{m.logged ? '✓ Logged' : 'Not logged'}</HelperText>
-          ) : undefined,
-          actions: canLog ? (
-            <Button
-              size="sm"
-              className="min-w-[72px] shrink-0 px-3"
-              onClick={(e) => {
-                e.stopPropagation();
-                void logMeal(day.id, m.id);
-              }}
-            >
-              Log
-            </Button>
-          ) : undefined,
-          onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
-          // A logged copied meal is recorded history and cannot be deleted;
-          // an unlogged one (a plan default the user doesn't want) can (#84
-          // narrows #41 R19). Ad-hoc meals can always be deleted, unless the
-          // day is in the past (R22).
-          onDelete:
-            (isTemplateMeal && m.logged) || isPast
-              ? undefined
-              : () => void removeMeal(day.id, m.id),
-          deleteLabel: 'Delete meal',
-        };
-      })}
+      // The Extras bucket lives in its own section, separate from structured
+      // meals (R1) — rendered below via the Extras card, not this list.
+      mealsItems={day.meals
+        .filter((m) => m.origin !== 'extra')
+        .map((m) => {
+          const mTotals = mealTotals(m);
+          const isTemplateMeal = m.origin === 'template';
+          const canLog = isTemplateMeal && !m.logged && m.ingredients.length > 0 && !isPast;
+          return {
+            id: m.id,
+            title: m.name || 'Meal',
+            meta: (
+              <MacroSummaryLine
+                calories={mTotals.calories}
+                protein={mTotals.protein}
+                carbs={mTotals.carbs}
+                fat={mTotals.fat}
+              />
+            ),
+            // Logged copied meals show a confirmation; unlogged ones read "Not logged".
+            rightMetric: isTemplateMeal ? (
+              <HelperText>{m.logged ? '✓ Logged' : 'Not logged'}</HelperText>
+            ) : undefined,
+            actions: canLog ? (
+              <Button
+                size="sm"
+                className="min-w-[72px] shrink-0 px-3"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void logMeal(day.id, m.id);
+                }}
+              >
+                Log
+              </Button>
+            ) : undefined,
+            onOpen: () => nav(`/track/day/${day.id}/meal/${m.id}`),
+            // A logged copied meal is recorded history and cannot be deleted;
+            // an unlogged one (a plan default the user doesn't want) can (#84
+            // narrows #41 R19). Ad-hoc meals can always be deleted, unless the
+            // day is in the past (R22).
+            onDelete:
+              (isTemplateMeal && m.logged) || isPast
+                ? undefined
+                : () => void removeMeal(day.id, m.id),
+            deleteLabel: 'Delete meal',
+          };
+        })}
       mealsControls={
         isPast ? undefined : (
           <div className={cn(recipes.stack.sm, 'mb-5')}>
@@ -273,6 +290,48 @@ export default function DayDetailPage() {
           </div>
         )
       }
-    />
+    >
+      <ExtrasCard
+        items={(extrasMeal?.ingredients ?? []).map((i) => ({
+          id: i.id,
+          name: i.name,
+          calories: i.calories,
+          protein: i.protein,
+          carbs: i.carbs,
+          fat: i.fat,
+        }))}
+        readOnly={isPast}
+        autoOpen={!isPast && autoOpenExtras}
+        onAdd={(draft) =>
+          void addExtra(day.id, {
+            id: uuidv7(),
+            name: draft.name,
+            calories: draft.calories,
+            fat: draft.fat,
+            carbs: draft.carbs,
+            protein: draft.protein,
+          })
+        }
+        onEdit={(id, draft) => {
+          if (!extrasMeal) return;
+          void upsertIngredient(day.id, extrasMeal.id, {
+            id,
+            mealId: extrasMeal.id,
+            name: draft.name,
+            weight: 0,
+            calories: draft.calories,
+            fat: draft.fat ?? 0,
+            saturatedFat: 0,
+            carbs: draft.carbs ?? 0,
+            fiber: 0,
+            protein: draft.protein ?? 0,
+          });
+        }}
+        onDelete={(id) => {
+          if (!extrasMeal) return;
+          void removeIngredient(day.id, extrasMeal.id, id);
+        }}
+      />
+    </DayDetailTemplate>
   );
 }
