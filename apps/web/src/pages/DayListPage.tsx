@@ -6,8 +6,9 @@ import {
   MonthCalendarCard,
   QuickActionsCard,
   WeeklyStatsCard,
+  type ExtraDraft,
 } from '@leanlog/ui';
-import { resolveCoveringGoal, type GoalMode } from '@leanlog/data-access';
+import { resolveCoveringGoal, uuidv7, type GoalMode } from '@leanlog/data-access';
 import { prettyDate, todayIso } from '../lib';
 import {
   aggregateStats,
@@ -35,7 +36,7 @@ const GOAL_MODE_LABEL: Record<GoalMode, string> = {
 
 export default function DayListPage() {
   const nav = useNavigate();
-  const { days, goals, profile, loading, error, addDay } = useStore();
+  const { days, goals, profile, loading, error, addDay, addExtra } = useStore();
 
   // A shortcut to the goal covering today, shown in Quick Actions (#56).
   const activeGoal = useMemo(() => {
@@ -71,21 +72,36 @@ export default function DayListPage() {
   const creatingRef = useRef(false);
 
   // Create a day for the given ISO date (copying templates) and open it. Shared
-  // by the "Log a meal"/"Log an extra" quick actions and the calendar's tap-to-create.
+  // by the "Log a meal" quick action and the calendar's tap-to-create.
   const createAndOpenDay = useCallback(
-    async (iso: string, navState?: { openExtras: boolean }) => {
+    async (iso: string) => {
       if (creatingRef.current) return;
       creatingRef.current = true;
       try {
         // Targets + meal slots are derived from the covering goal inside addDay (#56).
         const day = await addDay(iso);
-        nav(`/track/day/${day.id}`, navState ? { state: navState } : undefined);
+        nav(`/track/day/${day.id}`);
       } finally {
         creatingRef.current = false;
       }
     },
     [addDay, nav],
   );
+
+  // Resolves today's day id without navigating, creating it from templates
+  // first if it doesn't exist yet (#56) — used by actions that operate on
+  // today in place, like the inline "Log an extra" control (#64 R9/R10).
+  const ensureTodayId = useCallback(async () => {
+    if (today) return today.id;
+    if (creatingRef.current) return null;
+    creatingRef.current = true;
+    try {
+      const day = await addDay(todayIso());
+      return day.id;
+    } finally {
+      creatingRef.current = false;
+    }
+  }, [today, addDay]);
 
   async function handleAction() {
     if (!profile) return;
@@ -97,15 +113,20 @@ export default function DayListPage() {
     await createAndOpenDay(todayIso());
   }
 
-  // Log an extra (#64 R9/R10): same day-creation path as "Log a meal", but
-  // navigates with state telling the Day screen to open the Extras form.
-  async function handleAddExtra() {
+  // Log an extra (#64 R9/R10): the Quick Actions card handles its own inline
+  // form and only calls this on submit — no navigation, stays on Track.
+  async function handleAddExtra(draft: ExtraDraft) {
     if (!profile) return;
-    if (today) {
-      nav(`/track/day/${today.id}`, { state: { openExtras: true } });
-      return;
-    }
-    await createAndOpenDay(todayIso(), { openExtras: true });
+    const dayId = await ensureTodayId();
+    if (!dayId) return;
+    await addExtra(dayId, {
+      id: uuidv7(),
+      name: draft.name,
+      calories: draft.calories,
+      fat: draft.fat,
+      carbs: draft.carbs,
+      protein: draft.protein,
+    });
   }
 
   if (loading) return <PageLoadingState label="Loading your days…" />;
@@ -159,7 +180,7 @@ export default function DayListPage() {
           onAction={() => void handleAction()}
           activeGoal={activeGoal}
           onOpenPlans={() => nav('/track/goals/plans')}
-          onAddExtra={() => void handleAddExtra()}
+          onAddExtra={(draft) => void handleAddExtra(draft)}
         />
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop

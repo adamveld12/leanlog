@@ -9,7 +9,36 @@ describe('QuickActionsCard', () => {
     expect(screen.queryByRole('button', { name: 'Log an extra' })).not.toBeInTheDocument();
   });
 
-  it('shows and fires the "Log an extra" quick action beneath "Log a meal" (R9)', async () => {
+  it('shows the "Log an extra" quick action beneath "Log a meal" (R9)', () => {
+    render(
+      <QuickActionsCard
+        hasToday={false}
+        hasDays={false}
+        onAction={() => {}}
+        onAddExtra={() => {}}
+      />,
+    );
+    const buttons = screen.getAllByRole('button');
+    expect(buttons[0]).toHaveTextContent('Log a meal');
+    expect(buttons[1]).toHaveTextContent('Log an extra');
+  });
+
+  it('tapping "Log an extra" swaps it for the inline add-extra control, focused', async () => {
+    render(
+      <QuickActionsCard
+        hasToday={false}
+        hasDays={false}
+        onAction={() => {}}
+        onAddExtra={() => {}}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Log an extra' }));
+
+    expect(screen.queryByRole('button', { name: 'Log an extra' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Name')).toHaveFocus();
+  });
+
+  it('submits the draft and collapses back to the button (R9/R10 — no navigation)', async () => {
     const onAddExtra = vi.fn();
     render(
       <QuickActionsCard
@@ -19,11 +48,35 @@ describe('QuickActionsCard', () => {
         onAddExtra={onAddExtra}
       />,
     );
-    const buttons = screen.getAllByRole('button');
-    expect(buttons[0]).toHaveTextContent('Log a meal');
-    expect(buttons[1]).toHaveTextContent('Log an extra');
-
     await userEvent.click(screen.getByRole('button', { name: 'Log an extra' }));
-    expect(onAddExtra).toHaveBeenCalledTimes(1);
+    await userEvent.type(screen.getByLabelText('Name'), 'Red wine');
+    await userEvent.type(screen.getByLabelText('Calories'), '125');
+    await userEvent.click(screen.getByRole('button', { name: 'Add extra' }));
+
+    expect(onAddExtra).toHaveBeenCalledWith({
+      name: 'Red wine',
+      calories: 125,
+      protein: undefined,
+      carbs: undefined,
+      fat: undefined,
+    });
+    expect(screen.getByRole('button', { name: 'Log an extra' })).toBeInTheDocument();
+  });
+
+  it('Cancel reverts to the "Log an extra" button without submitting', async () => {
+    const onAddExtra = vi.fn();
+    render(
+      <QuickActionsCard
+        hasToday={false}
+        hasDays={false}
+        onAction={() => {}}
+        onAddExtra={onAddExtra}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Log an extra' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(onAddExtra).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Log an extra' })).toBeInTheDocument();
   });
 });

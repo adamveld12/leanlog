@@ -26,10 +26,6 @@ export const Empty: Story = {
   args: { items: [] },
 };
 
-export const FormOpen: Story = {
-  args: { autoOpen: true },
-};
-
 export const ReadOnlyWithItems: Story = {
   args: { readOnly: true },
 };

@@ -30,6 +30,7 @@ export * from './atoms/WarningText';
 export * from './molecules/ActionRow';
 export * from './molecules/DateSelect3';
 export * from './molecules/ListRow';
+export * from './molecules/ExtraQuickAddForm';
 export * from './molecules/LoadingState';
 export * from './molecules/ReorderableList';
 export * from './molecules/MacroSummaryLine';

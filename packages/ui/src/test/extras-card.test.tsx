@@ -110,11 +110,4 @@ describe('ExtrasCard', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(onDelete).toHaveBeenCalledWith('1');
   });
-
-  it('autoOpen starts with the form open and the name field focused (R10)', () => {
-    render(
-      <ExtrasCard items={[]} onAdd={() => {}} onEdit={() => {}} onDelete={() => {}} autoOpen />,
-    );
-    expect(screen.getByLabelText('Name')).toHaveFocus();
-  });
 });

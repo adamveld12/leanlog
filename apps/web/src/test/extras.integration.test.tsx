@@ -180,7 +180,71 @@ describe('extras (#64)', () => {
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
   });
 
-  it('"Log an extra" targets today and opens the form focused when today exists (scenario)', async () => {
+  it('"Log an extra" opens an inline control on the Track page — no navigation, targets today when it exists (scenario)', async () => {
+    apiMock.days.list.mockResolvedValue({ days: [makeDay()] });
+    apiMock.extras.add.mockResolvedValue(
+      extrasMeal([extraIngredient({ name: 'Red wine', calories: 125 })]),
+    );
+
+    render(
+      <StateProvider>
+        <MemoryRouter initialEntries={['/track']}>
+          <App />
+        </MemoryRouter>
+      </StateProvider>,
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Log an extra' }));
+    // Still on the Track page — the inline control replaced the button in place.
+    expect(screen.getByRole('button', { name: 'Log a meal' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Name')).toHaveFocus();
+
+    await userEvent.type(screen.getByLabelText('Name'), 'Red wine');
+    await userEvent.type(screen.getByLabelText('Calories'), '125');
+    await userEvent.click(screen.getByRole('button', { name: 'Add extra' }));
+
+    await waitFor(() =>
+      expect(apiMock.extras.add).toHaveBeenCalledWith(
+        'test-token',
+        'd1',
+        expect.objectContaining({ name: 'Red wine', calories: 125 }),
+      ),
+    );
+    // Collapses back to the button (Cancel-equivalent reset) without navigating.
+    expect(await screen.findByRole('button', { name: 'Log an extra' })).toBeInTheDocument();
+  });
+
+  it('"Log an extra" creates today from templates when missing, then submits to the new day (scenario)', async () => {
+    apiMock.days.list.mockResolvedValue({ days: [] });
+    apiMock.days.create.mockResolvedValue(makeDay());
+    apiMock.extras.add.mockResolvedValue(extrasMeal([extraIngredient({ calories: 150 })]));
+
+    render(
+      <StateProvider>
+        <MemoryRouter initialEntries={['/track']}>
+          <App />
+        </MemoryRouter>
+      </StateProvider>,
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Log an extra' }));
+    expect(screen.getByLabelText('Name')).toHaveFocus();
+
+    await userEvent.type(screen.getByLabelText('Name'), 'Tortilla chips');
+    await userEvent.type(screen.getByLabelText('Calories'), '150');
+    await userEvent.click(screen.getByRole('button', { name: 'Add extra' }));
+
+    await waitFor(() => expect(apiMock.days.create).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(apiMock.extras.add).toHaveBeenCalledWith(
+        'test-token',
+        'd1',
+        expect.objectContaining({ name: 'Tortilla chips', calories: 150 }),
+      ),
+    );
+  });
+
+  it('Cancel on the inline "Log an extra" control reverts to the button without submitting', async () => {
     apiMock.days.list.mockResolvedValue({ days: [makeDay()] });
 
     render(
@@ -192,27 +256,9 @@ describe('extras (#64)', () => {
     );
 
     await userEvent.click(await screen.findByRole('button', { name: 'Log an extra' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
-    await screen.findByText('Extras');
-    expect(screen.getByLabelText('Name')).toHaveFocus();
-  });
-
-  it('"Log an extra" creates today from templates when missing, then opens the form (scenario)', async () => {
-    apiMock.days.list.mockResolvedValue({ days: [] });
-    apiMock.days.create.mockResolvedValue(makeDay());
-
-    render(
-      <StateProvider>
-        <MemoryRouter initialEntries={['/track']}>
-          <App />
-        </MemoryRouter>
-      </StateProvider>,
-    );
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Log an extra' }));
-
-    await waitFor(() => expect(apiMock.days.create).toHaveBeenCalled());
-    await screen.findByText('Extras');
-    expect(screen.getByLabelText('Name')).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Log an extra' })).toBeInTheDocument();
+    expect(apiMock.extras.add).not.toHaveBeenCalled();
   });
 });

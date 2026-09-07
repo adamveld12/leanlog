@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
+import { ExtraQuickAddForm, type ExtraDraft } from '../molecules/ExtraQuickAddForm';
 import { MacroProgressBlock, type MacroProgressBlockProps } from '../molecules/MacroProgressBlock';
 import { SectionCard } from '../molecules/SectionCard';
 import { recipes } from '../styles/recipes';
@@ -16,9 +18,10 @@ export type QuickActionsCardProps = {
   activeGoal?: { summary: string; onOpen: () => void };
   // A shortcut to the plans list, which has no top-level nav entry (#84).
   onOpenPlans?: () => void;
-  // Targets today's day (creating it if missing) and opens the Extras quick-add
-  // form there (#64 R9/R10). Omitted hides the button entirely.
-  onAddExtra?: () => void;
+  // Submits a quick-added extra for today, creating the day first if missing
+  // (#64 R9/R10) — no navigation; the card handles its own inline form.
+  // Omitted hides the "Log an extra" affordance entirely.
+  onAddExtra?: (draft: ExtraDraft) => void;
 };
 
 export function QuickActionsCard({
@@ -32,6 +35,8 @@ export function QuickActionsCard({
   onOpenPlans,
   onAddExtra,
 }: QuickActionsCardProps) {
+  const [addingExtra, setAddingExtra] = useState(false);
+
   return (
     <AnalyticsScope properties={{ organism: 'QuickActionsCard' }}>
       <SectionCard title="Quick Actions">
@@ -40,9 +45,21 @@ export function QuickActionsCard({
         </Button>
 
         {onAddExtra ? (
-          <Button variant="secondary" onClick={onAddExtra} className="w-full">
-            Log an extra
-          </Button>
+          addingExtra ? (
+            <ExtraQuickAddForm
+              submitLabel="Add extra"
+              autoFocus
+              onCancel={() => setAddingExtra(false)}
+              onSubmit={(draft) => {
+                setAddingExtra(false);
+                onAddExtra(draft);
+              }}
+            />
+          ) : (
+            <Button variant="secondary" onClick={() => setAddingExtra(true)} className="w-full">
+              Log an extra
+            </Button>
+          )
         ) : null}
 
         {activeGoal ? (

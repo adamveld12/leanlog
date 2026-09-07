@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   APP_NAV_LINKS,
   BodyTrackingCard,
@@ -38,7 +38,6 @@ import {
 export default function DayDetailPage() {
   const { dayId } = useParams();
   const nav = useNavigate();
-  const location = useLocation();
   const {
     days,
     goals,
@@ -59,10 +58,6 @@ export default function DayDetailPage() {
   const [savingMeasurements, setSavingMeasurements] = useState(false);
   const [applyPlanId, setApplyPlanId] = useState('');
   const [applyState, dispatchApply] = useApplyPlanState();
-  // R10: the Track quick-action navigates here wanting the Extras form open
-  // and focused. Not component state — ExtrasCard itself only reads this prop
-  // at its own mount time, so recomputing it here on every render is safe.
-  const autoOpenExtras = Boolean((location.state as { openExtras?: boolean } | null)?.openExtras);
   const [routeLoad, setRouteLoad] = useState<RouteLoadState>({
     dayId: dayId ?? '',
     status: 'loading',
@@ -271,7 +266,6 @@ export default function DayDetailPage() {
           fat: i.fat,
         }))}
         readOnly={isPast}
-        autoOpen={!isPast && autoOpenExtras}
         onAdd={(draft) =>
           void addExtra(day.id, {
             id: uuidv7(),
