@@ -10,7 +10,8 @@ import type {
 
 // A meal's calories/macros count toward day totals only when it is a logged
 // template meal, or an ad-hoc meal (which has no logged state and counts
-// directly). See R23/R25/R35.
+// directly). See R23/R25/R35. The 'extra' bucket (#64 R3) is neither, so it
+// falls into the ad-hoc branch here and always contributes.
 export function contributesNutrition(meal: Meal): boolean {
   return meal.origin !== 'template' || meal.logged;
 }
@@ -20,6 +21,8 @@ export function contributesNutrition(meal: Meal): boolean {
 // copied meal count and track logged copies (R37/R38); zero-template ad-hoc days
 // treat every ad-hoc meal as both expected and tracked (R39); pre-feature days
 // fall back to their stored mealCountTarget so history is not rewritten (R15).
+// The 'extra' bucket is excluded from every branch's counts (#64 R4) — it
+// contributes to totals but is not a meal for coverage purposes.
 export function dayMealStructure(day: DailyMealLog): {
   kind: 'template' | 'adhoc' | 'legacy';
   mealsExpected: number;
@@ -33,10 +36,11 @@ export function dayMealStructure(day: DailyMealLog): {
       mealsTracked: copied.filter((m) => m.logged).length,
     };
   }
+  const nonExtra = day.meals.filter((m) => m.origin !== 'extra');
   if (day.mealCountTarget > 0) {
-    return { kind: 'legacy', mealsExpected: day.mealCountTarget, mealsTracked: day.meals.length };
+    return { kind: 'legacy', mealsExpected: day.mealCountTarget, mealsTracked: nonExtra.length };
   }
-  return { kind: 'adhoc', mealsExpected: day.meals.length, mealsTracked: day.meals.length };
+  return { kind: 'adhoc', mealsExpected: nonExtra.length, mealsTracked: nonExtra.length };
 }
 
 export function caloriesFromMode(
@@ -264,12 +268,15 @@ export type DayAdherence = {
 // A day succeeds only when its expected meals all have ingredients and calories
 // and every macro land inside tolerance (R64–R70). A day with nothing tracked
 // fails outright (R67); meal-count success counts meals with ≥1 ingredient and
-// ignores slot names (R68).
+// ignores slot names (R68). The 'extra' bucket never counts as a tracked meal
+// here even when it holds ingredients (#64 R4).
 export function dayAdherence(day: DailyMealLog): DayAdherence {
   const { mealsExpected } = dayMealStructure(day);
   // R68: meal-count success counts meals that actually carry ingredients,
   // regardless of slot name or logged flag.
-  const mealsTracked = day.meals.filter((m) => m.ingredients.length > 0).length;
+  const mealsTracked = day.meals.filter(
+    (m) => m.origin !== 'extra' && m.ingredients.length > 0,
+  ).length;
   const consumed = dayConsumed(day);
   const mealCount = mealsExpected > 0 && mealsTracked >= mealsExpected;
   const calories = withinTolerance(consumed.calories, day.targetCalories, CALORIE_TOLERANCE);

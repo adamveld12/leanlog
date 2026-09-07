@@ -6,8 +6,9 @@ import {
   MonthCalendarCard,
   QuickActionsCard,
   WeeklyStatsCard,
+  type ExtraDraft,
 } from '@leanlog/ui';
-import { resolveCoveringGoal, type GoalMode } from '@leanlog/data-access';
+import { resolveCoveringGoal, uuidv7, type GoalMode } from '@leanlog/data-access';
 import { prettyDate, todayIso } from '../lib';
 import {
   aggregateStats,
@@ -35,7 +36,7 @@ const GOAL_MODE_LABEL: Record<GoalMode, string> = {
 
 export default function DayListPage() {
   const nav = useNavigate();
-  const { days, goals, profile, loading, error, addDay } = useStore();
+  const { days, goals, profile, loading, error, addDay, addExtra } = useStore();
 
   // A shortcut to the goal covering today, shown in Quick Actions (#56).
   const activeGoal = useMemo(() => {
@@ -87,6 +88,21 @@ export default function DayListPage() {
     [addDay, nav],
   );
 
+  // Resolves today's day id without navigating, creating it from templates
+  // first if it doesn't exist yet (#56) — used by actions that operate on
+  // today in place, like the inline "Log an extra" control (#64 R9/R10).
+  const ensureTodayId = useCallback(async () => {
+    if (today) return today.id;
+    if (creatingRef.current) return null;
+    creatingRef.current = true;
+    try {
+      const day = await addDay(todayIso());
+      return day.id;
+    } finally {
+      creatingRef.current = false;
+    }
+  }, [today, addDay]);
+
   async function handleAction() {
     if (!profile) return;
     // Log a meal: open today's day (creating it from templates if it's missing).
@@ -95,6 +111,22 @@ export default function DayListPage() {
       return;
     }
     await createAndOpenDay(todayIso());
+  }
+
+  // Log an extra (#64 R9/R10): the Quick Actions card handles its own inline
+  // form and only calls this on submit — no navigation, stays on Track.
+  async function handleAddExtra(draft: ExtraDraft) {
+    if (!profile) return;
+    const dayId = await ensureTodayId();
+    if (!dayId) return;
+    await addExtra(dayId, {
+      id: uuidv7(),
+      name: draft.name,
+      calories: draft.calories,
+      fat: draft.fat,
+      carbs: draft.carbs,
+      protein: draft.protein,
+    });
   }
 
   if (loading) return <PageLoadingState label="Loading your days…" />;
@@ -148,6 +180,7 @@ export default function DayListPage() {
           onAction={() => void handleAction()}
           activeGoal={activeGoal}
           onOpenPlans={() => nav('/track/goals/plans')}
+          onAddExtra={(draft) => void handleAddExtra(draft)}
         />
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop

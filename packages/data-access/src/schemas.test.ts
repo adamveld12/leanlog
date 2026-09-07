@@ -495,6 +495,19 @@ describe('MealSchema origin/logged', () => {
     expect(result.success).toBe(true);
     expect(result.data!.origin).toBe('template');
   });
+
+  it('accepts extra origin (#64)', () => {
+    const result = MealSchema.safeParse({
+      id: 'm1',
+      dailyMealLogId: 'd1',
+      name: 'Extras',
+      origin: 'extra',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    });
+    expect(result.success).toBe(true);
+    expect(result.data!.origin).toBe('extra');
+  });
 });
 
 describe('CreateGoalSchema — calorie basis (#63)', () => {

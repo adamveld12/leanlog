@@ -1,8 +1,12 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { meals, dailyMealLogs, ingredients } from '../schema';
-import { TemplateMealNotDeletableError, EmptyMealNotLoggableError } from '@leanlog/data-access';
+import {
+  TemplateMealNotDeletableError,
+  EmptyMealNotLoggableError,
+  estimateCalories,
+} from '@leanlog/data-access';
 import type { MealRepository, Meal } from '@leanlog/data-access';
 
 export function createMealRepository(db: D1Database): MealRepository {
@@ -90,6 +94,68 @@ export function createMealRepository(db: D1Database): MealRepository {
         throw new TemplateMealNotDeletableError(mealId);
       }
       await d.delete(meals).where(eq(meals.id, mealId));
+    },
+
+    async addExtra(userId, dailyMealLogId, data) {
+      const dayRows = await d
+        .select({ userId: dailyMealLogs.userId })
+        .from(dailyMealLogs)
+        .where(eq(dailyMealLogs.id, dailyMealLogId));
+      if (!dayRows[0] || dayRows[0].userId !== userId) return null;
+
+      const ts = now();
+      const existing = (
+        await d
+          .select()
+          .from(meals)
+          .where(and(eq(meals.dailyMealLogId, dailyMealLogId), eq(meals.origin, 'extra')))
+      )[0];
+      const mealId = existing?.id ?? uuidv7();
+
+      // Calories are always explicit for an Extra (R12) — never re-estimated.
+      // estimatedCalories is still recorded for consistency with every other
+      // ingredient row, purely as informational metadata.
+      const estimated = estimateCalories({
+        fat: data.fat ?? 0,
+        carbs: data.carbs ?? 0,
+        protein: data.protein ?? 0,
+      });
+      const ingredientInsert = d.insert(ingredients).values({
+        id: data.id,
+        mealId,
+        name: data.name,
+        weight: 0,
+        calories: data.calories,
+        estimatedCalories: estimated,
+        calorieSource: 'explicit',
+        fat: data.fat ?? 0,
+        saturatedFat: 0,
+        carbs: data.carbs ?? 0,
+        fiber: 0,
+        protein: data.protein ?? 0,
+        createdAt: ts,
+        updatedAt: ts,
+      });
+
+      if (existing) {
+        await ingredientInsert;
+      } else {
+        // The bucket meal and its first ingredient are written atomically —
+        // a sequential pair of awaits could leave an empty orphaned "Extras"
+        // meal behind if the ingredient insert failed.
+        const mealInsert = d.insert(meals).values({
+          id: mealId,
+          dailyMealLogId,
+          name: 'Extras',
+          origin: 'extra',
+          logged: false,
+          createdAt: ts,
+          updatedAt: ts,
+        });
+        await d.batch([mealInsert, ingredientInsert]);
+      }
+
+      return load(mealId);
     },
   };
 }

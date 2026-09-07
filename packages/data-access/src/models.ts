@@ -7,6 +7,7 @@ import type {
   CreateDailyMealLogSchema,
   UpdateProfileSchema,
   UpsertIngredientSchema,
+  AddExtraSchema,
   DayTargetsSchema,
   SetDayProgressPhotoSchema,
   SetProgressBaselineSchema,
@@ -45,6 +46,7 @@ export type UserProfile = z.infer<typeof UserProfileSchema>;
 export type CreateDailyMealLog = z.infer<typeof CreateDailyMealLogSchema>;
 export type UpdateProfile = z.infer<typeof UpdateProfileSchema>;
 export type UpsertIngredient = z.infer<typeof UpsertIngredientSchema>;
+export type AddExtra = z.infer<typeof AddExtraSchema>;
 export type DayTargets = z.infer<typeof DayTargetsSchema>;
 export type SetDayProgressPhoto = z.infer<typeof SetDayProgressPhotoSchema>;
 export type SetProgressBaseline = z.infer<typeof SetProgressBaselineSchema>;

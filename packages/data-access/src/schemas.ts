@@ -243,7 +243,9 @@ export const MealSchema = z.object({
   // origin distinguishes meals copied from a template (fixed structure, logged
   // gating) from freeform ad-hoc meals. logged controls whether a template meal
   // contributes to day totals and tracking coverage. See issue #41.
-  origin: z.enum(['template', 'adhoc']).default('adhoc'),
+  // 'extra' is the day's singleton loose-item bucket for quick-add non-meal
+  // items (#64) — contributes to totals but excluded from meal coverage.
+  origin: z.enum(['template', 'adhoc', 'extra']).default('adhoc'),
   logged: z.boolean().default(false),
   ingredients: z.array(IngredientSchema).default([]),
   createdAt: z.string().datetime(),
@@ -412,6 +414,20 @@ export const UpsertIngredientSchema = IngredientSchema.omit({
 })
   .extend({
     calories: z.number().min(0).max(9999).nullable().optional(),
+  })
+  .strict();
+
+// A quick-add Extra (#64): unlike UpsertIngredientSchema, calories are
+// required (R2/R12 — never re-estimated) and weight/saturatedFat/fiber don't
+// apply, since Extras trade precision for speed. Macros default to zero/blank.
+export const AddExtraSchema = z
+  .object({
+    id: z.string(),
+    name: z.string().min(1),
+    calories: z.number().min(0).max(9999),
+    fat: z.number().min(0).max(999).optional(),
+    carbs: z.number().min(0).max(999).optional(),
+    protein: z.number().min(0).max(999).optional(),
   })
   .strict();
 export const DayTargetsSchema = z.object({
