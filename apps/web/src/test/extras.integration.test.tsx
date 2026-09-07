@@ -121,6 +121,8 @@ describe('extras (#64)', () => {
     expect(await screen.findByText('Tortilla chips')).toBeInTheDocument();
     // Meals X/Y is untouched by an extras-only day (R4).
     expect(screen.getByText('Meals 0 / 0')).toBeInTheDocument();
+    // The Daily Totals card reflects the 150 calories (R3).
+    expect(screen.getByText(/150 \/ 2000/)).toBeInTheDocument();
   });
 
   it('edits an existing extra via the standard ingredient upsert route (scenario: edit an extra)', async () => {
