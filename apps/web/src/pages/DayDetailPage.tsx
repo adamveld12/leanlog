@@ -301,6 +301,10 @@ export default function DayDetailPage() {
           void removeIngredient(day.id, extrasMeal.id, id);
         }}
         // Past days are read-only, so no lookup is offered there (#93 R12).
+        // A fresh element each render is fine here: the panel keeps its own
+        // reducer state across re-renders, and this render path sits after
+        // early returns, so useMemo would break hook ordering.
+        // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
         databaseSearch={
           isPast ? undefined : (
             <ExtraDatabaseSearch

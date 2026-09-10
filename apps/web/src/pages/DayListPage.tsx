@@ -183,6 +183,9 @@ export default function DayListPage() {
           activeGoal={activeGoal}
           onOpenPlans={() => nav('/track/goals/plans')}
           onAddExtra={(draft) => void handleAddExtra(draft)}
+          // Same as DayDetailPage: the panel owns its reducer state, so a new
+          // element per render re-renders it rather than resetting it.
+          // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
           extraDatabaseSearch={
             <ExtraDatabaseSearch
               surface="track"

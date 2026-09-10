@@ -42,8 +42,11 @@ export function ExtraDatabaseSearch({ surface, onAdd }: ExtraDatabaseSearchProps
       .catch(() => {});
   }, [searchNutritionDatabase]);
 
-  // Drop a pending search when the panel unmounts, so a late response can't
-  // dispatch into a torn-down reducer.
+  // Drop a pending search when the panel unmounts. Reading searchTimerRef.current
+  // in the cleanup is the point, not a bug: we want to clear whichever timer is
+  // pending at unmount, which is by definition the latest one. Capturing it at
+  // effect-setup time would always clear null.
+  // react-doctor-disable-next-line react-doctor/exhaustive-deps
   useEffect(() => {
     return () => {
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
