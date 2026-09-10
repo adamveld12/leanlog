@@ -54,6 +54,9 @@ export type Store = {
   // Finds or creates the day's Extras bucket meal and adds a new item to it
   // (#64). Returns the full bucket meal so callers can learn its id.
   addExtra(dayId: string, data: AddExtra): Promise<Meal>;
+  // Adds a nutrition-database item to the day's Extras bucket (#93). Like
+  // addExtra, returns the full bucket meal so callers learn its id.
+  addExtraFromDatabase(dayId: string, input: AddIngredientFromDatabase): Promise<Meal>;
   // Applies a plan to a day (R18-R27); returns how many meals were filled vs.
   // skipped so the UI can report it (R26).
   applyPlanToDay(dayId: string, planId: string): Promise<{ filled: number; skipped: number }>;

@@ -224,6 +224,14 @@ export function useCreateStore(): Store {
       return meal;
     },
 
+    async addExtraFromDatabase(dayId, input) {
+      // mealUpserted, not ingredientUpserted: the Extras bucket may not exist in
+      // local state yet, so the server's full meal creates or replaces it.
+      const meal = await withToken((t) => api.extras.addFromDatabase(t, dayId, input));
+      dispatch({ type: 'mealUpserted', dayId, meal });
+      return meal;
+    },
+
     async addIngredientFromDatabase(dayId, mealId, input) {
       const ingredient = await withToken((t) =>
         api.ingredients.addFromDatabase(t, dayId, mealId, input),

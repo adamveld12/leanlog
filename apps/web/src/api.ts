@@ -317,6 +317,15 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    // Adds a nutrition-database item to the day's Extras bucket, scaled
+    // server-side (#93). Returns the whole bucket meal for the same reason
+    // add() does — the client may not know the bucket's id yet.
+    addFromDatabase: (token: string, dayId: string, data: AddIngredientFromDatabase) =>
+      apiFetch<Meal>(`/api/days/${dayId}/extras/from-database`, {
+        token,
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
   plans: {
     list: (token: string) =>
