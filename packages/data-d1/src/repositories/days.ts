@@ -2,6 +2,7 @@ import { and, desc, eq, isNotNull } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { dailyMealLogs, meals, ingredients, goals } from '../schema';
+import { rowToIngredient } from './ingredientRow';
 import { copyPlanIngredient, createPlanRepository } from './plans';
 import {
   DEFAULT_MEAL_NAMES,
@@ -83,7 +84,7 @@ export function createDayRepository(db: D1Database): DayRepository {
           .map((meal) => ({
             ...meal,
             dailyMealLogId: meal.dailyMealLogId,
-            ingredients: ingredientRows.filter((i) => i.mealId === meal.id),
+            ingredients: ingredientRows.filter((i) => i.mealId === meal.id).map(rowToIngredient),
           })),
       }));
     },
@@ -109,7 +110,7 @@ export function createDayRepository(db: D1Database): DayRepository {
         meals: mealRows.map((meal) => ({
           ...meal,
           dailyMealLogId: meal.dailyMealLogId,
-          ingredients: ingredientRows.filter((i) => i.mealId === meal.id),
+          ingredients: ingredientRows.filter((i) => i.mealId === meal.id).map(rowToIngredient),
         })),
       };
     },
