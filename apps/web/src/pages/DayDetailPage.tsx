@@ -15,6 +15,7 @@ import {
   Select,
 } from '@leanlog/ui';
 import { deriveDayPlan, dayMealStructure, uuidv7, type PlanSummary } from '@leanlog/data-access';
+import { ExtraDatabaseSearch } from '../components/extras/ExtraDatabaseSearch';
 import { DayProgressPhotos } from '../components/progress-photos/DayProgressPhotos';
 import { isPastIso, prettyDate, todayIso } from '../lib';
 import {
@@ -51,6 +52,7 @@ export default function DayDetailPage() {
     setDayProgressPhoto,
     applyPlanToDay,
     addExtra,
+    addExtraFromDatabase,
     upsertIngredient,
     removeIngredient,
   } = useStore();
@@ -278,16 +280,19 @@ export default function DayDetailPage() {
         }
         onEdit={(id, draft) => {
           if (!extrasMeal) return;
+          const existing = extrasMeal.ingredients.find((i) => i.id === id);
+          if (!existing) return;
+          // upsert overwrites every column, so patch the stored row rather than
+          // rebuilding it — otherwise editing a database-sourced extra would
+          // wipe its weight, fiber, micronutrients and source reference (#93
+          // R14). The quick-add form only owns these five fields.
           void upsertIngredient(day.id, extrasMeal.id, {
-            id,
+            ...existing,
             mealId: extrasMeal.id,
             name: draft.name,
-            weight: 0,
             calories: draft.calories,
             fat: draft.fat ?? 0,
-            saturatedFat: 0,
             carbs: draft.carbs ?? 0,
-            fiber: 0,
             protein: draft.protein ?? 0,
           });
         }}
@@ -295,6 +300,17 @@ export default function DayDetailPage() {
           if (!extrasMeal) return;
           void removeIngredient(day.id, extrasMeal.id, id);
         }}
+        // Past days are read-only, so no lookup is offered there (#93 R12).
+        databaseSearch={
+          isPast ? undefined : (
+            <ExtraDatabaseSearch
+              surface="day"
+              onAdd={async (databaseIngredientId, input) => {
+                await addExtraFromDatabase(day.id, { databaseIngredientId, ...input });
+              }}
+            />
+          )
+        }
       />
     </DayDetailTemplate>
   );

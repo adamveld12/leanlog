@@ -20,6 +20,7 @@ import {
   todayLog,
   trackedDatesMap,
 } from '../selectors';
+import { ExtraDatabaseSearch } from '../components/extras/ExtraDatabaseSearch';
 import { useStore } from '../state';
 import {
   HeaderControls,
@@ -36,7 +37,8 @@ const GOAL_MODE_LABEL: Record<GoalMode, string> = {
 
 export default function DayListPage() {
   const nav = useNavigate();
-  const { days, goals, profile, loading, error, addDay, addExtra } = useStore();
+  const { days, goals, profile, loading, error, addDay, addExtra, addExtraFromDatabase } =
+    useStore();
 
   // A shortcut to the goal covering today, shown in Quick Actions (#56).
   const activeGoal = useMemo(() => {
@@ -181,6 +183,19 @@ export default function DayListPage() {
           activeGoal={activeGoal}
           onOpenPlans={() => nav('/track/goals/plans')}
           onAddExtra={(draft) => void handleAddExtra(draft)}
+          extraDatabaseSearch={
+            <ExtraDatabaseSearch
+              surface="track"
+              onAdd={async (databaseIngredientId, input) => {
+                // Same as handleAddExtra: resolve (creating) today first, so a
+                // lookup works before today's day exists (#64 R10, #93 R10).
+                if (!profile) return;
+                const dayId = await ensureTodayId();
+                if (!dayId) return;
+                await addExtraFromDatabase(dayId, { databaseIngredientId, ...input });
+              }}
+            />
+          }
         />
       }
       // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
