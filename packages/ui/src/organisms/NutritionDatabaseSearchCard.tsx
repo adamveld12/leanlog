@@ -76,6 +76,15 @@ export type NutritionDatabaseSearchCardProps = {
   truncated?: boolean;
   /** Total ingredients in the shared database; shown in the search label when known. */
   totalCount?: number;
+  /** Renders the search body without the SectionCard wrapper, so it can be
+   *  embedded inside another card (the Extras add flow, #93) without nesting. */
+  embedded?: boolean;
+  /** Add mode used for rows the user hasn't touched. Extras default to
+   *  'servings' — a packaged snack is the common case there (#93 R4). */
+  defaultMode?: AddFromDatabaseMode;
+  /** Amount used for rows the user hasn't touched, so a one-serving add is a
+   *  single tap. Defaults to 0, which leaves the Add button disabled (#93 R4). */
+  defaultAmount?: number;
 };
 
 const MODE_OPTIONS: { value: AddFromDatabaseMode; label: string }[] = [
@@ -281,77 +290,91 @@ export function NutritionDatabaseSearchCard({
   onLoadMore,
   truncated,
   totalCount,
+  embedded = false,
+  defaultMode = 'weight',
+  defaultAmount = 0,
 }: NutritionDatabaseSearchCardProps) {
   const searchLabel =
     totalCount != null
       ? `${totalCount} ingredient${totalCount === 1 ? '' : 's'} available for searching`
       : 'Search ingredients';
+
+  // The card's contents, independent of its chrome. `embedded` renders these
+  // bare so the Extras add flow can host them inside its own card (#93).
+  const body = (
+    <>
+      <Field label={searchLabel}>
+        <Input
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="e.g. Chicken breast"
+          disabled={scanning}
+        />
+      </Field>
+
+      {loading ? (
+        <LoadingState label="Searching…" size="sm" />
+      ) : searched && results.length === 0 ? (
+        <HelperText as="p">No ingredients found.</HelperText>
+      ) : (
+        <div className={recipes.stack.sm}>
+          {results.map((result, idx) => (
+            <SearchResultRow
+              // Use idx in key to support duplicate entries
+              key={`${result.id}-${idx}`}
+              result={result}
+              amount={amounts?.[result.id] ?? defaultAmount}
+              mode={modes?.[result.id] ?? defaultMode}
+              isAdding={addingId === result.id}
+              isDeleting={deletingId === result.id}
+              scanning={scanning}
+              manageable={(onEdit || onDelete) && (canManage ? canManage(result.id) : true)}
+              onAmountChange={onAmountChange}
+              onModeChange={onModeChange}
+              onAdd={onAdd}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
+
+      {truncated ? (
+        <HelperText as="p">
+          Showing first 25 results. Refine your search to narrow results.
+        </HelperText>
+      ) : null}
+
+      {onLoadMore ? (
+        <Button variant="secondary" fullWidth disabled={loading} onClick={onLoadMore}>
+          {loading ? 'Loading…' : 'Load more'}
+        </Button>
+      ) : null}
+
+      {onCreateNew || onScanLabel ? (
+        <div className={recipes.stack.sm}>
+          {onScanLabel ? (
+            <Button variant="primary" fullWidth disabled={scanning} onClick={onScanLabel}>
+              {scanning ? 'Scanning…' : 'Scan to add'}
+            </Button>
+          ) : null}
+          {onCreateNew ? (
+            <Button variant="primary" fullWidth disabled={scanning} onClick={onCreateNew}>
+              Add an ingredient
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
+
   return (
     <AnalyticsScope properties={{ organism: 'NutritionDatabaseSearchCard' }}>
-      <SectionCard title="Nutrition Facts Database">
-        <Field label={searchLabel}>
-          <Input
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="e.g. Chicken breast"
-            disabled={scanning}
-          />
-        </Field>
-
-        {loading ? (
-          <LoadingState label="Searching…" size="sm" />
-        ) : searched && results.length === 0 ? (
-          <HelperText as="p">No ingredients found.</HelperText>
-        ) : (
-          <div className={recipes.stack.sm}>
-            {results.map((result, idx) => (
-              <SearchResultRow
-                // Use idx in key to support duplicate entries
-                key={`${result.id}-${idx}`}
-                result={result}
-                amount={amounts?.[result.id] ?? 0}
-                mode={modes?.[result.id] ?? 'weight'}
-                isAdding={addingId === result.id}
-                isDeleting={deletingId === result.id}
-                scanning={scanning}
-                manageable={(onEdit || onDelete) && (canManage ? canManage(result.id) : true)}
-                onAmountChange={onAmountChange}
-                onModeChange={onModeChange}
-                onAdd={onAdd}
-                onEdit={onEdit}
-                onDelete={onDelete}
-              />
-            ))}
-          </div>
-        )}
-
-        {truncated ? (
-          <HelperText as="p">
-            Showing first 25 results. Refine your search to narrow results.
-          </HelperText>
-        ) : null}
-
-        {onLoadMore ? (
-          <Button variant="secondary" fullWidth disabled={loading} onClick={onLoadMore}>
-            {loading ? 'Loading…' : 'Load more'}
-          </Button>
-        ) : null}
-
-        {onCreateNew || onScanLabel ? (
-          <div className={recipes.stack.sm}>
-            {onScanLabel ? (
-              <Button variant="primary" fullWidth disabled={scanning} onClick={onScanLabel}>
-                {scanning ? 'Scanning…' : 'Scan to add'}
-              </Button>
-            ) : null}
-            {onCreateNew ? (
-              <Button variant="primary" fullWidth disabled={scanning} onClick={onCreateNew}>
-                Add an ingredient
-              </Button>
-            ) : null}
-          </div>
-        ) : null}
-      </SectionCard>
+      {embedded ? (
+        <div className={recipes.stack.sm}>{body}</div>
+      ) : (
+        <SectionCard title="Nutrition Facts Database">{body}</SectionCard>
+      )}
     </AnalyticsScope>
   );
 }

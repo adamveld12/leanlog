@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   NutritionDatabaseSearchCard,
+  type AddFromDatabaseMode,
   type NutritionDatabaseSearchResult,
 } from '../organisms/NutritionDatabaseSearchCard';
 
@@ -40,17 +41,26 @@ function Harness({
   onAdd = () => {},
   onCreateNew,
   totalCount,
+  embedded,
+  defaultMode,
+  defaultAmount,
 }: {
   results: NutritionDatabaseSearchResult[];
   onAdd?: (id: string) => void;
   onCreateNew?: () => void;
   totalCount?: number;
+  embedded?: boolean;
+  defaultMode?: AddFromDatabaseMode;
+  defaultAmount?: number;
 }) {
   const [query, setQuery] = useState('');
   const [amounts, setAmounts] = useState<Record<string, number>>({});
 
   return (
     <NutritionDatabaseSearchCard
+      embedded={embedded}
+      defaultMode={defaultMode}
+      defaultAmount={defaultAmount}
       query={query}
       onQueryChange={setQuery}
       results={results}
@@ -354,5 +364,34 @@ describe('NutritionDatabaseSearchCard', () => {
   it('does not offer a View photos toggle for an entry with no photos', () => {
     render(<Harness results={[result1]} />);
     expect(screen.queryByRole('button', { name: /view photos/i })).not.toBeInTheDocument();
+  });
+
+  // #93 — Extras embed this card's body and want a one-tap serving add.
+  describe('embedded mode and per-surface defaults (#93)', () => {
+    it('renders the search body without its own card heading when embedded', () => {
+      const { rerender } = render(<Harness results={[result1]} />);
+      expect(screen.getByText('Nutrition Facts Database')).toBeInTheDocument();
+
+      rerender(<Harness results={[result1]} embedded />);
+      expect(screen.queryByText('Nutrition Facts Database')).not.toBeInTheDocument();
+      // The body itself is untouched.
+      expect(screen.getByText(result1.name)).toBeInTheDocument();
+    });
+
+    it('defaults untouched rows to the supplied mode and amount (R4)', () => {
+      render(<Harness results={[result1]} defaultMode="servings" defaultAmount={1} />);
+
+      expect(screen.getByLabelText('Add by')).toHaveValue('servings');
+      expect(screen.getByLabelText('# of servings')).toHaveValue('1');
+      // Prefilled, so Add is immediately usable — that is the point of the default.
+      expect(screen.getByRole('button', { name: 'Add' })).toBeEnabled();
+    });
+
+    it('still defaults to weight with a blank amount for the meal flow', () => {
+      render(<Harness results={[result1]} />);
+
+      expect(screen.getByLabelText('Add by')).toHaveValue('weight');
+      expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
+    });
   });
 });
