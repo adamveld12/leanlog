@@ -110,4 +110,84 @@ describe('ExtrasCard', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(onDelete).toHaveBeenCalledWith('1');
   });
+
+  // #93 — database lookup lives behind a tab in the add flow.
+  describe('nutrition database lookup (#93)', () => {
+    const search = <div data-testid="db-search">database search</div>;
+
+    it('offers no tabs when the app supplies no search slot', async () => {
+      render(<ExtrasCard items={sample} onAdd={() => {}} onEdit={() => {}} onDelete={() => {}} />);
+      await userEvent.click(screen.getByRole('button', { name: '+ Add extra' }));
+
+      expect(screen.queryByRole('tab', { name: 'Search database' })).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Calories')).toBeInTheDocument();
+    });
+
+    it('defaults to the manual tab so quick-add costs no extra taps (R1)', async () => {
+      render(
+        <ExtrasCard
+          items={sample}
+          onAdd={() => {}}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          databaseSearch={search}
+        />,
+      );
+      await userEvent.click(screen.getByRole('button', { name: '+ Add extra' }));
+
+      expect(screen.getByRole('tab', { name: 'Manual' })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByLabelText('Calories')).toBeInTheDocument();
+      expect(screen.queryByTestId('db-search')).not.toBeInTheDocument();
+    });
+
+    it('renders the search slot once the database tab is selected', async () => {
+      render(
+        <ExtrasCard
+          items={sample}
+          onAdd={() => {}}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          databaseSearch={search}
+        />,
+      );
+      await userEvent.click(screen.getByRole('button', { name: '+ Add extra' }));
+      await userEvent.click(screen.getByRole('tab', { name: 'Search database' }));
+
+      expect(screen.getByTestId('db-search')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Calories')).not.toBeInTheDocument();
+    });
+
+    it('keeps editing an existing extra on the manual form (nothing to look up)', async () => {
+      render(
+        <ExtrasCard
+          items={sample}
+          onAdd={() => {}}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          databaseSearch={search}
+        />,
+      );
+      await userEvent.click(screen.getByText('Tortilla chips'));
+
+      expect(screen.queryByRole('tab', { name: 'Search database' })).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Calories')).toHaveValue('150');
+    });
+
+    it('offers no add flow at all on a read-only past day (R12)', () => {
+      render(
+        <ExtrasCard
+          items={sample}
+          onAdd={() => {}}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          readOnly
+          databaseSearch={search}
+        />,
+      );
+
+      expect(screen.queryByRole('button', { name: '+ Add extra' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: 'Search database' })).not.toBeInTheDocument();
+      expect(screen.queryByTestId('db-search')).not.toBeInTheDocument();
+    });
+  });
 });

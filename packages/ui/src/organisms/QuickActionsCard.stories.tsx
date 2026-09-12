@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { QuickActionsCard } from './QuickActionsCard';
+import { SectionCard } from '../molecules/SectionCard';
 
 const meta: Meta<typeof QuickActionsCard> = {
   title: 'Design System/Organisms/QuickActionsCard',
@@ -71,5 +72,16 @@ export const ZeroDays: Story = {
     hasToday: false,
     hasDays: false,
     onAction: () => {},
+  },
+};
+
+// #93: the app supplies the nutrition database search for the inline extra flow.
+export const WithExtraDatabaseSearch: Story = {
+  args: {
+    hasToday: true,
+    hasDays: true,
+    onAction: () => {},
+    onAddExtra: () => {},
+    extraDatabaseSearch: <SectionCard title="Nutrition Facts Database">Results here.</SectionCard>,
   },
 };

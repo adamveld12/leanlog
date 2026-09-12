@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button } from '../atoms/Button';
 import { HelperText } from '../atoms/HelperText';
 import { AnalyticsScope } from '../analytics/AnalyticsScope';
 import { ExtraQuickAddForm, type ExtraDraft } from '../molecules/ExtraQuickAddForm';
 import { MacroProgressBlock, type MacroProgressBlockProps } from '../molecules/MacroProgressBlock';
 import { SectionCard } from '../molecules/SectionCard';
+import { Tabs } from '../molecules/Tabs';
 import { recipes } from '../styles/recipes';
+
+type QuickExtraTab = 'database' | 'manual';
+
+const QUICK_DATABASE_PANEL = 'quick-extra-database-panel';
+const QUICK_MANUAL_PANEL = 'quick-extra-manual-panel';
 
 export type QuickActionsCardProps = {
   hasToday: boolean;
@@ -22,6 +28,9 @@ export type QuickActionsCardProps = {
   // (#64 R9/R10) — no navigation; the card handles its own inline form.
   // Omitted hides the "Log an extra" affordance entirely.
   onAddExtra?: (draft: ExtraDraft) => void;
+  /** Nutrition database search for the inline extra flow (#93), supplied by the
+   *  app for the same tier reason as ExtrasCard's. Ignored without onAddExtra. */
+  extraDatabaseSearch?: ReactNode;
 };
 
 export function QuickActionsCard({
@@ -34,8 +43,16 @@ export function QuickActionsCard({
   activeGoal,
   onOpenPlans,
   onAddExtra,
+  extraDatabaseSearch,
 }: QuickActionsCardProps) {
   const [addingExtra, setAddingExtra] = useState(false);
+  // Manual first, matching ExtrasCard (#93 R1).
+  const [extraTab, setExtraTab] = useState<QuickExtraTab>('manual');
+
+  const closeExtraForm = () => {
+    setAddingExtra(false);
+    setExtraTab('manual');
+  };
 
   return (
     <AnalyticsScope properties={{ organism: 'QuickActionsCard' }}>
@@ -46,15 +63,44 @@ export function QuickActionsCard({
 
         {onAddExtra ? (
           addingExtra ? (
-            <ExtraQuickAddForm
-              submitLabel="Add extra"
-              autoFocus
-              onCancel={() => setAddingExtra(false)}
-              onSubmit={(draft) => {
-                setAddingExtra(false);
-                onAddExtra(draft);
-              }}
-            />
+            <div className={recipes.stack.sm}>
+              {extraDatabaseSearch ? (
+                <Tabs
+                  tabs={[
+                    { key: 'database', label: 'Search database', panelId: QUICK_DATABASE_PANEL },
+                    { key: 'manual', label: 'Manual', panelId: QUICK_MANUAL_PANEL },
+                  ]}
+                  active={extraTab}
+                  onChange={(key) => setExtraTab(key as QuickExtraTab)}
+                  label="Extra entry method"
+                />
+              ) : null}
+              <div
+                role="tabpanel"
+                id={extraTab === 'database' ? QUICK_DATABASE_PANEL : QUICK_MANUAL_PANEL}
+                aria-labelledby={`${extraTab === 'database' ? QUICK_DATABASE_PANEL : QUICK_MANUAL_PANEL}-tab`}
+              >
+                {extraDatabaseSearch && extraTab === 'database' ? (
+                  extraDatabaseSearch
+                ) : (
+                  <ExtraQuickAddForm
+                    submitLabel="Add extra"
+                    autoFocus
+                    onCancel={closeExtraForm}
+                    onSubmit={(draft) => {
+                      closeExtraForm();
+                      onAddExtra(draft);
+                    }}
+                  />
+                )}
+              </div>
+              {/* The database panel stays open across adds (#93 R8). */}
+              {extraDatabaseSearch && extraTab === 'database' ? (
+                <Button variant="secondary" fullWidth onClick={closeExtraForm}>
+                  Cancel
+                </Button>
+              ) : null}
+            </div>
           ) : (
             <Button variant="secondary" onClick={() => setAddingExtra(true)} fullWidth>
               Log an extra

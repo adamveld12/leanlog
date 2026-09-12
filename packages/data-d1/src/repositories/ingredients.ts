@@ -1,49 +1,9 @@
 import { eq, count } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { ingredients, meals, dailyMealLogs } from '../schema';
-import { estimateCalories, parseMicronutrientsJson } from '@leanlog/data-access';
-import type {
-  IngredientRepository,
-  Ingredient,
-  UpsertIngredient,
-  Micronutrient,
-} from '@leanlog/data-access';
-
-function serializeMicronutrients(
-  micronutrients: Micronutrient[] | null | undefined,
-): string | null {
-  if (micronutrients == null) return null;
-  return JSON.stringify(micronutrients);
-}
-
-function rowToDomain(row: typeof ingredients.$inferSelect): Ingredient {
-  return {
-    id: row.id,
-    mealId: row.mealId,
-    name: row.name,
-    weight: row.weight,
-    calories: row.calories,
-    fat: row.fat,
-    saturatedFat: row.saturatedFat,
-    carbs: row.carbs,
-    fiber: row.fiber,
-    protein: row.protein,
-    unsaturatedFat: row.unsaturatedFat ?? null,
-    monounsaturatedFat: row.monounsaturatedFat ?? null,
-    polyunsaturatedFat: row.polyunsaturatedFat ?? null,
-    transFat: row.transFat ?? null,
-    sugar: row.sugar ?? null,
-    sugarAlcohol: row.sugarAlcohol ?? null,
-    allulose: row.allulose ?? null,
-    alcohol: row.alcohol ?? null,
-    calorieSource: row.calorieSource,
-    estimatedCalories: row.estimatedCalories,
-    micronutrients: parseMicronutrientsJson(row.micronutrientsJson),
-    sourceDatabaseIngredientId: row.sourceDatabaseIngredientId ?? null,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  };
-}
+import { estimateCalories } from '@leanlog/data-access';
+import { rowToIngredient, serializeMicronutrients } from './ingredientRow';
+import type { IngredientRepository, UpsertIngredient } from '@leanlog/data-access';
 
 export function createIngredientRepository(db: D1Database): IngredientRepository {
   const d = drizzle(db);
@@ -135,7 +95,7 @@ export function createIngredientRepository(db: D1Database): IngredientRepository
       }
 
       const rows = await d.select().from(ingredients).where(eq(ingredients.id, data.id));
-      return rowToDomain(rows[0]!);
+      return rowToIngredient(rows[0]!);
     },
 
     async delete(userId, ingredientId) {

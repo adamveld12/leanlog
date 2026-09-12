@@ -8,6 +8,7 @@ import {
   estimateCalories,
 } from '@leanlog/data-access';
 import type { MealRepository, Meal } from '@leanlog/data-access';
+import { rowToIngredient } from './ingredientRow';
 
 export function createMealRepository(db: D1Database): MealRepository {
   const d = drizzle(db);
@@ -22,10 +23,55 @@ export function createMealRepository(db: D1Database): MealRepository {
     return rows[0] ?? null;
   }
 
+  // Shared by addExtra and addExtraFromDatabase (#64, #93): resolves the day's
+  // singleton 'extra' bucket and inserts one ingredient into it. When the bucket
+  // doesn't exist yet, the meal and its first ingredient are written atomically —
+  // a sequential pair of awaits could leave an empty orphaned "Extras" meal
+  // behind if the ingredient insert failed. Returns null when the day isn't the
+  // user's, so callers can map that to a 404.
+  async function insertIntoExtrasBucket(
+    userId: string,
+    dailyMealLogId: string,
+    build: (mealId: string, ts: string) => typeof ingredients.$inferInsert,
+  ): Promise<Meal | null> {
+    const dayRows = await d
+      .select({ userId: dailyMealLogs.userId })
+      .from(dailyMealLogs)
+      .where(eq(dailyMealLogs.id, dailyMealLogId));
+    if (!dayRows[0] || dayRows[0].userId !== userId) return null;
+
+    const ts = now();
+    const existing = (
+      await d
+        .select()
+        .from(meals)
+        .where(and(eq(meals.dailyMealLogId, dailyMealLogId), eq(meals.origin, 'extra')))
+    )[0];
+    const mealId = existing?.id ?? uuidv7();
+    const ingredientInsert = d.insert(ingredients).values(build(mealId, ts));
+
+    if (existing) {
+      await ingredientInsert;
+    } else {
+      const mealInsert = d.insert(meals).values({
+        id: mealId,
+        dailyMealLogId,
+        name: 'Extras',
+        origin: 'extra',
+        logged: false,
+        createdAt: ts,
+        updatedAt: ts,
+      });
+      await d.batch([mealInsert, ingredientInsert]);
+    }
+
+    return load(mealId);
+  }
+
   async function load(mealId: string): Promise<Meal> {
     const mealRow = (await d.select().from(meals).where(eq(meals.id, mealId)))[0]!;
     const ingredientRows = await d.select().from(ingredients).where(eq(ingredients.mealId, mealId));
-    return { ...mealRow, ingredients: ingredientRows };
+    return { ...mealRow, ingredients: ingredientRows.map(rowToIngredient) };
   }
 
   return {
@@ -97,21 +143,6 @@ export function createMealRepository(db: D1Database): MealRepository {
     },
 
     async addExtra(userId, dailyMealLogId, data) {
-      const dayRows = await d
-        .select({ userId: dailyMealLogs.userId })
-        .from(dailyMealLogs)
-        .where(eq(dailyMealLogs.id, dailyMealLogId));
-      if (!dayRows[0] || dayRows[0].userId !== userId) return null;
-
-      const ts = now();
-      const existing = (
-        await d
-          .select()
-          .from(meals)
-          .where(and(eq(meals.dailyMealLogId, dailyMealLogId), eq(meals.origin, 'extra')))
-      )[0];
-      const mealId = existing?.id ?? uuidv7();
-
       // Calories are always explicit for an Extra (R12) — never re-estimated.
       // estimatedCalories is still recorded for consistency with every other
       // ingredient row, purely as informational metadata.
@@ -120,7 +151,7 @@ export function createMealRepository(db: D1Database): MealRepository {
         carbs: data.carbs ?? 0,
         protein: data.protein ?? 0,
       });
-      const ingredientInsert = d.insert(ingredients).values({
+      return insertIntoExtrasBucket(userId, dailyMealLogId, (mealId, ts) => ({
         id: data.id,
         mealId,
         name: data.name,
@@ -135,27 +166,49 @@ export function createMealRepository(db: D1Database): MealRepository {
         protein: data.protein ?? 0,
         createdAt: ts,
         updatedAt: ts,
+      }));
+    },
+
+    async addExtraFromDatabase(userId, dailyMealLogId, ingredient) {
+      // The label's printed calories stay explicit (#93 R6), matching how the
+      // meal-level from-database route forwards them.
+      const estimated = estimateCalories({
+        fat: ingredient.fat,
+        carbs: ingredient.carbs,
+        protein: ingredient.protein,
+        fiber: ingredient.fiber,
+        sugarAlcohol: ingredient.sugarAlcohol,
+        allulose: ingredient.allulose,
+        alcohol: ingredient.alcohol,
       });
-
-      if (existing) {
-        await ingredientInsert;
-      } else {
-        // The bucket meal and its first ingredient are written atomically —
-        // a sequential pair of awaits could leave an empty orphaned "Extras"
-        // meal behind if the ingredient insert failed.
-        const mealInsert = d.insert(meals).values({
-          id: mealId,
-          dailyMealLogId,
-          name: 'Extras',
-          origin: 'extra',
-          logged: false,
-          createdAt: ts,
-          updatedAt: ts,
-        });
-        await d.batch([mealInsert, ingredientInsert]);
-      }
-
-      return load(mealId);
+      return insertIntoExtrasBucket(userId, dailyMealLogId, (mealId, ts) => ({
+        id: ingredient.id,
+        mealId,
+        name: ingredient.name,
+        weight: ingredient.weight,
+        calories: ingredient.calories,
+        estimatedCalories: estimated,
+        calorieSource: 'explicit',
+        fat: ingredient.fat,
+        saturatedFat: ingredient.saturatedFat ?? 0,
+        carbs: ingredient.carbs,
+        fiber: ingredient.fiber ?? 0,
+        protein: ingredient.protein,
+        unsaturatedFat: ingredient.unsaturatedFat ?? null,
+        monounsaturatedFat: ingredient.monounsaturatedFat ?? null,
+        polyunsaturatedFat: ingredient.polyunsaturatedFat ?? null,
+        transFat: ingredient.transFat ?? null,
+        sugar: ingredient.sugar ?? null,
+        sugarAlcohol: ingredient.sugarAlcohol ?? null,
+        allulose: ingredient.allulose ?? null,
+        alcohol: ingredient.alcohol ?? null,
+        micronutrientsJson: ingredient.micronutrients
+          ? JSON.stringify(ingredient.micronutrients)
+          : null,
+        sourceDatabaseIngredientId: ingredient.sourceDatabaseIngredientId,
+        createdAt: ts,
+        updatedAt: ts,
+      }));
     },
   };
 }

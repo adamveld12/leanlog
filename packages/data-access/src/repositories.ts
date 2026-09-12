@@ -23,6 +23,7 @@ import type {
   CreatePlanMeal,
   UpsertPlanIngredient,
 } from './models';
+import type { ScaledNutritionSnapshot } from './calculations';
 import type { PhotoUpdatePatch } from './nutritionPhotos';
 import type { ProgressPose } from './progressPhotos';
 
@@ -53,7 +54,21 @@ export interface MealRepository {
   // the new ingredient into it — atomically when the meal doesn't exist yet.
   // Returns the full Extras meal, or null if the day isn't the user's.
   addExtra(userId: string, dailyMealLogId: string, data: AddExtra): Promise<Meal | null>;
+  // Same find-or-create-bucket semantics as addExtra, but for an item looked up
+  // in the nutrition database (#93). Persists the whole scaled snapshot —
+  // fiber, micronutrients, the source label reference — rather than the
+  // calories + three macros the manual quick-add captures.
+  addExtraFromDatabase(
+    userId: string,
+    dailyMealLogId: string,
+    ingredient: ExtraDatabaseIngredient,
+  ): Promise<Meal | null>;
 }
+
+// A database-sourced Extra: the scaled label snapshot plus the id to store it
+// under. The caller does the scaling (scaleLabelToIngredient) so the repository
+// stays free of nutrition math.
+export type ExtraDatabaseIngredient = ScaledNutritionSnapshot & { id: string };
 
 // Thrown by MealRepository.delete when a caller tries to delete a *logged*
 // copied meal — it is recorded history (#41 R19, narrowed by #84).
