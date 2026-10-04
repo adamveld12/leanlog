@@ -1,21 +1,24 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import posthog from 'posthog-js';
 import {
   APP_NAV_LINKS,
   DayListTemplate,
   MonthCalendarCard,
   QuickActionsCard,
+  TodayObjectivesCard,
+  useAnalytics,
   WeeklyStatsCard,
   type ExtraDraft,
 } from '@leanlog/ui';
-import { resolveCoveringGoal, uuidv7, type GoalMode } from '@leanlog/data-access';
-import { prettyDate, todayIso } from '../lib';
+import { isMeaningfulMeal, resolveCoveringGoal, uuidv7, type GoalMode } from '@leanlog/data-access';
+import { prettyDate, timeLabel, todayIso } from '../lib';
 import {
   aggregateStats,
-  dayTotals,
   daysLast90,
   daysThisWeek,
   selectNorthStar,
+  selectTodayObjectives,
   selectWeeklyWeightDelta,
   todayLog,
   trackedDatesMap,
@@ -37,8 +40,19 @@ const GOAL_MODE_LABEL: Record<GoalMode, string> = {
 
 export default function DayListPage() {
   const nav = useNavigate();
-  const { days, goals, profile, loading, error, addDay, addExtra, addExtraFromDatabase } =
-    useStore();
+  const track = useAnalytics();
+  const {
+    days,
+    goals,
+    plans,
+    profile,
+    loading,
+    error,
+    addDay,
+    addMeal,
+    addExtra,
+    addExtraFromDatabase,
+  } = useStore();
 
   // A shortcut to the goal covering today, shown in Quick Actions (#56).
   const activeGoal = useMemo(() => {
@@ -55,7 +69,8 @@ export default function DayListPage() {
   }, [goals, nav]);
 
   const today = useMemo(() => todayLog(days), [days]);
-  const todayTotalsData = useMemo(() => (today ? dayTotals(today) : null), [today]);
+  // Today only (#37 R2) — previewed from the covering goal until the day exists.
+  const objectives = useMemo(() => selectTodayObjectives(days, goals, plans), [days, goals, plans]);
 
   const weekDays = useMemo(() => daysThisWeek(days), [days]);
   const weeklyStats = useMemo(() => aggregateStats(weekDays), [weekDays]);
@@ -107,12 +122,41 @@ export default function DayListPage() {
 
   async function handleAction() {
     if (!profile) return;
-    // Log a meal: open today's day (creating it from templates if it's missing).
+    // Open today's day (creating it from templates if it's missing). The Day page
+    // leads with the weight editor until weight is logged.
     if (today) {
       nav(`/track/day/${today.id}`);
       return;
     }
     await createAndOpenDay(todayIso());
+  }
+
+  // Next-meal CTA (#37 R13): continue the first meal that isn't yet meaningful,
+  // else start a new one. A pre-filled plan meal is logged from the Day page —
+  // the Log control isn't on the meal editor — so that is where it sends the user.
+  async function handleNextMeal() {
+    if (!profile) return;
+    try {
+      let day = today;
+      if (!day) {
+        if (creatingRef.current) return;
+        creatingRef.current = true;
+        try {
+          day = await addDay(todayIso());
+        } finally {
+          creatingRef.current = false;
+        }
+      }
+      const open = day.meals.find((m) => m.origin !== 'extra' && !isMeaningfulMeal(m));
+      if (open?.origin === 'template' && open.ingredients.length > 0) {
+        nav(`/track/day/${day.id}`);
+        return;
+      }
+      const meal = open ?? (await addMeal(day.id, ''));
+      nav(meal ? `/track/day/${day.id}/meal/${meal.id}` : `/track/day/${day.id}`);
+    } catch (e) {
+      posthog.captureException(e, { context: 'day_objectives_next_meal' });
+    }
   }
 
   // Log an extra (#64 R9/R10): the Quick Actions card handles its own inline
@@ -142,26 +186,33 @@ export default function DayListPage() {
         renderNavLink: renderRouterNavLink,
         rightContent: <HeaderControls />,
       }}
+      // react-doctor-disable-next-line react-doctor/jsx-no-jsx-as-prop
+      objectives={
+        <TodayObjectivesCard
+          weight={{
+            ...objectives.weight,
+            onLogWeight: () => {
+              track('day.objectives.cta.clicked', { objective: 'weight', dayDate: todayIso() });
+              void handleAction();
+            },
+          }}
+          meals={{
+            ...objectives.meals,
+            onNextMeal: () => {
+              track('day.objectives.cta.clicked', { objective: 'meal', dayDate: todayIso() });
+              void handleNextMeal();
+            },
+          }}
+          macros={objectives.macros}
+          allComplete={objectives.allComplete}
+          completedAtLabel={
+            today?.objectivesCompletedAt ? timeLabel(today.objectivesCompletedAt) : undefined
+          }
+        />
+      }
       quickActions={
         <QuickActionsCard
-          hasToday={!!today}
           hasDays={hasDays}
-          today={
-            todayTotalsData && today
-              ? {
-                  calories: todayTotalsData.calories,
-                  calorieTarget: today.targetCalories,
-                  adjustedCalories: todayTotalsData.adjustedCalories,
-                  protein: todayTotalsData.protein,
-                  proteinTarget: today.targetProtein,
-                  carbs: todayTotalsData.carbs,
-                  carbsTarget: today.targetCarbs,
-                  fat: todayTotalsData.fat,
-                  fatTarget: today.targetFat,
-                  fiber: todayTotalsData.fiber,
-                }
-              : undefined
-          }
           week={
             weekDays.length > 0
               ? {
@@ -179,7 +230,6 @@ export default function DayListPage() {
               : undefined
           }
           weekDayCount={weekDays.length}
-          onAction={() => void handleAction()}
           activeGoal={activeGoal}
           onOpenPlans={() => nav('/track/goals/plans')}
           onAddExtra={(draft) => void handleAddExtra(draft)}

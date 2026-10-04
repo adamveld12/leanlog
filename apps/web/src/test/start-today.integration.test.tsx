@@ -69,7 +69,7 @@ type StoreCtx = {
   ) => Promise<{ status: 'found'; day: DailyMealLog } | { status: 'not_found' }>;
   addDay: (date: string) => Promise<DailyMealLog>;
   removeDay: (id: string) => Promise<void>;
-  addMeal: (...args: unknown[]) => Promise<null>;
+  addMeal: (...args: unknown[]) => Promise<{ id: string } | null>;
   removeMeal: (...args: unknown[]) => Promise<void>;
   renameMeal: (...args: unknown[]) => Promise<void>;
   upsertIngredient: (...args: unknown[]) => Promise<void>;
@@ -86,7 +86,7 @@ type StoreCtx = {
 const FakeStoreCtx = createContext<StoreCtx | null>(null);
 
 const addDaySpy = vi.fn<(date: string) => Promise<DailyMealLog>>();
-const addMealSpy = vi.fn<(...args: unknown[]) => Promise<null>>(async () => null);
+const addMealSpy = vi.fn<(...args: unknown[]) => Promise<{ id: string } | null>>(async () => null);
 
 function FakeStateProvider({
   children,
@@ -156,7 +156,7 @@ function renderApp(initialDays?: DailyMealLog[], addDayDelay?: Promise<void>) {
   );
 }
 
-describe('Log a meal quick action', () => {
+describe("Log today's weight objective CTA", () => {
   afterEach(() => {
     cleanup();
     addDaySpy.mockClear();
@@ -166,7 +166,7 @@ describe('Log a meal quick action', () => {
   it('creates today using the profile-derived targets when no day exists', async () => {
     renderApp();
 
-    await userEvent.click(screen.getByRole('button', { name: /Log a meal/i }));
+    await userEvent.click(screen.getByRole('button', { name: /log today.s weight/i }));
 
     expect(addDaySpy).toHaveBeenCalledTimes(1);
     const [date] = addDaySpy.mock.calls[0];
@@ -177,7 +177,7 @@ describe('Log a meal quick action', () => {
   it('navigates to the new day page after creating today', async () => {
     renderApp();
 
-    await userEvent.click(screen.getByRole('button', { name: /Log a meal/i }));
+    await userEvent.click(screen.getByRole('button', { name: /log today.s weight/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/new-day');
@@ -187,7 +187,7 @@ describe('Log a meal quick action', () => {
   it("opens today's existing day without creating a day or meal", async () => {
     renderApp([makeDay({ id: 'existing-today' })]);
 
-    await userEvent.click(screen.getByRole('button', { name: /Log a meal/i }));
+    await userEvent.click(screen.getByRole('button', { name: /log today.s weight/i }));
 
     expect(addDaySpy).not.toHaveBeenCalled();
     expect(addMealSpy).not.toHaveBeenCalled();
@@ -203,7 +203,7 @@ describe('Log a meal quick action', () => {
     });
     renderApp(undefined, gate);
 
-    const button = screen.getByRole('button', { name: /Log a meal/i });
+    const button = screen.getByRole('button', { name: /log today.s weight/i });
     fireEvent.click(button);
     fireEvent.click(button);
     release();
@@ -212,5 +212,144 @@ describe('Log a meal quick action', () => {
       expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/new-day');
     });
     expect(addDaySpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+function food(id: string, calories: number) {
+  return {
+    id: `ing-${id}`,
+    mealId: id,
+    name: 'Food',
+    weight: 100,
+    calories,
+    fat: 0,
+    saturatedFat: 0,
+    carbs: 0,
+    fiber: 0,
+    protein: 0,
+    calorieSource: 'explicit' as const,
+    estimatedCalories: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function adhocMeal(id: string, calories = 0) {
+  return {
+    id,
+    dailyMealLogId: 'today',
+    name: id,
+    origin: 'adhoc' as const,
+    logged: false,
+    ingredients: calories > 0 ? [food(id, calories)] : [],
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+describe("Today's objectives card", () => {
+  afterEach(() => {
+    cleanup();
+    addDaySpy.mockClear();
+    addMealSpy.mockClear();
+  });
+
+  it('leads the Day List with weight, meal and macro objectives for today', () => {
+    renderApp([makeDay({ id: 'today', mealCountTarget: 4 })]);
+
+    expect(screen.getByRole('heading', { name: /today.s objectives/i })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Weight incomplete' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Meals incomplete' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Macros incomplete' })).toBeInTheDocument();
+  });
+
+  it('is shown before today exists, fully incomplete, without creating the day', () => {
+    renderApp([]);
+
+    expect(screen.getByRole('img', { name: 'Weight incomplete' })).toBeInTheDocument();
+    expect(addDaySpy).not.toHaveBeenCalled();
+  });
+
+  // R2: yesterday is for review. Its logged weight must not complete today's.
+  it("only reflects today — yesterday's weight does not complete today's objective", () => {
+    const yesterday = new Date(Date.now() - 86400000);
+    const y = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    renderApp([makeDay({ id: 'yesterday', date: y, weightLbs: 181 })]);
+
+    expect(screen.getByRole('img', { name: 'Weight incomplete' })).toBeInTheDocument();
+  });
+
+  it('shows the logged weight and drops the weight CTA once today has a weight', () => {
+    renderApp([makeDay({ id: 'today', weightLbs: 182.5, mealCountTarget: 4 })]);
+
+    expect(screen.getByRole('img', { name: 'Weight completed' })).toBeInTheDocument();
+    expect(screen.getByText(/182\.5 lbs/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /log today.s weight/i })).not.toBeInTheDocument();
+  });
+
+  it('does not count an empty meal toward meal progress', () => {
+    renderApp([makeDay({ id: 'today', mealCountTarget: 4, meals: [adhocMeal('m1')] })]);
+
+    expect(screen.getByRole('progressbar', { name: 'Meals progress' })).toHaveAttribute(
+      'aria-valuenow',
+      '0',
+    );
+  });
+
+  describe('next-meal CTA', () => {
+    it('continues the first meal that is not yet meaningful', async () => {
+      renderApp([
+        makeDay({
+          id: 'today',
+          weightLbs: 182.5,
+          mealCountTarget: 4,
+          meals: [adhocMeal('m1', 400), adhocMeal('m2')],
+        }),
+      ]);
+
+      await userEvent.click(screen.getByRole('button', { name: /log meal 2 of 4/i }));
+
+      expect(addMealSpy).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/today/meal/m2');
+      });
+    });
+
+    it('adds a new meal when every existing one already has food', async () => {
+      addMealSpy.mockResolvedValueOnce({ id: 'fresh' });
+      renderApp([
+        makeDay({
+          id: 'today',
+          weightLbs: 182.5,
+          mealCountTarget: 4,
+          meals: [adhocMeal('m1', 400)],
+        }),
+      ]);
+
+      await userEvent.click(screen.getByRole('button', { name: /log meal 2 of 4/i }));
+
+      expect(addMealSpy).toHaveBeenCalledWith('today', '');
+      await waitFor(() => {
+        expect(screen.getByTestId('location-probe')).toHaveTextContent(
+          '/track/day/today/meal/fresh',
+        );
+      });
+    });
+
+    // A plan-copied meal arrives pre-filled; the Log control lives on the Day
+    // page, not the meal editor, so that is where the user must be sent.
+    it('sends the user to the day page to log a pre-filled plan meal', async () => {
+      const planMeal = { ...adhocMeal('p1', 400), origin: 'template' as const };
+      renderApp([
+        makeDay({ id: 'today', weightLbs: 182.5, mealCountTarget: 4, meals: [planMeal] }),
+      ]);
+
+      await userEvent.click(screen.getByRole('button', { name: /log meal 1 of 1/i }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/today');
+      });
+      expect(screen.getByTestId('location-probe')).not.toHaveTextContent('/meal/');
+    });
   });
 });

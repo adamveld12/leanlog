@@ -13,13 +13,12 @@ type QuickExtraTab = 'database' | 'manual';
 const QUICK_DATABASE_PANEL = 'quick-extra-database-panel';
 const QUICK_MANUAL_PANEL = 'quick-extra-manual-panel';
 
+// Today's progress and the "log a meal" entry point live on TodayObjectivesCard
+// (#37), so this card keeps only the weekly view and the secondary shortcuts.
 export type QuickActionsCardProps = {
-  hasToday: boolean;
   hasDays: boolean;
-  today?: Omit<MacroProgressBlockProps, 'label'>;
   week?: Omit<MacroProgressBlockProps, 'label'>;
   weekDayCount?: number;
-  onAction: () => void;
   // A shortcut to the goal covering today (mode + end date), linking to Goals.
   activeGoal?: { summary: string; onOpen: () => void };
   // A shortcut to the plans list, which has no top-level nav entry (#84).
@@ -34,12 +33,9 @@ export type QuickActionsCardProps = {
 };
 
 export function QuickActionsCard({
-  hasToday,
   hasDays,
-  today,
   week,
   weekDayCount,
-  onAction,
   activeGoal,
   onOpenPlans,
   onAddExtra,
@@ -57,10 +53,6 @@ export function QuickActionsCard({
   return (
     <AnalyticsScope properties={{ organism: 'QuickActionsCard' }}>
       <SectionCard title="Quick Actions">
-        <Button onClick={onAction} className="w-full">
-          Log a meal
-        </Button>
-
         {onAddExtra ? (
           addingExtra ? (
             <div className={recipes.stack.sm}>
@@ -122,25 +114,15 @@ export function QuickActionsCard({
 
         {!hasDays ? (
           <HelperText as="p" className="text-center">
-            Start tracking your meals to see daily and weekly macro progress here.
+            Start tracking your meals to see weekly macro progress here.
           </HelperText>
-        ) : (
-          <div className={recipes.stack.lg}>
-            {hasToday && today ? (
-              <MacroProgressBlock label="Today" {...today} />
-            ) : (
-              <HelperText as="p">No entry for today</HelperText>
-            )}
-
-            {week && (
-              <MacroProgressBlock
-                label="This Week (Mon-Sun)"
-                {...week}
-                detail={weekDayCount != null ? `${weekDayCount} days tracked` : undefined}
-              />
-            )}
-          </div>
-        )}
+        ) : week ? (
+          <MacroProgressBlock
+            label="This Week (Mon-Sun)"
+            {...week}
+            detail={weekDayCount != null ? `${weekDayCount} days tracked` : undefined}
+          />
+        ) : null}
       </SectionCard>
     </AnalyticsScope>
   );

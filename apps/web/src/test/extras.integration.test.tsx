@@ -201,7 +201,7 @@ describe('extras (#64)', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Log an extra' }));
     // Still on the Track page — the inline control replaced the button in place.
-    expect(screen.getByRole('button', { name: 'Log a meal' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /today.s objectives/i })).toBeInTheDocument();
     expect(screen.getByLabelText('Name')).toHaveFocus();
 
     await userEvent.type(screen.getByLabelText('Name'), 'Red wine');
