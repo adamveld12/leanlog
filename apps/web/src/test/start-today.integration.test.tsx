@@ -49,6 +49,7 @@ function makeDay(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
     frontPhotoKey: null,
     sidePhotoKey: null,
     backPhotoKey: null,
+    objectivesCompletedAt: null,
     meals: [],
     createdAt: now,
     updatedAt: now,

@@ -57,6 +57,7 @@ function makeDay(): DailyMealLog {
     frontPhotoKey: null,
     sidePhotoKey: null,
     backPhotoKey: null,
+    objectivesCompletedAt: null,
     meals: [
       {
         id: 'm1',

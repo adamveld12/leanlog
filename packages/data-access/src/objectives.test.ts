@@ -56,6 +56,7 @@ function day(partial: Partial<DailyMealLog> = {}): DailyMealLog {
     frontPhotoKey: null,
     sidePhotoKey: null,
     backPhotoKey: null,
+    objectivesCompletedAt: null,
     meals: [],
     createdAt: TS,
     updatedAt: TS,

@@ -63,6 +63,7 @@ function dayWithMeal(mealName: string, ingredients: DailyMealLog['meals'][number
     frontPhotoKey: null,
     sidePhotoKey: null,
     backPhotoKey: null,
+    objectivesCompletedAt: null,
     meals: [
       {
         id: 'm1',

@@ -83,6 +83,7 @@ vi.mock('../api', () => ({
       get: vi.fn(),
       updateTargets: vi.fn(),
       delete: vi.fn(),
+      completeObjectives: vi.fn(),
       applyPlan: vi.fn(),
     },
     meals: {

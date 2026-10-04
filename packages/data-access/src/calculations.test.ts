@@ -560,6 +560,7 @@ function makeDay(meals: Meal[], mealCountTarget = 0): DailyMealLog {
     frontPhotoKey: null,
     sidePhotoKey: null,
     backPhotoKey: null,
+    objectivesCompletedAt: null,
     meals,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
