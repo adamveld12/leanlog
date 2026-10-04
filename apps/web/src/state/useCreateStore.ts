@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import posthog from 'posthog-js';
+import { useAnalytics } from '@leanlog/ui';
 import {
+  dayMealStructure,
+  dayObjectives,
   deriveDayPlan,
   goalCoversDate,
+  isMeaningfulMeal,
   resolveCoveringGoal,
   type DailyMealLog,
   type Goal,
@@ -10,7 +15,7 @@ import {
 import { api, ApiError } from '../api';
 import { todayIso } from '../lib';
 import { selectWeightEntries } from '../selectors';
-import { initialStoreState, storeReducer } from './storeReducer';
+import { initialStoreState, storeReducer, type StoreAction } from './storeReducer';
 import type { EnsureDayResult, EnsurePlanResult, Store } from './types';
 
 // Default day targets used only before any goal exists (the background goal is
@@ -51,6 +56,12 @@ export function useCreateStore(): Store {
   const daysRef = useRef<DailyMealLog[]>(state.days);
   const goalsRef = useRef<Goal[]>(state.goals);
   const planDetailsRef = useRef(state.planDetails);
+  const track = useAnalytics();
+  // Per-session guards for objective analytics (#37 R34): a meal is reported the
+  // first time it becomes meaningful even if it later re-crosses the line, and a
+  // day's completion is attempted once at a time however many edits trigger it.
+  const reportedMealsRef = useRef(new Set<string>());
+  const completionRef = useRef(new Set<string>());
 
   useEffect(() => {
     daysRef.current = state.days;
@@ -105,6 +116,84 @@ export function useCreateStore(): Store {
     },
     [getToken],
   );
+
+  // Asks the server to stamp the day's first all-objectives-complete time. The
+  // server re-verifies, so a stale client is simply declined; only a stamp that
+  // actually lands is reported. Never throws: a lost stamp must not fail the edit
+  // that triggered it, and the next qualifying edit retries.
+  async function completeObjectives(day: DailyMealLog) {
+    if (completionRef.current.has(day.id)) return;
+    completionRef.current.add(day.id);
+    try {
+      const updated = await withToken((t) => api.days.completeObjectives(t, day.id));
+      if (!updated.objectivesCompletedAt) {
+        completionRef.current.delete(day.id);
+        return;
+      }
+      // Merge only the stamp so a concurrent local edit isn't overwritten by the
+      // server's snapshot.
+      const local = daysRef.current.find((d) => d.id === day.id);
+      if (local) {
+        const merged = { ...local, objectivesCompletedAt: updated.objectivesCompletedAt };
+        daysRef.current = daysRef.current.map((d) => (d.id === day.id ? merged : d));
+        dispatch({ type: 'dayReplaced', day: merged });
+      }
+      track('day.objectives.completed', { dayId: day.id, dayDate: day.date });
+    } catch (e) {
+      completionRef.current.delete(day.id);
+      posthog.captureException(e, { context: 'day_objectives_complete' });
+    }
+  }
+
+  // Objective analytics fire on the transition itself, which is why they live
+  // here and not in a component: only a mutation sees before → after (#37 R28-R34).
+  // Only today is evaluated, so back-filling history never fires them.
+  function observeObjectives(before: DailyMealLog, after: DailyMealLog) {
+    if (after.date !== todayIso()) return;
+    const ctx = { dayId: after.id, dayDate: after.date };
+
+    if (before.weightLbs == null && after.weightLbs != null) {
+      track('day.objectives.completed.weight_logged', { ...ctx, value: after.weightLbs });
+    }
+
+    // Anything meaningful beforehand counts as already reported, so removing a
+    // meal's food and adding it back doesn't report the same meal twice.
+    const wasMeaningful = before.meals.filter(isMeaningfulMeal);
+    for (const m of wasMeaningful) reportedMealsRef.current.add(`${after.id}:${m.id}`);
+    const meaningful = after.meals.filter(isMeaningfulMeal);
+    const total = dayMealStructure(after).mealsExpected;
+    for (const m of meaningful) {
+      const key = `${after.id}:${m.id}`;
+      if (reportedMealsRef.current.has(key)) continue;
+      reportedMealsRef.current.add(key);
+      track('day.objectives.completed.meal_eaten', {
+        ...ctx,
+        mealId: m.id,
+        value: meaningful.length,
+        total,
+      });
+    }
+
+    if (!after.objectivesCompletedAt && dayObjectives(after).allComplete) {
+      void completeObjectives(after);
+    }
+  }
+
+  // Dispatches, then replays the same pure reducer to learn the resulting day
+  // synchronously — including server side-effects the reducer mirrors, like a
+  // plan meal auto-logging when food is added. React state isn't readable until
+  // the next render, so daysRef is advanced here too.
+  function commit(dayId: string, ...actions: StoreAction[]) {
+    const before = daysRef.current.find((d) => d.id === dayId);
+    let next = { ...initialStoreState, days: daysRef.current };
+    for (const action of actions) {
+      dispatch(action);
+      next = storeReducer(next, action);
+    }
+    daysRef.current = next.days;
+    const after = next.days.find((d) => d.id === dayId);
+    if (before && after) observeObjectives(before, after);
+  }
 
   const ensureDayLoaded = useCallback(
     async (dayId: string): Promise<EnsureDayResult> => {
@@ -195,7 +284,7 @@ export function useCreateStore(): Store {
 
     async removeMeal(dayId, mealId) {
       await withToken((t) => api.meals.delete(t, dayId, mealId));
-      dispatch({ type: 'mealRemoved', dayId, mealId });
+      commit(dayId, { type: 'mealRemoved', dayId, mealId });
     },
 
     async renameMeal(dayId, mealId, name) {
@@ -205,22 +294,22 @@ export function useCreateStore(): Store {
 
     async logMeal(dayId, mealId) {
       const updated = await withToken((t) => api.meals.setLogged(t, dayId, mealId, true));
-      dispatch({ type: 'mealPatched', dayId, mealId, patch: updated });
+      commit(dayId, { type: 'mealPatched', dayId, mealId, patch: updated });
     },
 
     async upsertIngredient(dayId, mealId, ingredient) {
       const updated = await withToken((t) => api.ingredients.upsert(t, dayId, mealId, ingredient));
-      dispatch({ type: 'ingredientUpserted', dayId, mealId, ingredient: updated });
+      commit(dayId, { type: 'ingredientUpserted', dayId, mealId, ingredient: updated });
     },
 
     async removeIngredient(dayId, mealId, ingredientId) {
       await withToken((t) => api.ingredients.delete(t, dayId, mealId, ingredientId));
-      dispatch({ type: 'ingredientRemoved', dayId, mealId, ingredientId });
+      commit(dayId, { type: 'ingredientRemoved', dayId, mealId, ingredientId });
     },
 
     async addExtra(dayId, data) {
       const meal = await withToken((t) => api.extras.add(t, dayId, data));
-      dispatch({ type: 'mealUpserted', dayId, meal });
+      commit(dayId, { type: 'mealUpserted', dayId, meal });
       return meal;
     },
 
@@ -228,7 +317,7 @@ export function useCreateStore(): Store {
       // mealUpserted, not ingredientUpserted: the Extras bucket may not exist in
       // local state yet, so the server's full meal creates or replaces it.
       const meal = await withToken((t) => api.extras.addFromDatabase(t, dayId, input));
-      dispatch({ type: 'mealUpserted', dayId, meal });
+      commit(dayId, { type: 'mealUpserted', dayId, meal });
       return meal;
     },
 
@@ -236,14 +325,14 @@ export function useCreateStore(): Store {
       const ingredient = await withToken((t) =>
         api.ingredients.addFromDatabase(t, dayId, mealId, input),
       );
-      dispatch({ type: 'ingredientUpserted', dayId, mealId, ingredient });
+      commit(dayId, { type: 'ingredientUpserted', dayId, mealId, ingredient });
     },
 
     async applyPlanToDay(dayId, planId) {
       // Apply both fills and appends unmatched meals, so a partial local
       // mirror risks drifting from the server; replace the whole day instead.
       const { day, filled, skipped } = await withToken((t) => api.days.applyPlan(t, dayId, planId));
-      dispatch({ type: 'dayReplaced', day });
+      commit(dayId, { type: 'dayReplaced', day });
       return { filled, skipped };
     },
 
@@ -273,12 +362,12 @@ export function useCreateStore(): Store {
 
     async updateDayTargets(dayId, targets) {
       const updated = await withToken((t) => api.days.updateTargets(t, dayId, targets));
-      dispatch({ type: 'dayReplaced', day: updated });
+      commit(dayId, { type: 'dayReplaced', day: updated });
     },
 
     async updateDayWeight(dayId, weightLbs) {
       const updated = await withToken((t) => api.days.updateTargets(t, dayId, { weightLbs }));
-      dispatch({ type: 'dayReplaced', day: updated });
+      commit(dayId, { type: 'dayReplaced', day: updated });
       // R62: a successful weight log recomputes that day's targets from its
       // covering goal and the new weight. Use a day list that already reflects the
       // saved weight so weight-on-or-before picks it up.
@@ -286,7 +375,7 @@ export function useCreateStore(): Store {
       const targets = deriveTargetsForDay(updated.date, mergedDays, goalsRef.current);
       if (targets) {
         const recomputed = await withToken((t) => api.days.updateTargets(t, dayId, targets));
-        dispatch({ type: 'dayReplaced', day: recomputed });
+        commit(dayId, { type: 'dayReplaced', day: recomputed });
       }
       // Server only updates profile.weightLbs when this is the most recent weight-logged
       // day. Refetch profile to reflect (or skip) that change rather than guessing locally.
