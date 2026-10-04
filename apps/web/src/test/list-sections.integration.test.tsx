@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createContext, use, useState, type PropsWithChildren } from 'react';
+import { recipes } from '@leanlog/ui';
 import App from '../App';
 import { todayIso } from '../lib';
 import type { DailyMealLog, UserProfile } from '@leanlog/data-access';
@@ -378,5 +379,158 @@ describe('list section behaviors', () => {
     // MealEdit is a lazy route; await its chunk before reading the input.
     const nameInput = await screen.findByPlaceholderText('Meal Name');
     expect(nameInput).toHaveValue('');
+  });
+});
+
+// #37 R9/R14: once weight is logged the Day page stops leading with the weight
+// editor and instead leads with the next meal action.
+describe('Day page focus (#37)', () => {
+  const primary = recipes.button.primary.split(' ');
+  const planMeal = (
+    id: string,
+    name: string,
+    extra: Partial<DailyMealLog['meals'][number]> = {},
+  ) => ({
+    id,
+    dailyMealLogId: 'd1',
+    origin: 'template' as const,
+    logged: false,
+    name,
+    createdAt: now,
+    updatedAt: now,
+    ingredients: [],
+    ...extra,
+  });
+  const adhoc = () => ({ ...planMeal('m1', 'Meal'), origin: 'adhoc' as const });
+
+  afterEach(() => cleanup());
+
+  describe('weight (R9)', () => {
+    it('shows the prominent weight editor while weight is not logged', async () => {
+      renderApp('/track/day/d1', [makeDayWithMeals({ weightLbs: null, meals: [adhoc()] })]);
+
+      expect(await screen.findByLabelText('Weight (lbs)')).toBeInTheDocument();
+    });
+
+    it('collapses to a compact label with an Edit button once weight is logged', async () => {
+      renderApp('/track/day/d1', [makeDayWithMeals({ weightLbs: 182.5, meals: [adhoc()] })]);
+
+      expect(await screen.findByText(/182\.5 lbs/)).toBeInTheDocument();
+      expect(screen.queryByLabelText('Weight (lbs)')).not.toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Edit' })[0]).toBeInTheDocument();
+    });
+  });
+
+  describe('add meal on an ad-hoc day (R14)', () => {
+    it('is secondary while weight is the more urgent task', async () => {
+      renderApp('/track/day/d1', [makeDayWithMeals({ weightLbs: null, meals: [adhoc()] })]);
+
+      expect(await screen.findByRole('button', { name: 'Add meal' })).not.toHaveClass(...primary);
+    });
+
+    it('becomes the prominent primary action once weight is logged', async () => {
+      renderApp('/track/day/d1', [makeDayWithMeals({ weightLbs: 182.5, meals: [adhoc()] })]);
+
+      expect(await screen.findByRole('button', { name: 'Add meal' })).toHaveClass(...primary);
+    });
+  });
+
+  describe('next meal on a plan-backed day (R14)', () => {
+    it('offers the first empty plan meal as the primary action once weight is logged', async () => {
+      renderApp('/track/day/d1', [
+        makeDayWithMeals({
+          weightLbs: 182.5,
+          meals: [planMeal('m1', 'Breakfast'), planMeal('m2', 'Lunch')],
+        }),
+      ]);
+
+      const cta = await screen.findByRole('button', { name: 'Start Breakfast' });
+      expect(cta).toHaveClass(...primary);
+
+      await userEvent.click(cta);
+      await waitFor(() => {
+        expect(screen.getByTestId('location-probe')).toHaveTextContent('/track/day/d1/meal/m1');
+      });
+    });
+
+    it('is secondary while weight has not been logged', async () => {
+      renderApp('/track/day/d1', [
+        makeDayWithMeals({ weightLbs: null, meals: [planMeal('m1', 'Breakfast')] }),
+      ]);
+
+      expect(await screen.findByRole('button', { name: 'Start Breakfast' })).not.toHaveClass(
+        ...primary,
+      );
+    });
+
+    it('skips meals that already have food and points at the next empty one', async () => {
+      const fed = planMeal('m1', 'Breakfast', {
+        logged: true,
+        ingredients: [
+          {
+            id: 'i1',
+            mealId: 'm1',
+            name: 'Eggs',
+            weight: 100,
+            calories: 300,
+            fat: 0,
+            saturatedFat: 0,
+            carbs: 0,
+            fiber: 0,
+            protein: 0,
+            calorieSource: 'explicit' as const,
+            estimatedCalories: 0,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+      });
+      renderApp('/track/day/d1', [
+        makeDayWithMeals({ weightLbs: 182.5, meals: [fed, planMeal('m2', 'Lunch')] }),
+      ]);
+
+      expect(await screen.findByRole('button', { name: 'Start Lunch' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Start Breakfast' })).not.toBeInTheDocument();
+    });
+
+    it('offers nothing once every plan meal has food', async () => {
+      const fed = (id: string, name: string) =>
+        planMeal(id, name, {
+          logged: true,
+          ingredients: [
+            {
+              id: `i-${id}`,
+              mealId: id,
+              name: 'Food',
+              weight: 100,
+              calories: 300,
+              fat: 0,
+              saturatedFat: 0,
+              carbs: 0,
+              fiber: 0,
+              protein: 0,
+              calorieSource: 'explicit' as const,
+              estimatedCalories: 0,
+              createdAt: now,
+              updatedAt: now,
+            },
+          ],
+        });
+      renderApp('/track/day/d1', [
+        makeDayWithMeals({ weightLbs: 182.5, meals: [fed('m1', 'Breakfast')] }),
+      ]);
+
+      await screen.findByText('Breakfast');
+      expect(screen.queryByRole('button', { name: /^Start / })).not.toBeInTheDocument();
+    });
+
+    it('is not offered on past days, which are read-only', async () => {
+      renderApp('/track/day/d1', [
+        makeDayWithMeals({ date: '2020-01-01', meals: [planMeal('m1', 'Breakfast')] }),
+      ]);
+
+      await screen.findByText('Breakfast');
+      expect(screen.queryByRole('button', { name: /^Start / })).not.toBeInTheDocument();
+    });
   });
 });

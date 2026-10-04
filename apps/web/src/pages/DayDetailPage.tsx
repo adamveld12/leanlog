@@ -96,6 +96,12 @@ export default function DayDetailPage() {
   // fixed structure and per-meal logging. Ad-hoc days keep freeform meals.
   const isTemplateBacked = structure.kind === 'template';
   const isPast = isPastIso(day.date);
+  // The next action once weight is out of the way (#37 R14): the first plan meal
+  // that has no food yet. Pre-filled plan meals aren't candidates — they already
+  // carry their own Log button in the list.
+  const nextPlanMeal = isTemplateBacked
+    ? day.meals.find((m) => m.origin === 'template' && m.ingredients.length === 0)
+    : undefined;
   // The day's singleton Extras bucket (#64) — undefined until the first item
   // is quick-added, lazily created by addExtra().
   const extrasMeal = day.meals.find((m) => m.origin === 'extra');
@@ -237,6 +243,9 @@ export default function DayDetailPage() {
         <DayMealsControls
           isPast={isPast}
           isTemplateBacked={isTemplateBacked}
+          weightLogged={day.weightLbs != null}
+          nextPlanMeal={nextPlanMeal ? { id: nextPlanMeal.id, name: nextPlanMeal.name } : undefined}
+          onStartMeal={(mealId) => nav(`/track/day/${day.id}/meal/${mealId}`)}
           plans={plans}
           applyPlanId={applyPlanId}
           onApplyPlanIdChange={setApplyPlanId}
@@ -323,6 +332,10 @@ export default function DayDetailPage() {
 type DayMealsControlsProps = {
   isPast: boolean;
   isTemplateBacked: boolean;
+  /** Weight logged → the meal action becomes the prominent one (#37 R14). */
+  weightLogged: boolean;
+  nextPlanMeal?: { id: string; name: string };
+  onStartMeal: (mealId: string) => void;
   plans: PlanSummary[];
   applyPlanId: string;
   onApplyPlanIdChange: (planId: string) => void;
@@ -331,11 +344,16 @@ type DayMealsControlsProps = {
   onAddMeal: () => Promise<void>;
 };
 
-// Below the meals list: apply a plan to fill matching meals, and add an
-// ad-hoc meal (only on zero-template days, R34/R36). Hidden on past days.
+// Below the meals list: the day's next meal action, apply a plan to fill
+// matching meals, and add an ad-hoc meal (only on zero-template days, R34/R36).
+// The meal action leads and is primary only once weight is logged, so weight
+// stays the most urgent task until it's done (#37 R14). Hidden on past days.
 function DayMealsControls({
   isPast,
   isTemplateBacked,
+  weightLogged,
+  nextPlanMeal,
+  onStartMeal,
   plans,
   applyPlanId,
   onApplyPlanIdChange,
@@ -346,6 +364,24 @@ function DayMealsControls({
   if (isPast) return null;
   return (
     <div className={cn(recipes.stack.sm, 'mb-5')}>
+      {nextPlanMeal ? (
+        <Button
+          className="w-full"
+          variant={weightLogged ? 'primary' : 'secondary'}
+          onClick={() => onStartMeal(nextPlanMeal.id)}
+        >
+          Start {nextPlanMeal.name || 'meal'}
+        </Button>
+      ) : null}
+      {!isTemplateBacked ? (
+        <Button
+          className="w-full"
+          variant={weightLogged ? 'primary' : 'secondary'}
+          onClick={() => void onAddMeal()}
+        >
+          Add meal
+        </Button>
+      ) : null}
       {plans.length > 0 ? (
         <div className={recipes.stack.sm}>
           <Select value={applyPlanId} onChange={(e) => onApplyPlanIdChange(e.target.value)}>
@@ -372,11 +408,6 @@ function DayMealsControls({
             </HelperText>
           ) : null}
         </div>
-      ) : null}
-      {!isTemplateBacked ? (
-        <Button className="w-full" onClick={() => void onAddMeal()}>
-          Add meal
-        </Button>
       ) : null}
     </div>
   );
