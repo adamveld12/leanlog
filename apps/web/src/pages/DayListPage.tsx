@@ -128,25 +128,22 @@ export default function DayListPage() {
       nav(`/track/day/${today.id}`);
       return;
     }
-    await createAndOpenDay(todayIso());
+    try {
+      await createAndOpenDay(todayIso());
+    } catch (e) {
+      posthog.captureException(e, { context: 'day_objectives_weight_log' });
+    }
   }
 
   // Next-meal CTA (#37 R13): continue the first meal that isn't yet meaningful,
   // else start a new one. A pre-filled plan meal is logged from the Day page —
   // the Log control isn't on the meal editor — so that is where it sends the user.
+  // One guard spans the whole action, so a double-tap can't add two meals.
   async function handleNextMeal() {
-    if (!profile) return;
+    if (!profile || creatingRef.current) return;
+    creatingRef.current = true;
     try {
-      let day = today;
-      if (!day) {
-        if (creatingRef.current) return;
-        creatingRef.current = true;
-        try {
-          day = await addDay(todayIso());
-        } finally {
-          creatingRef.current = false;
-        }
-      }
+      const day = today ?? (await addDay(todayIso()));
       const open = day.meals.find((m) => m.origin !== 'extra' && !isMeaningfulMeal(m));
       if (open?.origin === 'template' && open.ingredients.length > 0) {
         nav(`/track/day/${day.id}`);
@@ -156,6 +153,8 @@ export default function DayListPage() {
       nav(meal ? `/track/day/${day.id}/meal/${meal.id}` : `/track/day/${day.id}`);
     } catch (e) {
       posthog.captureException(e, { context: 'day_objectives_next_meal' });
+    } finally {
+      creatingRef.current = false;
     }
   }
 

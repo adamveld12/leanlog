@@ -14,18 +14,9 @@ import {
 } from '@leanlog/data-access';
 import { api, ApiError } from '../api';
 import { todayIso } from '../lib';
-import { selectWeightEntries } from '../selectors';
+import { FALLBACK_DAY_TARGETS, selectWeightEntries } from '../selectors';
 import { initialStoreState, storeReducer, type StoreAction } from './storeReducer';
 import type { EnsureDayResult, EnsurePlanResult, Store } from './types';
-
-// Default day targets used only before any goal exists (the background goal is
-// seeded on first goals load, so this is a brief startup fallback).
-const FALLBACK_TARGETS = {
-  targetCalories: 2000,
-  targetFat: 70,
-  targetCarbs: 250,
-  targetProtein: 140,
-};
 
 type DayTargetsPatch = {
   targetCalories: number;
@@ -60,8 +51,11 @@ export function useCreateStore(): Store {
   // Per-session guards for objective analytics (#37 R34): a meal is reported the
   // first time it becomes meaningful even if it later re-crosses the line, and a
   // day's completion is attempted once at a time however many edits trigger it.
-  const reportedMealsRef = useRef(new Set<string>());
-  const completionRef = useRef(new Set<string>());
+  // Created lazily and only read from event handlers, never during render.
+  const reportedMealsRef = useRef<Set<string> | null>(null);
+  const completionRef = useRef<Set<string> | null>(null);
+  const reportedMeals = () => (reportedMealsRef.current ??= new Set());
+  const completions = () => (completionRef.current ??= new Set());
 
   useEffect(() => {
     daysRef.current = state.days;
@@ -122,12 +116,12 @@ export function useCreateStore(): Store {
   // actually lands is reported. Never throws: a lost stamp must not fail the edit
   // that triggered it, and the next qualifying edit retries.
   async function completeObjectives(day: DailyMealLog) {
-    if (completionRef.current.has(day.id)) return;
-    completionRef.current.add(day.id);
+    if (completions().has(day.id)) return;
+    completions().add(day.id);
     try {
       const updated = await withToken((t) => api.days.completeObjectives(t, day.id));
       if (!updated.objectivesCompletedAt) {
-        completionRef.current.delete(day.id);
+        completions().delete(day.id);
         return;
       }
       // Merge only the stamp so a concurrent local edit isn't overwritten by the
@@ -140,7 +134,7 @@ export function useCreateStore(): Store {
       }
       track('day.objectives.completed', { dayId: day.id, dayDate: day.date });
     } catch (e) {
-      completionRef.current.delete(day.id);
+      completions().delete(day.id);
       posthog.captureException(e, { context: 'day_objectives_complete' });
     }
   }
@@ -159,13 +153,13 @@ export function useCreateStore(): Store {
     // Anything meaningful beforehand counts as already reported, so removing a
     // meal's food and adding it back doesn't report the same meal twice.
     const wasMeaningful = before.meals.filter(isMeaningfulMeal);
-    for (const m of wasMeaningful) reportedMealsRef.current.add(`${after.id}:${m.id}`);
+    for (const m of wasMeaningful) reportedMeals().add(`${after.id}:${m.id}`);
     const meaningful = after.meals.filter(isMeaningfulMeal);
     const total = dayMealStructure(after).mealsExpected;
     for (const m of meaningful) {
       const key = `${after.id}:${m.id}`;
-      if (reportedMealsRef.current.has(key)) continue;
-      reportedMealsRef.current.add(key);
+      if (reportedMeals().has(key)) continue;
+      reportedMeals().add(key);
       track('day.objectives.completed.meal_eaten', {
         ...ctx,
         mealId: m.id,
@@ -263,7 +257,7 @@ export function useCreateStore(): Store {
             targetCarbs: plan.targetCarbs,
             targetProtein: plan.targetProtein,
           }
-        : FALLBACK_TARGETS;
+        : FALLBACK_DAY_TARGETS;
       const day = await withToken((t) =>
         api.days.create(t, { date, ...targets, mealCountTarget: 0, goalId: plan?.goalId }),
       );

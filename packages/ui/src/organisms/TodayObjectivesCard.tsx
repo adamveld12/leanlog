@@ -172,7 +172,7 @@ export function TodayObjectivesCard({
               analyticsName="objectives-next-meal"
               onClick={meals.onNextMeal}
             >
-              Log meal {meals.eaten + 1} of {meals.target}
+              {meals.target > 0 ? `Log meal ${meals.eaten + 1} of ${meals.target}` : 'Log a meal'}
             </Button>
           )}
         </ObjectiveRow>

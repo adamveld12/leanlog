@@ -25,6 +25,7 @@ import {
   selectLatestMeasurements,
   selectMeasurementsDue,
   selectTodayObjectives,
+  FALLBACK_DAY_TARGETS,
 } from '../selectors';
 import { todayIso } from '../lib';
 
@@ -643,6 +644,15 @@ describe('selectTodayObjectives', () => {
     expect(o.weight.complete).toBe(false);
     expect(o.meals).toEqual({ complete: false, eaten: 0, target: 4 });
     expect(o.allComplete).toBe(false);
+  });
+
+  // Mirrors addDay: with no covering goal yet, a created day gets the fallback
+  // targets — so the preview must show those, not zeros.
+  it('previews the same fallback targets addDay would use when no goal covers today', () => {
+    const o = selectTodayObjectives([], [], []);
+
+    expect(o.macros.protein.target).toBe(FALLBACK_DAY_TARGETS.targetProtein);
+    expect(o.macros.calories.target).toBe(FALLBACK_DAY_TARGETS.targetCalories);
   });
 
   it("uses the covering goal's default plan meal count and derived macro targets", () => {

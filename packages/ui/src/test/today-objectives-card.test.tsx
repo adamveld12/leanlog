@@ -85,6 +85,18 @@ describe('TodayObjectivesCard', () => {
       expect(onNextMeal).toHaveBeenCalledTimes(1);
     });
 
+    // An empty ad-hoc day has no expected meals; "Log meal 1 of 0" reads as a bug.
+    it('reads "Log a meal" when there is no meal target', () => {
+      render(
+        <TodayObjectivesCard
+          {...props({ meals: { complete: false, eaten: 0, target: 0, onNextMeal: vi.fn() } })}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: 'Log a meal' })).toBeInTheDocument();
+      expect(screen.queryByText(/of 0/)).not.toBeInTheDocument();
+    });
+
     it('drops the CTA once the meal target is reached', () => {
       render(
         <TodayObjectivesCard

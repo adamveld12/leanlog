@@ -127,6 +127,16 @@ export function todayLog(days: DailyMealLog[]): DailyMealLog | undefined {
   return days.find((day) => day.date === today);
 }
 
+// Day targets used only before any goal covers the date (the background goal is
+// seeded on first goals load, so this is a brief startup fallback). Shared by
+// addDay and the objectives preview so the preview matches the day it previews.
+export const FALLBACK_DAY_TARGETS = {
+  targetCalories: 2000,
+  targetFat: 70,
+  targetCarbs: 250,
+  targetProtein: 140,
+};
+
 // Today's objectives (#37). Before today's day row exists the card still has to
 // show something actionable, so this previews an empty day from what creating it
 // would produce: the covering goal's derived macro targets and its default plan's
@@ -142,6 +152,7 @@ export function selectTodayObjectives(
   if (existing) return dayObjectives(existing);
 
   const derived = deriveDayPlan(today, goals, selectWeightEntries(days), today);
+  const targets = derived ?? FALLBACK_DAY_TARGETS;
   const defaultPlanId = resolveCoveringGoal(today, goals)?.defaultPlanId;
   const plan = defaultPlanId ? plans.find((p) => p.id === defaultPlanId) : undefined;
   const ts = new Date().toISOString();
@@ -150,10 +161,10 @@ export function selectTodayObjectives(
     id: '',
     userId: '',
     date: today,
-    targetCalories: derived?.targetCalories ?? 0,
-    targetFat: derived?.targetFat ?? 0,
-    targetCarbs: derived?.targetCarbs ?? 0,
-    targetProtein: derived?.targetProtein ?? 0,
+    targetCalories: targets.targetCalories,
+    targetFat: targets.targetFat,
+    targetCarbs: targets.targetCarbs,
+    targetProtein: targets.targetProtein,
     mealCountTarget: plan ? plan.meals.length : DEFAULT_MEAL_NAMES.length,
     weightLbs: null,
     shoulderInches: null,

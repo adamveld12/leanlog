@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createContext, use, useState, type PropsWithChildren } from 'react';
+import posthog from 'posthog-js';
 import App from '../App';
 import { todayIso } from '../lib';
 import type { DailyMealLog, UserProfile } from '@leanlog/data-access';
@@ -196,6 +197,22 @@ describe("Log today's weight objective CTA", () => {
     });
   });
 
+  it('reports a failed day creation to PostHog instead of throwing', async () => {
+    const boom = new Error('network down');
+    const failing = Promise.reject(boom);
+    failing.catch(() => {}); // awaited later by addDay; avoid an early unhandled warning
+    vi.mocked(posthog.captureException).mockClear();
+    renderApp(undefined, failing);
+
+    await userEvent.click(screen.getByRole('button', { name: /log today.s weight/i }));
+
+    await waitFor(() => {
+      expect(posthog.captureException).toHaveBeenCalledWith(boom, {
+        context: 'day_objectives_weight_log',
+      });
+    });
+  });
+
   it('ignores rapid double-clicks while day creation is in flight', async () => {
     let release!: () => void;
     const gate = new Promise<void>((resolve) => {
@@ -334,6 +351,31 @@ describe("Today's objectives card", () => {
           '/track/day/today/meal/fresh',
         );
       });
+    });
+
+    it('ignores a rapid double-tap instead of creating two meals', async () => {
+      let release!: (meal: { id: string }) => void;
+      addMealSpy.mockImplementationOnce(() => new Promise((resolve) => (release = resolve)));
+      renderApp([
+        makeDay({
+          id: 'today',
+          weightLbs: 182.5,
+          mealCountTarget: 4,
+          meals: [adhocMeal('m1', 400)],
+        }),
+      ]);
+
+      const cta = screen.getByRole('button', { name: /log meal 2 of 4/i });
+      fireEvent.click(cta);
+      fireEvent.click(cta);
+      release({ id: 'fresh' });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('location-probe')).toHaveTextContent(
+          '/track/day/today/meal/fresh',
+        );
+      });
+      expect(addMealSpy).toHaveBeenCalledTimes(1);
     });
 
     // A plan-copied meal arrives pre-filled; the Log control lives on the Day
