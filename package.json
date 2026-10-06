@@ -49,5 +49,10 @@
     "*": [
       "prettier --ignore-unknown --write"
     ]
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
   }
 }
