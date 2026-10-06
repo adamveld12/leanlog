@@ -6,3 +6,7 @@ pnpm-lock.yaml
 .agents
 .claude
 .pi
+apps/mobile/android
+apps/mobile/ios
+apps/mobile/.expo
+apps/mobile/src/db/migrations
