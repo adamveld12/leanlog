@@ -20,6 +20,8 @@ import { getProfile, getSettings } from './base';
 const CHUNK = 50;
 
 async function insertChunks<T>(rows: T[], insert: (chunk: T[]) => Promise<unknown>) {
+  // Chunks insert one after another inside the import transaction; one connection, so no parallelism.
+  // react-doctor-disable-next-line react-doctor/async-await-in-loop
   for (let i = 0; i < rows.length; i += CHUNK) await insert(rows.slice(i, i + CHUNK));
 }
 
@@ -56,6 +58,8 @@ export async function exportAll(
 export async function replaceAll(db: Db, file: unknown): Promise<void> {
   const data = MobileExportSchema.parse(file);
   await withTransaction(db, async () => {
+    // Statements in one transaction share a single SQLite connection and must run in order.
+    // react-doctor-disable-next-line react-doctor/async-parallel
     await db.delete(hcQueue);
     await db.delete(ingredients);
     await db.delete(meals);

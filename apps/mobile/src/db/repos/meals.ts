@@ -1,4 +1,4 @@
-import { asc, eq, max } from 'drizzle-orm';
+import { asc, eq, inArray, max } from 'drizzle-orm';
 import {
   NutritionFieldsSchema,
   scaleSavedFood,
@@ -34,12 +34,20 @@ export async function listMealsForDay(db: Db, date: string): Promise<MealWithIng
     .from(meals)
     .where(eq(meals.date, date))
     .orderBy(asc(meals.position));
-  const result: MealWithIngredients[] = [];
-  for (const meal of mealRows) {
-    const rows = await db.select().from(ingredients).where(eq(ingredients.mealId, meal.id));
-    result.push({ ...meal, ingredients: rows });
-  }
-  return result;
+  if (mealRows.length === 0) return [];
+  const rows = await db
+    .select()
+    .from(ingredients)
+    .where(
+      inArray(
+        ingredients.mealId,
+        mealRows.map((m) => m.id),
+      ),
+    );
+  return mealRows.map((meal) => ({
+    ...meal,
+    ingredients: rows.filter((r) => r.mealId === meal.id),
+  }));
 }
 
 async function requireEditableMeal(db: Db, mealId: string, today: string): Promise<Meal> {
@@ -81,6 +89,8 @@ export function addMeal(db: Db, today: string, date: string, name: string): Prom
 
 export function renameMeal(db: Db, today: string, mealId: string, name: string): Promise<void> {
   return withTransaction(db, async () => {
+    // Statements in one transaction share a single SQLite connection and must run in order.
+    // react-doctor-disable-next-line react-doctor/async-parallel
     const meal = await requireEditableMeal(db, mealId, today);
     await db.update(meals).set({ name }).where(eq(meals.id, mealId));
     await touchMeal(db, meal);
@@ -89,6 +99,8 @@ export function renameMeal(db: Db, today: string, mealId: string, name: string):
 
 export function deleteMeal(db: Db, today: string, mealId: string): Promise<void> {
   return withTransaction(db, async () => {
+    // Statements in one transaction share a single SQLite connection and must run in order.
+    // react-doctor-disable-next-line react-doctor/async-parallel
     await requireEditableMeal(db, mealId, today);
     await db.delete(meals).where(eq(meals.id, mealId));
     await enqueueNutritionDelete(db, mealId);
@@ -151,6 +163,8 @@ export function addIngredientFromSavedFood(
 ): Promise<Ingredient> {
   return withTransaction(db, async () => {
     const meal = await requireEditableMeal(db, mealId, today);
+    // Statements in one transaction share a single SQLite connection and must run in order.
+    // react-doctor-disable-next-line react-doctor/server-sequential-independent-await
     const food = await getSavedFood(db, savedFoodId);
     if (!food) throw new NotFoundError('Saved food', savedFoodId);
     const row = {

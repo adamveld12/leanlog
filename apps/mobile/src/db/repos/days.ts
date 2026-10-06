@@ -32,6 +32,8 @@ export type WeightInput = {
 export function setWeight(db: Db, today: string, date: string, input: WeightInput): Promise<void> {
   return withTransaction(db, async () => {
     assertEditableDay(date, today);
+    // Statements in one transaction share a single SQLite connection and must run in order.
+    // react-doctor-disable-next-line react-doctor/async-parallel
     await ensureDayRow(db, today);
     await db
       .update(days)

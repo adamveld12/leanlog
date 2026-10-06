@@ -5,7 +5,7 @@ import * as schema from '../db/schema';
 import type { Db } from '../db/types';
 
 // Apply the same bundled migrations the app runs through `useMigrations`.
-export function applyBundledMigrations(sqlite: Database.Database) {
+function applyBundledMigrations(sqlite: Database.Database) {
   for (const entry of migrations.journal.entries) {
     const text = migrations.migrations[`m${String(entry.idx).padStart(4, '0')}`];
     for (const statement of text.split('--> statement-breakpoint')) {

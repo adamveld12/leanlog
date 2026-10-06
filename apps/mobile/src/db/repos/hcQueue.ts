@@ -1,4 +1,3 @@
-import { asc, eq, sql } from 'drizzle-orm';
 import { hcQueue } from '../schema';
 import type { Db } from '../types';
 
@@ -26,18 +25,3 @@ export const enqueueNutritionUpsert = (db: Db, mealId: string) =>
 
 export const enqueueNutritionDelete = (db: Db, mealId: string) =>
   enqueue(db, { op: 'delete', recordType: 'Nutrition', clientRecordId: `meal:${mealId}` });
-
-export async function listPending(db: Db): Promise<HcQueueItem[]> {
-  return db.select().from(hcQueue).orderBy(asc(hcQueue.id));
-}
-
-export async function remove(db: Db, id: number): Promise<void> {
-  await db.delete(hcQueue).where(eq(hcQueue.id, id));
-}
-
-export async function markFailed(db: Db, id: number): Promise<void> {
-  await db
-    .update(hcQueue)
-    .set({ attempts: sql`${hcQueue.attempts} + 1` })
-    .where(eq(hcQueue.id, id));
-}

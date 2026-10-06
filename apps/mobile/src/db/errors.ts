@@ -12,7 +12,7 @@ export class NotFoundError extends Error {
   }
 }
 
-export class FutureDayError extends Error {
+class FutureDayError extends Error {
   constructor(date: string, today: string) {
     super(`Day ${date} is in the future (today is ${today})`);
     this.name = 'FutureDayError';

@@ -11,7 +11,7 @@ import type { Db } from '../types';
 import { getProfile } from './base';
 import { withTransaction } from '../tx';
 
-export async function latestWeightOnOrBefore(db: Db, date: string): Promise<number | null> {
+async function latestWeightOnOrBefore(db: Db, date: string): Promise<number | null> {
   const [row] = await db
     .select({ weightLbs: days.weightLbs })
     .from(days)
@@ -21,7 +21,7 @@ export async function latestWeightOnOrBefore(db: Db, date: string): Promise<numb
   return row?.weightLbs ?? null;
 }
 
-export async function latestBodyFatOnOrBefore(db: Db, date: string) {
+async function latestBodyFatOnOrBefore(db: Db, date: string) {
   const [row] = await db
     .select()
     .from(bodyFatResults)

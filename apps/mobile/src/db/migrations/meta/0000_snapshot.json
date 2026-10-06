@@ -46,9 +46,7 @@
       "indexes": {
         "body_fat_date_idx": {
           "name": "body_fat_date_idx",
-          "columns": [
-            "date"
-          ],
+          "columns": ["date"],
           "isUnique": false
         }
       },
@@ -268,10 +266,7 @@
       "indexes": {
         "hc_queue_record_idx": {
           "name": "hc_queue_record_idx",
-          "columns": [
-            "record_type",
-            "client_record_id"
-          ],
+          "columns": ["record_type", "client_record_id"],
           "isUnique": true
         }
       },
@@ -364,9 +359,7 @@
       "indexes": {
         "ingredients_meal_idx": {
           "name": "ingredients_meal_idx",
-          "columns": [
-            "meal_id"
-          ],
+          "columns": ["meal_id"],
           "isUnique": false
         }
       },
@@ -375,12 +368,8 @@
           "name": "ingredients_meal_id_meals_id_fk",
           "tableFrom": "ingredients",
           "tableTo": "meals",
-          "columnsFrom": [
-            "meal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meal_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -432,9 +421,7 @@
       "indexes": {
         "meals_date_idx": {
           "name": "meals_date_idx",
-          "columns": [
-            "date"
-          ],
+          "columns": ["date"],
           "isUnique": false
         }
       },
@@ -443,12 +430,8 @@
           "name": "meals_date_days_date_fk",
           "tableFrom": "meals",
           "tableTo": "days",
-          "columnsFrom": [
-            "date"
-          ],
-          "columnsTo": [
-            "date"
-          ],
+          "columnsFrom": ["date"],
+          "columnsTo": ["date"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
