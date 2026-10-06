@@ -13,3 +13,4 @@ export * from './progressPhotos';
 export { uuidv7 } from 'uuidv7';
 export * from './objectives';
 export * from './bodyFat';
+export * from './profileTargets';
