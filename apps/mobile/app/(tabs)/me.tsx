@@ -1,6 +1,3 @@
-import { Text } from '../../src/ui/atoms/Text';
+import { MeScreen } from '../../src/screens/MeScreen';
 
-// Placeholder until milestone C builds the screens from the mobile UI kit.
-export default function MeScreen() {
-  return <Text>Me</Text>;
-}
+export default MeScreen;
