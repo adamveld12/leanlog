@@ -255,6 +255,10 @@ export const api = {
       }),
     delete: (token: string, dayId: string) =>
       apiFetch<void>(`/api/days/${dayId}`, { token, method: 'DELETE' }),
+    // Asks the server to stamp the day's first all-objectives-complete time (#37).
+    // The server re-verifies, so this is a no-op for a day that isn't complete.
+    completeObjectives: (token: string, dayId: string) =>
+      apiFetch<DailyMealLog>(`/api/days/${dayId}/objectives-complete`, { token, method: 'POST' }),
     applyPlan: (token: string, dayId: string, planId: string) =>
       apiFetch<{ day: DailyMealLog; filled: number; skipped: number }>(
         `/api/days/${dayId}/apply-plan`,

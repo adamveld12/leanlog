@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { uuidv7 } from 'uuidv7';
 import { dailyMealLogs, meals, ingredients, goals } from '../schema';
@@ -208,6 +208,25 @@ export function createDayRepository(db: D1Database): DayRepository {
 
       const updated = await this.getById(userId, dayId);
       return { day: updated!, releasedKey };
+    },
+
+    async markObjectivesComplete(userId, dayId, at) {
+      const day = await this.getById(userId, dayId);
+      if (!day) return null;
+
+      // Write-once at the SQL level (R27): the isNull predicate makes a
+      // concurrent or repeated call update zero rows instead of overwriting.
+      await d
+        .update(dailyMealLogs)
+        .set({ objectivesCompletedAt: at, updatedAt: now() })
+        .where(
+          and(
+            eq(dailyMealLogs.id, dayId),
+            eq(dailyMealLogs.userId, userId),
+            isNull(dailyMealLogs.objectivesCompletedAt),
+          ),
+        );
+      return this.getById(userId, dayId);
     },
 
     async getMostRecentWeightDate(userId) {

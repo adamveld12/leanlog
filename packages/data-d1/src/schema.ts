@@ -104,6 +104,10 @@ export const dailyMealLogs = sqliteTable(
     frontPhotoKey: text('front_photo_key'),
     sidePhotoKey: text('side_photo_key'),
     backPhotoKey: text('back_photo_key'),
+    // The first time every daily objective was complete (#37 R25–R27). Null
+    // until then, and never cleared or overwritten once set — enforced by the
+    // write-once UPDATE in markObjectivesComplete, not by the schema.
+    objectivesCompletedAt: text('objectives_completed_at'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },

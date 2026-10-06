@@ -445,4 +445,57 @@ describe('createDayRepository', () => {
       expect(updated.weightLbs).toBeNull();
     });
   });
+
+  // #37 R25–R27: the first time every objective is complete is stamped on the
+  // day and never cleared or overwritten afterwards.
+  describe('markObjectivesComplete', () => {
+    test('a new day has no completion timestamp (R26)', async () => {
+      await seedUser(env.DB, userId);
+      const dayId = await seedDay(env.DB, userId, '2026-01-01');
+
+      const day = await createDayRepository(env.DB).getById(userId, dayId);
+      expect(day!.objectivesCompletedAt).toBeNull();
+    });
+
+    test('sets the timestamp and round-trips through getById (R25)', async () => {
+      await seedUser(env.DB, userId);
+      const dayId = await seedDay(env.DB, userId, '2026-01-01');
+      const repo = createDayRepository(env.DB);
+
+      const marked = await repo.markObjectivesComplete(userId, dayId, '2026-01-01T20:42:00.000Z');
+
+      expect(marked!.objectivesCompletedAt).toBe('2026-01-01T20:42:00.000Z');
+      const reloaded = await repo.getById(userId, dayId);
+      expect(reloaded!.objectivesCompletedAt).toBe('2026-01-01T20:42:00.000Z');
+    });
+
+    test('is write-once: a later call never overwrites the first timestamp (R27)', async () => {
+      await seedUser(env.DB, userId);
+      const dayId = await seedDay(env.DB, userId, '2026-01-01');
+      const repo = createDayRepository(env.DB);
+
+      await repo.markObjectivesComplete(userId, dayId, '2026-01-01T20:42:00.000Z');
+      const second = await repo.markObjectivesComplete(userId, dayId, '2026-01-01T23:59:00.000Z');
+
+      expect(second!.objectivesCompletedAt).toBe('2026-01-01T20:42:00.000Z');
+    });
+
+    test("does not touch another user's day and returns null", async () => {
+      const otherUser = `test-user-${uuidv7()}`;
+      await seedUser(env.DB, userId);
+      await seedUser(env.DB, otherUser);
+      const dayId = await seedDay(env.DB, userId, '2026-01-01');
+      const repo = createDayRepository(env.DB);
+
+      const result = await repo.markObjectivesComplete(
+        otherUser,
+        dayId,
+        '2026-01-01T20:42:00.000Z',
+      );
+
+      expect(result).toBeNull();
+      const day = await repo.getById(userId, dayId);
+      expect(day!.objectivesCompletedAt).toBeNull();
+    });
+  });
 });

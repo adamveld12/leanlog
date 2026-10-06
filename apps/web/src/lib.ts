@@ -4,6 +4,9 @@ import { resolveScannedMicronutrients, type NutritionUnit } from '@leanlog/data-
 export const round1 = (n: number) => Math.round(n * 10) / 10;
 export const todayIso = () => format(new Date(), 'yyyy-MM-dd');
 
+// Local-time label for an ISO instant, e.g. "8:42pm".
+export const timeLabel = (iso: string) => format(new Date(iso), 'h:mmaaa');
+
 // A day whose local date is before today is read-only (issue #41, R21/R22).
 export const isPastIso = (isoDate: string) => isoDate < todayIso();
 

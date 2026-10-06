@@ -28,6 +28,7 @@ vi.mock('posthog-js', () => ({
   default: {
     init: vi.fn(),
     capture: vi.fn(),
+    captureException: vi.fn(),
     identify: vi.fn(),
     reset: vi.fn(),
   },
@@ -83,6 +84,7 @@ vi.mock('../api', () => ({
       get: vi.fn(),
       updateTargets: vi.fn(),
       delete: vi.fn(),
+      completeObjectives: vi.fn(),
       applyPlan: vi.fn(),
     },
     meals: {

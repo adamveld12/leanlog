@@ -42,6 +42,10 @@ export interface DayRepository {
     key: string | null,
   ): Promise<{ day: DailyMealLog; releasedKey: string | null } | null>;
   getMostRecentWeightDate(userId: string): Promise<string | null>;
+  // Stamps the day's first all-objectives-complete time (#37). Write-once: a day
+  // that already has a timestamp is returned unchanged. Null when the day does
+  // not exist or is not the user's.
+  markObjectivesComplete(userId: string, dayId: string, at: string): Promise<DailyMealLog | null>;
   delete(userId: string, dayId: string): Promise<void>;
 }
 

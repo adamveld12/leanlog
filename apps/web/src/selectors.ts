@@ -10,6 +10,9 @@ import type {
   PoseComparison,
   Plan,
   PlanMeal,
+  PlanSummary,
+  Goal,
+  DayObjectives,
 } from '@leanlog/data-access';
 import {
   macroAccuracy,
@@ -25,6 +28,10 @@ import {
   addDaysIso,
   computeProgressComparisons,
   fiberAdjustedCalories,
+  dayObjectives,
+  deriveDayPlan,
+  resolveCoveringGoal,
+  DEFAULT_MEAL_NAMES,
 } from '@leanlog/data-access';
 import { parseLocalDate, sum, todayIso } from './lib';
 
@@ -118,6 +125,60 @@ export function daysLast90(days: DailyMealLog[], referenceDate?: string): DailyM
 export function todayLog(days: DailyMealLog[]): DailyMealLog | undefined {
   const today = todayIso();
   return days.find((day) => day.date === today);
+}
+
+// Day targets used only before any goal covers the date (the background goal is
+// seeded on first goals load, so this is a brief startup fallback). Shared by
+// addDay and the objectives preview so the preview matches the day it previews.
+export const FALLBACK_DAY_TARGETS = {
+  targetCalories: 2000,
+  targetFat: 70,
+  targetCarbs: 250,
+  targetProtein: 140,
+};
+
+// Today's objectives (#37). Before today's day row exists the card still has to
+// show something actionable, so this previews an empty day from what creating it
+// would produce: the covering goal's derived macro targets and its default plan's
+// meal count (or the four default meals). Only today is ever evaluated — past
+// days are for review, never action (R2).
+export function selectTodayObjectives(
+  days: DailyMealLog[],
+  goals: Goal[],
+  plans: PlanSummary[],
+  today: string = todayIso(),
+): DayObjectives {
+  const existing = days.find((d) => d.date === today);
+  if (existing) return dayObjectives(existing);
+
+  const derived = deriveDayPlan(today, goals, selectWeightEntries(days), today);
+  const targets = derived ?? FALLBACK_DAY_TARGETS;
+  const defaultPlanId = resolveCoveringGoal(today, goals)?.defaultPlanId;
+  const plan = defaultPlanId ? plans.find((p) => p.id === defaultPlanId) : undefined;
+  const ts = new Date().toISOString();
+
+  return dayObjectives({
+    id: '',
+    userId: '',
+    date: today,
+    targetCalories: targets.targetCalories,
+    targetFat: targets.targetFat,
+    targetCarbs: targets.targetCarbs,
+    targetProtein: targets.targetProtein,
+    mealCountTarget: plan ? plan.meals.length : DEFAULT_MEAL_NAMES.length,
+    weightLbs: null,
+    shoulderInches: null,
+    waistInches: null,
+    bicepInches: null,
+    thighInches: null,
+    frontPhotoKey: null,
+    sidePhotoKey: null,
+    backPhotoKey: null,
+    objectivesCompletedAt: null,
+    meals: [],
+    createdAt: ts,
+    updatedAt: ts,
+  });
 }
 
 export function trackedDatesMap(days: DailyMealLog[]): Map<string, string> {

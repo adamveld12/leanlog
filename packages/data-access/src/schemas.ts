@@ -352,6 +352,10 @@ export const DailyMealLogSchema = z.object({
   frontPhotoKey: z.string().nullable().default(null),
   sidePhotoKey: z.string().nullable().default(null),
   backPhotoKey: z.string().nullable().default(null),
+  // First time every daily objective was complete (#37 R25–R27). Null until
+  // then; written only by the server-verified objectives-complete endpoint, so
+  // it is deliberately absent from DayTargetsSchema and CreateDailyMealLogSchema.
+  objectivesCompletedAt: z.string().datetime().nullable().default(null),
   meals: z.array(MealSchema).default([]),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -395,6 +399,7 @@ export const CreateDailyMealLogSchema = DailyMealLogSchema.omit({
   frontPhotoKey: true,
   sidePhotoKey: true,
   backPhotoKey: true,
+  objectivesCompletedAt: true,
   createdAt: true,
   updatedAt: true,
 }).extend({

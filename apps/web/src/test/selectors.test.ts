@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { DailyMealLog } from '@leanlog/data-access';
+import {
+  deriveDayPlan,
+  type DailyMealLog,
+  type Goal,
+  type PlanSummary,
+} from '@leanlog/data-access';
 import {
   dayTotals,
   mealTotals,
@@ -19,7 +24,10 @@ import {
   selectWeeklyWeightEntries,
   selectLatestMeasurements,
   selectMeasurementsDue,
+  selectTodayObjectives,
+  FALLBACK_DAY_TARGETS,
 } from '../selectors';
+import { todayIso } from '../lib';
 
 const now = new Date().toISOString();
 
@@ -41,6 +49,7 @@ function makeDay(overrides: Partial<DailyMealLog> = {}): DailyMealLog {
     frontPhotoKey: null,
     sidePhotoKey: null,
     backPhotoKey: null,
+    objectivesCompletedAt: null,
     meals: [],
     createdAt: now,
     updatedAt: now,
@@ -586,5 +595,75 @@ describe('measurement selectors (#68)', () => {
   it('selectMeasurementsDue: a partial set in the window does not satisfy the cadence', () => {
     const days = [makeDay({ id: 'a', date: '2026-06-25', shoulderInches: 50, waistInches: 32 })];
     expect(selectMeasurementsDue(days, '2026-06-26')).toBe(true);
+  });
+});
+
+// #37 D7: the objectives card renders before today's day row exists, so the
+// selector previews it from the covering goal and its default plan.
+describe('selectTodayObjectives', () => {
+  const background: Goal = {
+    id: 'g-bg',
+    userId: 'u1',
+    isBackground: true,
+    name: null,
+    description: null,
+    mode: 'maintain',
+    targetWeightLbs: null,
+    macroFats: 25,
+    macroCarbs: 35,
+    macroProtein: 40,
+    startDate: null,
+    endDate: null,
+    calorieDelta: 0,
+    calorieBasis: 'bodyweight',
+    bodyFatPct: null,
+    activityLevel: null,
+    defaultPlanId: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  it("reflects today's stored day when it exists", () => {
+    const today = makeDay({ id: 'today', date: todayIso(), weightLbs: 182.5, mealCountTarget: 3 });
+
+    const o = selectTodayObjectives([today], [background], []);
+
+    expect(o.weight).toEqual({ complete: true, weightLbs: 182.5 });
+    expect(o.meals.target).toBe(3);
+  });
+
+  it("ignores other days: yesterday's weight never completes today's objective", () => {
+    const yesterday = makeDay({ id: 'y', date: '2000-01-01', weightLbs: 181 });
+
+    expect(selectTodayObjectives([yesterday], [], []).weight.complete).toBe(false);
+  });
+
+  it('previews an incomplete day with the four default meals when there is no plan', () => {
+    const o = selectTodayObjectives([], [], []);
+
+    expect(o.weight.complete).toBe(false);
+    expect(o.meals).toEqual({ complete: false, eaten: 0, target: 4 });
+    expect(o.allComplete).toBe(false);
+  });
+
+  // Mirrors addDay: with no covering goal yet, a created day gets the fallback
+  // targets — so the preview must show those, not zeros.
+  it('previews the same fallback targets addDay would use when no goal covers today', () => {
+    const o = selectTodayObjectives([], [], []);
+
+    expect(o.macros.protein.target).toBe(FALLBACK_DAY_TARGETS.targetProtein);
+    expect(o.macros.calories.target).toBe(FALLBACK_DAY_TARGETS.targetCalories);
+  });
+
+  it("uses the covering goal's default plan meal count and derived macro targets", () => {
+    const goal: Goal = { ...background, defaultPlanId: 'p1' };
+    const plan = { id: 'p1', meals: [{}, {}, {}] } as unknown as PlanSummary;
+
+    const o = selectTodayObjectives([], [goal], [plan]);
+
+    expect(o.meals.target).toBe(3);
+    const derived = deriveDayPlan(todayIso(), [goal], [], todayIso())!;
+    expect(o.macros.protein.target).toBe(derived.targetProtein);
+    expect(o.macros.calories.target).toBe(derived.targetCalories);
   });
 });

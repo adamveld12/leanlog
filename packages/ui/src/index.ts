@@ -79,3 +79,4 @@ export * from './templates/PlanEditTemplate';
 export * from './templates/ProfileTemplate';
 export * from './templates/NutritionFactsDatabaseTemplate';
 export * from './templates/GoalsTemplate';
+export * from './organisms/TodayObjectivesCard';

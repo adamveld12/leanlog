@@ -31,7 +31,7 @@ const meta: Meta<typeof DayListTemplate> = {
         </a>
       ),
     },
-    quickActions: <QuickActionsCard hasToday={false} hasDays={false} onAction={() => {}} />,
+    quickActions: <QuickActionsCard hasDays={false} />,
     statistics: (
       <WeeklyStatsCard
         weekly={emptyStats}

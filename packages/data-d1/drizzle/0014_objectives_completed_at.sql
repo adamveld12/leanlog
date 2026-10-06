@@ -1,0 +1,1 @@
+ALTER TABLE `daily_meal_logs` ADD `objectives_completed_at` text;

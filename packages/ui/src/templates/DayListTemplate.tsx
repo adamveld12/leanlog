@@ -4,6 +4,8 @@ import { AppShell } from './AppShell';
 
 export type DayListTemplateProps = {
   heading: ComponentProps<typeof PageNavHeading>;
+  /** Today's objectives command center (#37); leads the page when present. */
+  objectives?: ReactNode;
   quickActions: ReactNode;
   statistics: ReactNode;
   /** The month calendar, which also creates today/future days on tap (#41). */
@@ -15,6 +17,7 @@ export type DayListTemplateProps = {
 
 export function DayListTemplate({
   heading,
+  objectives,
   quickActions,
   statistics,
   calendar,
@@ -24,6 +27,7 @@ export function DayListTemplate({
   return (
     <AppShell>
       <PageNavHeading {...heading} />
+      {objectives}
       {quickActions}
       {statistics}
       {calendar}

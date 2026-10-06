@@ -12,20 +12,7 @@ type Story = StoryObj<typeof QuickActionsCard>;
 
 export const ActiveUser: Story = {
   args: {
-    hasToday: true,
     hasDays: true,
-    today: {
-      calories: 1520,
-      calorieTarget: 2700,
-      adjustedCalories: 1520,
-      protein: 130,
-      proteinTarget: 270,
-      carbs: 95,
-      carbsTarget: 236,
-      fat: 48,
-      fatTarget: 75,
-      fiber: 12,
-    },
     week: {
       calories: 8200,
       calorieTarget: 18900,
@@ -39,16 +26,14 @@ export const ActiveUser: Story = {
       fiber: 84,
     },
     weekDayCount: 3,
-    onAction: () => {},
     activeGoal: { summary: 'GOAL: 🎯 Cut · ends Jul 31', onOpen: () => {} },
     onOpenPlans: () => {},
     onAddExtra: () => {},
   },
 };
 
-export const NoTodayEntry: Story = {
+export const WeekOnly: Story = {
   args: {
-    hasToday: false,
     hasDays: true,
     week: {
       calories: 5400,
@@ -63,24 +48,19 @@ export const NoTodayEntry: Story = {
       fiber: 56,
     },
     weekDayCount: 2,
-    onAction: () => {},
   },
 };
 
 export const ZeroDays: Story = {
   args: {
-    hasToday: false,
     hasDays: false,
-    onAction: () => {},
   },
 };
 
 // #93: the app supplies the nutrition database search for the inline extra flow.
 export const WithExtraDatabaseSearch: Story = {
   args: {
-    hasToday: true,
     hasDays: true,
-    onAction: () => {},
     onAddExtra: () => {},
     extraDatabaseSearch: <SectionCard title="Nutrition Facts Database">Results here.</SectionCard>,
   },
