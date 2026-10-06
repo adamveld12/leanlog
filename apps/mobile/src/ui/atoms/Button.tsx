@@ -10,6 +10,8 @@ type Props = {
   variant?: ButtonVariant;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  // Overrides the spoken name when the visible label is a glyph.
+  accessibilityLabel?: string;
   testID?: string;
 };
 
@@ -19,6 +21,7 @@ export function Button({
   variant = 'primary',
   disabled = false,
   style,
+  accessibilityLabel,
   testID,
 }: Props) {
   const c = useColors();
@@ -30,6 +33,7 @@ export function Button({
     <Pressable
       testID={testID}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}

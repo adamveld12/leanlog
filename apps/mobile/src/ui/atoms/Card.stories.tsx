@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
-import { Button } from './Button';
 import { Card } from './Card';
 import { Text } from './Text';
 
@@ -18,7 +17,8 @@ export const WithTitle: Story = {
 export const WithHeaderSlot: Story = {
   args: {
     title: 'Lunch',
-    headerEnd: <Text variant="helper">720 kcal</Text>,
-    children: <Button variant="secondary" label="+ Add food" />,
+    headerNote: '720 kcal',
+    headerAction: { label: 'Edit', onPress: () => {} },
+    children: <Text>Rice 200 g</Text>,
   },
 };
