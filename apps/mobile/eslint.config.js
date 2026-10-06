@@ -6,6 +6,11 @@ module.exports = tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    },
+  },
+  {
     files: ['**/*.{js,cjs}'],
     languageOptions: {
       globals: { module: 'writable', require: 'readonly', __dirname: 'readonly' },
