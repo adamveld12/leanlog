@@ -53,7 +53,7 @@ const days: MobileExport['days'] = Array.from({ length: DAYS }, (_, i) => {
 
 const yesterday = addDaysIso(TODAY, -1);
 
-export const mobileSampleExport: MobileExport = {
+const raw: MobileExport = {
   format: 'leanlog-mobile',
   version: 1,
   exportedAt: '2026-10-06T12:00:00.000Z',
@@ -167,4 +167,15 @@ export const mobileSampleExport: MobileExport = {
     },
   ],
   errorLog: [],
+};
+
+const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+// Canonical row order, matching what the mobile repositories export:
+// meals by date then position, ingredients by meal then id, foods by id.
+export const mobileSampleExport: MobileExport = {
+  ...raw,
+  meals: [...raw.meals].sort((a, b) => cmp(a.date, b.date) || a.position - b.position),
+  ingredients: [...raw.ingredients].sort((a, b) => cmp(a.mealId, b.mealId) || cmp(a.id, b.id)),
+  savedFoods: [...raw.savedFoods].sort((a, b) => cmp(a.id, b.id)),
 };
