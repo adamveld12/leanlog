@@ -1,7 +1,7 @@
 // Must be the first import: uuidv7 needs crypto.getRandomValues, which Hermes lacks.
 import 'react-native-get-random-values';
 import { Stack } from 'expo-router';
-import { Text } from 'react-native';
+import { Text } from '../src/ui/atoms/Text';
 import { useDatabase } from '../src/db/useDatabase';
 import { MobileStoreProvider } from '../src/state/MobileStore';
 
