@@ -86,16 +86,19 @@ export function MealScreen() {
                 void run(async () => {
                   let savedFoodId: string | null = null;
                   if (saveAsFood) {
-                    const food = await actions.createSavedFood({
-                      name: ingredient.name,
-                      referenceGrams: ingredient.grams,
-                      calories: ingredient.calories,
-                      fat: ingredient.fat,
-                      saturatedFat: ingredient.saturatedFat,
-                      carbs: ingredient.carbs,
-                      fiber: ingredient.fiber,
-                      protein: ingredient.protein,
-                    });
+                    const food = await actions.createSavedFood(
+                      {
+                        name: ingredient.name,
+                        referenceGrams: ingredient.grams,
+                        calories: ingredient.calories,
+                        fat: ingredient.fat,
+                        saturatedFat: ingredient.saturatedFat,
+                        carbs: ingredient.carbs,
+                        fiber: ingredient.fiber,
+                        protein: ingredient.protein,
+                      },
+                      'entry',
+                    );
                     savedFoodId = food.id;
                   }
                   await actions.addIngredient(meal.id, { ...ingredient, savedFoodId });

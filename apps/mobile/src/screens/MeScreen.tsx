@@ -2,9 +2,14 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Linking } from 'react-native';
 import { FALLBACK_WEIGHT_LBS } from '@leanlog/data-access';
+import { analyticsAvailable, setAnalyticsEnabled, track } from '../telemetry/analytics';
+import { describeCounts } from '../backup/describe';
+import type { ImportPreview } from '../backup/importData';
 import type { HcStatus } from '../health/HealthConnectService';
 import { Screen } from '../ui/atoms/Screen';
 import { Text } from '../ui/atoms/Text';
+import { ConfirmDialog } from '../ui/molecules/ConfirmDialog';
+import { BackupCard } from '../ui/organisms/BackupCard';
 import { HealthConnectCard } from '../ui/organisms/HealthConnectCard';
 import { ProfileCard } from '../ui/organisms/ProfileCard';
 import { SettingsCard } from '../ui/organisms/SettingsCard';
@@ -18,10 +23,12 @@ const HEALTH_CONNECT_PACKAGE = 'com.google.android.apps.healthdata';
 type HealthConnectInfo = { status: HcStatus; connected: boolean; pending: number };
 
 export function MeScreen() {
-  const { state, actions, healthConnect } = useMobileStore();
+  const { state, actions, healthConnect, backup } = useMobileStore();
   const router = useRouter();
   const { error, saved, run } = useRunAction();
   const [hcInfo, setHcInfo] = useState<HealthConnectInfo | null>(null);
+  const [preview, setPreview] = useState<ImportPreview | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const service = healthConnect?.service;
   const loadHcInfo = useCallback(async () => {
@@ -73,6 +80,21 @@ export function MeScreen() {
       <SettingsCard
         units={settings.units}
         onChangeUnits={(units) => void run(() => actions.updateSettings({ units }))}
+        analytics={
+          analyticsAvailable()
+            ? {
+                enabled: settings.analyticsOptIn,
+                onChange: (enabled) =>
+                  void run(async () => {
+                    // Say it was turned off while the client still exists, then stop it.
+                    if (enabled) setAnalyticsEnabled(true);
+                    track('analytics_opt_in_changed', { enabled });
+                    if (!enabled) setAnalyticsEnabled(false);
+                    await actions.updateSettings({ analyticsOptIn: enabled });
+                  }),
+              }
+            : undefined
+        }
       />
       {healthConnect ? (
         <HealthConnectCard
@@ -103,6 +125,49 @@ export function MeScreen() {
           onWhy={() => router.push('/health-rationale')}
         />
       ) : null}
+      {backup ? (
+        <>
+          <BackupCard
+            onExport={() => {
+              setNotice(null);
+              void run(
+                async () => {
+                  const result = await backup.exportBackup();
+                  setNotice(`Exported ${result.fileName}`);
+                },
+                { quiet: true },
+              );
+            }}
+            onImport={() => {
+              setNotice(null);
+              void run(async () => setPreview(await backup.pickBackup()), { quiet: true });
+            }}
+          />
+          <ConfirmDialog
+            visible={preview !== null}
+            title="Replace everything on this phone?"
+            message={
+              preview
+                ? `${preview.fileName} has ${describeCounts(preview.counts)}. Importing replaces all your current data and can't be undone.`
+                : ''
+            }
+            confirmLabel="Replace all data"
+            onCancel={() => setPreview(null)}
+            onConfirm={() => {
+              if (!preview) return;
+              void run(
+                async () => {
+                  await backup.importBackup(preview);
+                  setPreview(null);
+                  setNotice(`Imported ${preview.fileName}`);
+                },
+                { quiet: true },
+              );
+            }}
+          />
+        </>
+      ) : null}
+      {notice ? <Text variant="helper">{notice}</Text> : null}
       {saved ? <Text variant="helper">Saved</Text> : null}
       {error ? <Text variant="warning">{error}</Text> : null}
     </Screen>

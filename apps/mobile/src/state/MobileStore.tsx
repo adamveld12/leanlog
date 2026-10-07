@@ -10,10 +10,16 @@ import {
   type ReactNode,
 } from 'react';
 import { AppState } from 'react-native';
+import { exportBackup } from '../backup/exportData';
+import { pickBackup, type ImportPreview } from '../backup/importData';
+import type { BackupIO } from '../backup/io';
 import { ensureSeeded } from '../db/repos/base';
+import { replaceAll } from '../db/repos/exportImport';
 import { ensureToday } from '../db/repos/targets';
 import type { Db } from '../db/types';
 import type { HealthConnectService } from '../health/HealthConnectService';
+import { track } from '../telemetry/analytics';
+import { reportError } from '../telemetry/reportError';
 import { createActions, type Actions } from './actions';
 import { localDate, msUntilNextLocalMidnight } from './date';
 import { reducer, type State } from './reducer';
@@ -27,7 +33,20 @@ type HealthConnectControls = {
   disconnect: () => Promise<void>;
 };
 
-type Store = { state: State; actions: Actions; healthConnect: HealthConnectControls | null };
+// Present when the device's file system, share sheet and picker are wired in.
+type BackupControls = {
+  exportBackup: () => ReturnType<typeof exportBackup>;
+  pickBackup: () => Promise<ImportPreview | null>;
+  // Replaces all local data with the (already validated) preview, then makes sure today exists.
+  importBackup: (preview: ImportPreview) => Promise<void>;
+};
+
+type Store = {
+  state: State;
+  actions: Actions;
+  healthConnect: HealthConnectControls | null;
+  backup: BackupControls | null;
+};
 
 const StoreContext = createContext<Store | null>(null);
 
@@ -43,6 +62,8 @@ type Props = {
   clock?: () => Date;
   // Optional: sends saved data to Health Connect and imports a smart-scale weight.
   healthConnect?: HealthConnectService;
+  // Optional: export/import through the share sheet and document picker.
+  backupIo?: BackupIO;
   children: ReactNode;
 };
 
@@ -52,7 +73,13 @@ const defaultClock = () => new Date();
 // repositories (which enforce locking, re-derive today's targets and queue
 // Health Connect work in one transaction); the store reloads afterwards. The
 // local day is re-checked on foreground and at local midnight.
-export function MobileStoreProvider({ db, clock = defaultClock, healthConnect, children }: Props) {
+export function MobileStoreProvider({
+  db,
+  clock = defaultClock,
+  healthConnect,
+  backupIo,
+  children,
+}: Props) {
   const [state, dispatch] = useReducer(reducer, { status: 'loading' });
   const todayRef = useRef('');
   if (!todayRef.current) todayRef.current = localDate(clock());
@@ -133,19 +160,62 @@ export function MobileStoreProvider({ db, clock = defaultClock, healthConnect, c
               const connected = await healthConnect.connect();
               await refresh();
               if (connected) void syncHealthConnect();
+              track('hc_permissions_changed', {
+                granted: await healthConnect.grantedPermissions(),
+              });
               return connected;
             },
             disconnect: async () => {
               await healthConnect.disconnect();
               await refresh();
+              track('hc_permissions_changed', { granted: [] });
             },
           }
         : null,
     [healthConnect, refresh, syncHealthConnect],
   );
+  const backup = useMemo<BackupControls | null>(
+    () =>
+      backupIo
+        ? {
+            exportBackup: async () => {
+              try {
+                const result = await exportBackup(db, backupIo, clockRef.current());
+                track('export_completed', { ...result.counts });
+                return result;
+              } catch (error) {
+                await reportError(db, 'backup', error);
+                throw error;
+              }
+            },
+            pickBackup: async () => {
+              try {
+                return await pickBackup(backupIo);
+              } catch (error) {
+                await reportError(db, 'backup', error);
+                throw error;
+              }
+            },
+            importBackup: async (preview) => {
+              try {
+                // Each step depends on the one before: replace, then recreate today, then reload.
+                // react-doctor-disable-next-line react-doctor/async-parallel
+                await replaceAll(db, preview.data);
+                await ensureToday(db, todayRef.current);
+                await refresh();
+                track('import_completed', { ...preview.counts });
+              } catch (error) {
+                await reportError(db, 'backup', error);
+                throw error;
+              }
+            },
+          }
+        : null,
+    [db, backupIo, refresh],
+  );
   const value = useMemo(
-    () => ({ state, actions, healthConnect: healthConnectControls }),
-    [state, actions, healthConnectControls],
+    () => ({ state, actions, healthConnect: healthConnectControls, backup }),
+    [state, actions, healthConnectControls, backup],
   );
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

@@ -6,12 +6,16 @@ import { useState } from 'react';
 export function useRunAction() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const run = async (action: () => Promise<unknown>): Promise<boolean> => {
+  // `quiet` skips the "Saved" confirmation for actions that report their own result.
+  const run = async (
+    action: () => Promise<unknown>,
+    options: { quiet?: boolean } = {},
+  ): Promise<boolean> => {
     setSaved(false);
     try {
       await action();
       setError(null);
-      setSaved(true);
+      setSaved(!options.quiet);
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
