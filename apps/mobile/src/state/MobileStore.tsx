@@ -18,6 +18,8 @@ import { replaceAll } from '../db/repos/exportImport';
 import { ensureToday } from '../db/repos/targets';
 import type { Db } from '../db/types';
 import type { HealthConnectService } from '../health/HealthConnectService';
+import { track } from '../telemetry/analytics';
+import { reportError } from '../telemetry/reportError';
 import { createActions, type Actions } from './actions';
 import { localDate, msUntilNextLocalMidnight } from './date';
 import { reducer, type State } from './reducer';
@@ -158,11 +160,15 @@ export function MobileStoreProvider({
               const connected = await healthConnect.connect();
               await refresh();
               if (connected) void syncHealthConnect();
+              track('hc_permissions_changed', {
+                granted: await healthConnect.grantedPermissions(),
+              });
               return connected;
             },
             disconnect: async () => {
               await healthConnect.disconnect();
               await refresh();
+              track('hc_permissions_changed', { granted: [] });
             },
           }
         : null,
@@ -172,14 +178,36 @@ export function MobileStoreProvider({
     () =>
       backupIo
         ? {
-            exportBackup: () => exportBackup(db, backupIo, clockRef.current()),
-            pickBackup: () => pickBackup(backupIo),
+            exportBackup: async () => {
+              try {
+                const result = await exportBackup(db, backupIo, clockRef.current());
+                track('export_completed', { ...result.counts });
+                return result;
+              } catch (error) {
+                await reportError(db, 'backup', error);
+                throw error;
+              }
+            },
+            pickBackup: async () => {
+              try {
+                return await pickBackup(backupIo);
+              } catch (error) {
+                await reportError(db, 'backup', error);
+                throw error;
+              }
+            },
             importBackup: async (preview) => {
-              // Each step depends on the one before: replace, then recreate today, then reload.
-              // react-doctor-disable-next-line react-doctor/async-parallel
-              await replaceAll(db, preview.data);
-              await ensureToday(db, todayRef.current);
-              await refresh();
+              try {
+                // Each step depends on the one before: replace, then recreate today, then reload.
+                // react-doctor-disable-next-line react-doctor/async-parallel
+                await replaceAll(db, preview.data);
+                await ensureToday(db, todayRef.current);
+                await refresh();
+                track('import_completed', { ...preview.counts });
+              } catch (error) {
+                await reportError(db, 'backup', error);
+                throw error;
+              }
             },
           }
         : null,

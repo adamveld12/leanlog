@@ -11,3 +11,6 @@ type Story = StoryObj<typeof meta>;
 
 export const Imperial: Story = {};
 export const Metric: Story = { args: { units: 'metric' } };
+export const WithAnalytics: Story = {
+  args: { analytics: { enabled: false, onChange: () => {} } },
+};

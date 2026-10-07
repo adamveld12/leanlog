@@ -27,7 +27,8 @@ type Props = {
   // Current weight and body fat (null before the first calculation).
   weightLbs: number;
   bodyFatPct: number | null;
-  onSave: (draft: TargetsDraft) => void;
+  // Only the fields the user changed, so each change is recorded for what it is.
+  onSave: (changes: Partial<TargetsDraft>) => void;
 };
 
 type ActivityValue = 'none' | ActivityLevel;
@@ -119,15 +120,23 @@ export function TargetsCard({ initial, weightLbs, bodyFatPct, onSave }: Props) {
       <Button
         label="Save targets"
         disabled={!canSave}
-        onPress={() =>
-          onSave({
+        onPress={() => {
+          const next: TargetsDraft = {
             activityLevel: activity === 'none' ? null : activity,
             calorieDelta: deltaValue,
             macroFats: fats ?? 0,
             macroCarbs: carbs ?? 0,
             macroProtein: protein ?? 0,
-          })
-        }
+          };
+          const changes: Partial<TargetsDraft> = {};
+          if (next.activityLevel !== initial.activityLevel)
+            changes.activityLevel = next.activityLevel;
+          if (next.calorieDelta !== initial.calorieDelta) changes.calorieDelta = next.calorieDelta;
+          if (next.macroFats !== initial.macroFats) changes.macroFats = next.macroFats;
+          if (next.macroCarbs !== initial.macroCarbs) changes.macroCarbs = next.macroCarbs;
+          if (next.macroProtein !== initial.macroProtein) changes.macroProtein = next.macroProtein;
+          onSave(changes);
+        }}
       />
     </Card>
   );

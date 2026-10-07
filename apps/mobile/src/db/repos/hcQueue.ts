@@ -1,8 +1,8 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
-import { uuidv7 } from '@leanlog/data-access';
-import { errorLog, hcQueue } from '../schema';
+import { hcQueue } from '../schema';
 import { withTransaction } from '../tx';
 import type { Db } from '../types';
+import { logError } from './errorLog';
 
 export type HcQueueItem = typeof hcQueue.$inferSelect;
 export type NewHcQueueItem = Pick<
@@ -59,12 +59,11 @@ export function markFailed(db: Db, item: HcQueueItem, reason: string): Promise<v
     const attempts = item.attempts + 1;
     await db.update(hcQueue).set({ attempts }).where(eq(hcQueue.id, item.id));
     if (attempts === LOG_AFTER_ATTEMPTS) {
-      await db.insert(errorLog).values({
-        id: uuidv7(),
-        at: new Date().toISOString(),
-        source: 'health-connect',
-        message: `${item.recordType} sync failed after ${attempts} attempts: ${reason}`,
-      });
+      await logError(
+        db,
+        'health-connect',
+        new Error(`${item.recordType} sync failed after ${attempts} attempts: ${reason}`),
+      );
     }
   });
 }

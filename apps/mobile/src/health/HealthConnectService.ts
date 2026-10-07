@@ -229,6 +229,11 @@ export function createHealthConnectService({ client, db, ownPackage }: Deps) {
     return { weightLbs, heightIn };
   }
 
+  // e.g. ['read:Weight', 'write:Nutrition'], for the analytics event and diagnostics.
+  async function grantedPermissions(): Promise<string[]> {
+    return [...(await granted())].sort();
+  }
+
   async function pendingCount(): Promise<number> {
     return (await listPending(db)).length;
   }
@@ -242,6 +247,7 @@ export function createHealthConnectService({ client, db, ownPackage }: Deps) {
     flushQueue,
     importTodayWeight,
     readProfileHints,
+    grantedPermissions,
     pendingCount,
   };
 }

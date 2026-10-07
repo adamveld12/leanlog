@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Linking } from 'react-native';
 import { FALLBACK_WEIGHT_LBS } from '@leanlog/data-access';
+import { analyticsAvailable, setAnalyticsEnabled, track } from '../telemetry/analytics';
 import { describeCounts } from '../backup/describe';
 import type { ImportPreview } from '../backup/importData';
 import type { HcStatus } from '../health/HealthConnectService';
@@ -79,6 +80,21 @@ export function MeScreen() {
       <SettingsCard
         units={settings.units}
         onChangeUnits={(units) => void run(() => actions.updateSettings({ units }))}
+        analytics={
+          analyticsAvailable()
+            ? {
+                enabled: settings.analyticsOptIn,
+                onChange: (enabled) =>
+                  void run(async () => {
+                    // Say it was turned off while the client still exists, then stop it.
+                    if (enabled) setAnalyticsEnabled(true);
+                    track('analytics_opt_in_changed', { enabled });
+                    if (!enabled) setAnalyticsEnabled(false);
+                    await actions.updateSettings({ analyticsOptIn: enabled });
+                  }),
+              }
+            : undefined
+        }
       />
       {healthConnect ? (
         <HealthConnectCard

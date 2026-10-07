@@ -73,7 +73,8 @@ describe('Me › Backup', () => {
     await fireEvent.press(await screen.findByRole('button', { name: 'Import data' }));
     expect(await screen.findByText("That file isn't a Leanlog backup.")).toBeTruthy();
     expect(screen.queryByText('Replace everything on this phone?')).toBeNull();
-    expect(await exportAll(db, 'x')).toEqual(before);
+    // The rejection itself is recorded in the error log; everything else is untouched.
+    expect({ ...(await exportAll(db, 'x')), errorLog: [] }).toEqual({ ...before, errorLog: [] });
   });
 
   it('does nothing when the picker is cancelled', async () => {

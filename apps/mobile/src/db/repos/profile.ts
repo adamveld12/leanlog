@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { MobileProfileSchema, minProfileDelta, type MobileProfile } from '@leanlog/data-access';
+import { DomainError } from '../errors';
 import { profile } from '../schema';
 import { withTransaction } from '../tx';
 import type { Db } from '../types';
@@ -10,7 +11,7 @@ import { deriveInputs, refreshTodayRow } from './targets';
 export { ensureSeeded, getProfile } from './base';
 
 // Thrown when a calorie delta would push carb calories below 0 (R18).
-export class DeltaBelowFloorError extends Error {
+export class DeltaBelowFloorError extends DomainError {
   readonly minDelta: number;
   constructor(minDelta: number) {
     super(`Calorie delta can't go below ${minDelta}`);

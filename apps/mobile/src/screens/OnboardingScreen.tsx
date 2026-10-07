@@ -8,6 +8,7 @@ import {
   OnboardingProfileCard,
   type OnboardingProfile,
 } from '../ui/organisms/OnboardingProfileCard';
+import { track } from '../telemetry/analytics';
 import { useMobileStore } from '../state/MobileStore';
 import { useRunAction } from './useRunAction';
 
@@ -93,6 +94,10 @@ export function OnboardingScreen() {
             void run(async () => {
               await actions.logWeight(step.profile.weightLbs);
               await actions.updateProfile(toProfilePatch(step.profile));
+              track('onboarding_completed', {
+                hcGranted: (await service?.isConnected()) ?? false,
+                bodyFatDone: false,
+              });
             })
           }
         />
@@ -120,6 +125,10 @@ export function OnboardingScreen() {
               await actions.saveBodyFat({
                 ...result,
                 profilePatch: { ...result.profilePatch, ...toProfilePatch(step.profile) },
+              });
+              track('onboarding_completed', {
+                hcGranted: (await service?.isConnected()) ?? false,
+                bodyFatDone: true,
               });
             })
           }
