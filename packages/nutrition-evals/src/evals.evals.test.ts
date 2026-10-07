@@ -67,7 +67,7 @@ describe.skipIf(!apiKey)('nutrition scan eval harness', () => {
 
     const report = renderReport(results, fixtures.length);
     writeFileSync(REPORT_PATH, report);
-    // eslint-disable-next-line no-console
+    // oxlint-disable-next-line no-console
     console.log(`\n${report}`);
     expect(report).toContain('Nutrition Scan Eval');
   });

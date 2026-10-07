@@ -54,7 +54,7 @@ Your task is to understand the implementation & requirements and then write code
 4. Build, check and iterate
     - Make logical commits as you go. Commit often
     - Use conventional commits message format
-    - The pre-commit hook (tsc + eslint + `design:audit` + react-lint) runs on each commit; the pre-push hook runs `pnpm test`. No need to run these manually first — but expect the push to be blocked until the suite is green.
+    - The pre-commit hook (tsc + oxlint + `design:audit` + react-lint) runs on each commit; the pre-push hook runs `pnpm test`. No need to run these manually first — but expect the push to be blocked until the suite is green.
 
 5. Open a PR
     - After opening, offer to watch it (`subscribe_pr_activity`) to autofix CI/review feedback.

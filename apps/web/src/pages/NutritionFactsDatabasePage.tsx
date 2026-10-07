@@ -302,7 +302,7 @@ export default function NutritionFactsDatabasePage() {
               if (state.editingId) {
                 // creationSource is immutable on edit; drop it so the strict
                 // update schema accepts the payload.
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                // oxlint-disable-next-line no-unused-vars
                 const { creationSource, ...editable } = payload;
                 void updateNutritionDatabaseIngredient(state.editingId, editable)
                   .then((label) => {

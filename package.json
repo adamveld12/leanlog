@@ -15,7 +15,9 @@
     "test:evals": "pnpm --filter @leanlog/nutrition-evals test:evals",
     "test:watch": "pnpm -r test:watch",
     "test:coverage": "pnpm -r test:coverage",
-    "format": "prettier --write .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint:ox": "oxlint",
     "prepare": "husky",
     "design:audit": "node scripts/design-system-audit.mjs",
     "dev:vite": "pnpm --filter @leanlog/web dev:vite",
@@ -30,24 +32,18 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
-    "@typescript-eslint/eslint-plugin": "^8.59.3",
-    "@typescript-eslint/parser": "^8.59.3",
     "@vitest/coverage-v8": "^4.0.18",
-    "eslint": "^10.3.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
     "husky": "^9.1.7",
     "jsdom": "^29.0.1",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.8.1",
+    "oxfmt": "^0.72.0",
+    "oxlint": "^1.87.0",
     "react-doctor": "0.5.0",
     "vitest": "^4.1.0"
   },
   "lint-staged": {
     "*": [
-      "prettier --ignore-unknown --write"
+      "oxfmt --no-error-on-unmatched-pattern"
     ]
   }
 }

@@ -9,7 +9,7 @@ Leanlog is a mobile-first nutrition tracker for meals, calories, and macros.
 - Vite
 - Storybook
 - Tailwind CSS
-- ESLint + Prettier + Husky
+- oxlint + oxfmt + Husky
 
 ## Packages
 

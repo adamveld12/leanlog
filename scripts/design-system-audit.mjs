@@ -89,7 +89,9 @@ function hasEslintDisable(text, matchIndex) {
   const prevLineStart = prevLineEnd <= 0 ? 0 : text.lastIndexOf('\n', prevLineEnd - 1) + 1;
   const prevLine = text.slice(prevLineStart, prevLineEnd);
   const currentLine = text.slice(lineStart, text.indexOf('\n', lineStart));
-  return prevLine.includes('eslint-disable') || currentLine.includes('eslint-disable');
+  return (
+    /(?:eslint|oxlint)-disable/.test(prevLine) || /(?:eslint|oxlint)-disable/.test(currentLine)
+  );
 }
 
 const uiRawTypographyDirs = [

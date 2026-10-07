@@ -46,9 +46,9 @@ App pages **must** use templates. Do not build page layouts manually with `AppSh
 
 ## Enforcement
 
-ESLint and the design audit script enforce these rules automatically. The pre-commit hook runs `pnpm -r lint` + `pnpm design:audit` and blocks commits that violate them.
+oxlint and the design audit script enforce these rules automatically. The pre-commit hook runs `pnpm -r lint` + `pnpm design:audit` and blocks commits that violate them.
 
-### ESLint bans raw typography elements
+### oxlint bans raw typography elements
 
 In `apps/web/`: raw `<small>`, `<h3>`, `<h4>`, `<p>`, `<span>`, `<a>` are errors.
 In `packages/ui/` molecules/organisms/templates: same ban. Only atoms may use raw elements. Stories are exempt.

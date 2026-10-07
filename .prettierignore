@@ -1,8 +1,0 @@
-node_modules
-dist
-coverage
-storybook-static
-pnpm-lock.yaml
-.agents
-.claude
-.pi

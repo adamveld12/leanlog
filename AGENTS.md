@@ -10,13 +10,13 @@ The pre-commit hook runs `pnpm -r lint` + `pnpm design:audit` and blocks commits
 
 1. Read the error messages — they tell you which atom to use instead of the raw element
 2. Fix the violations (do NOT bypass with `--no-verify`)
-3. If you need a legitimate exemption, use `// eslint-disable-next-line no-restricted-syntax` with a justification comment
+3. If you need a legitimate exemption, use `// oxlint-disable-next-line leanlog/no-raw-elements` with a justification comment
 
 Every UI component must have a Storybook story. The audit enforces this.
 
 ### Raw HTML elements are banned
 
-**Never use raw HTML `<button>`, `<input>`, `<select>`, `<textarea>`, or `<label>` elements.** ESLint will block your commit if you do. Always use the corresponding atoms from `@leanlog/ui`:
+**Never use raw HTML `<button>`, `<input>`, `<select>`, `<textarea>`, or `<label>` elements.** oxlint will block your commit if you do. Always use the corresponding atoms from `@leanlog/ui`:
 
 | Raw element                | Use instead                                                             |
 | -------------------------- | ----------------------------------------------------------------------- |
@@ -41,7 +41,7 @@ Two git hooks run automatically — know which checks block where:
 
 | Hook           | Runs                                                                                      | Blocks on                           |
 | -------------- | ----------------------------------------------------------------------------------------- | ----------------------------------- |
-| **pre-commit** | `pnpm -r lint` (tsc + eslint), `pnpm react-lint`, `pnpm design:audit`, `pnpm lint-staged` | **tsc, eslint, and `design:audit`** |
+| **pre-commit** | `pnpm -r lint` (tsc + oxlint), `pnpm react-lint`, `pnpm design:audit`, `pnpm lint-staged` | **tsc, oxlint, and `design:audit`** |
 | **pre-push**   | `pnpm test`                                                                               | **any failing test**                |
 
 - **`design:audit` is a hard gate** — it enforces atom usage, story coverage, and recipe-class duplication (see table below). Fix violations; never `--no-verify`.
