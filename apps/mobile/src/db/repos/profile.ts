@@ -37,7 +37,7 @@ export async function applyProfilePatch(
       op: 'upsert',
       recordType: 'Height',
       clientRecordId: `height:${today}`,
-      payload: { heightIn: merged.heightIn },
+      payload: { heightIn: merged.heightIn, at: new Date().toISOString() },
     });
   }
 }
