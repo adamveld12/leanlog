@@ -135,6 +135,8 @@ export function createHealthConnectService({ client, db, ownPackage }: Deps) {
       // Not allowed to write this type: leave it queued rather than failing it.
       if (!have.has(`write:${item.recordType}`)) continue;
       try {
+        // Items go out one at a time, in queue order, each with its own failure handling.
+        // react-doctor-disable-next-line react-doctor/async-await-in-loop
         await send(item);
         if (!(await remove(db, item))) requeued = true;
       } catch (e) {
@@ -157,6 +159,8 @@ export function createHealthConnectService({ client, db, ownPackage }: Deps) {
         while (again && passes < MAX_PASSES) {
           flushAgain = false;
           passes += 1;
+          // Each pass must see the previous one's writes, so passes can't run in parallel.
+          // react-doctor-disable-next-line react-doctor/async-await-in-loop
           again = (await pass()) || flushAgain;
         }
       } finally {
@@ -207,7 +211,10 @@ export function createHealthConnectService({ client, db, ownPackage }: Deps) {
     const none = { weightLbs: null, heightIn: null };
     if (!(await isConnected())) return none;
     const have = await granted();
-    const filter = { operator: 'before' as const, endTime: new Date().toISOString() };
+    // Upper bound a day ahead: it only has to include "now" despite clock skew or a
+    // record stamped in the same instant, and nothing real is dated in the future.
+    const endTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const filter = { operator: 'before' as const, endTime };
     const options = { timeRangeFilter: filter, ascendingOrder: false, pageSize: 1 };
     let weightLbs: number | null = null;
     let heightIn: number | null = null;
