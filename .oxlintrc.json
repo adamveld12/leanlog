@@ -6,8 +6,7 @@
   "ignorePatterns": ["**/dist/**", "**/.wrangler/**", "**/storybook-static/**", "**/coverage/**"],
   "rules": {
     "react/exhaustive-deps": "error",
-    "react/rules-of-hooks": "error",
-    "react/purity": "off"
+    "react/rules-of-hooks": "error"
   },
   "overrides": [
     {

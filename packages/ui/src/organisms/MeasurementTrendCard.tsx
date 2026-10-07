@@ -100,6 +100,8 @@ export function MeasurementTrendCard({
   const [metric, setMetric] = useState<MeasurementMetric>(() => metrics[0]);
   const [range, setRange] = useState<MeasurementTrendRange>(defaultRange);
   const tokens = useChartTokens();
+  // Captured once so render stays pure; `now` overrides it (tests/stories).
+  const [mountedAt] = useState(() => new Date());
 
   const metricTabs = metrics.map((m) => ({
     key: m,
@@ -111,13 +113,13 @@ export function MeasurementTrendCard({
 
   const filtered = useMemo(() => {
     if (range === 'all') return points;
-    const reference = now ?? new Date();
+    const reference = now ?? mountedAt;
     const cutoff = new Date(reference);
     cutoff.setHours(0, 0, 0, 0);
     cutoff.setDate(cutoff.getDate() - RANGE_DAYS[range] + 1);
     const cutoffIso = toIso(cutoff);
     return points.filter((e) => e.date >= cutoffIso);
-  }, [points, range, now]);
+  }, [points, range, now, mountedAt]);
 
   const isEmpty = filtered.length === 0;
 
