@@ -1,0 +1,42 @@
+name: Mobile build
+
+# Builds the Android preview APK on EAS. Needs the EAS project set up and an
+# EXPO_TOKEN repository secret (see docs/mobile.md#eas-builds); until then it fails.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'mobile-v*'
+
+jobs:
+  eas-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Android preview APK
+        working-directory: apps/mobile
+        run: eas build -p android --profile preview --non-interactive

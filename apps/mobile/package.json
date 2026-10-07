@@ -8,7 +8,9 @@
     "android": "expo run:android",
     "lint": "tsc --noEmit && eslint .",
     "test": "jest",
-    "build": "expo export --platform android"
+    "build": "expo export --platform android",
+    "storybook": "EXPO_PUBLIC_STORYBOOK_ENABLED=true expo start --dev-client",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@leanlog/data-access": "workspace:*",

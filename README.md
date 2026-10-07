@@ -15,6 +15,7 @@ Leanlog is a mobile-first nutrition tracker for meals, calories, and macros.
 
 - `apps/web` — main app
 - `packages/ui` — shared UI components + Storybook
+- `apps/mobile` — Android app (Expo / React Native, on-device data, Health Connect); see [docs/mobile.md](docs/mobile.md)
 
 ## Local development
 
