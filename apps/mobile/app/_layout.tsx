@@ -3,6 +3,7 @@ import 'react-native-get-random-values';
 import Constants from 'expo-constants';
 import { Stack } from 'expo-router';
 import { useMemo } from 'react';
+import { nativeIo } from '../src/backup/nativeIo';
 import { now } from '../src/clock';
 import { useDatabase } from '../src/db/useDatabase';
 import { createHealthConnectService } from '../src/health/HealthConnectService';
@@ -55,7 +56,12 @@ export default function RootLayout() {
   if (error) return <Text>Couldn't open the database: {error.message}</Text>;
   if (!db) return null;
   return (
-    <MobileStoreProvider db={db} clock={now} healthConnect={healthConnect ?? undefined}>
+    <MobileStoreProvider
+      db={db}
+      clock={now}
+      healthConnect={healthConnect ?? undefined}
+      backupIo={nativeIo}
+    >
       <Navigation />
     </MobileStoreProvider>
   );

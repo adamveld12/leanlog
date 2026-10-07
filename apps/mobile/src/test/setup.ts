@@ -1,4 +1,5 @@
 import { cleanup } from '@testing-library/react-native';
+import { resetTestBackupIo } from './backupIoHolder';
 import { resetTestHc } from './hcHolder';
 import { resetTestDb } from './testDb';
 
@@ -7,6 +8,7 @@ afterEach(cleanup);
 beforeEach(() => {
   resetTestDb();
   resetTestHc();
+  resetTestBackupIo();
 });
 
 // The real database needs the native expo-sqlite module; screens get the
@@ -30,6 +32,22 @@ jest.mock('../health/nativeClient', () => {
           (_target, method: string) =>
           (...args: unknown[]) =>
             testHc()[method](...args),
+      },
+    ),
+  };
+});
+
+// Likewise for the file system, share sheet and document picker.
+jest.mock('../backup/nativeIo', () => {
+  const { testBackupIo } = jest.requireActual('./backupIoHolder');
+  return {
+    nativeIo: new Proxy(
+      {},
+      {
+        get:
+          (_target, method: string) =>
+          (...args: unknown[]) =>
+            testBackupIo()[method](...args),
       },
     ),
   };
