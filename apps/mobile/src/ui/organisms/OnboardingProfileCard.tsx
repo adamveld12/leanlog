@@ -16,6 +16,8 @@ export type OnboardingProfile = {
 
 type Props = {
   todayIso: string;
+  // Starting values (e.g. from Health Connect); every field stays editable.
+  prefill?: { weightLbs: number | null; heightIn: number | null };
   onNext: (profile: OnboardingProfile) => void;
 };
 
@@ -39,10 +41,12 @@ function validBirthDate(value: string, todayIso: string): boolean {
   return age >= 13 && age <= 120;
 }
 
-export function OnboardingProfileCard({ todayIso, onNext }: Props) {
+export function OnboardingProfileCard({ todayIso, prefill, onNext }: Props) {
+  // Draft form: props seed the editable fields; the screen remounts the card (key) if the prefill changes.
+  // react-doctor-disable-next-line react-doctor/no-derived-useState
   const [draft, setDraft] = useState({
-    weightLbs: null as number | null,
-    heightIn: null as number | null,
+    weightLbs: (prefill?.weightLbs ?? null) as number | null,
+    heightIn: (prefill?.heightIn ?? null) as number | null,
     sex: null as Sex | null,
     birthDate: '',
   });

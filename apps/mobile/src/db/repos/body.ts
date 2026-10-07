@@ -47,7 +47,7 @@ export function saveBodyFatResult(db: Db, today: string, input: BodyFatInput): P
       op: 'upsert',
       recordType: 'BodyFat',
       clientRecordId: `bodyfat:${id}`,
-      payload: { pct: input.pct, date: today },
+      payload: { pct: input.pct, date: today, at: new Date().toISOString() },
     });
   });
 }

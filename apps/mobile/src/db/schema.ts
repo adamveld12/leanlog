@@ -122,6 +122,8 @@ export const hcQueue = sqliteTable(
     clientRecordId: text('client_record_id').notNull(),
     payload: text('payload', { mode: 'json' }).$type<Record<string, unknown>>(),
     attempts: integer('attempts').notNull().default(0),
+    // Bumped on every enqueue, so a send can tell whether the item changed while it was in flight.
+    version: integer('version').notNull().default(0),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`),

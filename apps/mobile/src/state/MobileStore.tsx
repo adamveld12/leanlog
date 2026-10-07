@@ -13,12 +13,21 @@ import { AppState } from 'react-native';
 import { ensureSeeded } from '../db/repos/base';
 import { ensureToday } from '../db/repos/targets';
 import type { Db } from '../db/types';
+import type { HealthConnectService } from '../health/HealthConnectService';
 import { createActions, type Actions } from './actions';
 import { localDate, msUntilNextLocalMidnight } from './date';
 import { reducer, type State } from './reducer';
 import { loadSnapshot } from './snapshot';
 
-type Store = { state: State; actions: Actions };
+// Present when Health Connect is wired in; `connect`/`disconnect` also reload the
+// store so imported data and settings show up.
+type HealthConnectControls = {
+  service: HealthConnectService;
+  connect: () => Promise<boolean>;
+  disconnect: () => Promise<void>;
+};
+
+type Store = { state: State; actions: Actions; healthConnect: HealthConnectControls | null };
 
 const StoreContext = createContext<Store | null>(null);
 
@@ -32,6 +41,8 @@ type Props = {
   db: Db;
   // Injectable for tests; defaults to the real clock.
   clock?: () => Date;
+  // Optional: sends saved data to Health Connect and imports a smart-scale weight.
+  healthConnect?: HealthConnectService;
   children: ReactNode;
 };
 
@@ -41,7 +52,7 @@ const defaultClock = () => new Date();
 // repositories (which enforce locking, re-derive today's targets and queue
 // Health Connect work in one transaction); the store reloads afterwards. The
 // local day is re-checked on foreground and at local midnight.
-export function MobileStoreProvider({ db, clock = defaultClock, children }: Props) {
+export function MobileStoreProvider({ db, clock = defaultClock, healthConnect, children }: Props) {
   const [state, dispatch] = useReducer(reducer, { status: 'loading' });
   const todayRef = useRef('');
   if (!todayRef.current) todayRef.current = localDate(clock());
@@ -57,6 +68,18 @@ export function MobileStoreProvider({ db, clock = defaultClock, children }: Prop
     }
   }, [db]);
 
+  // Health Connect is best-effort: a failure here must never block or break the
+  // app. Anything unsent stays queued and goes out on the next flush.
+  const syncHealthConnect = useCallback(async () => {
+    if (!healthConnect) return;
+    try {
+      if (await healthConnect.importTodayWeight(todayRef.current)) await refresh();
+      await healthConnect.flushQueue();
+    } catch {
+      // Retried on the next foreground or write.
+    }
+  }, [healthConnect, refresh]);
+
   // Roll `today` over if the local day changed, then reload.
   const sync = useCallback(async () => {
     try {
@@ -64,10 +87,11 @@ export function MobileStoreProvider({ db, clock = defaultClock, children }: Prop
       todayRef.current = today;
       await ensureToday(db, today);
       await refresh();
+      void syncHealthConnect();
     } catch (error) {
       dispatch({ type: 'failed', message: error instanceof Error ? error.message : String(error) });
     }
-  }, [db, refresh]);
+  }, [db, refresh, syncHealthConnect]);
 
   useEffect(() => {
     void ensureSeeded(db).then(sync);
@@ -89,7 +113,39 @@ export function MobileStoreProvider({ db, clock = defaultClock, children }: Prop
     return () => clearTimeout(timer);
   }, [today]);
 
-  const actions = useMemo(() => createActions(db, () => todayRef.current, refresh), [db, refresh]);
-  const value = useMemo(() => ({ state, actions }), [state, actions]);
+  // After each write: reload from SQLite, then send queued work to Health Connect
+  // in the background so a slow or missing Health Connect never delays the save.
+  const afterWrite = useCallback(async () => {
+    await refresh();
+    void healthConnect?.flushQueue().catch(() => undefined);
+  }, [healthConnect, refresh]);
+
+  const actions = useMemo(
+    () => createActions(db, () => todayRef.current, afterWrite),
+    [db, afterWrite],
+  );
+  const healthConnectControls = useMemo<HealthConnectControls | null>(
+    () =>
+      healthConnect
+        ? {
+            service: healthConnect,
+            connect: async () => {
+              const connected = await healthConnect.connect();
+              await refresh();
+              if (connected) void syncHealthConnect();
+              return connected;
+            },
+            disconnect: async () => {
+              await healthConnect.disconnect();
+              await refresh();
+            },
+          }
+        : null,
+    [healthConnect, refresh, syncHealthConnect],
+  );
+  const value = useMemo(
+    () => ({ state, actions, healthConnect: healthConnectControls }),
+    [state, actions, healthConnectControls],
+  );
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
