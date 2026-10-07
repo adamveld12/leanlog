@@ -299,6 +299,10 @@ const componentDirs = [
   'packages/ui/src/molecules',
   'packages/ui/src/organisms',
   'packages/ui/src/templates',
+  // Mobile UI kit (apps/mobile): stories are enforced by file existence only.
+  'apps/mobile/src/ui/atoms',
+  'apps/mobile/src/ui/molecules',
+  'apps/mobile/src/ui/organisms',
 ];
 for (const dir of componentDirs) {
   if (!existsSync(dir)) continue;

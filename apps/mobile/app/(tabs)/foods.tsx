@@ -1,6 +1,3 @@
-import { Text } from 'react-native';
+import { FoodsScreen } from '../../src/screens/FoodsScreen';
 
-// Placeholder until milestone C builds the screens from the mobile UI kit.
-export default function FoodsScreen() {
-  return <Text>Foods</Text>;
-}
+export default FoodsScreen;

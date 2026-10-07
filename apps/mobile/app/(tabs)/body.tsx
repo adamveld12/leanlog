@@ -1,6 +1,3 @@
-import { Text } from 'react-native';
+import { BodyScreen } from '../../src/screens/BodyScreen';
 
-// Placeholder until milestone C builds the screens from the mobile UI kit.
-export default function BodyScreen() {
-  return <Text>Body</Text>;
-}
+export default BodyScreen;

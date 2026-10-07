@@ -1,6 +1,3 @@
-import { Text } from 'react-native';
+import { TodayScreen } from '../../src/screens/TodayScreen';
 
-// Placeholder until milestone C builds the screens from the mobile UI kit.
-export default function TodayScreen() {
-  return <Text>Today</Text>;
-}
+export default TodayScreen;
