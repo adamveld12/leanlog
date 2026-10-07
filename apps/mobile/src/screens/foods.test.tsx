@@ -1,17 +1,17 @@
 import { router } from 'expo-router';
 import { act, fireEvent, screen } from 'expo-router/testing-library';
-import { ensureSeeded } from '../db/repos/base';
 import { addMeal } from '../db/repos/meals';
 import { exportAll } from '../db/repos/exportImport';
 import { createSavedFood } from '../db/repos/savedFoods';
 import { renderApp } from '../test/renderApp';
 import { testDb } from '../test/testDb';
+import { seedOnboarded } from '../test/seed';
 
 const TODAY = '2026-10-06';
 
 describe('Foods', () => {
   it('creates a saved food from the Foods tab', async () => {
-    await ensureSeeded(testDb());
+    await seedOnboarded(testDb());
     await renderApp('/foods');
     await fireEvent.press(await screen.findByRole('button', { name: 'New food' }));
     await fireEvent.changeText(await screen.findByLabelText('Food name'), 'Oats');
@@ -22,7 +22,7 @@ describe('Foods', () => {
 
   it('saves a manual entry to the foods list in one tap and logs it to the meal', async () => {
     const db = testDb();
-    await ensureSeeded(db);
+    await seedOnboarded(db);
     await addMeal(db, TODAY, TODAY, 'Lunch');
     await renderApp('/');
     await fireEvent.press(await screen.findByRole('button', { name: 'Add food' }));
@@ -40,7 +40,7 @@ describe('Foods', () => {
 
   it('keeps logged ingredients unchanged when a saved food is edited (R8)', async () => {
     const db = testDb();
-    await ensureSeeded(db);
+    await seedOnboarded(db);
     const meal = await addMeal(db, TODAY, TODAY, 'Breakfast');
     const food = await createSavedFood(db, {
       name: 'Oats',

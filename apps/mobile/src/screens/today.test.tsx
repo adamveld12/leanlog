@@ -1,8 +1,8 @@
 import { fireEvent, screen } from 'expo-router/testing-library';
-import { ensureSeeded } from '../db/repos/base';
 import { addMeal } from '../db/repos/meals';
 import { createSavedFood } from '../db/repos/savedFoods';
 import { testDb } from '../test/testDb';
+import { seedOnboarded } from '../test/seed';
 import { renderApp } from '../test/renderApp';
 
 const TODAY = '2026-10-06';
@@ -21,6 +21,7 @@ const oats = {
 
 describe('Today', () => {
   it('opens on today with the bodyweight-fallback target and a body fat prompt (AE5)', async () => {
+    await seedOnboarded(testDb());
     await renderApp('/');
     expect(await screen.findByText('Tue, Oct 6')).toBeTruthy();
     expect(screen.getByText('0 / 2,700 kcal')).toBeTruthy();
@@ -29,6 +30,7 @@ describe('Today', () => {
   });
 
   it('adds a named meal', async () => {
+    await seedOnboarded(testDb());
     await renderApp('/');
     await fireEvent.changeText(await screen.findByLabelText('Meal name'), 'Lunch');
     await fireEvent.press(screen.getByRole('button', { name: 'Add meal' }));
@@ -37,7 +39,7 @@ describe('Today', () => {
 
   it('shows past days read-only: no add or edit controls', async () => {
     const db = testDb();
-    await ensureSeeded(db);
+    await seedOnboarded(db);
     await addMeal(db, YESTERDAY, YESTERDAY, 'Dinner');
     await renderApp('/');
     await fireEvent.press(await screen.findByRole('button', { name: 'Previous day' }));
@@ -58,7 +60,7 @@ describe('Today', () => {
 
   it('adds 50 g of a saved food to a meal as a scaled copy (190 kcal)', async () => {
     const db = testDb();
-    await ensureSeeded(db);
+    await seedOnboarded(db);
     await createSavedFood(db, oats);
     await addMeal(db, TODAY, TODAY, 'Breakfast');
     await renderApp('/');

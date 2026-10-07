@@ -1,18 +1,18 @@
 import { fireEvent, screen } from 'expo-router/testing-library';
-import { ensureSeeded } from '../db/repos/base';
 import { saveBodyFatResult } from '../db/repos/body';
 import { setWeight } from '../db/repos/days';
 import { exportAll } from '../db/repos/exportImport';
 import { updateProfile } from '../db/repos/profile';
 import { renderApp } from '../test/renderApp';
 import { testDb } from '../test/testDb';
+import { seedOnboarded } from '../test/seed';
 
 const TODAY = '2026-10-06';
 
 // 180 lb at 15% body fat, Moderate activity, 30F / 40C / 30P.
 async function seedKatch() {
   const db = testDb();
-  await ensureSeeded(db);
+  await seedOnboarded(db);
   await setWeight(db, TODAY, TODAY, { weightLbs: 180, source: 'manual', at: `${TODAY}T07:00:00Z` });
   await saveBodyFatResult(db, TODAY, { method: 'navy', pct: 15, inputs: {} });
   await updateProfile(db, TODAY, { activityLevel: 'moderate' });
@@ -60,7 +60,7 @@ describe('Me › targets', () => {
 
   it('applies a new activity level to today when saved (AE2)', async () => {
     const db = testDb();
-    await ensureSeeded(db);
+    await seedOnboarded(db);
     await setWeight(db, TODAY, TODAY, { weightLbs: 180, source: 'manual', at: 'a' });
     await saveBodyFatResult(db, TODAY, { method: 'navy', pct: 15, inputs: {} });
     await renderApp('/me');
@@ -76,7 +76,7 @@ describe('Me › targets', () => {
 describe('Me › units', () => {
   it('is display-only: 180.78 lb reads 180.8 lb, then 82 kg, and storage is unchanged', async () => {
     const db = testDb();
-    await ensureSeeded(db);
+    await seedOnboarded(db);
     await setWeight(db, TODAY, TODAY, { weightLbs: 180.78, source: 'manual', at: 'a' });
     await renderApp('/body');
     expect((await screen.findByLabelText('Weight today')).props.value).toBe('180.8');
