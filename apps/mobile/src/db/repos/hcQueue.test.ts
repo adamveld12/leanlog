@@ -30,8 +30,20 @@ describe('hc queue', () => {
     const db = await setup();
     await enqueue(db, { op: 'upsert', recordType: 'Nutrition', clientRecordId: 'meal:a' });
     const [item] = await listPending(db);
-    await remove(db, item.id);
+    await remove(db, item);
     expect(await listPending(db)).toEqual([]);
+  });
+
+  it('does not remove an item that was re-queued after it was read (an edit during a send)', async () => {
+    const db = await setup();
+    await enqueue(db, { op: 'upsert', recordType: 'Nutrition', clientRecordId: 'meal:a' });
+    const [read] = await listPending(db);
+    // The user edits the meal while the send for `read` is in flight.
+    await enqueue(db, { op: 'upsert', recordType: 'Nutrition', clientRecordId: 'meal:a' });
+    await remove(db, read);
+    const pending = await listPending(db);
+    expect(pending).toHaveLength(1);
+    expect(pending[0].version).toBeGreaterThan(read.version);
   });
 
   it('counts failures, keeps the item, and logs locally on the third (no payload in the log)', async () => {

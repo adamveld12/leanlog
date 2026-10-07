@@ -28,6 +28,16 @@ export async function getMeal(db: Db, id: string): Promise<Meal | null> {
   return row ?? null;
 }
 
+export async function getMealWithIngredients(
+  db: Db,
+  id: string,
+): Promise<MealWithIngredients | null> {
+  const meal = await getMeal(db, id);
+  if (!meal) return null;
+  const rows = await db.select().from(ingredients).where(eq(ingredients.mealId, id));
+  return { ...meal, ingredients: rows };
+}
+
 export async function listMealsForDay(db: Db, date: string): Promise<MealWithIngredients[]> {
   const mealRows = await db
     .select()

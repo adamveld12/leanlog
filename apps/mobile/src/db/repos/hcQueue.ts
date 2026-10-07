@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { uuidv7 } from '@leanlog/data-access';
 import { errorLog, hcQueue } from '../schema';
 import { withTransaction } from '../tx';
@@ -19,7 +19,12 @@ export async function enqueue(db: Db, item: NewHcQueueItem): Promise<void> {
     .values({ ...item, payload: item.payload ?? null })
     .onConflictDoUpdate({
       target: [hcQueue.recordType, hcQueue.clientRecordId],
-      set: { op: item.op, payload: item.payload ?? null, attempts: 0 },
+      set: {
+        op: item.op,
+        payload: item.payload ?? null,
+        attempts: 0,
+        version: sql`${hcQueue.version} + 1`,
+      },
     });
 }
 
@@ -33,8 +38,15 @@ export async function listPending(db: Db): Promise<HcQueueItem[]> {
   return db.select().from(hcQueue).orderBy(asc(hcQueue.id));
 }
 
-export async function remove(db: Db, id: number): Promise<void> {
-  await db.delete(hcQueue).where(eq(hcQueue.id, id));
+// Remove a sent item, but only if it hasn't been re-queued since it was read:
+// an edit made while the send was in flight must still go out on the next flush.
+// Returns false when the item changed and was kept.
+export async function remove(db: Db, item: HcQueueItem): Promise<boolean> {
+  const removed = await db
+    .delete(hcQueue)
+    .where(and(eq(hcQueue.id, item.id), eq(hcQueue.version, item.version)))
+    .returning({ id: hcQueue.id });
+  return removed.length > 0;
 }
 
 // How many failed attempts before a sync problem is recorded in the local log.
