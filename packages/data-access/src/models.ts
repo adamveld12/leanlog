@@ -23,6 +23,7 @@ import type {
   GoalModeSchema,
   CalorieBasisSchema,
   ActivityLevelSchema,
+  SexSchema,
   CreateGoalSchema,
   UpdateGoalSchema,
   UpdateBackgroundGoalSchema,
@@ -69,6 +70,7 @@ export type Goal = z.infer<typeof GoalSchema>;
 export type GoalMode = z.infer<typeof GoalModeSchema>;
 export type CalorieBasis = z.infer<typeof CalorieBasisSchema>;
 export type ActivityLevel = z.infer<typeof ActivityLevelSchema>;
+export type Sex = z.infer<typeof SexSchema>;
 export type CreateGoal = z.infer<typeof CreateGoalSchema>;
 export type UpdateGoal = z.infer<typeof UpdateGoalSchema>;
 export type UpdateBackgroundGoal = z.infer<typeof UpdateBackgroundGoalSchema>;

@@ -502,6 +502,9 @@ export const ActivityLevelSchema = z.enum([
   'athlete',
 ]);
 
+// Biological sex for the body fat calculators and Katch BMR (#75).
+export const SexSchema = z.enum(['male', 'female']);
+
 // Body fat is a coarse dropdown by design — Katch-McArdle is only reasonably
 // accurate in the 10-25% range, so users outside it use the bodyweight basis
 // (R4/R15). Deliberately limited to discourage false precision.
