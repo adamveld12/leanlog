@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react"],
+  "categories": { "correctness": "error" },
+  "env": { "browser": true, "es2022": true },
+  "ignorePatterns": ["**/dist/**", "**/.wrangler/**", "**/storybook-static/**", "**/coverage/**"],
+  "rules": {
+    "react/exhaustive-deps": "error",
+    "react/rules-of-hooks": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "apps/web/**/*.tsx",
+        "packages/ui/src/molecules/**/*.tsx",
+        "packages/ui/src/organisms/**/*.tsx",
+        "packages/ui/src/templates/**/*.tsx"
+      ],
+      "excludeFiles": ["**/*.stories.tsx"],
+      "jsPlugins": ["./tools/oxlint-leanlog-plugin.mjs"],
+      "rules": { "leanlog/no-raw-elements": "error" }
+    }
+  ]
+}

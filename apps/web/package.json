@@ -7,7 +7,7 @@
     "dev": "concurrently -k -n vite,api -c cyan,magenta \"pnpm dev:vite\" \"pnpm dev:api\"",
     "build": "tsc -b && vite build",
     "pages:build": "node scripts/migrate.mjs && tsc -b && vite build",
-    "lint": "tsc -b --noEmit && eslint .",
+    "lint": "tsc -b --noEmit && oxlint",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -36,7 +36,6 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260212.0",
-    "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.0",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
@@ -44,14 +43,9 @@
     "@vitejs/plugin-react": "^6.0.1",
     "chart.js": "^4.5.1",
     "concurrently": "^9.2.0",
-    "eslint": "^10.3.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.6.0",
     "react-chartjs-2": "^5.3.1",
     "tailwindcss": "^4.2.2",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",
     "wrangler": "^4.98.0"
   }

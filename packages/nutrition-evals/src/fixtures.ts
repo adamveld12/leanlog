@@ -54,7 +54,7 @@ export function loadFixtures(root: string): Fixture[] {
 
     const image = findImage(dir);
     if (!image) {
-      // eslint-disable-next-line no-console
+      // oxlint-disable-next-line no-console
       console.warn(`[evals] skipping "${name}": expected.json present but no image found`);
       continue;
     }

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Select } from '../atoms/Select';
 import { recipes } from '../styles/recipes';
 
@@ -10,7 +11,7 @@ type DateSelect3Props = {
 
 export function DateSelect3({ month, day, year, onChange }: DateSelect3Props) {
   // Offer a few future years so users can pre-log upcoming days, plus history.
-  const currentYear = new Date().getFullYear();
+  const [currentYear] = useState(() => new Date().getFullYear());
   const years = Array.from({ length: 22 }, (_, i) => currentYear + 2 - i);
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
