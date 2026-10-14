@@ -25,6 +25,11 @@ export const userProfiles = sqliteTable('user_profiles', {
   frontBaselineDate: text('front_baseline_date'),
   sideBaselineDate: text('side_baseline_date'),
   backBaselineDate: text('back_baseline_date'),
+  // Simple vs full app experience (#102). The column default backfills existing
+  // users to 'full'; new profiles are inserted as 'simple' via PROFILE_DEFAULTS.
+  appMode: text('app_mode', { enum: ['full', 'simple'] })
+    .notNull()
+    .default('full'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });

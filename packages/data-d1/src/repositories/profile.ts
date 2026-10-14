@@ -37,6 +37,7 @@ export function createProfileRepository(db: D1Database): ProfileRepository {
       frontBaselineDate: row.frontBaselineDate ?? null,
       sideBaselineDate: row.sideBaselineDate ?? null,
       backBaselineDate: row.backBaselineDate ?? null,
+      appMode: row.appMode,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

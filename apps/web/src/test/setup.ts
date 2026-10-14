@@ -158,6 +158,7 @@ vi.mock('../api', () => ({
           frontBaselineDate: null,
           sideBaselineDate: null,
           backBaselineDate: null,
+          appMode: 'full' as const,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
