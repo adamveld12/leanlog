@@ -65,3 +65,12 @@ export const SavingMeasurements: Story = {
     savingMeasurements: true,
   },
 };
+
+// Simple mode (#102): weight only, no measurements and no "required" nag.
+export const WeightOnly: Story = {
+  args: { variant: 'weightOnly', weightLbs: null },
+};
+
+export const WeightOnlyLogged: Story = {
+  args: { variant: 'weightOnly', weightLbs: 182.4 },
+};

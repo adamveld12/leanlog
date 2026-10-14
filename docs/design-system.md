@@ -92,11 +92,11 @@ ActionRow, DateSelect3, ListRow, LoadingState, MacroProgressBlock, MacroSummaryL
 
 ### Organisms (16)
 
-AppPageHeading, AuthLanding, DailyTotalsCard, DayWeightCard, IngredientEntryCard, LabelScanCard, ListSectionCard, MonthCalendarCard, NutritionDatabaseEntryCard, NutritionDatabaseSearchCard, PageNavHeading, ProfileSectionCards, QuickActionsCard, ScanReviewModal, WeeklyStatsCard, WeightTrendCard
+AppPageHeading, AuthLanding, DailyTotalsCard, DayWeightCard, IngredientEntryCard, LabelScanCard, ListSectionCard, MealSectionCard, MonthCalendarCard, NutritionDatabaseEntryCard, NutritionDatabaseSearchCard, PageNavHeading, ProfileSectionCards, QuickActionsCard, ScanReviewModal, WeekDayTotalsCard, WeeklyStatsCard, WeightTrendCard
 
 ### Templates (7)
 
-AppShell, DayDetailTemplate, DayListTemplate, ErrorTemplate, LandingTemplate, MealEditTemplate, ProfileTemplate
+AppShell, DayDetailTemplate, DayListTemplate, ErrorTemplate, LandingTemplate, MealEditTemplate, ProfileTemplate, SimpleEntryTemplate, SimpleStatsTemplate
 
 ## Recipes (`packages/ui/src/styles/recipes.ts`)
 
