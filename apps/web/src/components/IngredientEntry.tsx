@@ -22,7 +22,7 @@ type IngredientEntryProps = {
   onDelete: (ingredientId: string) => void;
   onAddFromDatabase: (databaseIngredientId: string, input: AddFromDatabaseInput) => Promise<void>;
   showDatabaseCreate?: boolean;
-  analyticsContext: 'meal' | 'plan';
+  analyticsContext: 'meal' | 'plan' | 'simple';
 };
 
 export function IngredientEntry({

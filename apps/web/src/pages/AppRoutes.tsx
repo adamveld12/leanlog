@@ -15,6 +15,9 @@ const GoalsPage = lazy(() => import('./GoalsPage'));
 const PlansPage = lazy(() => import('./PlansPage'));
 const PlanEditPage = lazy(() => import('./PlanEditPage'));
 const PlanMealEditPage = lazy(() => import('./PlanMealEditPage'));
+// Simple mode (#102): the two-page Entry + Stats experience.
+const SimpleEntryPage = lazy(() => import('./SimpleEntryPage'));
+const SimpleStatsPage = lazy(() => import('./SimpleStatsPage'));
 
 export default function App() {
   return (
@@ -82,6 +85,22 @@ export default function App() {
           element={
             <RequireSignedIn>
               <PlanMealEditPage />
+            </RequireSignedIn>
+          }
+        />
+        <Route
+          path="/simple"
+          element={
+            <RequireSignedIn mode="simple">
+              <SimpleEntryPage />
+            </RequireSignedIn>
+          }
+        />
+        <Route
+          path="/simple/stats"
+          element={
+            <RequireSignedIn mode="simple">
+              <SimpleStatsPage />
             </RequireSignedIn>
           }
         />
