@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  canAddAdhocMeal,
   findSectionMeal,
   groupDayIntoSections,
   lastNDays,
@@ -245,5 +246,24 @@ describe('weekAverage', () => {
 
   test('is all zeros for an empty week', () => {
     expect(weekAverage([], 7)).toEqual({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+  });
+});
+
+describe('canAddAdhocMeal', () => {
+  const plan = makeMeal({ id: 'p', name: 'Meal 1', origin: 'template' });
+
+  test('any ad-hoc meal is allowed on a day without plan meals', () => {
+    expect(canAddAdhocMeal(makeDay([]), 'Second breakfast')).toBe(true);
+  });
+
+  test('a simple-mode section meal is allowed on a plan day so simple mode can log food there', () => {
+    for (const name of ['Breakfast', 'Lunch', 'Dinner', 'Snacks']) {
+      expect(canAddAdhocMeal(makeDay([plan]), name)).toBe(true);
+    }
+  });
+
+  test('other ad-hoc meals are still refused on a plan day', () => {
+    expect(canAddAdhocMeal(makeDay([plan]), 'Pre-workout')).toBe(false);
+    expect(canAddAdhocMeal(makeDay([plan]), '')).toBe(false);
   });
 });

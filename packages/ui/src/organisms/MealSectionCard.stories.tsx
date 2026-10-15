@@ -40,3 +40,8 @@ export const WithReadOnlyItem: Story = {
 export const ReadOnly: Story = {
   args: { readOnly: true },
 };
+
+// Opening the section failed (e.g. the server refused to create its meal).
+export const WithError: Story = {
+  args: { title: 'Lunch', items: [], error: "Couldn't open Lunch. Try again." },
+};

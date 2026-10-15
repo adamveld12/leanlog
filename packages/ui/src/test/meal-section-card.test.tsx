@@ -92,4 +92,17 @@ describe('MealSectionCard', () => {
     );
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
+
+  it('shows an error when adding food failed', () => {
+    render(
+      <MealSectionCard
+        title="Lunch"
+        items={[]}
+        totals={totals}
+        onAdd={() => {}}
+        error="Couldn't open Lunch. Try again."
+      />,
+    );
+    expect(screen.getByText("Couldn't open Lunch. Try again.")).toBeInTheDocument();
+  });
 });

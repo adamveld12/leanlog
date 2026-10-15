@@ -241,6 +241,18 @@ describe('simple mode (#102)', () => {
       );
     });
 
+    it('tells the user when a section could not be opened instead of doing nothing', async () => {
+      apiMock.days.list.mockResolvedValue({ days: [day()] });
+      apiMock.meals.create.mockRejectedValue(new Error('API 409: nope'));
+
+      renderApp('/simple');
+      await userEvent.click(await screen.findByRole('button', { name: 'Add food to Lunch' }));
+
+      const lunch = await section('Lunch');
+      expect(await within(lunch).findByText(/Couldn.t open Lunch/)).toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'Add to Lunch' })).not.toBeInTheDocument();
+    });
+
     it('deletes a food from its section', async () => {
       apiMock.days.list.mockResolvedValue({
         days: [day({ meals: [meal({ ingredients: [ingredient()] })] })],

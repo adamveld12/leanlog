@@ -4,6 +4,7 @@ import { Button } from '../atoms/Button';
 import { Card } from '../atoms/Card';
 import { HelperText } from '../atoms/HelperText';
 import { SectionHeading } from '../atoms/SectionHeading';
+import { WarningText } from '../atoms/WarningText';
 import { ListRow } from '../molecules/ListRow';
 import { MacroSummaryLine } from '../molecules/MacroSummaryLine';
 import { recipes } from '../styles/recipes';
@@ -32,6 +33,8 @@ export type MealSectionCardProps = {
   onDelete?: (id: string) => void;
   /** Past days in Stats: food is shown, nothing can be changed. */
   readOnly?: boolean;
+  /** Shown above the add button when opening the section failed. */
+  error?: string;
 };
 
 // One fixed meal section of simple mode's notebook-style day (#102):
@@ -44,6 +47,7 @@ export function MealSectionCard({
   onEdit,
   onDelete,
   readOnly = false,
+  error,
 }: MealSectionCardProps) {
   const headingId = useId();
   return (
@@ -95,6 +99,8 @@ export function MealSectionCard({
               />
             );
           })}
+
+          {error ? <WarningText>{error}</WarningText> : null}
 
           {!readOnly && onAdd ? (
             <Button

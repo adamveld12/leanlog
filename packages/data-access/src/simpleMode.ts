@@ -126,3 +126,13 @@ export function weekAverage(dayTotals: SimpleSectionTotals[], windowLength: numb
     fat: sum((t) => t.fat),
   };
 }
+
+// Whether a new ad-hoc meal may be added to a day. Plan-backed days keep a
+// fixed meal structure (R34/R36), except for simple mode's own section meals
+// (#102): a simple-mode user whose day came from a plan must still be able to
+// log food under Breakfast / Lunch / Dinner / Snacks.
+export function canAddAdhocMeal(day: DailyMealLog, name: string): boolean {
+  if (!day.meals.some((m) => m.origin === 'template')) return true;
+  const normalized = name.trim().toLowerCase();
+  return SIMPLE_SECTIONS.some((s) => s.label.toLowerCase() === normalized);
+}

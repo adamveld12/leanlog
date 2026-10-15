@@ -74,6 +74,9 @@ export default function SimpleEntryPage() {
   const track = useAnalytics();
   const [target, setTarget] = useState<AddTarget | null>(null);
   const [savingWeight, setSavingWeight] = useState(false);
+  // The section whose add-food open failed, so the card can say so rather
+  // than the tap silently doing nothing.
+  const [failedSection, setFailedSection] = useState<SimpleSectionKey | null>(null);
 
   if (loading) return <PageLoadingState label="Loading today…" />;
   if (error) return <TrackerErrorState message={error} />;
@@ -83,12 +86,14 @@ export default function SimpleEntryPage() {
   const totals = day ? dayTotals(day) : null;
 
   async function openSection(section: SimpleSectionKey, existingDay: DailyMealLog | undefined) {
+    setFailedSection(null);
     try {
       const d = existingDay ?? (await ensureSimpleDay(today));
       const existed = findSectionMeal(d, section) != null;
       const meal = await ensureSectionMeal(d.id, section);
       setTarget({ section, dayId: d.id, mealId: meal.id, created: !existed });
     } catch (e) {
+      setFailedSection(section);
       posthog.captureException(e, { context: 'simple_ensure_section_meal' });
     }
   }
@@ -157,6 +162,7 @@ export default function SimpleEntryPage() {
           key={s.key}
           title={s.label}
           totals={s.totals}
+          error={failedSection === s.key ? `Couldn't open ${s.label}. Try again.` : undefined}
           items={s.entries.map((e) => ({
             id: e.ingredient.id,
             name: e.ingredient.name,
