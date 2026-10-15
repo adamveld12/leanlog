@@ -48,8 +48,8 @@ export type MealSectionCardProps = {
   onCollapsed?: () => void;
 };
 
-// Matches recipes.expand's 180ms plus a little slack for the last frame.
-const COLLAPSE_MS = 220;
+// Matches recipes.expand's 350ms plus a little slack for the last frame.
+const COLLAPSE_MS = 400;
 
 // One fixed meal section of simple mode's notebook-style day (#102):
 // Breakfast, Lunch, Dinner or Snacks with its food and an add button.

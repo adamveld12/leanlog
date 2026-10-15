@@ -161,7 +161,7 @@ describe('MealSectionCard', () => {
         rerender(<MealSectionCard {...props} expanded={false} />);
         expect(onCollapsed).not.toHaveBeenCalled();
         act(() => {
-          vi.advanceTimersByTime(250);
+          vi.advanceTimersByTime(450);
         });
         expect(onCollapsed).toHaveBeenCalledTimes(1);
       } finally {

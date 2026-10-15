@@ -9,7 +9,7 @@ export const recipes = {
   // motion. The sanctioned exception to "no layout animation" — see Motion in
   // docs/design-system.md.
   expand: {
-    base: 'grid transition-[grid-template-rows,opacity] duration-[180ms] ease-[var(--ll-ease)] motion-reduce:transition-none',
+    base: 'grid transition-[grid-template-rows,opacity] duration-[350ms] ease-[var(--ll-ease)] motion-reduce:transition-none',
     open: 'grid-rows-[1fr] opacity-100',
     closed: 'grid-rows-[0fr] opacity-0',
     inner: 'min-h-0 overflow-hidden',
