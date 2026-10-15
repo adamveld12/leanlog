@@ -36,8 +36,8 @@ export default function SimpleStatsPage() {
   if (loading) return <PageLoadingState label="Loading your week…" />;
   if (error) return <TrackerErrorState message={error} />;
 
-  const window = lastNDays(days, today, WINDOW_DAYS);
-  const rows: WeekDayRow[] = window
+  const week = lastNDays(days, today, WINDOW_DAYS);
+  const rows: WeekDayRow[] = week
     .map(({ date, day }): WeekDayRow => {
       const totals = day ? dayTotals(day) : null;
       const sections = day ? groupDayIntoSections(day).filter((s) => s.entries.length > 0) : [];
@@ -94,7 +94,7 @@ export default function SimpleStatsPage() {
           rows={rows}
           onExpand={(date) =>
             track('simple.stats.day_expanded', {
-              daysAgo: window.length - 1 - window.findIndex((w) => w.date === date),
+              daysAgo: week.length - 1 - week.findIndex((w) => w.date === date),
             })
           }
         />

@@ -20,6 +20,7 @@ import {
   type SimpleSection,
   type SimpleSectionKey,
 } from '@leanlog/data-access';
+import { ApiError } from '../api';
 import { IngredientEntry } from '../components/IngredientEntry';
 import { useToday } from '../hooks/useToday';
 import { normalizeIngredientName, resolveDraftMicronutrients } from '../lib';
@@ -45,6 +46,13 @@ const EMPTY_SECTIONS: SimpleSection[] = SIMPLE_SECTIONS.map((s) => ({
 }));
 
 const round = (n: number) => Math.round(n);
+
+// Writes from this page only ever target today, so a 409 (past day) means the
+// page outlived midnight mid-edit — report it distinctly from other failures.
+function reportWriteError(e: unknown) {
+  const pastDay = e instanceof ApiError && e.status === 409;
+  posthog.captureException(e, { context: pastDay ? 'simple_past_day_write' : 'simple_write' });
+}
 
 // Simple mode's one entry page (#102): today only — weight, totals, and the
 // four fixed meal sections. Past days are never shown here (they're read-only
@@ -111,9 +119,10 @@ export default function SimpleEntryPage() {
     }
   }
 
-  const targetMeal = target
-    ? days.find((d) => d.id === target.dayId)?.meals.find((m) => m.id === target.mealId)
-    : undefined;
+  const targetDay = target ? days.find((d) => d.id === target.dayId) : undefined;
+  const targetMeal = targetDay?.meals.find((m) => m.id === target?.mealId);
+  // A dialog left open past midnight belongs to a now read-only day: hide it.
+  const dialogOpen = target != null && targetDay?.date === today;
   const targetLabel = SIMPLE_SECTIONS.find((s) => s.key === target?.section)?.label ?? '';
 
   return (
@@ -165,14 +174,14 @@ export default function SimpleEntryPage() {
           onDelete={(ingredientId) => {
             const entry = s.entries.find((e) => e.ingredient.id === ingredientId);
             if (!day || !entry) return;
-            void removeIngredient(day.id, entry.mealId, ingredientId);
+            removeIngredient(day.id, entry.mealId, ingredientId).catch(reportWriteError);
             track('simple.ingredient.deleted', { section: s.key });
           }}
         />
       ))}
     >
-      <Modal open={target != null} title={`Add to ${targetLabel}`} onClose={closeSection}>
-        {target && targetMeal ? (
+      <Modal open={dialogOpen} title={`Add to ${targetLabel}`} onClose={closeSection}>
+        {dialogOpen && target && targetMeal ? (
           <div className={recipes.stack.lg}>
             <IngredientEntry
               key={target.mealId}
@@ -194,9 +203,11 @@ export default function SimpleEntryPage() {
                   protein: draft.protein ?? 0,
                   micronutrients: resolveDraftMicronutrients(draft.micronutrients),
                 };
-                void upsertIngredient(target.dayId, target.mealId, next);
+                upsertIngredient(target.dayId, target.mealId, next).catch(reportWriteError);
               }}
-              onDelete={(id) => void removeIngredient(target.dayId, target.mealId, id)}
+              onDelete={(id) =>
+                removeIngredient(target.dayId, target.mealId, id).catch(reportWriteError)
+              }
               onAddFromDatabase={(databaseIngredientId, input) =>
                 addIngredientFromDatabase(target.dayId, target.mealId, {
                   databaseIngredientId,
