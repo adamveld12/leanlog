@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { act } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { MealSectionCard, type MealSectionItem } from '../organisms/MealSectionCard';
 
@@ -104,5 +105,68 @@ describe('MealSectionCard', () => {
       />,
     );
     expect(screen.getByText("Couldn't open Lunch. Try again.")).toBeInTheDocument();
+  });
+
+  describe('inline add (#102)', () => {
+    it('expands in place to show the entry form, and the add button becomes Done', async () => {
+      const onDone = vi.fn();
+      render(
+        <MealSectionCard
+          title="Lunch"
+          items={[]}
+          totals={totals}
+          onAdd={() => {}}
+          onDone={onDone}
+          expanded
+          entry={<div>Entry form</div>}
+        />,
+      );
+      const region = screen.getByTestId('section-entry');
+      expect(region).not.toHaveAttribute('aria-hidden', 'true');
+      expect(screen.getByText('Entry form')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Add food to Lunch' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Done adding to Lunch' }));
+      expect(onDone).toHaveBeenCalled();
+    });
+
+    it('hides the entry form from assistive tech and focus while collapsed', () => {
+      render(
+        <MealSectionCard
+          title="Lunch"
+          items={[]}
+          totals={totals}
+          onAdd={() => {}}
+          expanded={false}
+          entry={<div>Entry form</div>}
+        />,
+      );
+      const region = screen.getByTestId('section-entry');
+      expect(region).toHaveAttribute('aria-hidden', 'true');
+      expect(region).toHaveAttribute('inert');
+    });
+
+    it('reports when the collapse animation has finished', () => {
+      vi.useFakeTimers();
+      try {
+        const onCollapsed = vi.fn();
+        const props = {
+          title: 'Lunch',
+          items: [],
+          totals,
+          onAdd: () => {},
+          onCollapsed,
+          entry: <div>Entry form</div>,
+        };
+        const { rerender } = render(<MealSectionCard {...props} expanded />);
+        rerender(<MealSectionCard {...props} expanded={false} />);
+        expect(onCollapsed).not.toHaveBeenCalled();
+        act(() => {
+          vi.advanceTimersByTime(250);
+        });
+        expect(onCollapsed).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });

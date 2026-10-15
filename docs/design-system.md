@@ -61,6 +61,7 @@
 - **Curve:** `cubic-bezier(0.2, 0.8, 0.2, 1)`
 - **Animated properties:** transform, opacity, border-color
 - **Rule:** No layout-jank animations.
+- **Exception:** Expanding a card in place (`recipes.expand`, e.g. simple mode's `MealSectionCard`, #102) animates height via `grid-template-rows` 0fr→1fr plus opacity over 180ms. It's the only sanctioned layout animation and is skipped under `prefers-reduced-motion`.
 - **Exception:** The `Spinner` atom uses a continuous 0.75s linear rotation — the only intentional infinite animation. Pauses automatically under `prefers-reduced-motion`.
 
 ## Component Baselines

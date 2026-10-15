@@ -45,3 +45,14 @@ export const ReadOnly: Story = {
 export const WithError: Story = {
   args: { title: 'Lunch', items: [], error: "Couldn't open Lunch. Try again." },
 };
+
+// Inline add (#102): the card grows in place to hold the app's entry form.
+export const Expanded: Story = {
+  args: {
+    title: 'Lunch',
+    items: [],
+    totals: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    expanded: true,
+    entry: 'Database · Label Scan · Manual entry form goes here',
+  },
+};

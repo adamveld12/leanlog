@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type Mock } from 'vitest';
 import App from '../App';
 import { api } from '../api';
 import { StateProvider } from '../state';
@@ -118,21 +118,15 @@ function renderApp(route: string) {
   );
 }
 
-// Modal uses the native <dialog>; jsdom doesn't implement showModal/close.
-beforeAll(() => {
-  if (!HTMLDialogElement.prototype.showModal) {
-    HTMLDialogElement.prototype.showModal = function () {
-      this.open = true;
-    };
-  }
-  if (!HTMLDialogElement.prototype.close) {
-    HTMLDialogElement.prototype.close = function () {
-      this.open = false;
-    };
-  }
-});
-
 const section = (name: string) => screen.findByRole('region', { name });
+
+// The section's inline entry form, once it has expanded open.
+async function entryOf(name: string) {
+  const card = await section(name);
+  const form = await within(card).findByTestId('section-entry');
+  await waitFor(() => expect(form).not.toHaveAttribute('aria-hidden', 'true'));
+  return form;
+}
 
 describe('simple mode (#102)', () => {
   beforeEach(() => {
@@ -178,7 +172,7 @@ describe('simple mode (#102)', () => {
   });
 
   describe('Entry page', () => {
-    it('adds food to Lunch on a day that does not exist yet', async () => {
+    it('adds food to Lunch inline on a day that does not exist yet', async () => {
       const created = day();
       apiMock.days.create.mockResolvedValue(created);
       apiMock.meals.create.mockResolvedValue(meal());
@@ -189,7 +183,7 @@ describe('simple mode (#102)', () => {
       renderApp('/simple');
       await userEvent.click(await screen.findByRole('button', { name: 'Add food to Lunch' }));
 
-      const dialog = await screen.findByRole('dialog', { name: 'Add to Lunch' });
+      const form = await entryOf('Lunch');
       // Simple mode never applies a plan: the day is created without a goal.
       expect(apiMock.days.create).toHaveBeenCalledWith(
         'test-token',
@@ -197,18 +191,52 @@ describe('simple mode (#102)', () => {
       );
       expect(apiMock.days.create.mock.calls[0]![1]).toMatchObject({ date: TODAY });
       expect(apiMock.meals.create).toHaveBeenCalledWith('test-token', 'today', 'Lunch');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-      await userEvent.click(within(dialog).getByRole('tab', { name: 'Manual Entry' }));
-      await userEvent.type(within(dialog).getByLabelText('Ingredient Name'), 'chicken breast');
-      await userEvent.type(within(dialog).getByLabelText('Calories (kcal)'), '250');
-      await userEvent.type(within(dialog).getByLabelText('Protein'), '45');
-      await userEvent.click(within(dialog).getByRole('button', { name: 'Add' }));
-      await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+      await userEvent.click(within(form).getByRole('tab', { name: 'Manual Entry' }));
+      await userEvent.type(within(form).getByLabelText('Ingredient Name'), 'chicken breast');
+      await userEvent.type(within(form).getByLabelText('Calories (kcal)'), '250');
+      await userEvent.type(within(form).getByLabelText('Protein'), '45');
+      await userEvent.click(within(form).getByRole('button', { name: 'Add' }));
 
       const lunch = await section('Lunch');
-      expect(within(lunch).getByText('CHICKEN BREAST')).toBeInTheDocument();
+      await waitFor(() => expect(within(lunch).getByText('CHICKEN BREAST')).toBeInTheDocument());
       expect(within(lunch).getByTestId('section-calories')).toHaveTextContent('250 kcal');
+
+      await userEvent.click(within(lunch).getByRole('button', { name: 'Done adding to Lunch' }));
+      expect(within(lunch).getByTestId('section-entry')).toHaveAttribute('aria-hidden', 'true');
+      expect(within(lunch).getByRole('button', { name: 'Add food to Lunch' })).toBeInTheDocument();
       expect(apiMock.meals.delete).not.toHaveBeenCalled();
+    });
+
+    it('keeps only one section open at a time', async () => {
+      apiMock.days.list.mockResolvedValue({
+        days: [day({ meals: [meal(), meal({ id: 'dinner-meal', name: 'Dinner' })] })],
+      });
+
+      renderApp('/simple');
+      await userEvent.click(await screen.findByRole('button', { name: 'Add food to Lunch' }));
+      await entryOf('Lunch');
+      await userEvent.click(screen.getByRole('button', { name: 'Add food to Dinner' }));
+      await entryOf('Dinner');
+
+      const lunch = await section('Lunch');
+      expect(within(lunch).getByRole('button', { name: 'Add food to Lunch' })).toBeInTheDocument();
+      expect(within(lunch).getByTestId('section-entry')).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('edits a food inline by tapping it', async () => {
+      apiMock.days.list.mockResolvedValue({
+        days: [day({ meals: [meal({ ingredients: [ingredient()] })] })],
+      });
+
+      renderApp('/simple');
+      const lunch = await section('Lunch');
+      await userEvent.click(within(lunch).getByRole('button', { name: /^CHICKEN BREAST/ }));
+
+      const form = await entryOf('Lunch');
+      expect(within(form).getByLabelText('Ingredient Name')).toHaveValue('CHICKEN BREAST');
+      expect(within(form).getByRole('button', { name: 'Update' })).toBeInTheDocument();
     });
 
     it('creates the section meal once even if Add food is tapped twice quickly', async () => {
@@ -222,19 +250,19 @@ describe('simple mode (#102)', () => {
       await userEvent.click(add);
       resolveMeal(meal({ id: 'dinner-meal', name: 'Dinner' }));
 
-      await screen.findByRole('dialog', { name: 'Add to Dinner' });
+      await entryOf('Dinner');
       expect(apiMock.meals.create).toHaveBeenCalledTimes(1);
     });
 
-    it('removes a section meal it created when the dialog closes with nothing added', async () => {
+    it('removes a section meal it created when closed with nothing added', async () => {
       apiMock.days.list.mockResolvedValue({ days: [day()] });
       apiMock.meals.create.mockResolvedValue(meal({ id: 'breakfast-meal', name: 'Breakfast' }));
       apiMock.meals.delete.mockResolvedValue(undefined);
 
       renderApp('/simple');
       await userEvent.click(await screen.findByRole('button', { name: 'Add food to Breakfast' }));
-      const dialog = await screen.findByRole('dialog', { name: 'Add to Breakfast' });
-      await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+      await entryOf('Breakfast');
+      await userEvent.click(screen.getByRole('button', { name: 'Done adding to Breakfast' }));
 
       await waitFor(() =>
         expect(apiMock.meals.delete).toHaveBeenCalledWith('test-token', 'today', 'breakfast-meal'),
@@ -250,7 +278,7 @@ describe('simple mode (#102)', () => {
 
       const lunch = await section('Lunch');
       expect(await within(lunch).findByText(/Couldn.t open Lunch/)).toBeInTheDocument();
-      expect(screen.queryByRole('dialog', { name: 'Add to Lunch' })).not.toBeInTheDocument();
+      expect(within(lunch).queryByTestId('section-entry')).not.toBeInTheDocument();
     });
 
     it('deletes a food from its section', async () => {
