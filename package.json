@@ -17,7 +17,6 @@
     "test:coverage": "pnpm -r test:coverage",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "lint:ox": "oxlint",
     "prepare": "husky",
     "design:audit": "node scripts/design-system-audit.mjs",
     "dev:vite": "pnpm --filter @leanlog/web dev:vite",

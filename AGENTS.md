@@ -6,7 +6,7 @@
 
 ## Design System Enforcement
 
-The pre-commit hook runs `pnpm -r lint` + `pnpm design:audit` and blocks commits that violate design system rules. If your commit is blocked:
+The pre-commit hook runs `pnpm lint` + `pnpm design:audit` and blocks commits that violate design system rules. If your commit is blocked:
 
 1. Read the error messages — they tell you which atom to use instead of the raw element
 2. Fix the violations (do NOT bypass with `--no-verify`)
@@ -39,10 +39,10 @@ Buttons, inputs, and other controls belong **inside** a `SectionCard` (or a card
 
 Two git hooks run automatically — know which checks block where:
 
-| Hook           | Runs                                                                                      | Blocks on                           |
-| -------------- | ----------------------------------------------------------------------------------------- | ----------------------------------- |
-| **pre-commit** | `pnpm -r lint` (tsc + oxlint), `pnpm react-lint`, `pnpm design:audit`, `pnpm lint-staged` | **tsc, oxlint, and `design:audit`** |
-| **pre-push**   | `pnpm test`                                                                               | **any failing test**                |
+| Hook           | Runs                                                                                   | Blocks on                           |
+| -------------- | -------------------------------------------------------------------------------------- | ----------------------------------- |
+| **pre-commit** | `pnpm lint` (tsc + oxlint), `pnpm react-lint`, `pnpm design:audit`, `pnpm lint-staged` | **tsc, oxlint, and `design:audit`** |
+| **pre-push**   | `pnpm test`                                                                            | **any failing test**                |
 
 - **`design:audit` is a hard gate** — it enforces atom usage, story coverage, and recipe-class duplication (see table below). Fix violations; never `--no-verify`.
 - **`react-lint` (react-doctor) is a blocking gate in CI** (`pnpm react-lint:ci`, `--blocking warning`) — the #46 backlog is at zero. The pre-commit `pnpm react-lint` is still advisory (changed-files only) so you can commit WIP, but **CI fails on any new warning**, so fix findings you introduce. To accept a genuine false positive / intentional pattern, add a **file-scoped inline** `// react-doctor-disable-next-line react-doctor/<rule>` with a justification comment — never a global rule-off in config. The `IngredientEntry`/`StateProvider` split + `useReducer` work is deferred to **#50**.

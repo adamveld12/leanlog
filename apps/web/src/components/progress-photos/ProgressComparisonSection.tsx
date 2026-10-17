@@ -121,17 +121,24 @@ export function ProgressComparisonSection() {
 
   const panels = PROGRESS_POSES.map((pose) => {
     const column = POSE_TO_KEY[pose];
-    const options = photoDays.reduce<{ value: string; label: string }[]>((acc, d) => {
-      if (d[column]) acc.push({ value: d.date, label: prettyDate(d.date) });
-      return acc;
-    }, []);
+    // Only photos before the latest can anchor the comparison; the latest is the
+    // other side of it.
+    const latestDate = byPose[pose].latest?.date ?? '';
+    const options = photoDays
+      .filter((d) => d[column] && d.date < latestDate)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((d) => ({ value: d.date, label: prettyDate(d.date) }));
+    // A saved choice the comparison ignored (stale or no longer earlier than the
+    // latest) shows as the default rather than a value missing from the list.
+    const saved = baselines[pose];
+    const selected = saved && options.some((o) => o.value === saved) ? saved : null;
     return buildPanel(
       pose,
       byPose[pose],
       srcs[pose].baseline,
       srcs[pose].latest,
       options,
-      baselines[pose],
+      selected,
       (date) => void setProgressBaseline(pose, date),
     );
   });

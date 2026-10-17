@@ -142,7 +142,8 @@ function daysBetween(fromIso: string, toIso: string): number {
  * - One photo → `single`, shown without a misleading "zero change" delta.
  * - The baseline defaults to the earliest photo, or the user's chosen
  *   `baselineDate` when that day still has a photo for this pose (R15). A stale
- *   choice (no photo on that day) falls back to the earliest.
+ *   choice (no photo on that day, or on/after the latest photo) falls back to
+ *   the earliest.
  * - Deltas are computed only across two distinct photos, and each is null when
  *   either side lacks that stat (R11).
  */
@@ -173,7 +174,12 @@ export function computePoseComparison(
   });
 
   const latestDay = withPhoto[withPhoto.length - 1];
-  const chosen = baselineDate ? withPhoto.find((day) => day.date === baselineDate) : undefined;
+  // A chosen baseline must precede the latest photo: comparing the latest against
+  // itself would collapse to the single state, which hides the baseline picker.
+  const chosen =
+    baselineDate && baselineDate < latestDay.date
+      ? withPhoto.find((day) => day.date === baselineDate)
+      : undefined;
   const baselineDay = chosen ?? withPhoto[0];
 
   const latest = toStats(latestDay);

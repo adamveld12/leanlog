@@ -185,6 +185,49 @@ describe('progress photo comparison (Statistics area)', () => {
       date: '2026-05-21',
     });
   });
+
+  it('never offers the latest photo as a baseline', async () => {
+    apiMock.days.list.mockResolvedValue({
+      days: [
+        makeDay({ id: 'a', date: '2026-04-09', frontPhotoKey: KEY(0) }),
+        makeDay({ id: 'b', date: '2026-05-21', frontPhotoKey: KEY(1) }),
+        makeDay({ id: 'c', date: '2026-06-25', frontPhotoKey: KEY(2) }),
+      ],
+    });
+    renderApp('/track/goals');
+
+    const select = await screen.findByRole('combobox');
+    const labels = Array.from((select as HTMLSelectElement).options).map((o) => o.text);
+    expect(labels).toEqual(['Earliest (default)', 'Apr 9', 'May 21']);
+  });
+
+  it('recovers when the saved baseline is the latest photo, so an earlier one can be picked', async () => {
+    // A baseline saved on the latest photo used to collapse the pose to the
+    // single-photo view, which hides the picker — the user could never move back.
+    const profileMock = (api as unknown as { profile: { get: Mock } }).profile.get;
+    const base = await (profileMock.getMockImplementation()!() as Promise<object>);
+    profileMock.mockResolvedValueOnce({ ...base, frontBaselineDate: '2026-06-25' });
+    apiMock.progressPhotos.setBaseline.mockResolvedValue({
+      ...base,
+      frontBaselineDate: '2026-04-09',
+    });
+    apiMock.days.list.mockResolvedValue({
+      days: [
+        makeDay({ id: 'a', date: '2026-04-09', frontPhotoKey: KEY(0) }),
+        makeDay({ id: 'b', date: '2026-05-21', frontPhotoKey: KEY(1) }),
+        makeDay({ id: 'c', date: '2026-06-25', frontPhotoKey: KEY(2) }),
+      ],
+    });
+    renderApp('/track/goals');
+
+    const select = await screen.findByRole('combobox');
+    expect((select as HTMLSelectElement).value).toBe('');
+    await userEvent.selectOptions(select, 'Apr 9');
+    expect(apiMock.progressPhotos.setBaseline).toHaveBeenCalledWith('test-token', {
+      pose: 'front',
+      date: '2026-04-09',
+    });
+  });
 });
 
 describe('progress photo capture (day page)', () => {
