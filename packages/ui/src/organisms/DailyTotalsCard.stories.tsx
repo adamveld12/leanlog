@@ -55,3 +55,8 @@ export const FiberAdjusted: Story = {
     fiber: 109.5,
   },
 };
+
+// Simple mode (#102): no targets at all — plain totals, no progress bars.
+export const TotalsOnly: Story = {
+  args: { calorieTarget: undefined, macroTargets: undefined },
+};

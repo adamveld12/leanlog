@@ -41,14 +41,25 @@ export type BodyTrackingCardProps = {
   savingWeight?: boolean;
   onSaveWeight: (weightLbs: number) => void;
   // Measurements (weekly) — a hard block when overdue (all four required).
-  measurementsToday: TodayMeasurements;
-  latestMeasurements: LatestMeasurements | null;
-  measurementsDue: boolean;
+  // Unused by the weight-only variant, so optional there.
+  measurementsToday?: TodayMeasurements;
+  latestMeasurements?: LatestMeasurements | null;
+  measurementsDue?: boolean;
   savingMeasurements?: boolean;
-  onSaveMeasurements: (patch: MeasurementPatch) => void;
+  onSaveMeasurements?: (patch: MeasurementPatch) => void;
+  // 'weightOnly' is simple mode's daily weigh-in (#102): no measurements and no
+  // "required" nag, since simple mode has no objectives to block on.
+  variant?: 'full' | 'weightOnly';
   // Past days are read-only: values are shown, never editable (#68). Server-side
   // the day guard also rejects past-day writes.
   readOnly?: boolean;
+};
+
+const NO_MEASUREMENTS: TodayMeasurements = {
+  shoulderInches: null,
+  waistInches: null,
+  bicepInches: null,
+  thighInches: null,
 };
 
 type MeasDraft = {
@@ -83,13 +94,15 @@ export function BodyTrackingCard({
   weightLbs,
   savingWeight,
   onSaveWeight,
-  measurementsToday,
-  latestMeasurements,
-  measurementsDue,
+  measurementsToday = NO_MEASUREMENTS,
+  latestMeasurements = null,
+  measurementsDue = false,
   savingMeasurements,
   onSaveMeasurements,
   readOnly = false,
+  variant = 'full',
 }: BodyTrackingCardProps) {
+  const weightOnly = variant === 'weightOnly';
   const [weight, setWeight] = useState<{ editing: boolean; draft: number | null }>(() => ({
     editing: false,
     draft: weightLbs,
@@ -108,6 +121,7 @@ export function BodyTrackingCard({
   const wd = weight.draft;
   const canSaveWeight = !savingWeight && wd != null && wd > 0;
   const weightHardBlock = !readOnly && weightLbs == null;
+  const showRequired = weightHardBlock && !weightOnly;
   const weightShowEditor = weightHardBlock || (!readOnly && weight.editing);
 
   function saveWeight() {
@@ -158,16 +172,16 @@ export function BodyTrackingCard({
     if (md.waist != null && md.waist > 0) patch.waistInches = md.waist;
     if (md.bicep != null && md.bicep > 0) patch.bicepInches = md.bicep;
     if (md.thigh != null && md.thigh > 0) patch.thighInches = md.thigh;
-    onSaveMeasurements(patch);
+    onSaveMeasurements?.(patch);
     setMeas((m) => ({ ...m, editing: false }));
   }
 
   return (
     <AnalyticsScope properties={{ organism: 'BodyTrackingCard' }}>
-      <SectionCard title="Measurements">
+      <SectionCard title={weightOnly ? 'Weight' : 'Measurements'}>
         {weightShowEditor ? (
           <div className={recipes.stack.sm}>
-            {weightHardBlock ? <WarningText>Required — log today’s weight.</WarningText> : null}
+            {showRequired ? <WarningText>Required — log today’s weight.</WarningText> : null}
             <NumberInput
               label="Weight (lbs)"
               value={wd}
@@ -214,9 +228,9 @@ export function BodyTrackingCard({
           </div>
         )}
 
-        <div className="border-t border-[var(--ll-line)]" />
+        {weightOnly ? null : <div className="border-t border-[var(--ll-line)]" />}
 
-        {measShowEditor ? (
+        {weightOnly ? null : measShowEditor ? (
           <div className={recipes.stack.sm}>
             {measHardBlock ? (
               <WarningText>Required — log all four measurements (due weekly).</WarningText>

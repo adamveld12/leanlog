@@ -28,6 +28,7 @@ const mockProfile: UserProfile = {
   frontBaselineDate: null,
   sideBaselineDate: null,
   backBaselineDate: null,
+  appMode: 'full' as const,
   createdAt: now,
   updatedAt: now,
 };

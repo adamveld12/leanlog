@@ -22,7 +22,12 @@ type IngredientEntryProps = {
   onDelete: (ingredientId: string) => void;
   onAddFromDatabase: (databaseIngredientId: string, input: AddFromDatabaseInput) => Promise<void>;
   showDatabaseCreate?: boolean;
-  analyticsContext: 'meal' | 'plan';
+  analyticsContext: 'meal' | 'plan' | 'simple';
+  /** Hide the built-in ingredient list when the host already shows the food
+   *  (simple mode's section card, #102). */
+  showList?: boolean;
+  /** Mount straight into editing this ingredient; remount (key) to switch. */
+  initialEditing?: EntryIngredient;
 };
 
 export function IngredientEntry({
@@ -32,9 +37,15 @@ export function IngredientEntry({
   onAddFromDatabase,
   showDatabaseCreate = false,
   analyticsContext,
+  showList = true,
+  initialEditing,
 }: IngredientEntryProps) {
   const track = useAnalytics();
-  const [entry, dispatch] = useReducer(entryReducer, initialEntryState);
+  const [entry, dispatch] = useReducer(entryReducer, initialEditing, (editing) =>
+    editing
+      ? entryReducer(initialEntryState, { type: 'editRow', ingredient: editing })
+      : initialEntryState,
+  );
   // dbTotal lives here so the database ingredient count survives tab switches.
   const [dbTotal, setDbTotal] = useState<number | null>(null);
 
@@ -46,18 +57,20 @@ export function IngredientEntry({
 
   return (
     <>
-      <IngredientList
-        ingredients={ingredients}
-        onEdit={(id) => {
-          const ingredient = ingredients.find((i) => i.id === id);
-          if (ingredient) dispatch({ type: 'editRow', ingredient });
-        }}
-        onDelete={(id) => {
-          onDelete(id);
-          track(`${analyticsContext}.ingredient.deleted`, { ingredientId: id });
-          if (entry.editingId === id) dispatch({ type: 'reset' });
-        }}
-      />
+      {showList ? (
+        <IngredientList
+          ingredients={ingredients}
+          onEdit={(id) => {
+            const ingredient = ingredients.find((i) => i.id === id);
+            if (ingredient) dispatch({ type: 'editRow', ingredient });
+          }}
+          onDelete={(id) => {
+            onDelete(id);
+            track(`${analyticsContext}.ingredient.deleted`, { ingredientId: id });
+            if (entry.editingId === id) dispatch({ type: 'reset' });
+          }}
+        />
+      ) : null}
       <div className={recipes.stack.lg}>
         <Tabs
           tabs={[

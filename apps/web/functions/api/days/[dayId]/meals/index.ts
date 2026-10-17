@@ -1,4 +1,5 @@
 import { createDayRepository, createMealRepository } from '@leanlog/data-d1';
+import { canAddAdhocMeal } from '@leanlog/data-access';
 import { z } from 'zod';
 import type { Env } from '../../../_env';
 import { isPastDate } from '../../../_dayGuard';
@@ -29,8 +30,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return new Response('Past days are read-only', { status: 409 });
   }
   // Ad-hoc meals are only allowed on zero-template days; template-backed days
-  // have a fixed meal structure in the first version (R34/R36).
-  if (day.meals.some((m) => m.origin === 'template')) {
+  // have a fixed meal structure in the first version (R34/R36). Simple mode's
+  // section meals are the exception (#102).
+  if (!canAddAdhocMeal(day, parsed.data.name)) {
     return new Response('Cannot add ad-hoc meals to a template-backed day', { status: 409 });
   }
 

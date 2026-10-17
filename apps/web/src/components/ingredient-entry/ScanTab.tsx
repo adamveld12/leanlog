@@ -45,7 +45,7 @@ export type ScanTabProps = {
   draft: IngredientDraft;
   editingId: string | null;
   draftSource: 'manual' | 'scanned';
-  analyticsContext: 'meal' | 'plan';
+  analyticsContext: 'meal' | 'plan' | 'simple';
   onDraftChange: (draft: IngredientDraft) => void;
   onApplyScan: (patch: Partial<IngredientDraft>) => void;
   onSubmit: () => void;

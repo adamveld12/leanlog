@@ -44,7 +44,16 @@ vi.mock('@clerk/clerk-react', () => ({
     signedIn ? createElement(Fragment, null, children) : null,
   SignedOut: ({ children }: PropsWithChildren) =>
     signedIn ? null : createElement(Fragment, null, children),
-  UserButton: () => createElement('button', { type: 'button' }, 'User'),
+  // Renders custom menu actions inline so tests can click them directly.
+  UserButton: Object.assign(
+    ({ children }: PropsWithChildren) =>
+      createElement(Fragment, null, createElement('button', { type: 'button' }, 'User'), children),
+    {
+      MenuItems: ({ children }: PropsWithChildren) => createElement(Fragment, null, children),
+      Action: ({ label, onClick }: { label: string; onClick?: () => void }) =>
+        createElement('button', { type: 'button', onClick }, label),
+    },
+  ),
   PricingTable: () => createElement('div', null, 'Pricing Table'),
   useAuth: () => ({
     isSignedIn: signedIn,
@@ -141,15 +150,15 @@ vi.mock('../api', () => ({
       fetchBlob: vi.fn(() => Promise.resolve(new Blob([], { type: 'image/jpeg' }))),
     },
     profile: {
-      get: () =>
+      get: vi.fn(() =>
         Promise.resolve({
           id: 'p1',
           clerkUserId: 'user_test',
           weightLbs: 180,
           heightInches: 72,
-          calorieMode: 'maintenance',
+          calorieMode: 'maintenance' as const,
           targetCalories: null,
-          macroMode: 'percentage',
+          macroMode: 'percentage' as const,
           macroFats: 25,
           macroCarbs: 35,
           macroProtein: 40,
@@ -158,9 +167,11 @@ vi.mock('../api', () => ({
           frontBaselineDate: null,
           sideBaselineDate: null,
           backBaselineDate: null,
+          appMode: 'full' as const,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }),
+      ),
       update: vi.fn(),
     },
     goals: {

@@ -193,6 +193,9 @@ const profileFields = {
   macroProtein: z.number(),
   goalWeightLbs: z.number().nullable(),
   goalBodyFatPct: z.number().nullable(),
+  // 'simple' is the two-page Entry + Stats experience for notebook-and-pen users
+  // (#102); 'full' is the complete leanlog app.
+  appMode: z.enum(['full', 'simple']),
 };
 
 export const PROFILE_DEFAULTS = {
@@ -206,6 +209,10 @@ export const PROFILE_DEFAULTS = {
   macroProtein: 40,
   goalWeightLbs: null,
   goalBodyFatPct: null,
+  // New accounts start in simple mode (#102). Deliberately differs from the DB
+  // column default ('full'), which backfills every pre-existing user to full —
+  // don't "fix" one to match the other.
+  appMode: 'simple' as const,
 };
 
 export const IngredientSchema = z.object({
@@ -374,6 +381,7 @@ export const UserProfileSchema = z.object({
   macroProtein: profileFields.macroProtein.default(PROFILE_DEFAULTS.macroProtein),
   goalWeightLbs: profileFields.goalWeightLbs.default(PROFILE_DEFAULTS.goalWeightLbs),
   goalBodyFatPct: profileFields.goalBodyFatPct.default(PROFILE_DEFAULTS.goalBodyFatPct),
+  appMode: profileFields.appMode.default(PROFILE_DEFAULTS.appMode),
   // Per-pose progress-photo baseline selection (#69): the ISO date anchoring each
   // pose's comparison, or null to default to the earliest photo (R15).
   frontBaselineDate: z.string().nullable().default(null),

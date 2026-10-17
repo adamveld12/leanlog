@@ -1,8 +1,24 @@
 import { useEffect, useReducer, useState, type PropsWithChildren } from 'react';
 import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { NavLink, Navigate, useNavigate } from 'react-router-dom';
-import { cn, ErrorTemplate, LoadingState, recipes, ThemeToggle } from '@leanlog/ui';
+import posthog from 'posthog-js';
+import type { UserProfile } from '@leanlog/data-access';
+import {
+  cn,
+  ErrorTemplate,
+  LoadingState,
+  recipes,
+  Text,
+  ThemeToggle,
+  useAnalytics,
+} from '@leanlog/ui';
+import { useStore } from '../state';
 import type { SaveSections } from '../types';
+
+type AppMode = UserProfile['appMode'];
+
+// Each mode's home route (#102).
+const MODE_HOME: Record<AppMode, string> = { full: '/track', simple: '/simple' };
 
 export type ApplyPlanState = {
   applying: boolean;
@@ -73,7 +89,7 @@ export const renderRouterNavLink = ({
   // (Execute) from matching its nested day/goal/nutrition routes.
   <NavLink
     to={href}
-    end={href === '/track'}
+    end={href === '/track' || href === '/simple'}
     className={({ isActive }) =>
       cn(className, isActive && 'text-[var(--ll-text)] underline decoration-2 underline-offset-4')
     }
@@ -83,14 +99,44 @@ export const renderRouterNavLink = ({
 );
 
 // Theme toggle (left) + Clerk user control (right), shown in every page header
-// in place of the old Settings page (#56, R5).
+// in place of the old Settings page (#56, R5). The user menu carries the
+// simple/full mode switch (#102).
 export function HeaderControls() {
   const [theme, setTheme] = useTheme();
+  const { profile, setAppMode } = useStore();
+  const nav = useNavigate();
+  const track = useAnalytics();
+  const target: AppMode | null = profile
+    ? profile.appMode === 'simple'
+      ? 'full'
+      : 'simple'
+    : null;
+
+  async function switchMode(to: AppMode) {
+    try {
+      await setAppMode(to);
+      track('simple.mode.switched', { to });
+      nav(MODE_HOME[to]);
+    } catch (e) {
+      posthog.captureException(e, { context: 'simple_mode_switch' });
+    }
+  }
+
   return (
     <>
       <ThemeToggle value={theme} onChange={setTheme} />
       <SignedIn>
-        <UserButton afterSignOutUrl="/" />
+        <UserButton afterSignOutUrl="/">
+          {target ? (
+            <UserButton.MenuItems>
+              <UserButton.Action
+                label={target === 'simple' ? 'Switch to simple mode' : 'Switch to full LeanLog'}
+                labelIcon={<Text aria-hidden="true">⇄</Text>}
+                onClick={() => void switchMode(target)}
+              />
+            </UserButton.MenuItems>
+          ) : null}
+        </UserButton>
       </SignedIn>
     </>
   );
@@ -129,10 +175,27 @@ export function TrackerErrorState({ message }: { message: string }) {
   return <ErrorTemplate title="Unable to load LeanLog" message={message} homeHref="/" />;
 }
 
-export function RequireSignedIn({ children }: PropsWithChildren) {
+// Keeps each account on its own mode's pages (#102): a simple-mode account is
+// sent from full-mode routes to /simple, and vice versa. Waits for the profile
+// so nobody briefly sees the wrong app; with no profile (load failed) the page
+// renders and shows its own error state.
+function RequireMode({ mode, children }: PropsWithChildren<{ mode: AppMode }>) {
+  const { profile, loading } = useStore();
+  if (loading) return <PageLoadingState label="Loading…" />;
+  if (profile && profile.appMode !== mode)
+    return <Navigate to={MODE_HOME[profile.appMode]} replace />;
+  return <>{children}</>;
+}
+
+export function RequireSignedIn({
+  children,
+  mode = 'full',
+}: PropsWithChildren<{ mode?: AppMode }>) {
   return (
     <>
-      <SignedIn>{children}</SignedIn>
+      <SignedIn>
+        <RequireMode mode={mode}>{children}</RequireMode>
+      </SignedIn>
       <SignedOut>
         <Navigate to="/" replace />
       </SignedOut>

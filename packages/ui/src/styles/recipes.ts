@@ -4,6 +4,16 @@ export const recipes = {
   ring: { today: 'ring-2 ring-[var(--ll-line-strong)]' },
   controlDisabled: 'disabled:opacity-50 disabled:cursor-not-allowed',
   transition: 'transition duration-[140ms] ease-[var(--ll-ease)]',
+  // Expand/collapse a card region in place (#102). Animates height via the
+  // grid-template-rows 0fr→1fr technique plus opacity; skipped under reduced
+  // motion. The sanctioned exception to "no layout animation" — see Motion in
+  // docs/design-system.md.
+  expand: {
+    base: 'grid transition-[grid-template-rows,opacity] duration-[350ms] ease-[var(--ll-ease)] motion-reduce:transition-none',
+    open: 'grid-rows-[1fr] opacity-100',
+    closed: 'grid-rows-[0fr] opacity-0',
+    inner: 'min-h-0 overflow-hidden',
+  },
   radius: {
     control: 'rounded-[10px]',
     card: 'rounded-[14px]',

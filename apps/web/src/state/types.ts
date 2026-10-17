@@ -20,6 +20,8 @@ import type {
   UpdateGoal,
   UpdateBackgroundGoal,
   ProgressPose,
+  SimpleSectionKey,
+  UserProfile as Profile,
 } from '@leanlog/data-access';
 
 export type EnsureDayResult =
@@ -42,8 +44,17 @@ export type Store = {
   error: string | null;
   ensureDayLoaded(dayId: string): Promise<EnsureDayResult>;
   // Creates a day for the date, deriving its targets and meal slots from the
-  // covering goal and the latest known weight (#56).
-  addDay(date: string): Promise<DailyMealLog>;
+  // covering goal and the latest known weight (#56). Simple mode passes
+  // applyPlan: false so no plan meals are materialized (#102).
+  addDay(date: string, opts?: { applyPlan?: boolean }): Promise<DailyMealLog>;
+  // Simple mode (#102): returns the day for the date, creating it without a
+  // plan when missing. Concurrent calls share one request.
+  ensureSimpleDay(date: string): Promise<DailyMealLog>;
+  // Simple mode (#102): returns the ad-hoc meal backing a fixed section,
+  // creating it on first use. Concurrent calls share one request, so a double
+  // tap can't create two "Lunch" meals.
+  ensureSectionMeal(dayId: string, section: SimpleSectionKey): Promise<Meal>;
+  setAppMode(mode: Profile['appMode']): Promise<void>;
   removeDay(dayId: string): Promise<void>;
   addMeal(dayId: string, name: string): Promise<Meal | null>;
   removeMeal(dayId: string, mealId: string): Promise<void>;

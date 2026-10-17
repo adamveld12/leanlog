@@ -61,6 +61,7 @@
 - **Curve:** `cubic-bezier(0.2, 0.8, 0.2, 1)`
 - **Animated properties:** transform, opacity, border-color
 - **Rule:** No layout-jank animations.
+- **Exception:** Expanding a card in place (`recipes.expand`, e.g. simple mode's `MealSectionCard`, #102) animates height via `grid-template-rows` 0fr→1fr plus opacity over 350ms — slower than the 120–180ms default so the resize reads as motion. It's the only sanctioned layout animation and is skipped under `prefers-reduced-motion`.
 - **Exception:** The `Spinner` atom uses a continuous 0.75s linear rotation — the only intentional infinite animation. Pauses automatically under `prefers-reduced-motion`.
 
 ## Component Baselines
@@ -92,11 +93,11 @@ ActionRow, DateSelect3, ListRow, LoadingState, MacroProgressBlock, MacroSummaryL
 
 ### Organisms (16)
 
-AppPageHeading, AuthLanding, DailyTotalsCard, DayWeightCard, IngredientEntryCard, LabelScanCard, ListSectionCard, MonthCalendarCard, NutritionDatabaseEntryCard, NutritionDatabaseSearchCard, PageNavHeading, ProfileSectionCards, QuickActionsCard, ScanReviewModal, WeeklyStatsCard, WeightTrendCard
+AppPageHeading, AuthLanding, DailyTotalsCard, DayWeightCard, IngredientEntryCard, LabelScanCard, ListSectionCard, MealSectionCard, MonthCalendarCard, NutritionDatabaseEntryCard, NutritionDatabaseSearchCard, PageNavHeading, ProfileSectionCards, QuickActionsCard, ScanReviewModal, WeekDayTotalsCard, WeeklyStatsCard, WeightTrendCard
 
 ### Templates (7)
 
-AppShell, DayDetailTemplate, DayListTemplate, ErrorTemplate, LandingTemplate, MealEditTemplate, ProfileTemplate
+AppShell, DayDetailTemplate, DayListTemplate, ErrorTemplate, LandingTemplate, MealEditTemplate, ProfileTemplate, SimpleEntryTemplate, SimpleStatsTemplate
 
 ## Recipes (`packages/ui/src/styles/recipes.ts`)
 

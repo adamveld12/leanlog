@@ -9,3 +9,9 @@ export const APP_NAV_LINKS: NavLink[] = [
   { href: '/track/goals', label: 'Goals' },
   { href: '/track/nutrition-facts', label: 'Nutrition Facts' },
 ];
+
+// Simple mode's two pages (#102): today's entry page and the weekly look back.
+export const SIMPLE_NAV_LINKS: NavLink[] = [
+  { href: '/simple', label: 'Today' },
+  { href: '/simple/stats', label: 'Stats' },
+];

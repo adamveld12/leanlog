@@ -1,0 +1,1 @@
+ALTER TABLE `user_profiles` ADD `app_mode` text DEFAULT 'full' NOT NULL;

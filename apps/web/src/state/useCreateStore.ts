@@ -6,9 +6,11 @@ import {
   dayMealStructure,
   dayObjectives,
   deriveDayPlan,
+  findSectionMeal,
   goalCoversDate,
   isMeaningfulMeal,
   resolveCoveringGoal,
+  sectionLabel,
   type DailyMealLog,
   type Goal,
 } from '@leanlog/data-access';
@@ -56,6 +58,17 @@ export function useCreateStore(): Store {
   const completionRef = useRef<Set<string> | null>(null);
   const reportedMeals = () => (reportedMealsRef.current ??= new Set());
   const completions = () => (completionRef.current ??= new Set());
+  // In-flight simple-mode creates (#102), keyed by what they create, so rapid
+  // repeat calls share one request instead of creating duplicates.
+  const inflightRef = useRef<Map<string, Promise<unknown>> | null>(null);
+  const inflight = () => (inflightRef.current ??= new Map());
+  function dedupe<T>(key: string, create: () => Promise<T>): Promise<T> {
+    const pending = inflight().get(key) as Promise<T> | undefined;
+    if (pending) return pending;
+    const p = create().finally(() => inflight().delete(key));
+    inflight().set(key, p);
+    return p;
+  }
 
   useEffect(() => {
     daysRef.current = state.days;
@@ -173,6 +186,17 @@ export function useCreateStore(): Store {
     }
   }
 
+  // A day with no goal and no plan meals (simple mode, #102). Targets fall back
+  // to defaults since simple mode shows none.
+  async function createPlanlessDay(date: string) {
+    const day = await withToken((t) =>
+      api.days.create(t, { date, ...FALLBACK_DAY_TARGETS, mealCountTarget: 0 }),
+    );
+    daysRef.current = [...daysRef.current, day];
+    dispatch({ type: 'dayAdded', day });
+    return day;
+  }
+
   // Dispatches, then replays the same pure reducer to learn the resulting day
   // synchronously — including server side-effects the reducer mirrors, like a
   // plan meal auto-logging when food is added. React state isn't readable until
@@ -240,7 +264,10 @@ export function useCreateStore(): Store {
     ensureDayLoaded,
     ensurePlanLoaded,
 
-    async addDay(date) {
+    async addDay(date, opts) {
+      // Simple mode (#102) never materializes plan meals: no goal, fallback
+      // targets (simple mode shows no targets anyway).
+      if (opts?.applyPlan === false) return createPlanlessDay(date);
       // Derive targets + covering goal client-side (#56); the server snapshots the
       // goal's meal slots into the day's meals. mealCountTarget is derived
       // server-side from those slots, so the client sends 0.
@@ -263,6 +290,28 @@ export function useCreateStore(): Store {
       );
       dispatch({ type: 'dayAdded', day });
       return day;
+    },
+
+    ensureSimpleDay(date) {
+      const existing = daysRef.current.find((d) => d.date === date);
+      if (existing) return Promise.resolve(existing);
+      return dedupe(`day:${date}`, () => createPlanlessDay(date));
+    },
+
+    ensureSectionMeal(dayId, section) {
+      const day = daysRef.current.find((d) => d.id === dayId);
+      const existing = day && findSectionMeal(day, section);
+      if (existing) return Promise.resolve(existing);
+      return dedupe(`meal:${dayId}:${section}`, async () => {
+        const meal = await withToken((t) => api.meals.create(t, dayId, sectionLabel(section)));
+        commit(dayId, { type: 'mealAdded', dayId, meal });
+        return meal;
+      });
+    },
+
+    async setAppMode(appMode) {
+      const updated = await withToken((t) => api.profile.update(t, { appMode }));
+      dispatch({ type: 'profileSet', profile: updated });
     },
 
     async removeDay(dayId) {
