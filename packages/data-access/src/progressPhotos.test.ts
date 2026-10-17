@@ -162,6 +162,20 @@ describe('computePoseComparison', () => {
     expect(c.weightDelta).toBe(-5);
   });
 
+  it('falls back to earliest when the chosen baseline is the latest photo', () => {
+    // A baseline can't be compared against itself; honoring it would collapse the
+    // pose to the single-photo state and hide the picker, stranding the user.
+    const days = [
+      day('2026-01-01', 'front', KEY('u'), 210),
+      day('2026-03-01', 'front', KEY('u'), 205),
+      day('2026-06-01', 'front', KEY('u'), 200),
+    ];
+    const c = computePoseComparison('front', days, '2026-06-01');
+    expect(c.single).toBe(false);
+    expect(c.baseline?.date).toBe('2026-01-01');
+    expect(c.latest?.date).toBe('2026-06-01');
+  });
+
   it('falls back to earliest when the chosen baseline day has no photo for this pose', () => {
     const days = [
       day('2026-01-01', 'front', KEY('u'), 210),
