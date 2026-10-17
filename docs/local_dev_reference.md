@@ -34,7 +34,7 @@ http://localhost:5173
 | `pnpm dev:db:migrate` | Applies migrations from `packages/data-d1/drizzle` to local D1 state.                                      |
 | `pnpm dev:db:reset`   | Resets only the local D1 app schema/data, then reapplies migrations. Preserves other Wrangler local state. |
 | `pnpm dev:reset`      | Removes all local Wrangler state under `apps/web/.wrangler/state`, then reapplies D1 migrations.           |
-| `pnpm -r lint`        | Typechecks and lints all packages.                                                                         |
+| `pnpm lint`           | Typechecks and lints all packages.                                                                         |
 | `pnpm test`           | Runs the test suite.                                                                                       |
 | `pnpm build`          | Builds all packages/apps.                                                                                  |
 

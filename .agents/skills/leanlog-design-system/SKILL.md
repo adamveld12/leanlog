@@ -46,7 +46,7 @@ App pages **must** use templates. Do not build page layouts manually with `AppSh
 
 ## Enforcement
 
-oxlint and the design audit script enforce these rules automatically. The pre-commit hook runs `pnpm -r lint` + `pnpm design:audit` and blocks commits that violate them.
+oxlint and the design audit script enforce these rules automatically. The pre-commit hook runs `pnpm lint` + `pnpm design:audit` and blocks commits that violate them.
 
 ### oxlint bans raw typography elements
 
