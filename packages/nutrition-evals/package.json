@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "tsc --noEmit",
+    "lint": "tsc --noEmit && oxlint",
     "test": "vitest run",
     "test:evals": "vitest run --config vitest.evals.config.ts"
   },
