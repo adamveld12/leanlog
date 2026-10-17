@@ -38,7 +38,7 @@
     "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
     "react-doctor": "0.5.0",
-    "vitest": "^4.1.0"
+    "vitest": "^5.0.5"
   },
   "lint-staged": {
     "*": [
